@@ -107,11 +107,50 @@ const createTables = async (): Promise<void> => {
       )
     `);
 
+            // Create users table
+            await connection.execute(`
+              CREATE TABLE IF NOT EXISTS users (
+                id VARCHAR(36) PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NULL,
+                first_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100) NOT NULL,
+                phone_number VARCHAR(20) NOT NULL,
+                role ENUM('customer', 'admin', 'store_owner') DEFAULT 'customer',
+                is_active BOOLEAN DEFAULT false,
+                email_verified BOOLEAN DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                last_login_at TIMESTAMP NULL,
+                INDEX idx_email (email),
+                INDEX idx_role (role),
+                INDEX idx_active (is_active)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            `);
+
+            // Create verification_tokens table
+            await connection.execute(`
+              CREATE TABLE IF NOT EXISTS verification_tokens (
+                id VARCHAR(36) PRIMARY KEY,
+                user_id VARCHAR(36) NOT NULL,
+                token VARCHAR(255) NOT NULL UNIQUE,
+                type ENUM('email_verification', 'password_reset') NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_user_id (user_id),
+                INDEX idx_token (token),
+                INDEX idx_type (type),
+                INDEX idx_expires_at (expires_at),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            `);
+
     // Create activity_logs table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS activity_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified') NOT NULL,
+        type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login') NOT NULL,
         message TEXT NOT NULL,
         store_name VARCHAR(255) NULL,
         store_id VARCHAR(36) NULL,
@@ -122,6 +161,29 @@ const createTables = async (): Promise<void> => {
         INDEX idx_created_at (created_at)
       )
     `);
+
+            // Update existing activity_logs table to include new enum values
+            try {
+              await connection.execute(`
+                ALTER TABLE activity_logs 
+                MODIFY COLUMN type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login') NOT NULL
+              `);
+            } catch (error) {
+              // Table might not exist or already have the correct enum values
+              console.log('Activity logs table enum update skipped:', error);
+            }
+
+            // Update existing users table to allow null passwords
+            try {
+              await connection.execute(`
+                ALTER TABLE users 
+                MODIFY COLUMN password VARCHAR(255) NULL,
+                MODIFY COLUMN is_active BOOLEAN DEFAULT false
+              `);
+            } catch (error) {
+              // Table might not exist or already have the correct schema
+              console.log('Users table schema update skipped:', error);
+            }
 
     console.log('✅ Database tables created successfully');
   } finally {

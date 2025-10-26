@@ -2,7 +2,7 @@ import { pool } from '../config/database';
 
 export interface ActivityLog {
   id: string;
-  type: 'store_created' | 'store_updated' | 'store_deleted' | 'store_verified';
+  type: 'store_created' | 'store_updated' | 'store_deleted' | 'store_verified' | 'user_registered' | 'user_login';
   message: string;
   timestamp: Date;
   storeName?: string;

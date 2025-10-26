@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import storeRoutes from './routes/storeRoutes';
 import systemRoutes from './routes/systemRoutes';
 import activityLogRoutes from './routes/activityLogRoutes';
+import authRoutes from './routes/authRoutes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { testConnection, initializeDatabase } from './config/database';
 import { setupSwagger } from './config/swagger';
@@ -84,6 +85,7 @@ setupSwagger(app);
 app.use('/api/stores', storeRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
+app.use('/api/auth', authRoutes);
 
 /**
  * @swagger
