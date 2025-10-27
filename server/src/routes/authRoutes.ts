@@ -524,4 +524,274 @@ router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Resp
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *     responses:
+ *       200:
+ *         description: Password reset email sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset email sent"
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    // Check if user exists
+    const user = await userModel.getUserByEmail(email);
+    if (!user) {
+      // For security, don't reveal if email exists or not
+      return res.json({
+        success: true,
+        message: 'If an account with that email exists, a password reset link has been sent'
+      });
+    }
+
+    // Generate reset token
+    const resetToken = emailService.generatePasswordResetToken();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Store reset token
+    await verificationTokenModel.createToken({
+      userId: user.id,
+      token: resetToken,
+      type: 'password_reset',
+      expiresAt
+    });
+
+    // Send reset email
+    const emailSent = await emailService.sendPasswordResetEmail(email, resetToken);
+    
+    if (!emailSent) {
+      console.warn('Failed to send password reset email');
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send password reset email'
+      });
+    }
+
+    // Log the activity
+    try {
+      await ActivityLogModel.createLog({
+        type: 'password_reset_requested',
+        message: `Password reset requested for user "${user.firstName} ${user.lastName}"`,
+        metadata: {
+          userId: user.id,
+          email: user.email,
+          emailSent
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log password reset request:', logError);
+    }
+
+    return res.json({
+      success: true,
+      message: 'If an account with that email exists, a password reset link has been sent'
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to process password reset request',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: "abc123def456..."
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "newpassword123"
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset successful"
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Invalid or expired token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token and password are required'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
+      });
+    }
+
+    // Find reset token
+    const resetToken = await verificationTokenModel.getTokenByTokenValue(token);
+    
+    if (!resetToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid reset token'
+      });
+    }
+
+    // Check if token is expired
+    if (resetToken.expiresAt < new Date()) {
+      return res.status(401).json({
+        success: false,
+        message: 'Reset token has expired'
+      });
+    }
+
+    // Check if token is already used
+    if (resetToken.used) {
+      return res.status(401).json({
+        success: false,
+        message: 'Reset token has already been used'
+      });
+    }
+
+    // Check if token is for password reset
+    if (resetToken.type !== 'password_reset') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid token type'
+      });
+    }
+
+    // Get user
+    const user = await userModel.getUserById(resetToken.userId);
+
+    // Update password
+    await userModel.updatePassword(user.id, password);
+
+    // Mark token as used
+    await verificationTokenModel.markTokenAsUsed(resetToken.id);
+
+    // Log the activity
+    try {
+      await ActivityLogModel.createLog({
+        type: 'password_reset_completed',
+        message: `Password reset completed for user "${user.firstName} ${user.lastName}"`,
+        metadata: {
+          userId: user.id,
+          email: user.email
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log password reset completion:', logError);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Password reset successful'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to reset password',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

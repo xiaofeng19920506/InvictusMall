@@ -178,6 +178,19 @@ export class UserModel {
     await this.pool.execute(query, [hashedPassword, now, userId]);
   }
 
+  async updatePassword(userId: string, password: string): Promise<void> {
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const now = new Date();
+
+    const query = `
+      UPDATE users 
+      SET password = ?, updated_at = ?
+      WHERE id = ?
+    `;
+
+    await this.pool.execute(query, [hashedPassword, now, userId]);
+  }
+
   async verifyEmail(userId: string): Promise<void> {
     const now = new Date();
 
