@@ -2,7 +2,7 @@ import { pool } from '../config/database';
 
 export interface ActivityLog {
   id: string;
-  type: 'store_created' | 'store_updated' | 'store_deleted' | 'store_verified' | 'user_registered' | 'user_login';
+  type: 'store_created' | 'store_updated' | 'store_deleted' | 'store_verified' | 'user_registered' | 'user_login' | 'password_reset_requested' | 'password_reset_completed';
   message: string;
   timestamp: Date;
   storeName?: string;
@@ -58,7 +58,7 @@ export class ActivityLogModel {
       timestamp: row.created_at,
       storeName: row.store_name,
       storeId: row.store_id,
-      metadata: row.metadata ? JSON.parse(row.metadata) : undefined
+      metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined
     };
   }
 
@@ -83,7 +83,7 @@ export class ActivityLogModel {
         timestamp: row.created_at,
         storeName: row.store_name,
         storeId: row.store_id,
-        metadata: row.metadata ? JSON.parse(row.metadata) : undefined
+        metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined
       }));
     } catch (error) {
       console.error('Error fetching recent logs:', error);
@@ -113,7 +113,7 @@ export class ActivityLogModel {
         timestamp: row.created_at,
         storeName: row.store_name,
         storeId: row.store_id,
-        metadata: row.metadata ? JSON.parse(row.metadata) : undefined
+        metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined
       }));
     } catch (error) {
       console.error('Error fetching logs by store ID:', error);
@@ -143,7 +143,7 @@ export class ActivityLogModel {
         timestamp: row.created_at,
         storeName: row.store_name,
         storeId: row.store_id,
-        metadata: row.metadata ? JSON.parse(row.metadata) : undefined
+        metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined
       }));
     } catch (error) {
       console.error('Error fetching logs by type:', error);

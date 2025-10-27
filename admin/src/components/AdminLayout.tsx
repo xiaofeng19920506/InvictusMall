@@ -8,8 +8,16 @@ import {
   X,
   ExternalLink,
   Globe,
-  Server
+  Server,
+  LogOut,
+  Shield,
+  UserCheck,
+  TrendingUp,
+  FileText
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../services/auth';
+import type { Permission } from '../services/auth';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -23,13 +31,23 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   onPageChange 
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { user, logout } = useAuth();
 
-  const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'stores', label: 'Stores', icon: Store },
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'settings', label: 'Settings', icon: Settings },
+  // Define all possible navigation items
+  const allNavigationItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: BarChart3, permission: 'dashboard' as Permission },
+    { id: 'stores', label: 'Stores', icon: Store, permission: 'stores' as Permission },
+    { id: 'users', label: 'Users', icon: Users, permission: 'users' as Permission },
+    { id: 'analytics', label: 'Analytics', icon: TrendingUp, permission: 'analytics' as Permission },
+    { id: 'register-staff', label: 'Register Staff', icon: UserCheck, permission: 'user_management' as Permission },
+    { id: 'settings', label: 'Settings', icon: Settings, permission: 'settings' as Permission },
+    { id: 'system_logs', label: 'System Logs', icon: FileText, permission: 'system_logs' as Permission },
   ];
+
+  // Filter navigation items based on user permissions
+  const navigationItems = user ? allNavigationItems.filter(item => 
+    authService.hasPermission(user, item.permission)
+  ) : [];
 
   return (
     <div className="admin-layout">
@@ -89,10 +107,31 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
             </div>
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-600">
-                Admin User
+                <div className="font-medium">{user ? `${user.firstName} ${user.lastName}` : 'User'}</div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    user?.role === 'admin' ? 'bg-red-100 text-red-800' :
+                    user?.role === 'owner' ? 'bg-purple-100 text-purple-800' :
+                    user?.role === 'manager' ? 'bg-blue-100 text-blue-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {user?.role === 'admin' && <Shield size={12} className="inline mr-1" />}
+                    {user?.role === 'owner' && <UserCheck size={12} className="inline mr-1" />}
+                    {user?.role === 'manager' && <TrendingUp size={12} className="inline mr-1" />}
+                    {user?.role === 'employee' && <Store size={12} className="inline mr-1" />}
+                    {user?.role?.toUpperCase() || 'USER'}
+                  </span>
+                </div>
               </div>
+              <button
+                onClick={logout}
+                className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 hover:text-red-600 transition-colors"
+                title="Logout"
+              >
+                <LogOut size={20} />
+              </button>
               <div className="w-8 h-8 bg-primary-color rounded-full flex items-center justify-center text-white font-medium">
-                A
+                {user ? user.firstName.charAt(0).toUpperCase() : 'U'}
               </div>
             </div>
           </div>

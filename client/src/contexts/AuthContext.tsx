@@ -12,6 +12,7 @@ interface AuthContextType {
   forgotPassword: (data: ForgotPasswordRequest) => Promise<AuthResponse>;
   resetPassword: (data: ResetPasswordRequest) => Promise<AuthResponse>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -23,36 +24,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = authService.getToken();
-    if (token) {
+    const restoreAuthState = async () => {
       try {
-        // Basic token validation - in a real app, you'd verify with the server
-        const decodedToken = JSON.parse(atob(token.split('.')[1]));
-        if (decodedToken.exp * 1000 > Date.now()) {
-          // Token is valid, set user data
-          setUser({
-            id: decodedToken.userId,
-            email: decodedToken.email || '',
-            firstName: decodedToken.firstName || '',
-            lastName: decodedToken.lastName || '',
-            phoneNumber: decodedToken.phoneNumber || '',
-            role: decodedToken.role || 'customer',
-            isActive: true,
-            emailVerified: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            lastLoginAt: new Date().toISOString()
-          });
+        // Try to get current user from server using HTTP-only cookie
+        const response = await authService.getCurrentUser();
+        if (response.success && response.user) {
+          // Server confirms user is authenticated, restore user state
+          setUser(response.user);
           setIsAuthenticated(true);
         } else {
-          authService.logout();
+          // Server says user is not authenticated
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('Failed to decode token:', error);
-        authService.logout();
+        console.error('Failed to restore auth state:', error);
+        setUser(null);
+        setIsAuthenticated(false);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    restoreAuthState();
   }, []);
 
   const login = async (credentials: LoginUserRequest): Promise<AuthResponse> => {
@@ -107,14 +100,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const response = await authService.getCurrentUser();
+      if (response.success && response.user) {
+        setUser(response.user);
+      } else {
+        logout();
+      }
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+      logout();
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, signup, forgotPassword, resetPassword, logout, loading }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, signup, forgotPassword, resetPassword, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

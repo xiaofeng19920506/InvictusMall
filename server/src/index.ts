@@ -3,10 +3,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import storeRoutes from './routes/storeRoutes';
 import systemRoutes from './routes/systemRoutes';
 import activityLogRoutes from './routes/activityLogRoutes';
 import authRoutes from './routes/authRoutes';
+import staffRoutes from './routes/staffRoutes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { testConnection, initializeDatabase } from './config/database';
 import { setupSwagger } from './config/swagger';
@@ -41,6 +43,9 @@ app.use(morgan('combined'));
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Cookie parsing middleware
+app.use(cookieParser());
 
 /**
  * @swagger
@@ -86,6 +91,7 @@ app.use('/api/stores', storeRoutes);
 app.use('/api/system', systemRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/staff', staffRoutes);
 
 /**
  * @swagger

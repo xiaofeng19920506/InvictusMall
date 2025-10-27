@@ -116,6 +116,38 @@ export class UserModel {
       SELECT id, email, password, first_name, last_name, phone_number, role, 
              is_active, email_verified, created_at, updated_at, last_login_at
       FROM users 
+      WHERE id = ?
+    `;
+
+    const [rows] = await this.pool.execute(query, [id]);
+    const users = rows as any[];
+
+    if (users.length === 0) {
+      throw new Error('User not found');
+    }
+
+    const user = users[0];
+    return {
+      id: user.id,
+      email: user.email,
+      password: user.password,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      phoneNumber: user.phone_number,
+      role: user.role,
+      isActive: user.is_active,
+      emailVerified: user.email_verified,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      lastLoginAt: user.last_login_at
+    };
+  }
+
+  async getActiveUserById(id: string): Promise<User> {
+    const query = `
+      SELECT id, email, password, first_name, last_name, phone_number, role, 
+             is_active, email_verified, created_at, updated_at, last_login_at
+      FROM users 
       WHERE id = ? AND is_active = true
     `;
 

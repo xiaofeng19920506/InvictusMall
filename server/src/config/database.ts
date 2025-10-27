@@ -11,10 +11,7 @@ export const dbConfig = {
   database: process.env.DB_NAME || 'invictus_mall',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
+  queueLimit: 0
 };
 
 // Create connection pool
@@ -128,21 +125,52 @@ const createTables = async (): Promise<void> => {
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
-            // Create verification_tokens table
+            // Create staff table for admin app users
             await connection.execute(`
-              CREATE TABLE IF NOT EXISTS verification_tokens (
+              CREATE TABLE IF NOT EXISTS staff (
                 id VARCHAR(36) PRIMARY KEY,
-                user_id VARCHAR(36) NOT NULL,
-                token VARCHAR(255) NOT NULL UNIQUE,
-                type ENUM('email_verification', 'password_reset') NOT NULL,
-                expires_at TIMESTAMP NOT NULL,
-                used BOOLEAN DEFAULT false,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                first_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100) NOT NULL,
+                phone_number VARCHAR(20) NOT NULL,
+                role ENUM('admin', 'owner', 'manager', 'employee') DEFAULT 'employee',
+                department VARCHAR(100) NULL,
+                employee_id VARCHAR(50) UNIQUE NULL,
+                is_active BOOLEAN DEFAULT true,
+                email_verified BOOLEAN DEFAULT true,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_user_id (user_id),
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                last_login_at TIMESTAMP NULL,
+                created_by VARCHAR(36) NULL,
+                INDEX idx_email (email),
+                INDEX idx_role (role),
+                INDEX idx_active (is_active),
+                INDEX idx_employee_id (employee_id),
+                INDEX idx_department (department)
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            `);
+
+            // Create staff_invitations table
+            await connection.execute(`
+              CREATE TABLE IF NOT EXISTS staff_invitations (
+                id VARCHAR(36) PRIMARY KEY,
+                email VARCHAR(255) NOT NULL,
+                first_name VARCHAR(100) NOT NULL,
+                last_name VARCHAR(100) NOT NULL,
+                role ENUM('admin', 'owner', 'manager', 'employee') NOT NULL,
+                department VARCHAR(100) NULL,
+                employee_id VARCHAR(50) NULL,
+                token VARCHAR(36) UNIQUE NOT NULL,
+                invited_by VARCHAR(36) NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                is_used BOOLEAN DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_email (email),
                 INDEX idx_token (token),
-                INDEX idx_type (type),
                 INDEX idx_expires_at (expires_at),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                INDEX idx_is_used (is_used)
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
@@ -150,7 +178,7 @@ const createTables = async (): Promise<void> => {
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS activity_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login') NOT NULL,
+        type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed') NOT NULL,
         message TEXT NOT NULL,
         store_name VARCHAR(255) NULL,
         store_id VARCHAR(36) NULL,
@@ -166,7 +194,7 @@ const createTables = async (): Promise<void> => {
             try {
               await connection.execute(`
                 ALTER TABLE activity_logs 
-                MODIFY COLUMN type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login') NOT NULL
+                MODIFY COLUMN type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed') NOT NULL
               `);
             } catch (error) {
               // Table might not exist or already have the correct enum values

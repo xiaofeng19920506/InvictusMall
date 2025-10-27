@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import AuthModal from './AuthModal';
 import Link from 'next/link';
 
 interface HeaderProps {
@@ -15,8 +14,6 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchType, setSearchType] = useState('All');
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('login');
   
   const { user, logout, isAuthenticated } = useAuth();
 
@@ -57,15 +54,6 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
     if (onSearchTypeChange) {
       onSearchTypeChange(type);
     }
-  };
-
-  const openAuthModal = (mode: 'login' | 'signup') => {
-    setAuthModalMode(mode);
-    setIsAuthModalOpen(true);
-  };
-
-  const closeAuthModal = () => {
-    setIsAuthModalOpen(false);
   };
 
   const handleLogout = () => {
@@ -164,20 +152,20 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <button 
-                  onClick={() => openAuthModal('login')}
+                <Link 
+                  href="/login"
                   className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
                 >
                   <span>👤</span>
                   <span>Sign In</span>
-                </button>
-                <button 
-                  onClick={() => openAuthModal('signup')}
+                </Link>
+                <Link 
+                  href="/signup"
                   className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors"
                 >
                   <span>📝</span>
                   <span>Sign Up</span>
-                </button>
+                </Link>
               </div>
             )}
             
@@ -208,12 +196,6 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
           </div>
         </div>
       </nav>
-      
-      <AuthModal 
-        isOpen={isAuthModalOpen}
-        onClose={closeAuthModal}
-        initialMode={authModalMode}
-      />
     </header>
   );
 }

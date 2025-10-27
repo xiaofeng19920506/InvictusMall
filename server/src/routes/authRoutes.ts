@@ -251,7 +251,14 @@ router.post('/login', validateLogin, handleValidationErrors, async (req: Request
     }
 
     // Verify password
-    const isPasswordValid = await userModel.verifyPassword(password, user.password);
+    if (!user.password) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password'
+      });
+    }
+    
+    const isPasswordValid = await userModel.verifyPassword(password, user.password!);
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -269,7 +276,7 @@ router.post('/login', validateLogin, handleValidationErrors, async (req: Request
         email: user.email, 
         role: user.role 
       },
-      JWT_SECRET,
+      JWT_SECRET as string,
       { expiresIn: '1h' }
     );
 
@@ -289,14 +296,22 @@ router.post('/login', validateLogin, handleValidationErrors, async (req: Request
       // Continue with login even if logging fails
     }
 
-    // Return user data without password
+    // Set HTTP-only cookie with JWT token
+    res.cookie('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+
+    // Return user data without password (no token in response body)
     const { password: _, ...userWithoutPassword } = user;
 
     return res.json({
       success: true,
       message: 'Login successful',
-      user: userWithoutPassword,
-      token
+      user: userWithoutPassword
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -410,8 +425,8 @@ router.post('/setup-password', validateSetupPassword, handleValidationErrors, as
         email: user.email, 
         role: user.role 
       },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
+      JWT_SECRET as string,
+      { expiresIn: '7d' }
     );
 
     // Update last login
@@ -436,14 +451,22 @@ router.post('/setup-password', validateSetupPassword, handleValidationErrors, as
       // Continue even if logging fails
     }
 
-    // Return user data without password
+    // Set HTTP-only cookie with JWT token
+    res.cookie('auth_token', jwtToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+
+    // Return user data without password (no token in response body)
     const { password: _, ...userWithoutPassword } = updatedUser;
 
     return res.status(200).json({
       success: true,
       message: 'Password setup successful! Your account is now active.',
-      user: userWithoutPassword,
-      token: jwtToken
+      user: userWithoutPassword
     });
   } catch (error) {
     console.error('Password setup error:', error);
@@ -505,7 +528,7 @@ router.post('/setup-password', validateSetupPassword, handleValidationErrors, as
 router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     // User is already authenticated and available in req.user
-    const user = await userModel.getUserById(req.user!.id);
+    const user = await userModel.getActiveUserById(req.user!.id);
 
     // Return user data without password
     const { password: _, ...userWithoutPassword } = user;
@@ -758,7 +781,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     }
 
     // Get user
-    const user = await userModel.getUserById(resetToken.userId);
+    const user = await userModel.getActiveUserById(resetToken.userId);
 
     // Update password
     await userModel.updatePassword(user.id, password);
@@ -792,6 +815,42 @@ router.post('/reset-password', async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
+});
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Authentication]
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Logout successful"
+ */
+router.post('/logout', (req: Request, res: Response) => {
+  // Clear the HTTP-only cookie
+  res.clearCookie('auth_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/'
+  });
+
+  return res.json({
+    success: true,
+    message: 'Logout successful'
+  });
 });
 
 export default router;

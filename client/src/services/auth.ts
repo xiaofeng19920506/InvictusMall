@@ -69,6 +69,7 @@ class AuthService {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include', // Include cookies in requests
       ...options,
     };
 
@@ -89,10 +90,13 @@ class AuthService {
   }
 
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/login', {
+    const response = await this.request<AuthResponse>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
+    
+    // Token is now stored in HTTP-only cookie, no need to save it
+    return response;
   }
 
   async signup(userData: SignupRequest): Promise<AuthResponse> {
@@ -107,21 +111,14 @@ class AuthService {
       method: 'POST',
       body: JSON.stringify(data),
     });
-    if (response.token) {
-      this.setToken(response.token);
-    }
-    if (response.user) {
-      this.setUser(response.user);
-    }
+    
+    // Token is now stored in HTTP-only cookie, no need to save it
     return response;
   }
 
-  async getCurrentUser(token: string): Promise<AuthResponse> {
+  async getCurrentUser(): Promise<AuthResponse> {
     return this.request<AuthResponse>('/api/auth/me', {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
     });
   }
 
@@ -132,67 +129,23 @@ class AuthService {
     });
   }
 
-  async resetPassword(data: ResetPasswordRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/reset-password', {
+  async logout(): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/api/auth/logout', {
       method: 'POST',
-      body: JSON.stringify(data),
     });
   }
 
-  // Token management helpers
-  setToken(token: string): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
-    }
-  }
 
-  getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('auth_token');
-    }
-    return null;
-  }
 
-  removeToken(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
-    }
-  }
 
-  setUser(user: User): void {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_user', JSON.stringify(user));
-    }
-  }
 
-  getUser(): User | null {
-    if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('auth_user');
-      if (userStr) {
-        try {
-          return JSON.parse(userStr);
-        } catch (error) {
-          console.error('Error parsing user from localStorage:', error);
-          this.removeUser();
-        }
-      }
-    }
-    return null;
-  }
 
-  removeUser(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_user');
-    }
-  }
 
-  logout(): void {
-    this.removeToken();
-    this.removeUser();
-  }
-
+  // Check if user is authenticated (no token storage needed)
   isAuthenticated(): boolean {
-    return !!this.getToken();
+    // We can't check token validity from frontend anymore since it's HTTP-only
+    // This will be determined by the /me endpoint response
+    return true; // Always return true, let the server determine validity
   }
 }
 

@@ -18,8 +18,14 @@ export const authenticateToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    // Try to get token from HTTP-only cookie first
+    let token = req.cookies.auth_token || req.cookies.staff_auth_token;
+    
+    // Fallback to Authorization header for backward compatibility
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    }
 
     if (!token) {
       res.status(401).json({
@@ -31,23 +37,45 @@ export const authenticateToken = async (
 
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     
-    // Verify user still exists and is active
-    const userModel = new UserModel();
-    const user = await userModel.getUserById(decoded.userId);
-    
-    if (!user || !user.isActive) {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid or expired token'
-      });
-      return;
-    }
+    // Check if this is a staff token or user token
+    if (decoded.type === 'staff') {
+      // Handle staff authentication
+      const { StaffModel } = await import('../models/StaffModel');
+      const staffModel = new StaffModel();
+      const staff = await staffModel.getStaffById(decoded.staffId);
+      
+      if (!staff || !staff.isActive) {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid or expired token'
+        });
+        return;
+      }
 
-    req.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role
-    };
+      req.user = {
+        id: staff.id,
+        email: staff.email,
+        role: staff.role
+      };
+    } else {
+      // Handle regular user authentication
+      const userModel = new UserModel();
+      const user = await userModel.getUserById(decoded.userId);
+      
+      if (!user || !user.isActive) {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid or expired token'
+        });
+        return;
+      }
+
+      req.user = {
+        id: user.id,
+        email: user.email,
+        role: user.role
+      };
+    }
 
     next();
   } catch (error) {
