@@ -239,16 +239,16 @@ export default function AdminRegister() {
             {isSubmitting ? (
               <div className="admin-login-button-content">
                 <div className="admin-login-spinner"></div>
-                Creating Staff...
+                Sending Invitation...
               </div>
             ) : (
-              'Create Staff Member'
+              'Send Invitation'
             )}
           </button>
 
           <div className="admin-login-footer">
             <p className="admin-login-footer-text">
-              Staff members will be able to login immediately after creation
+              The invited staff member will receive an email with setup instructions
             </p>
           </div>
         </form>
