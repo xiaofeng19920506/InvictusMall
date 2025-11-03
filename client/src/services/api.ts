@@ -64,7 +64,12 @@ class ApiService {
 
   constructor() {
     // Use environment variable or default to localhost
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Normalize URL to ensure it has a protocol
+    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+      url = `http://${url}`;
+    }
+    this.baseUrl = url;
   }
 
   // Transform server store data to client format
@@ -110,6 +115,19 @@ class ApiService {
     try {
       const response = await fetch(url, config);
       
+      // Check content type to ensure we're getting JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response received:', {
+          url,
+          status: response.status,
+          contentType,
+          preview: text.substring(0, 200)
+        });
+        throw new Error(`Expected JSON but received ${contentType}. Check if the API URL is correct: ${this.baseUrl}`);
+      }
+      
       if (!response.ok) {
         const errorData: ApiError = await response.json();
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -118,7 +136,11 @@ class ApiService {
       const data: T = await response.json();
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
+      console.error('API request failed:', {
+        url,
+        baseUrl: this.baseUrl,
+        error
+      });
       throw error;
     }
   }

@@ -52,7 +52,12 @@ export default function ChangePasswordForm({ onSuccess }: ChangePasswordFormProp
     try {
       // Note: This endpoint needs to be implemented on the backend
       // For now, we'll simulate the API call
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/change-password`, {
+      let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      // Normalize URL to ensure it has a protocol
+      if (apiUrl && !apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+        apiUrl = `http://${apiUrl}`;
+      }
+      const response = await fetch(`${apiUrl}/api/auth/change-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
