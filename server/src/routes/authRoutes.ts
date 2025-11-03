@@ -130,7 +130,7 @@ router.post('/signup', validateSignup, handleValidationErrors, async (req: Reque
     });
 
     // Send verification email
-    await emailService.sendVerificationEmail(email, verificationToken);
+    const emailSent = await emailService.sendVerificationEmail(email, verificationToken);
 
     // Log the activity
     try {

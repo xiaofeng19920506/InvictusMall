@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -8,7 +8,7 @@ interface ResetPasswordFormProps {
   onSuccess?: () => void;
 }
 
-export default function ResetPasswordForm({ onSuccess }: ResetPasswordFormProps) {
+function ResetPasswordFormContent({ onSuccess }: ResetPasswordFormProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -150,5 +150,20 @@ export default function ResetPasswordForm({ onSuccess }: ResetPasswordFormProps)
         </p>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordForm({ onSuccess }: ResetPasswordFormProps) {
+  return (
+    <Suspense fallback={
+      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordFormContent onSuccess={onSuccess} />
+    </Suspense>
   );
 }
