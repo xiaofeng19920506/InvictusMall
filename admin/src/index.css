@@ -196,6 +196,17 @@ body {
   border-color: #059669;
 }
 
+.btn-warning {
+  background-color: var(--warning-color);
+  color: white;
+  border-color: var(--warning-color);
+}
+
+.btn-warning:hover {
+  background-color: #d97706;
+  border-color: #d97706;
+}
+
 .btn-sm {
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;

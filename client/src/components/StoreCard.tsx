@@ -1,6 +1,7 @@
 'use client';
 
 import { Store } from '@/services/api';
+import { useFavorites } from '@/contexts/FavoritesContext';
 
 interface StoreCardProps {
   store: Store;
@@ -8,10 +9,18 @@ interface StoreCardProps {
 }
 
 export default function StoreCard({ store, onClick }: StoreCardProps) {
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favorite = isFavorite(store.id);
+
   const handleClick = () => {
     if (onClick) {
       onClick(store);
     }
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    toggleFavorite(store.id);
   };
 
   const renderStars = (rating: number) => {
@@ -50,6 +59,17 @@ export default function StoreCard({ store, onClick }: StoreCardProps) {
           {store.discount}
         </div>
       )}
+      <button
+        onClick={handleFavoriteClick}
+        className={`absolute top-2 right-2 p-2 rounded-full z-10 transition-colors ${
+          favorite
+            ? 'bg-red-500 text-white'
+            : 'bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100'
+        }`}
+        title={favorite ? 'Remove from favorites' : 'Add to favorites'}
+      >
+        {favorite ? '❤️' : '🤍'}
+      </button>
       
       <div className="relative h-48 overflow-hidden">
         <img 

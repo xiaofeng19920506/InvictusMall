@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { authService } from '@/services/auth';
-import { User, LoginUserRequest, CreateUserRequest, AuthResponse, ForgotPasswordRequest, ResetPasswordRequest } from '@/models/User';
+import { User, LoginUserRequest, CreateUserRequest, AuthResponse, ForgotPasswordRequest, ResetPasswordRequest, UpdateUserRequest } from '@/models/User';
 
 interface AuthContextType {
   user: Omit<User, 'password'> | null;
@@ -11,6 +11,8 @@ interface AuthContextType {
   signup: (userData: CreateUserRequest) => Promise<AuthResponse>;
   forgotPassword: (data: ForgotPasswordRequest) => Promise<AuthResponse>;
   resetPassword: (data: ResetPasswordRequest) => Promise<AuthResponse>;
+  updateUser: (data: UpdateUserRequest) => Promise<AuthResponse>;
+  uploadAvatar: (file: File) => Promise<AuthResponse>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   loading: boolean;
@@ -125,8 +127,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateUser = async (data: UpdateUserRequest): Promise<AuthResponse> => {
+    try {
+      const response = await authService.updateProfile(data);
+      if (response.success && response.user) {
+        setUser(response.user);
+      }
+      return response;
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to update profile' };
+    }
+  };
+
+  const uploadAvatar = async (file: File): Promise<AuthResponse> => {
+    try {
+      const response = await authService.uploadAvatar(file);
+      if (response.success && response.user) {
+        setUser(response.user);
+      }
+      return response;
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to upload avatar' };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, signup, forgotPassword, resetPassword, logout, refreshUser, loading }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, signup, forgotPassword, resetPassword, updateUser, uploadAvatar, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

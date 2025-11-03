@@ -3,10 +3,11 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  phoneNumber: string;
+  phoneNumber?: string;
   role: 'customer' | 'admin' | 'store_owner';
   isActive: boolean;
   emailVerified: boolean;
+  avatar?: string;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
@@ -38,9 +39,15 @@ export interface ResetPasswordRequest {
   password: string;
 }
 
+export interface UpdateUserRequest {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+}
+
 export interface AuthResponse {
   success: boolean;
-  message: string;
+  message?: string;
   user?: Omit<User, 'password'>;
   token?: string;
 }

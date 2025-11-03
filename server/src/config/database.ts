@@ -21,11 +21,9 @@ export const pool = mysql.createPool(dbConfig);
 export const testConnection = async (): Promise<boolean> => {
   try {
     const connection = await pool.getConnection();
-    console.log('✅ Database connected successfully');
     connection.release();
     return true;
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
     return false;
   }
 };
@@ -46,7 +44,6 @@ export const initializeDatabase = async (): Promise<void> => {
 
     // Create tables
     await createTables();
-    console.log('✅ Database schema initialized successfully');
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
     throw error;
@@ -178,7 +175,7 @@ const createTables = async (): Promise<void> => {
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS activity_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed') NOT NULL,
+        type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created') NOT NULL,
         message TEXT NOT NULL,
         store_name VARCHAR(255) NULL,
         store_id VARCHAR(36) NULL,
@@ -194,14 +191,13 @@ const createTables = async (): Promise<void> => {
             try {
               await connection.execute(`
                 ALTER TABLE activity_logs 
-                MODIFY COLUMN type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed') NOT NULL
+                MODIFY COLUMN type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created') NOT NULL
               `);
             } catch (error) {
               // Table might not exist or already have the correct enum values
-              console.log('Activity logs table enum update skipped:', error);
             }
 
-            // Update existing users table to allow null passwords
+            // Update existing users table to allow null passwords and add avatar field
             try {
               await connection.execute(`
                 ALTER TABLE users 
@@ -210,10 +206,22 @@ const createTables = async (): Promise<void> => {
               `);
             } catch (error) {
               // Table might not exist or already have the correct schema
-              console.log('Users table schema update skipped:', error);
             }
 
-    console.log('✅ Database tables created successfully');
+            // Add avatar column to users table if it doesn't exist
+            try {
+              await connection.execute(`
+                ALTER TABLE users 
+                ADD COLUMN avatar VARCHAR(500) NULL
+              `);
+            } catch (error: any) {
+              // Column might already exist
+            }
+
+            // Initialize OrderModel tables
+            const { OrderModel } = await import('../models/OrderModel');
+            const orderModel = new OrderModel();
+            await orderModel.createOrdersTable();
   } finally {
     connection.release();
   }

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
 import Link from 'next/link';
 
 interface HeaderProps {
@@ -16,6 +18,8 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
   const [searchType, setSearchType] = useState('All');
   
   const { user, logout, isAuthenticated } = useAuth();
+  const { getItemCount } = useCart();
+  const { favorites } = useFavorites();
 
   const categories = [
     'All',
@@ -106,6 +110,20 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
+                  {/* User Avatar or Initials */}
+                  <Link href="/profile" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={`${user.firstName} ${user.lastName}`}
+                        className="w-8 h-8 rounded-full border-2 border-white"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                        {user?.firstName?.[0]}{user?.lastName?.[0]}
+                      </div>
+                    )}
+                  </Link>
                   <span className="text-sm text-gray-300">
                     Welcome, {user?.firstName}
                   </span>
@@ -141,6 +159,17 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                     <span>My Store</span>
                   </Link>
                 )}
+
+                {/* Account Menu */}
+                <div className="relative group">
+                  <Link
+                    href="/profile"
+                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    <span>👤</span>
+                    <span>Account</span>
+                  </Link>
+                </div>
                 
                 <button 
                   onClick={handleLogout}
@@ -169,10 +198,30 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
               </div>
             )}
             
-            <button className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
+            <Link
+              href="/favorites"
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors relative"
+            >
               <span>❤️</span>
               <span>Favorites</span>
-            </button>
+              {favorites.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {favorites.length}
+                </span>
+              )}
+            </Link>
+            <Link
+              href="/cart"
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors relative"
+            >
+              <span>🛒</span>
+              <span>Cart</span>
+              {getItemCount() > 0 && (
+                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {getItemCount()}
+                </span>
+              )}
+            </Link>
           </div>
         </div>
       </div>

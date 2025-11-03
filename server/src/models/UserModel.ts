@@ -13,6 +13,7 @@ export interface User {
   role: 'customer' | 'admin' | 'store_owner';
   isActive: boolean;
   emailVerified: boolean;
+  avatar?: string;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
@@ -82,7 +83,7 @@ export class UserModel {
   async getUserByEmail(email: string): Promise<User | null> {
     const query = `
       SELECT id, email, password, first_name, last_name, phone_number, role, 
-             is_active, email_verified, created_at, updated_at, last_login_at
+             is_active, email_verified, avatar, created_at, updated_at, last_login_at
       FROM users 
       WHERE email = ? AND is_active = true
     `;
@@ -105,6 +106,7 @@ export class UserModel {
       role: user.role,
       isActive: user.is_active,
       emailVerified: user.email_verified,
+      avatar: user.avatar || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       lastLoginAt: user.last_login_at
@@ -114,7 +116,7 @@ export class UserModel {
   async getUserById(id: string): Promise<User> {
     const query = `
       SELECT id, email, password, first_name, last_name, phone_number, role, 
-             is_active, email_verified, created_at, updated_at, last_login_at
+             is_active, email_verified, avatar, created_at, updated_at, last_login_at
       FROM users 
       WHERE id = ?
     `;
@@ -137,6 +139,7 @@ export class UserModel {
       role: user.role,
       isActive: user.is_active,
       emailVerified: user.email_verified,
+      avatar: user.avatar || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       lastLoginAt: user.last_login_at
@@ -146,7 +149,7 @@ export class UserModel {
   async getActiveUserById(id: string): Promise<User> {
     const query = `
       SELECT id, email, password, first_name, last_name, phone_number, role, 
-             is_active, email_verified, created_at, updated_at, last_login_at
+             is_active, email_verified, avatar, created_at, updated_at, last_login_at
       FROM users 
       WHERE id = ? AND is_active = true
     `;
@@ -169,6 +172,7 @@ export class UserModel {
       role: user.role,
       isActive: user.is_active,
       emailVerified: user.email_verified,
+      avatar: user.avatar || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       lastLoginAt: user.last_login_at
@@ -238,7 +242,7 @@ export class UserModel {
   async getUserByEmailUnverified(email: string): Promise<User | null> {
     const query = `
       SELECT id, email, password, first_name, last_name, phone_number, role, 
-             is_active, email_verified, created_at, updated_at, last_login_at
+             is_active, email_verified, avatar, created_at, updated_at, last_login_at
       FROM users 
       WHERE email = ?
     `;
@@ -261,10 +265,58 @@ export class UserModel {
       role: user.role,
       isActive: user.is_active,
       emailVerified: user.email_verified,
+      avatar: user.avatar || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       lastLoginAt: user.last_login_at
     };
+  }
+
+  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phoneNumber?: string }): Promise<User> {
+    const updates: string[] = [];
+    const values: any[] = [];
+
+    if (data.firstName !== undefined) {
+      updates.push('first_name = ?');
+      values.push(data.firstName);
+    }
+    if (data.lastName !== undefined) {
+      updates.push('last_name = ?');
+      values.push(data.lastName);
+    }
+    if (data.phoneNumber !== undefined) {
+      updates.push('phone_number = ?');
+      values.push(data.phoneNumber);
+    }
+
+    if (updates.length === 0) {
+      return this.getUserById(userId);
+    }
+
+    updates.push('updated_at = ?');
+    values.push(new Date());
+    values.push(userId);
+
+    const query = `
+      UPDATE users 
+      SET ${updates.join(', ')}
+      WHERE id = ?
+    `;
+
+    await this.pool.execute(query, values);
+    return this.getUserById(userId);
+  }
+
+  async updateAvatar(userId: string, avatarUrl: string): Promise<User> {
+    const query = `
+      UPDATE users 
+      SET avatar = ?, updated_at = ?
+      WHERE id = ?
+    `;
+
+    const now = new Date();
+    await this.pool.execute(query, [avatarUrl, now, userId]);
+    return this.getUserById(userId);
   }
 
   async createUsersTable(): Promise<void> {
@@ -279,6 +331,7 @@ export class UserModel {
         role ENUM('customer', 'admin', 'store_owner') DEFAULT 'customer',
         is_active BOOLEAN DEFAULT false,
         email_verified BOOLEAN DEFAULT false,
+        avatar VARCHAR(500) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         last_login_at TIMESTAMP NULL,

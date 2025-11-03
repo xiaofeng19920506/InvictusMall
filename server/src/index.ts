@@ -4,11 +4,13 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
+import path from 'path';
 import storeRoutes from './routes/storeRoutes';
 import systemRoutes from './routes/systemRoutes';
 import activityLogRoutes from './routes/activityLogRoutes';
 import authRoutes from './routes/authRoutes';
 import staffRoutes from './routes/staffRoutes';
+import orderRoutes from './routes/orderRoutes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 import { testConnection, initializeDatabase } from './config/database';
 import { setupSwagger } from './config/swagger';
@@ -46,6 +48,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Cookie parsing middleware
 app.use(cookieParser());
+
+// Static file serving for uploaded avatars
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 /**
  * @swagger
@@ -92,6 +97,7 @@ app.use('/api/system', systemRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/orders', orderRoutes);
 
 /**
  * @swagger
@@ -151,23 +157,15 @@ const startServer = async () => {
     // Test database connection (skip for now and use mock data)
     const isConnected = await testConnection();
     if (!isConnected) {
-      console.warn('⚠️  Database connection failed. Using mock data instead.');
       // Don't exit, just continue with mock data
     } else {
       // Initialize database schema only if connected
       await initializeDatabase();
-      console.log('🗄️  Database: MySQL connected successfully');
     }
 
     // Start server
     app.listen(PORT, () => {
-      console.log(`🚀 Express server running on http://localhost:${PORT}`);
-      console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`🏪 Stores API: http://localhost:${PORT}/api/stores`);
-      console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
-      if (!isConnected) {
-        console.log(`🎭 Using mock data (database not connected)`);
-      }
+      // Server started
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

@@ -128,9 +128,7 @@ class EmailService {
         `
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Verification email sent successfully:', info.messageId);
-      
+      await this.transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
       console.error('❌ Failed to send verification email:', error);
@@ -213,7 +211,6 @@ class EmailService {
       };
 
       await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Staff invitation email sent to ${email}`);
       return true;
     } catch (error) {
       console.error('❌ Failed to send staff invitation email:', error);
@@ -312,9 +309,7 @@ class EmailService {
         `
       };
 
-      const info = await this.transporter.sendMail(mailOptions);
-      console.log('✅ Password reset email sent successfully:', info.messageId);
-      
+      await this.transporter.sendMail(mailOptions);
       return true;
     } catch (error) {
       console.error('❌ Failed to send password reset email:', error);

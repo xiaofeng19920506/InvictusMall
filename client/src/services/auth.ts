@@ -4,9 +4,11 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  phoneNumber?: string;
   role: 'customer' | 'admin' | 'store_owner';
   isActive: boolean;
   emailVerified: boolean;
+  avatar?: string;
   createdAt: string;
   updatedAt: string;
   lastLoginAt?: string;
@@ -36,6 +38,12 @@ export interface ForgotPasswordRequest {
 export interface ResetPasswordRequest {
   token: string;
   password: string;
+}
+
+export interface UpdateUserRequest {
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
 }
 
 export interface AuthResponse {
@@ -129,10 +137,52 @@ class AuthService {
     });
   }
 
+  async resetPassword(data: ResetPasswordRequest): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async logout(): Promise<AuthResponse> {
     return this.request<AuthResponse>('/api/auth/logout', {
       method: 'POST',
     });
+  }
+
+  async updateProfile(data: UpdateUserRequest): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/api/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async uploadAvatar(file: File): Promise<AuthResponse> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const url = `${this.baseUrl}/api/auth/avatar`;
+    
+    const config: RequestInit = {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        const errorData: ApiError = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data: AuthResponse = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Avatar upload failed:', error);
+      throw error;
+    }
   }
 
 

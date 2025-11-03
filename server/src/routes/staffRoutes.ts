@@ -10,7 +10,6 @@ import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 const router = Router();
 const staffModel = new StaffModel();
 const invitationModel = new StaffInvitationModel();
-const activityLogModel = new ActivityLogModel();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
 
 /**
@@ -347,7 +346,7 @@ router.post('/register', authenticateToken, [
     });
 
     // Log activity
-    await activityLogModel.createLog({
+    await ActivityLogModel.createLog({
       type: 'staff_registered',
       message: `New staff member ${staff.email} (${staff.role}) registered by ${req.user.email}.`,
       metadata: { 
@@ -491,7 +490,7 @@ router.post('/invite', authenticateToken, [
     );
 
     // Log activity
-    await activityLogModel.createLog({
+    await ActivityLogModel.createLog({
       type: 'staff_registered',
       message: `Staff invitation sent to ${email} (${role}) by ${req.user.email}.`,
       metadata: { 
@@ -622,7 +621,7 @@ router.post('/setup-password', [
     });
 
     // Log activity
-    await activityLogModel.createLog({
+    await ActivityLogModel.createLog({
       type: 'staff_registered',
       message: `Staff member ${staff.email} completed registration via invitation.`,
       metadata: { 

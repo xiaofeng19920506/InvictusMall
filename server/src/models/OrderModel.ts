@@ -1,0 +1,326 @@
+import { Pool } from 'mysql2/promise';
+import { pool } from '../config/database';
+import { v4 as uuidv4 } from 'uuid';
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  productName: string;
+  productImage?: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  storeId: string;
+  storeName: string;
+  items: OrderItem[];
+  totalAmount: number;
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  shippingAddress: {
+    streetAddress: string;
+    aptNumber?: string;
+    city: string;
+    stateProvince: string;
+    zipCode: string;
+    country: string;
+  };
+  paymentMethod: string;
+  orderDate: string;
+  shippedDate?: string;
+  deliveredDate?: string;
+  trackingNumber?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateOrderRequest {
+  userId: string;
+  storeId: string;
+  storeName: string;
+  items: Array<{
+    productId: string;
+    productName: string;
+    productImage?: string;
+    quantity: number;
+    price: number;
+  }>;
+  shippingAddress: {
+    streetAddress: string;
+    aptNumber?: string;
+    city: string;
+    stateProvince: string;
+    zipCode: string;
+    country: string;
+  };
+  paymentMethod: string;
+}
+
+export class OrderModel {
+  private pool: Pool;
+
+  constructor() {
+    this.pool = pool;
+  }
+
+  async createOrder(orderData: CreateOrderRequest): Promise<Order> {
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      const orderId = uuidv4();
+      const now = new Date();
+      const totalAmount = orderData.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+      // Insert order
+      const orderQuery = `
+        INSERT INTO orders (
+          id, user_id, store_id, store_name, total_amount, status,
+          shipping_street_address, shipping_apt_number, shipping_city,
+          shipping_state_province, shipping_zip_code, shipping_country,
+          payment_method, order_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      await connection.execute(orderQuery, [
+        orderId,
+        orderData.userId,
+        orderData.storeId,
+        orderData.storeName,
+        totalAmount,
+        'pending',
+        orderData.shippingAddress.streetAddress,
+        orderData.shippingAddress.aptNumber || null,
+        orderData.shippingAddress.city,
+        orderData.shippingAddress.stateProvince,
+        orderData.shippingAddress.zipCode,
+        orderData.shippingAddress.country,
+        orderData.paymentMethod,
+        now,
+        now,
+        now
+      ]);
+
+      // Insert order items
+      const itemQuery = `
+        INSERT INTO order_items (
+          id, order_id, product_id, product_name, product_image,
+          quantity, price, subtotal, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      for (const item of orderData.items) {
+        const itemId = uuidv4();
+        const subtotal = item.price * item.quantity;
+        await connection.execute(itemQuery, [
+          itemId,
+          orderId,
+          item.productId,
+          item.productName,
+          item.productImage || null,
+          item.quantity,
+          item.price,
+          subtotal,
+          now
+        ]);
+      }
+
+      await connection.commit();
+      return this.getOrderById(orderId);
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async getOrderById(orderId: string): Promise<Order> {
+    const query = `
+      SELECT 
+        o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
+        o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
+        o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
+        o.payment_method, o.order_date, o.shipped_date, o.delivered_date,
+        o.tracking_number, o.created_at, o.updated_at,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', oi.id,
+            'productId', oi.product_id,
+            'productName', oi.product_name,
+            'productImage', oi.product_image,
+            'quantity', oi.quantity,
+            'price', oi.price,
+            'subtotal', oi.subtotal
+          )
+        ) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE o.id = ?
+      GROUP BY o.id
+    `;
+
+    const [rows] = await this.pool.execute(query, [orderId]);
+    const orders = rows as any[];
+
+    if (orders.length === 0) {
+      throw new Error('Order not found');
+    }
+
+    return this.mapRowToOrder(orders[0]);
+  }
+
+  async getOrdersByUserId(
+    userId: string,
+    options?: { status?: string; limit?: number; offset?: number }
+  ): Promise<Order[]> {
+    let query = `
+      SELECT 
+        o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
+        o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
+        o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
+        o.payment_method, o.order_date, o.shipped_date, o.delivered_date,
+        o.tracking_number, o.created_at, o.updated_at,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', oi.id,
+            'productId', oi.product_id,
+            'productName', oi.product_name,
+            'productImage', oi.product_image,
+            'quantity', oi.quantity,
+            'price', oi.price,
+            'subtotal', oi.subtotal
+          )
+        ) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE o.user_id = ?
+    `;
+
+    const params: any[] = [userId];
+
+    if (options?.status) {
+      query += ' AND o.status = ?';
+      params.push(options.status);
+    }
+
+    query += ' GROUP BY o.id ORDER BY o.order_date DESC';
+
+    if (options?.limit) {
+      query += ' LIMIT ?';
+      params.push(options.limit);
+      if (options?.offset) {
+        query += ' OFFSET ?';
+        params.push(options.offset);
+      }
+    }
+
+    const [rows] = await this.pool.execute(query, params);
+    const orders = rows as any[];
+
+    return orders.map(order => this.mapRowToOrder(order));
+  }
+
+  private mapRowToOrder(row: any): Order {
+    const items = row.items && Array.isArray(row.items) && row.items.length > 0 && row.items[0].id
+      ? row.items
+      : [];
+
+    return {
+      id: row.id,
+      userId: row.user_id,
+      storeId: row.store_id,
+      storeName: row.store_name,
+      items: items.map((item: any) => ({
+        id: item.id,
+        orderId: row.id,
+        productId: item.productId,
+        productName: item.productName,
+        productImage: item.productImage || undefined,
+        quantity: item.quantity,
+        price: parseFloat(item.price),
+        subtotal: parseFloat(item.subtotal)
+      })),
+      totalAmount: parseFloat(row.total_amount),
+      status: row.status,
+      shippingAddress: {
+        streetAddress: row.shipping_street_address,
+        aptNumber: row.shipping_apt_number || undefined,
+        city: row.shipping_city,
+        stateProvince: row.shipping_state_province,
+        zipCode: row.shipping_zip_code,
+        country: row.shipping_country
+      },
+      paymentMethod: row.payment_method,
+      orderDate: row.order_date,
+      shippedDate: row.shipped_date || undefined,
+      deliveredDate: row.delivered_date || undefined,
+      trackingNumber: row.tracking_number || undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+  }
+
+  async createOrdersTable(): Promise<void> {
+    const connection = await this.pool.getConnection();
+    try {
+      // Create orders table
+      const ordersTableQuery = `
+        CREATE TABLE IF NOT EXISTS orders (
+          id VARCHAR(36) PRIMARY KEY,
+          user_id VARCHAR(36) NOT NULL,
+          store_id VARCHAR(36) NOT NULL,
+          store_name VARCHAR(255) NOT NULL,
+          total_amount DECIMAL(10, 2) NOT NULL,
+          status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
+          shipping_street_address VARCHAR(255) NOT NULL,
+          shipping_apt_number VARCHAR(50) NULL,
+          shipping_city VARCHAR(100) NOT NULL,
+          shipping_state_province VARCHAR(100) NOT NULL,
+          shipping_zip_code VARCHAR(20) NOT NULL,
+          shipping_country VARCHAR(100) NOT NULL,
+          payment_method VARCHAR(50) NOT NULL,
+          order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          shipped_date TIMESTAMP NULL,
+          delivered_date TIMESTAMP NULL,
+          tracking_number VARCHAR(100) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_user_id (user_id),
+          INDEX idx_store_id (store_id),
+          INDEX idx_status (status),
+          INDEX idx_order_date (order_date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `;
+
+      await connection.execute(ordersTableQuery);
+
+      // Create order_items table
+      const orderItemsTableQuery = `
+        CREATE TABLE IF NOT EXISTS order_items (
+          id VARCHAR(36) PRIMARY KEY,
+          order_id VARCHAR(36) NOT NULL,
+          product_id VARCHAR(36) NOT NULL,
+          product_name VARCHAR(255) NOT NULL,
+          product_image VARCHAR(500) NULL,
+          quantity INT NOT NULL,
+          price DECIMAL(10, 2) NOT NULL,
+          subtotal DECIMAL(10, 2) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+          INDEX idx_order_id (order_id),
+          INDEX idx_product_id (product_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `;
+
+      await connection.execute(orderItemsTableQuery);
+    } finally {
+      connection.release();
+    }
+  }
+}
+

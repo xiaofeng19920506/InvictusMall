@@ -12,10 +12,9 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for logging
+// Request interceptor
 api.interceptors.request.use(
   (config) => {
-    console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
     return config;
   },
   (error) => {
@@ -104,6 +103,12 @@ export const storeApi = {
   // Get premium stores
   getPremiumStores: async (): Promise<ApiResponse<Store[]>> => {
     const response = await api.get('/api/stores/premium');
+    return response.data;
+  },
+
+  // Verify store (admin only)
+  verifyStore: async (id: string): Promise<ApiResponse<Store>> => {
+    const response = await api.put(`/api/stores/${id}/verify`);
     return response.data;
   },
 };

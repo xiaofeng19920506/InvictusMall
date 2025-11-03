@@ -3,9 +3,12 @@ import { UserModel, CreateUserRequest, LoginRequest, SetupPasswordRequest } from
 import { VerificationTokenModel } from '../models/VerificationTokenModel';
 import { validateLogin, validateSignup, validateSetupPassword, handleValidationErrors } from '../middleware/validation';
 import jwt from 'jsonwebtoken';
-import { ActivityLogModel } from '../models/ActivityLogModel';
+import { ActivityLogModel, ActivityLog } from '../models/ActivityLogModel';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import { emailService } from '../services/emailService';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
 const userModel = new UserModel();
@@ -127,11 +130,7 @@ router.post('/signup', validateSignup, handleValidationErrors, async (req: Reque
     });
 
     // Send verification email
-    const emailSent = await emailService.sendVerificationEmail(email, verificationToken);
-    
-    if (!emailSent) {
-      console.warn('Failed to send verification email, but user was created');
-    }
+    await emailService.sendVerificationEmail(email, verificationToken);
 
     // Log the activity
     try {
@@ -636,7 +635,6 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     const emailSent = await emailService.sendPasswordResetEmail(email, resetToken);
     
     if (!emailSent) {
-      console.warn('Failed to send password reset email');
       return res.status(500).json({
         success: false,
         message: 'Failed to send password reset email'
@@ -851,6 +849,329 @@ router.post('/logout', (req: Request, res: Response) => {
     success: true,
     message: 'Logout successful'
   });
+});
+
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: Update user profile
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *                 example: "John"
+ *               lastName:
+ *                 type: string
+ *                 example: "Doe"
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+1234567890"
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { firstName, lastName, phoneNumber } = req.body;
+
+    const updateData: { firstName?: string; lastName?: string; phoneNumber?: string } = {};
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+
+    const updatedUser = await userModel.updateProfile(userId, updateData);
+
+    // Log the activity
+    try {
+      await ActivityLogModel.createLog({
+        type: 'profile_updated' as ActivityLog['type'],
+        message: `User "${updatedUser.firstName} ${updatedUser.lastName}" updated their profile`,
+        metadata: {
+          userId: updatedUser.id,
+          email: updatedUser.email,
+          updates: updateData
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log profile update:', logError);
+    }
+
+    const { password: _, ...userWithoutPassword } = updatedUser;
+
+    return res.json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: userWithoutPassword
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update profile',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Configure multer for file uploads
+const uploadDir = path.join(__dirname, '../../uploads/avatars');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const userId = (req as AuthenticatedRequest).user!.id;
+    const ext = path.extname(file.originalname);
+    const filename = `avatar-${userId}-${Date.now()}${ext}`;
+    cb(null, filename);
+  }
+});
+
+const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  // Accept only image files
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed'));
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/avatar:
+ *   post:
+ *     summary: Upload user avatar
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Avatar uploaded successfully
+ *       400:
+ *         description: Invalid file
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/avatar', authenticateToken, upload.single('avatar'), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    const userId = req.user!.id;
+    // Construct the URL for the uploaded file
+    // In production, you might want to use a CDN or cloud storage
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    
+    const updatedUser = await userModel.updateAvatar(userId, avatarUrl);
+
+    // Log the activity
+    try {
+      await ActivityLogModel.createLog({
+        type: 'avatar_uploaded' as ActivityLog['type'],
+        message: `User "${updatedUser.firstName} ${updatedUser.lastName}" uploaded a new avatar`,
+        metadata: {
+          userId: updatedUser.id,
+          email: updatedUser.email,
+          avatarUrl
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log avatar upload:', logError);
+    }
+
+    const { password: _, ...userWithoutPassword } = updatedUser;
+
+    return res.json({
+      success: true,
+      message: 'Avatar uploaded successfully',
+      user: userWithoutPassword
+    });
+  } catch (error) {
+    console.error('Upload avatar error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to upload avatar',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     summary: Change password for authenticated user
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 format: password
+ *                 example: "currentpassword123"
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: "newpassword123"
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password changed successfully"
+ *       400:
+ *         description: Validation error or invalid password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized or incorrect current password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post('/change-password', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password and new password are required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be at least 6 characters long'
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be different from current password'
+      });
+    }
+
+    // Get user with password
+    const user = await userModel.getUserById(userId);
+
+    if (!user.password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password has not been set yet. Please use reset password flow.'
+      });
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await userModel.verifyPassword(currentPassword, user.password);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // Update password
+    await userModel.updatePassword(userId, newPassword);
+
+    // Log the activity
+    try {
+      await ActivityLogModel.createLog({
+        type: 'password_changed',
+        message: `User "${user.firstName} ${user.lastName}" changed their password`,
+        metadata: {
+          userId: user.id,
+          email: user.email
+        }
+      });
+    } catch (logError) {
+      console.error('Failed to log password change:', logError);
+    }
+
+    return res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to change password',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
 });
 
 export default router;

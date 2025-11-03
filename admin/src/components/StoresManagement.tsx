@@ -8,20 +8,26 @@ import {
   Eye,
   Star,
   X,
-  RefreshCw
+  RefreshCw,
+  CheckCircle
 } from 'lucide-react';
 import { storeApi } from '../services/api';
 import type { Store } from '../types/store';
 import { useRealTimeStores } from '../hooks/useRealTimeStores';
+import { useAuth } from '../contexts/AuthContext';
 
 const StoresManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const { user } = useAuth();
 
   // Use real-time stores hook with 10-second refresh interval
   const { stores, loading, error, refetch, lastUpdated } = useRealTimeStores(10000);
+  
+  // Check if user is admin
+  const isAdmin = user?.role === 'admin';
 
   const handleDeleteStore = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this store?')) {
@@ -32,6 +38,24 @@ const StoresManagement: React.FC = () => {
       } catch (error) {
         console.error('Error deleting store:', error);
         alert('Failed to delete store');
+      }
+    }
+  };
+
+  const handleVerifyStore = async (id: string) => {
+    if (window.confirm('Are you sure you want to verify this store?')) {
+      try {
+        await storeApi.verifyStore(id);
+        // Refetch data to get real-time updates
+        refetch();
+      } catch (error: any) {
+        console.error('Error verifying store:', error);
+        const errorMessage = error.response?.data?.message || 'Failed to verify store';
+        if (errorMessage.includes('Only administrators')) {
+          alert('Only administrators can verify stores');
+        } else {
+          alert(errorMessage);
+        }
       }
     }
   };
@@ -197,15 +221,26 @@ const StoresManagement: React.FC = () => {
                   </td>
                   <td>
                     <div className="flex gap-2">
+                      {isAdmin && !store.isVerified && (
+                        <button
+                          onClick={() => handleVerifyStore(store.id)}
+                          className="btn btn-success btn-sm"
+                          title="Verify Store"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleEditStore(store)}
                         className="btn btn-secondary btn-sm"
+                        title="Edit Store"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteStore(store.id)}
                         className="btn btn-danger btn-sm"
+                        title="Delete Store"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

@@ -60,9 +60,9 @@ export const authenticateToken = async (
     } else {
       // Handle regular user authentication
       const userModel = new UserModel();
-      const user = await userModel.getUserById(decoded.userId);
+      const user = await userModel.getActiveUserById(decoded.userId);
       
-      if (!user || !user.isActive) {
+      if (!user) {
         res.status(401).json({
           success: false,
           message: 'Invalid or expired token'

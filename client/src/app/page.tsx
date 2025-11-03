@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Header from '@/components/Header';
 import StoreGrid from '@/components/StoreGrid';
 import { useRealTimeStores } from '@/hooks/useRealTimeStores';
+import { Store } from '@/services/api';
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,9 +32,7 @@ export default function Home() {
   };
 
   const handleStoreClick = (store: Store) => {
-    console.log('Store clicked:', store);
-    // Here you would typically navigate to a store detail page
-    alert(`You clicked on ${store.name}! This would navigate to the store's page.`);
+    window.location.href = `/stores/${store.id}`;
   };
 
   const handleRetry = () => {

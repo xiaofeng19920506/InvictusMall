@@ -7,7 +7,7 @@ export default function AuthTestComponent() {
   const { user, isAuthenticated, loading, refreshUser } = useAuth();
 
   useEffect(() => {
-    console.log('Auth State:', { user, isAuthenticated, loading });
+    // Auth state monitoring
   }, [user, isAuthenticated, loading]);
 
   if (loading) {

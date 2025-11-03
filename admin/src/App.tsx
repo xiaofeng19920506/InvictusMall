@@ -10,6 +10,8 @@ import SystemLogs from './components/SystemLogs';
 import AdminRegister from './components/AdminRegister';
 import SetupPassword from './components/SetupPassword';
 import NotificationSystem from './components/NotificationSystem';
+import UsersManagement from './components/UsersManagement';
+import Settings from './components/Settings';
 import type { Notification } from './components/NotificationSystem';
 
 function App() {
@@ -52,14 +54,7 @@ function AdminApp({ notifications, onRemoveNotification }: {
       case 'stores':
         return <StoresManagement />;
       case 'users':
-        return (
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title">Users Management</h3>
-            </div>
-            <p>Users management functionality will be implemented here.</p>
-          </div>
-        );
+        return <UsersManagement />;
       case 'analytics':
         return <Analytics />;
       case 'register-staff':
@@ -67,14 +62,7 @@ function AdminApp({ notifications, onRemoveNotification }: {
       case 'system_logs':
         return <SystemLogs />;
       case 'settings':
-        return (
-          <div className="card">
-            <div className="card-header">
-              <h3 className="card-title">Settings</h3>
-            </div>
-            <p>Settings functionality will be implemented here.</p>
-          </div>
-        );
+        return <Settings />;
       default:
         return <Dashboard />;
     }
