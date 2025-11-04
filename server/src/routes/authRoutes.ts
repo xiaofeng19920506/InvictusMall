@@ -241,7 +241,25 @@ router.post('/login', validateLogin, handleValidationErrors, async (req: Request
     const { email, password }: LoginRequest = req.body;
 
     // Get user by email
-    const user = await userModel.getUserByEmail(email);
+    let user;
+    try {
+      user = await userModel.getUserByEmail(email);
+    } catch (dbError: any) {
+      // Handle database connection errors
+      if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || 
+          dbError.code === 'ECONNREFUSED' || 
+          dbError.code === 'ENOTFOUND' ||
+          dbError.code === 'ETIMEDOUT') {
+        console.error('Database connection error during login:', dbError.message);
+        return res.status(503).json({
+          success: false,
+          message: 'Service temporarily unavailable. Please try again later.'
+        });
+      }
+      // Re-throw other database errors
+      throw dbError;
+    }
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -265,8 +283,13 @@ router.post('/login', validateLogin, handleValidationErrors, async (req: Request
       });
     }
 
-    // Update last login
-    await userModel.updateLastLogin(user.id);
+    // Update last login (don't fail login if this fails)
+    try {
+      await userModel.updateLastLogin(user.id);
+    } catch (updateError) {
+      console.error('Failed to update last login:', updateError);
+      // Continue with login even if update fails
+    }
 
     // Generate JWT token
     const token = jwt.sign(
@@ -279,7 +302,7 @@ router.post('/login', validateLogin, handleValidationErrors, async (req: Request
       { expiresIn: '1h' }
     );
 
-    // Log the activity
+    // Log the activity (don't fail login if this fails)
     try {
       await ActivityLogModel.createLog({
         type: 'user_login',
@@ -316,8 +339,10 @@ router.post('/login', validateLogin, handleValidationErrors, async (req: Request
     console.error('Login error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to login',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: 'Failed to login. Please try again later.',
+      ...(process.env.NODE_ENV === 'development' && {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
     });
   }
 });

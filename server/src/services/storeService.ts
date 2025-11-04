@@ -5,18 +5,34 @@ import { createError } from '../middleware/errorHandler';
 export class StoreService {
 
   async getAllStores(): Promise<Store[]> {
-    return await StoreModel.findAll();
+    try {
+      return await StoreModel.findAll();
+    } catch (error) {
+      console.error('StoreService.getAllStores error:', error);
+      // Return empty array on any error to prevent 500
+      return [];
+    }
   }
 
   async getStoresByCategory(category: string): Promise<Store[]> {
-    if (category === 'All') {
-      return await StoreModel.findAll();
+    try {
+      if (category === 'All') {
+        return await StoreModel.findAll();
+      }
+      return await StoreModel.findByCategory(category);
+    } catch (error) {
+      console.error('StoreService.getStoresByCategory error:', error);
+      return [];
     }
-    return await StoreModel.findByCategory(category);
   }
 
   async searchStores(query: string): Promise<Store[]> {
-    return await StoreModel.search(query);
+    try {
+      return await StoreModel.search(query);
+    } catch (error) {
+      console.error('StoreService.searchStores error:', error);
+      return [];
+    }
   }
 
   async getStoreById(id: string): Promise<Store> {
@@ -47,12 +63,23 @@ export class StoreService {
   }
 
   async getCategories(): Promise<string[]> {
-    return await StoreModel.getCategories();
+    try {
+      return await StoreModel.getCategories();
+    } catch (error) {
+      console.error('StoreService.getCategories error:', error);
+      // Return empty array on any error to prevent 500
+      return [];
+    }
   }
 
   async getMembershipStores(): Promise<Store[]> {
-    const allStores = await StoreModel.findAll();
-    return allStores.filter(store => store.membership);
+    try {
+      const allStores = await StoreModel.findAll();
+      return allStores.filter(store => store.membership);
+    } catch (error) {
+      console.error('StoreService.getMembershipStores error:', error);
+      return [];
+    }
   }
 
   async getStoresByMembershipType(membershipType: 'basic' | 'premium' | 'platinum'): Promise<Store[]> {
@@ -60,10 +87,15 @@ export class StoreService {
   }
 
   async getPremiumStores(): Promise<Store[]> {
-    const allStores = await StoreModel.findAll();
-    return allStores.filter(store => 
-      store.membership && 
-      (store.membership.type === 'premium' || store.membership.type === 'platinum')
-    );
+    try {
+      const allStores = await StoreModel.findAll();
+      return allStores.filter(store => 
+        store.membership && 
+        (store.membership.type === 'premium' || store.membership.type === 'platinum')
+      );
+    } catch (error) {
+      console.error('StoreService.getPremiumStores error:', error);
+      return [];
+    }
   }
 }

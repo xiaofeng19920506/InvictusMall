@@ -12,8 +12,9 @@ const storeService = new StoreService();
  * @swagger
  * /api/stores:
  *   get:
- *     summary: Get all stores
+ *     summary: Get all stores (Public endpoint - no authentication required)
  *     tags: [Stores]
+ *     security: []  # No authentication required
  *     parameters:
  *       - in: query
  *         name: category
@@ -50,6 +51,7 @@ const storeService = new StoreService();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+// Public endpoint - no authentication required for browsing stores
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { category, search } = req.query;
@@ -69,10 +71,15 @@ router.get('/', async (req: Request, res: Response) => {
       count: stores.length
     });
   } catch (error) {
+    console.error('Error fetching stores:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch stores',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      ...(process.env.NODE_ENV === 'development' && { 
+        stack: error instanceof Error ? error.stack : undefined 
+      })
     });
   }
 });
@@ -81,8 +88,9 @@ router.get('/', async (req: Request, res: Response) => {
  * @swagger
  * /api/stores/categories:
  *   get:
- *     summary: Get all store categories
+ *     summary: Get all store categories (Public endpoint - no authentication required)
  *     tags: [Stores]
+ *     security: []  # No authentication required
  *     responses:
  *       200:
  *         description: List of categories retrieved successfully
@@ -106,6 +114,7 @@ router.get('/', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+// Public endpoint - no authentication required
 router.get('/categories', async (req: Request, res: Response) => {
   try {
     const categories = await storeService.getCategories();
@@ -114,10 +123,15 @@ router.get('/categories', async (req: Request, res: Response) => {
       data: categories
     });
   } catch (error) {
+    console.error('Error fetching categories:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch categories',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      ...(process.env.NODE_ENV === 'development' && { 
+        stack: error instanceof Error ? error.stack : undefined 
+      })
     });
   }
 });
@@ -126,8 +140,9 @@ router.get('/categories', async (req: Request, res: Response) => {
  * @swagger
  * /api/stores/membership:
  *   get:
- *     summary: Get stores with membership
+ *     summary: Get stores with membership (Public endpoint - no authentication required)
  *     tags: [Stores]
+ *     security: []  # No authentication required
  *     responses:
  *       200:
  *         description: List of stores with membership retrieved successfully
@@ -153,6 +168,7 @@ router.get('/categories', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+// Public endpoint - no authentication required
 router.get('/membership', async (req: Request, res: Response) => {
   try {
     const stores = await storeService.getMembershipStores();
@@ -174,8 +190,9 @@ router.get('/membership', async (req: Request, res: Response) => {
  * @swagger
  * /api/stores/membership/{type}:
  *   get:
- *     summary: Get stores by membership type
+ *     summary: Get stores by membership type (Public endpoint - no authentication required)
  *     tags: [Stores]
+ *     security: []  # No authentication required
  *     parameters:
  *       - in: path
  *         name: type
@@ -215,6 +232,7 @@ router.get('/membership', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+// Public endpoint - no authentication required
 router.get('/membership/:type', async (req: Request, res: Response) => {
   try {
     const { type } = req.params;
@@ -244,8 +262,9 @@ router.get('/membership/:type', async (req: Request, res: Response) => {
  * @swagger
  * /api/stores/premium:
  *   get:
- *     summary: Get premium and platinum stores
+ *     summary: Get premium and platinum stores (Public endpoint - no authentication required)
  *     tags: [Stores]
+ *     security: []  # No authentication required
  *     responses:
  *       200:
  *         description: List of premium and platinum stores retrieved successfully
@@ -271,6 +290,7 @@ router.get('/membership/:type', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+// Public endpoint - no authentication required
 router.get('/premium', async (req: Request, res: Response) => {
   try {
     const stores = await storeService.getPremiumStores();
@@ -292,8 +312,9 @@ router.get('/premium', async (req: Request, res: Response) => {
  * @swagger
  * /api/stores/featured:
  *   get:
- *     summary: Get featured stores (premium and platinum)
+ *     summary: Get featured stores (premium and platinum) (Public endpoint - no authentication required)
  *     tags: [Stores]
+ *     security: []  # No authentication required
  *     responses:
  *       200:
  *         description: List of featured stores retrieved successfully
@@ -319,6 +340,7 @@ router.get('/premium', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+// Public endpoint - no authentication required
 router.get('/featured', async (req: Request, res: Response) => {
   try {
     // Featured stores are premium and platinum stores
@@ -342,8 +364,9 @@ router.get('/featured', async (req: Request, res: Response) => {
  * @swagger
  * /api/stores/{id}:
  *   get:
- *     summary: Get store by ID
+ *     summary: Get store by ID (Public endpoint - no authentication required)
  *     tags: [Stores]
+ *     security: []  # No authentication required
  *     parameters:
  *       - in: path
  *         name: id
@@ -377,6 +400,7 @@ router.get('/featured', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+// Public endpoint - no authentication required for viewing store details
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
@@ -393,10 +417,15 @@ router.get('/:id', async (req: Request, res: Response) => {
       data: store
     });
   } catch (error) {
+    console.error('Error fetching store by ID:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     const statusCode = error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500;
     return res.status(statusCode).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
+      ...(process.env.NODE_ENV === 'development' && { 
+        stack: error instanceof Error ? error.stack : undefined 
+      })
     });
   }
 });

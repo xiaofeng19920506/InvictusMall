@@ -5,21 +5,25 @@ import { v4 as uuidv4 } from 'uuid';
 export class StoreModel {
   // Get all stores
   static async findAll(): Promise<Store[]> {
-    const connection = await pool.getConnection();
+    let connection;
     try {
+      connection = await pool.getConnection();
       const [stores] = await connection.execute(`
         SELECT 
           s.*,
-          GROUP_CONCAT(sc.category) as categories,
-          JSON_ARRAYAGG(
-            JSON_OBJECT(
-              'streetAddress', sl.street_address,
-              'aptNumber', sl.apt_number,
-              'city', sl.city,
-              'stateProvince', sl.state_province,
-              'zipCode', sl.zip_code,
-              'country', sl.country
-            )
+          COALESCE(GROUP_CONCAT(DISTINCT sc.category), '') as categories,
+          COALESCE(
+            JSON_ARRAYAGG(
+              JSON_OBJECT(
+                'streetAddress', sl.street_address,
+                'aptNumber', sl.apt_number,
+                'city', sl.city,
+                'stateProvince', sl.state_province,
+                'zipCode', sl.zip_code,
+                'country', sl.country
+              )
+            ),
+            JSON_ARRAY()
           ) as locations
         FROM stores s
         LEFT JOIN store_categories sc ON s.id = sc.store_id
@@ -28,29 +32,54 @@ export class StoreModel {
         ORDER BY s.created_at DESC
       `);
 
-      return (stores as any[]).map(this.mapRowToStore);
+      const storesArray = stores as any[];
+      if (!storesArray || storesArray.length === 0) {
+        return [];
+      }
+      return storesArray.map(this.mapRowToStore);
+    } catch (error: any) {
+      console.error('Database error in findAll:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      // If table doesn't exist, return empty array instead of throwing
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.code === '42S02') {
+        console.warn('Stores table does not exist yet, returning empty array');
+        return [];
+      }
+      // If connection failed, return empty array
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+        console.warn('Database connection failed, returning empty array');
+        return [];
+      }
+      throw error;
     } finally {
-      connection.release();
+      if (connection) {
+        connection.release();
+      }
     }
   }
 
   // Get store by ID
   static async findById(id: string): Promise<Store | null> {
-    const connection = await pool.getConnection();
+    let connection;
     try {
+      connection = await pool.getConnection();
       const [stores] = await connection.execute(`
         SELECT 
           s.*,
-          GROUP_CONCAT(sc.category) as categories,
-          JSON_ARRAYAGG(
-            JSON_OBJECT(
-              'streetAddress', sl.street_address,
-              'aptNumber', sl.apt_number,
-              'city', sl.city,
-              'stateProvince', sl.state_province,
-              'zipCode', sl.zip_code,
-              'country', sl.country
-            )
+          COALESCE(GROUP_CONCAT(DISTINCT sc.category), '') as categories,
+          COALESCE(
+            JSON_ARRAYAGG(
+              JSON_OBJECT(
+                'streetAddress', sl.street_address,
+                'aptNumber', sl.apt_number,
+                'city', sl.city,
+                'stateProvince', sl.state_province,
+                'zipCode', sl.zip_code,
+                'country', sl.country
+              )
+            ),
+            JSON_ARRAY()
           ) as locations
         FROM stores s
         LEFT JOIN store_categories sc ON s.id = sc.store_id
@@ -61,8 +90,25 @@ export class StoreModel {
 
       const results = stores as any[];
       return results.length > 0 ? this.mapRowToStore(results[0]) : null;
+    } catch (error: any) {
+      console.error('Database error in findById:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      // If table doesn't exist, return null instead of throwing
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.code === '42S02') {
+        console.warn('Stores table does not exist yet, returning null');
+        return null;
+      }
+      // If connection failed, return null
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+        console.warn('Database connection failed, returning null');
+        return null;
+      }
+      throw error;
     } finally {
-      connection.release();
+      if (connection) {
+        connection.release();
+      }
     }
   }
 
@@ -342,14 +388,36 @@ export class StoreModel {
 
   // Get all categories
   static async getCategories(): Promise<string[]> {
-    const connection = await pool.getConnection();
+    let connection;
     try {
+      connection = await pool.getConnection();
       const [categories] = await connection.execute(`
         SELECT DISTINCT category FROM store_categories ORDER BY category
       `);
-      return (categories as any[]).map(row => row.category);
+      const categoriesArray = categories as any[];
+      if (!categoriesArray || categoriesArray.length === 0) {
+        return [];
+      }
+      return categoriesArray.map(row => row.category);
+    } catch (error: any) {
+      console.error('Database error in getCategories:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      // If table doesn't exist, return empty array instead of throwing
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.code === '42S02') {
+        console.warn('Store categories table does not exist yet, returning empty array');
+        return [];
+      }
+      // If connection failed, return empty array
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+        console.warn('Database connection failed, returning empty array');
+        return [];
+      }
+      throw error;
     } finally {
-      connection.release();
+      if (connection) {
+        connection.release();
+      }
     }
   }
 

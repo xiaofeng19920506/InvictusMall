@@ -60,6 +60,10 @@ function SetupPasswordForm() {
       });
       
       if (result.success) {
+        // Mark that user has logged in (for future session restores)
+        if (result.user) {
+          sessionStorage.setItem('has_logged_in', 'true');
+        }
         setSuccess(true);
         // Redirect to home page after 3 seconds
         setTimeout(() => {

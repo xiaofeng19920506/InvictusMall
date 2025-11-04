@@ -122,6 +122,24 @@ const createTables = async (): Promise<void> => {
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
+            // Create verification_tokens table (must be after users table due to foreign key)
+            await connection.execute(`
+              CREATE TABLE IF NOT EXISTS verification_tokens (
+                id VARCHAR(36) PRIMARY KEY,
+                user_id VARCHAR(36) NOT NULL,
+                token VARCHAR(255) NOT NULL UNIQUE,
+                type ENUM('email_verification', 'password_reset') NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_user_id (user_id),
+                INDEX idx_token (token),
+                INDEX idx_type (type),
+                INDEX idx_expires_at (expires_at),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            `);
+
             // Create staff table for admin app users
             await connection.execute(`
               CREATE TABLE IF NOT EXISTS staff (

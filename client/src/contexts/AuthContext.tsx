@@ -27,6 +27,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const restoreAuthState = async () => {
+      // Check if user has ever logged in (stored in sessionStorage)
+      // This prevents unnecessary API calls on first visit
+      const hasLoggedInBefore = sessionStorage.getItem('has_logged_in') === 'true';
+      
+      // If user has never logged in, skip the API call
+      if (!hasLoggedInBefore) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
+
       try {
         // Try to get current user from server using HTTP-only cookie
         const response = await authService.getCurrentUser();
@@ -38,11 +50,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Server says user is not authenticated
           setUser(null);
           setIsAuthenticated(false);
+          sessionStorage.removeItem('has_logged_in');
         }
-      } catch (error) {
-        console.error('Failed to restore auth state:', error);
-        setUser(null);
-        setIsAuthenticated(false);
+      } catch (error: any) {
+        // Handle 401 (Unauthorized) gracefully - this is expected when not logged in
+        if (error?.isAuthError || error?.status === 401) {
+          // User is not authenticated, which is fine - just set state
+          setUser(null);
+          setIsAuthenticated(false);
+          sessionStorage.removeItem('has_logged_in');
+        } else {
+          // Only log actual errors (network failures, etc.)
+          console.error('Failed to restore auth state:', error);
+          setUser(null);
+          setIsAuthenticated(false);
+        }
       }
       setLoading(false);
     };
@@ -57,14 +79,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (response.success && response.user) {
         setUser(response.user);
         setIsAuthenticated(true);
+        // Mark that user has logged in (for future session restores)
+        sessionStorage.setItem('has_logged_in', 'true');
       } else {
-        throw new Error(response.message || 'Login failed');
+        // Login failed - return the error response from server
+        setUser(null);
+        setIsAuthenticated(false);
+        return response; // Already contains success: false and message
       }
       return response;
     } catch (err: any) {
+      // Network or other unexpected errors
       setUser(null);
       setIsAuthenticated(false);
-      return { success: false, message: err.message || 'Login failed' };
+      return { success: false, message: err.message || 'Login failed. Please check your connection and try again.' };
     } finally {
       setLoading(false);
     }
@@ -110,6 +138,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setUser(null);
       setIsAuthenticated(false);
+      // Clear the login flag on logout
+      sessionStorage.removeItem('has_logged_in');
     }
   };
 
@@ -121,9 +151,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         logout();
       }
-    } catch (error) {
-      console.error('Failed to refresh user data:', error);
-      logout();
+    } catch (error: any) {
+      // Handle 401 gracefully - user is just not authenticated
+      if (error?.isAuthError || error?.status === 401) {
+        logout();
+      } else {
+        console.error('Failed to refresh user data:', error);
+        logout();
+      }
     }
   };
 

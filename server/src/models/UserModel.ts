@@ -81,36 +81,42 @@ export class UserModel {
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
-    const query = `
-      SELECT id, email, password, first_name, last_name, phone_number, role, 
-             is_active, email_verified, avatar, created_at, updated_at, last_login_at
-      FROM users 
-      WHERE email = ? AND is_active = true
-    `;
+    try {
+      const query = `
+        SELECT id, email, password, first_name, last_name, phone_number, role, 
+               is_active, email_verified, avatar, created_at, updated_at, last_login_at
+        FROM users 
+        WHERE email = ? AND is_active = true
+      `;
 
-    const [rows] = await this.pool.execute(query, [email.toLowerCase()]);
-    const users = rows as any[];
+      const [rows] = await this.pool.execute(query, [email.toLowerCase()]);
+      const users = rows as any[];
 
-    if (users.length === 0) {
-      return null;
+      if (users.length === 0) {
+        return null;
+      }
+
+      const user = users[0];
+      return {
+        id: user.id,
+        email: user.email,
+        password: user.password,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        phoneNumber: user.phone_number,
+        role: user.role,
+        isActive: user.is_active,
+        emailVerified: user.email_verified,
+        avatar: user.avatar || undefined,
+        createdAt: user.created_at,
+        updatedAt: user.updated_at,
+        lastLoginAt: user.last_login_at
+      };
+    } catch (error: any) {
+      console.error('Database error in getUserByEmail:', error);
+      // Re-throw database errors so they can be handled by the route
+      throw error;
     }
-
-    const user = users[0];
-    return {
-      id: user.id,
-      email: user.email,
-      password: user.password,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      phoneNumber: user.phone_number,
-      role: user.role,
-      isActive: user.is_active,
-      emailVerified: user.email_verified,
-      avatar: user.avatar || undefined,
-      createdAt: user.created_at,
-      updatedAt: user.updated_at,
-      lastLoginAt: user.last_login_at
-    };
   }
 
   async getUserById(id: string): Promise<User> {

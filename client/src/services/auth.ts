@@ -104,29 +104,72 @@ class AuthService {
       
       if (!response.ok) {
         const errorData: ApiError = await response.json();
+        // For 401 errors, throw a special error that can be handled gracefully
+        if (response.status === 401) {
+          const authError = new Error(errorData.message || 'Unauthorized') as any;
+          authError.status = 401;
+          authError.isAuthError = true;
+          throw authError;
+        }
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
 
       const data: T = await response.json();
       return data;
     } catch (error) {
-      console.error('Auth API request failed:', {
-        url,
-        baseUrl: this.baseUrl,
-        error
-      });
+      // Only log non-authentication errors (401 is expected when not logged in)
+      if (!(error as any)?.isAuthError) {
+        console.error('Auth API request failed:', {
+          url,
+          baseUrl: this.baseUrl,
+          error
+        });
+      }
       throw error;
     }
   }
 
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
+    const url = `${this.baseUrl}/api/auth/login`;
     
-    // Token is now stored in HTTP-only cookie, no need to save it
-    return response;
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(credentials),
+      });
+
+      // Check content type
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Expected JSON but received ${contentType}`);
+      }
+      
+      const data: AuthResponse = await response.json();
+      
+      // For login, we want to return the response even if status is 401 (invalid credentials)
+      // This allows the UI to show the error message to the user
+      if (!response.ok) {
+        // Return the error response from server
+        return {
+          success: false,
+          message: data.message || 'Login failed'
+        };
+      }
+
+      // Token is now stored in HTTP-only cookie, no need to save it
+      return data;
+    } catch (error: any) {
+      // If it's a network error or parsing error, throw it
+      if (error.message && !error.message.includes('JSON')) {
+        console.error('Login request failed:', error);
+      }
+      throw error;
+    }
   }
 
   async signup(userData: SignupRequest): Promise<AuthResponse> {
