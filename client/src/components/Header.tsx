@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
-import { useFavorites } from '@/contexts/FavoritesContext';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -16,10 +16,26 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchType, setSearchType] = useState('All');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   const { user, logout, isAuthenticated } = useAuth();
   const { getItemCount } = useCart();
-  const { favorites } = useFavorites();
+  const router = useRouter();
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const categories = [
     'All',
@@ -62,6 +78,8 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
 
   const handleLogout = () => {
     logout();
+    setShowDropdown(false);
+    router.push('/');
   };
 
   return (
@@ -109,36 +127,6 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  {/* User Avatar or Initials */}
-                  <Link href="/profile" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-                    {user?.avatar ? (
-                      <img
-                        src={user.avatar}
-                        alt={`${user.firstName} ${user.lastName}`}
-                        className="w-8 h-8 rounded-full border-2 border-white"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
-                        {user?.firstName?.[0]}{user?.lastName?.[0]}
-                      </div>
-                    )}
-                  </Link>
-                  <span className="text-sm text-gray-300">
-                    Welcome, {user?.firstName}
-                  </span>
-                  {user?.role === 'admin' && (
-                    <span className="px-2 py-1 text-xs bg-orange-500 text-white rounded-full">
-                      Admin
-                    </span>
-                  )}
-                  {user?.role === 'store_owner' && (
-                    <span className="px-2 py-1 text-xs bg-blue-500 text-white rounded-full">
-                      Store Owner
-                    </span>
-                  )}
-                </div>
-                
                 {/* Dashboard Links */}
                 {user?.role === 'admin' && (
                   <Link 
@@ -160,24 +148,65 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                   </Link>
                 )}
 
-                {/* Account Menu */}
-                <div className="relative group">
-                  <Link
-                    href="/profile"
-                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
+                {/* User Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
                   >
-                    <span>👤</span>
-                    <span>Account</span>
-                  </Link>
+                    {/* User Avatar or Initials */}
+                    {user?.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={`${user.firstName} ${user.lastName}`}
+                        className="w-8 h-8 rounded-full border-2 border-white"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs font-bold">
+                        {user?.firstName?.[0]}{user?.lastName?.[0]}
+                      </div>
+                    )}
+                    <span className="text-sm text-gray-300">
+                      Welcome, {user?.firstName}
+                    </span>
+                    {user?.role === 'admin' && (
+                      <span className="px-2 py-1 text-xs bg-orange-500 text-white rounded-full">
+                        Admin
+                      </span>
+                    )}
+                    {user?.role === 'store_owner' && (
+                      <span className="px-2 py-1 text-xs bg-blue-500 text-white rounded-full">
+                        Store Owner
+                      </span>
+                    )}
+                    <span className="text-gray-400">▼</span>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {showDropdown && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200">
+                      <Link
+                        href="/profile"
+                        onClick={() => setShowDropdown(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>👤</span>
+                          <span>Profile</span>
+                        </div>
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>🚪</span>
+                          <span>Logout</span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
                 </div>
-                
-                <button 
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  <span>🚪</span>
-                  <span>Logout</span>
-                </button>
               </div>
             ) : (
               <div className="flex items-center space-x-2">
@@ -198,18 +227,6 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
               </div>
             )}
             
-            <Link
-              href="/favorites"
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors relative"
-            >
-              <span>❤️</span>
-              <span>Favorites</span>
-              {favorites.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {favorites.length}
-                </span>
-              )}
-            </Link>
             <Link
               href="/cart"
               className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors relative"
