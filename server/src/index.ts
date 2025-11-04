@@ -17,20 +17,44 @@ import { setupSwagger } from "./config/swagger";
 import { accountCleanupService } from "./services/accountCleanupService";
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || "3001", 10);
 
 // Security middleware
 app.use(helmet());
 
 // CORS configuration
+// Allow localhost and local network IPs
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
+];
+
+// Add custom origins from environment variable (comma-separated)
+if (process.env.CORS_ORIGINS) {
+  allowedOrigins.push(...process.env.CORS_ORIGINS.split(",").map(origin => origin.trim()));
+}
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3002",
-      "http://localhost:3003",
-    ],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        // Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+        const localNetworkRegex = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/;
+        if (localNetworkRegex.test(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      }
+    },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })
@@ -171,9 +195,10 @@ const startServer = async () => {
       await initializeDatabase();
     }
 
-    // Start server
-    app.listen(PORT, () => {
+    // Start server - listen on all network interfaces (0.0.0.0) to accept connections from other machines
+    app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server is running on port ${PORT}`);
+      console.log(`📡 Accessible at http://localhost:${PORT} or http://[your-ip]:${PORT}`);
 
       // Start account cleanup service (runs daily)
       // Only start if database is connected
