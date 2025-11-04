@@ -22,39 +22,10 @@ const PORT = parseInt(process.env.PORT || "3001", 10);
 // Security middleware
 app.use(helmet());
 
-// CORS configuration
-// Allow localhost and local network IPs
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3002",
-  "http://localhost:3003",
-];
-
-// Add custom origins from environment variable (comma-separated)
-if (process.env.CORS_ORIGINS) {
-  allowedOrigins.push(...process.env.CORS_ORIGINS.split(",").map(origin => origin.trim()));
-}
-
+// CORS configuration - Allow all origins
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      
-      // Check if origin is in allowed list
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        // Allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
-        const localNetworkRegex = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/;
-        if (localNetworkRegex.test(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
-      }
-    },
+    origin: true, // Allow all origins
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true,
   })
