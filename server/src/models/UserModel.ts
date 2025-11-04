@@ -1,7 +1,7 @@
-import { Pool } from 'mysql2/promise';
-import { pool } from '../config/database';
-import bcrypt from 'bcryptjs';
-import { v4 as uuidv4 } from 'uuid';
+import { Pool } from "mysql2/promise";
+import { pool } from "../config/database";
+import bcrypt from "bcryptjs";
+import { v4 as uuidv4 } from "uuid";
 
 export interface User {
   id: string;
@@ -10,7 +10,7 @@ export interface User {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  role: 'customer' | 'admin' | 'store_owner';
+  role: "customer" | "admin" | "store_owner";
   isActive: boolean;
   emailVerified: boolean;
   avatar?: string;
@@ -38,7 +38,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   success: boolean;
-  user?: Omit<User, 'password'>;
+  user?: Omit<User, "password">;
   token?: string;
   message?: string;
 }
@@ -48,6 +48,69 @@ export class UserModel {
 
   constructor() {
     this.pool = pool;
+  }
+
+  /**
+   * Delete unactivated user accounts older than specified days
+   * An account is considered unactivated if:
+   * - is_active = false OR
+   * - email_verified = false OR
+   * - password IS NULL
+   * @param daysOld - Number of days old the account should be (default: 7)
+   * @returns Number of accounts deleted
+   */
+  async deleteUnactivatedAccounts(daysOld: number = 7): Promise<number> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+      const query = `
+        DELETE FROM users
+        WHERE created_at < ?
+        AND (
+          is_active = false
+          OR email_verified = false
+          OR password IS NULL
+        )
+      `;
+
+      const [result] = await this.pool.execute(query, [cutoffDate]);
+      const deleteResult = result as any;
+      return deleteResult.affectedRows || 0;
+    } catch (error: any) {
+      console.error("Error deleting unactivated accounts:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get count of unactivated accounts older than specified days
+   * @param daysOld - Number of days old the account should be (default: 7)
+   * @returns Count of unactivated accounts
+   */
+  async countUnactivatedAccounts(daysOld: number = 7): Promise<number> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+      const query = `
+        SELECT COUNT(*) as count
+        FROM users
+        WHERE created_at < ?
+        AND (
+          is_active = false
+          OR email_verified = false
+          OR password IS NULL
+        )
+      `;
+
+      const [rows] = await this.pool.execute(query, [cutoffDate]);
+      const result = rows as any[];
+      return result[0]?.count || 0;
+    } catch (error: any) {
+      console.error("Error counting unactivated accounts:", error);
+      throw error;
+    }
   }
 
   async createUser(userData: CreateUserRequest): Promise<User> {
@@ -68,11 +131,11 @@ export class UserModel {
       userData.firstName,
       userData.lastName,
       userData.phoneNumber,
-      'customer', // Always set to customer
+      "customer", // Always set to customer
       false, // Inactive until email is verified
       false, // Email not verified yet
       now,
-      now
+      now,
     ];
 
     await this.pool.execute(query, values);
@@ -110,10 +173,10 @@ export class UserModel {
         avatar: user.avatar || undefined,
         createdAt: user.created_at,
         updatedAt: user.updated_at,
-        lastLoginAt: user.last_login_at
+        lastLoginAt: user.last_login_at,
       };
     } catch (error: any) {
-      console.error('Database error in getUserByEmail:', error);
+      console.error("Database error in getUserByEmail:", error);
       // Re-throw database errors so they can be handled by the route
       throw error;
     }
@@ -131,7 +194,7 @@ export class UserModel {
     const users = rows as any[];
 
     if (users.length === 0) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     const user = users[0];
@@ -148,7 +211,7 @@ export class UserModel {
       avatar: user.avatar || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
-      lastLoginAt: user.last_login_at
+      lastLoginAt: user.last_login_at,
     };
   }
 
@@ -164,7 +227,7 @@ export class UserModel {
     const users = rows as any[];
 
     if (users.length === 0) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     const user = users[0];
@@ -181,16 +244,19 @@ export class UserModel {
       avatar: user.avatar || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
-      lastLoginAt: user.last_login_at
+      lastLoginAt: user.last_login_at,
     };
   }
 
-  async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  async verifyPassword(
+    password: string,
+    hashedPassword: string
+  ): Promise<boolean> {
     return bcrypt.compare(password, hashedPassword);
   }
 
   async emailExists(email: string): Promise<boolean> {
-    const query = 'SELECT id FROM users WHERE email = ?';
+    const query = "SELECT id FROM users WHERE email = ?";
     const [rows] = await this.pool.execute(query, [email.toLowerCase()]);
     const users = rows as any[];
     return users.length > 0;
@@ -274,24 +340,27 @@ export class UserModel {
       avatar: user.avatar || undefined,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
-      lastLoginAt: user.last_login_at
+      lastLoginAt: user.last_login_at,
     };
   }
 
-  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phoneNumber?: string }): Promise<User> {
+  async updateProfile(
+    userId: string,
+    data: { firstName?: string; lastName?: string; phoneNumber?: string }
+  ): Promise<User> {
     const updates: string[] = [];
     const values: any[] = [];
 
     if (data.firstName !== undefined) {
-      updates.push('first_name = ?');
+      updates.push("first_name = ?");
       values.push(data.firstName);
     }
     if (data.lastName !== undefined) {
-      updates.push('last_name = ?');
+      updates.push("last_name = ?");
       values.push(data.lastName);
     }
     if (data.phoneNumber !== undefined) {
-      updates.push('phone_number = ?');
+      updates.push("phone_number = ?");
       values.push(data.phoneNumber);
     }
 
@@ -299,13 +368,13 @@ export class UserModel {
       return this.getUserById(userId);
     }
 
-    updates.push('updated_at = ?');
+    updates.push("updated_at = ?");
     values.push(new Date());
     values.push(userId);
 
     const query = `
       UPDATE users 
-      SET ${updates.join(', ')}
+      SET ${updates.join(", ")}
       WHERE id = ?
     `;
 

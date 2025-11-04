@@ -1,12 +1,59 @@
-import { Router, Request, Response } from 'express';
-import { StoreService } from '../services/storeService';
-import { validateStore, validateUpdateStore, handleValidationErrors } from '../middleware/validation';
-import { ActivityLogModel } from '../models/ActivityLogModel';
-import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { Router, Request, Response } from "express";
+import { StoreService } from "../services/storeService";
+import {
+  validateStore,
+  validateUpdateStore,
+  handleValidationErrors,
+} from "../middleware/validation";
+import { ActivityLogModel } from "../models/ActivityLogModel";
+import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const router = Router();
 // Use real database service now that database is connected
 const storeService = new StoreService();
+
+// Configure multer for store image uploads
+const storeUploadDir = path.join(__dirname, "../../uploads/stores");
+if (!fs.existsSync(storeUploadDir)) {
+  fs.mkdirSync(storeUploadDir, { recursive: true });
+}
+
+const storeImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, storeUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const filename = `store-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}${ext}`;
+    cb(null, filename);
+  },
+});
+
+const storeImageFilter = (
+  req: any,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  // Accept only image files
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed"));
+  }
+};
+
+const uploadStoreImage = multer({
+  storage: storeImageStorage,
+  fileFilter: storeImageFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
 
 /**
  * @swagger
@@ -52,14 +99,14 @@ const storeService = new StoreService();
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Public endpoint - no authentication required for browsing stores
-router.get('/', async (req: Request, res: Response) => {
+router.get("/", async (req: Request, res: Response) => {
   try {
     const { category, search } = req.query;
-    
+
     let stores;
-    if (search && typeof search === 'string') {
+    if (search && typeof search === "string") {
       stores = await storeService.searchStores(search);
-    } else if (category && typeof category === 'string') {
+    } else if (category && typeof category === "string") {
       stores = await storeService.getStoresByCategory(category);
     } else {
       stores = await storeService.getAllStores();
@@ -68,18 +115,21 @@ router.get('/', async (req: Request, res: Response) => {
     return res.json({
       success: true,
       data: stores,
-      count: stores.length
+      count: stores.length,
     });
   } catch (error) {
-    console.error('Error fetching stores:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error("Error fetching stores:", error);
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch stores',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      ...(process.env.NODE_ENV === 'development' && { 
-        stack: error instanceof Error ? error.stack : undefined 
-      })
+      message: "Failed to fetch stores",
+      error: error instanceof Error ? error.message : "Unknown error",
+      ...(process.env.NODE_ENV === "development" && {
+        stack: error instanceof Error ? error.stack : undefined,
+      }),
     });
   }
 });
@@ -115,23 +165,26 @@ router.get('/', async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Public endpoint - no authentication required
-router.get('/categories', async (req: Request, res: Response) => {
+router.get("/categories", async (req: Request, res: Response) => {
   try {
     const categories = await storeService.getCategories();
     return res.json({
       success: true,
-      data: categories
+      data: categories,
     });
   } catch (error) {
-    console.error('Error fetching categories:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error("Error fetching categories:", error);
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch categories',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      ...(process.env.NODE_ENV === 'development' && { 
-        stack: error instanceof Error ? error.stack : undefined 
-      })
+      message: "Failed to fetch categories",
+      error: error instanceof Error ? error.message : "Unknown error",
+      ...(process.env.NODE_ENV === "development" && {
+        stack: error instanceof Error ? error.stack : undefined,
+      }),
     });
   }
 });
@@ -169,19 +222,19 @@ router.get('/categories', async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Public endpoint - no authentication required
-router.get('/membership', async (req: Request, res: Response) => {
+router.get("/membership", async (req: Request, res: Response) => {
   try {
     const stores = await storeService.getMembershipStores();
     return res.json({
       success: true,
       data: stores,
-      count: stores.length
+      count: stores.length,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch membership stores',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Failed to fetch membership stores",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -233,27 +286,29 @@ router.get('/membership', async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Public endpoint - no authentication required
-router.get('/membership/:type', async (req: Request, res: Response) => {
+router.get("/membership/:type", async (req: Request, res: Response) => {
   try {
     const { type } = req.params;
-    if (!type || !['basic', 'premium', 'platinum'].includes(type)) {
+    if (!type || !["basic", "premium", "platinum"].includes(type)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid membership type. Must be basic, premium, or platinum'
+        message: "Invalid membership type. Must be basic, premium, or platinum",
       });
     }
-    
-    const stores = await storeService.getStoresByMembershipType(type as 'basic' | 'premium' | 'platinum');
+
+    const stores = await storeService.getStoresByMembershipType(
+      type as "basic" | "premium" | "platinum"
+    );
     return res.json({
       success: true,
       data: stores,
-      count: stores.length
+      count: stores.length,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch stores by membership type',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Failed to fetch stores by membership type",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -291,19 +346,19 @@ router.get('/membership/:type', async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Public endpoint - no authentication required
-router.get('/premium', async (req: Request, res: Response) => {
+router.get("/premium", async (req: Request, res: Response) => {
   try {
     const stores = await storeService.getPremiumStores();
     return res.json({
       success: true,
       data: stores,
-      count: stores.length
+      count: stores.length,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch premium stores',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Failed to fetch premium stores",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -341,20 +396,20 @@ router.get('/premium', async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Public endpoint - no authentication required
-router.get('/featured', async (req: Request, res: Response) => {
+router.get("/featured", async (req: Request, res: Response) => {
   try {
     // Featured stores are premium and platinum stores
     const stores = await storeService.getPremiumStores();
     return res.json({
       success: true,
       data: stores,
-      count: stores.length
+      count: stores.length,
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: 'Failed to fetch featured stores',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Failed to fetch featured stores",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -401,31 +456,37 @@ router.get('/featured', async (req: Request, res: Response) => {
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // Public endpoint - no authentication required for viewing store details
-router.get('/:id', async (req: Request, res: Response) => {
+router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
       return res.status(400).json({
         success: false,
-        message: 'Store ID is required'
+        message: "Store ID is required",
       });
     }
-    
+
     const store = await storeService.getStoreById(id);
     return res.json({
       success: true,
-      data: store
+      data: store,
     });
   } catch (error) {
-    console.error('Error fetching store by ID:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    const statusCode = error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500;
+    console.error("Error fetching store by ID:", error);
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace"
+    );
+    const statusCode =
+      error instanceof Error && "statusCode" in error
+        ? (error as any).statusCode
+        : 500;
     return res.status(statusCode).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Unknown error',
-      ...(process.env.NODE_ENV === 'development' && { 
-        stack: error instanceof Error ? error.stack : undefined 
-      })
+      message: error instanceof Error ? error.message : "Unknown error",
+      ...(process.env.NODE_ENV === "development" && {
+        stack: error instanceof Error ? error.stack : undefined,
+      }),
     });
   }
 });
@@ -493,36 +554,41 @@ router.get('/:id', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/', validateStore, handleValidationErrors, async (req: Request, res: Response) => {
-  try {
-    const store = await storeService.createStore(req.body);
-    
-    // Log the activity
-    await ActivityLogModel.createLog({
-      type: 'store_created',
-      message: `New store "${store.name}" has been added`,
-      storeName: store.name,
-      storeId: store.id,
-      metadata: {
-        categories: store.category,
-        rating: store.rating,
-        isVerified: store.isVerified
-      }
-    });
-    
-    return res.status(201).json({
-      success: true,
-      data: store,
-      message: 'Store created successfully'
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to create store',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+router.post(
+  "/",
+  validateStore,
+  handleValidationErrors,
+  async (req: Request, res: Response) => {
+    try {
+      const store = await storeService.createStore(req.body);
+
+      // Log the activity
+      await ActivityLogModel.createLog({
+        type: "store_created",
+        message: `New store "${store.name}" has been added`,
+        storeName: store.name,
+        storeId: store.id,
+        metadata: {
+          categories: store.category,
+          rating: store.rating,
+          isVerified: store.isVerified,
+        },
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: store,
+        message: "Store created successfully",
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create store",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -586,45 +652,53 @@ router.post('/', validateStore, handleValidationErrors, async (req: Request, res
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.put('/:id', validateUpdateStore, handleValidationErrors, async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(400).json({
+router.put(
+  "/:id",
+  validateUpdateStore,
+  handleValidationErrors,
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Store ID is required",
+        });
+      }
+
+      const store = await storeService.updateStore(id, req.body);
+
+      // Log the activity
+      await ActivityLogModel.createLog({
+        type: "store_updated",
+        message: `Store "${store.name}" information has been updated`,
+        storeName: store.name,
+        storeId: store.id,
+        metadata: {
+          updatedFields: Object.keys(req.body),
+          categories: store.category,
+          rating: store.rating,
+          isVerified: store.isVerified,
+        },
+      });
+
+      return res.json({
+        success: true,
+        data: store,
+        message: "Store updated successfully",
+      });
+    } catch (error) {
+      const statusCode =
+        error instanceof Error && "statusCode" in error
+          ? (error as any).statusCode
+          : 500;
+      return res.status(statusCode).json({
         success: false,
-        message: 'Store ID is required'
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
-    
-    const store = await storeService.updateStore(id, req.body);
-    
-    // Log the activity
-    await ActivityLogModel.createLog({
-      type: 'store_updated',
-      message: `Store "${store.name}" information has been updated`,
-      storeName: store.name,
-      storeId: store.id,
-      metadata: {
-        updatedFields: Object.keys(req.body),
-        categories: store.category,
-        rating: store.rating,
-        isVerified: store.isVerified
-      }
-    });
-    
-    return res.json({
-      success: true,
-      data: store,
-      message: 'Store updated successfully'
-    });
-  } catch (error) {
-    const statusCode = error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500;
-    return res.status(statusCode).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
   }
-});
+);
 
 /**
  * @swagger
@@ -655,40 +729,43 @@ router.put('/:id', validateUpdateStore, handleValidationErrors, async (req: Requ
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
       return res.status(400).json({
         success: false,
-        message: 'Store ID is required'
+        message: "Store ID is required",
       });
     }
-    
+
     // Get store info before deleting for logging
     const storeToDelete = await storeService.getStoreById(id);
-    
+
     await storeService.deleteStore(id);
-    
+
     // Log the activity
     await ActivityLogModel.createLog({
-      type: 'store_deleted',
+      type: "store_deleted",
       message: `Store "${storeToDelete.name}" has been deleted`,
       storeName: storeToDelete.name,
       storeId: storeToDelete.id,
       metadata: {
         deletedAt: new Date().toISOString(),
         categories: storeToDelete.category,
-        rating: storeToDelete.rating
-      }
+        rating: storeToDelete.rating,
+      },
     });
-    
+
     return res.status(204).send();
   } catch (error) {
-    const statusCode = error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500;
+    const statusCode =
+      error instanceof Error && "statusCode" in error
+        ? (error as any).statusCode
+        : 500;
     return res.status(statusCode).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -729,53 +806,129 @@ router.delete('/:id', async (req: Request, res: Response) => {
  *       500:
  *         description: Internal server error
  */
-router.put('/:id/verify', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const user = req.user!;
-    
-    // Only admin can verify stores
-    if (user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only administrators can verify stores'
-      });
-    }
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Store ID is required'
-      });
-    }
-    
-    // Update store verification status
-    const store = await storeService.updateStore(id, { isVerified: true });
-    
-    // Log the activity
-    await ActivityLogModel.createLog({
-      type: 'store_verified',
-      message: `Store "${store.name}" has been verified by admin ${user.email}`,
-      storeName: store.name,
-      storeId: store.id,
-      metadata: {
-        verifiedBy: user.id,
-        verifiedAt: new Date().toISOString()
+router.put(
+  "/:id/verify",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+
+      // Only admin can verify stores
+      if (user.role !== "admin") {
+        return res.status(403).json({
+          success: false,
+          message: "Only administrators can verify stores",
+        });
       }
-    });
-    
-    return res.json({
-      success: true,
-      data: store,
-      message: 'Store verified successfully'
-    });
-  } catch (error) {
-    const statusCode = error instanceof Error && 'statusCode' in error ? (error as any).statusCode : 500;
-    return res.status(statusCode).json({
-      success: false,
-      message: error instanceof Error ? error.message : 'Unknown error'
-    });
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Store ID is required",
+        });
+      }
+
+      // Update store verification status
+      const store = await storeService.updateStore(id, { isVerified: true });
+
+      // Log the activity
+      await ActivityLogModel.createLog({
+        type: "store_verified",
+        message: `Store "${store.name}" has been verified by admin ${user.email}`,
+        storeName: store.name,
+        storeId: store.id,
+        metadata: {
+          verifiedBy: user.id,
+          verifiedAt: new Date().toISOString(),
+        },
+      });
+
+      return res.json({
+        success: true,
+        data: store,
+        message: "Store verified successfully",
+      });
+    } catch (error) {
+      const statusCode =
+        error instanceof Error && "statusCode" in error
+          ? (error as any).statusCode
+          : 500;
+      return res.status(statusCode).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
-});
+);
+
+/**
+ * @swagger
+ * /api/stores/upload-image:
+ *   post:
+ *     summary: Upload store image
+ *     tags: [Stores]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Image uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 imageUrl:
+ *                   type: string
+ *       400:
+ *         description: Invalid file
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  "/upload-image",
+  authenticateToken,
+  uploadStoreImage.single("image"),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No image file uploaded",
+        });
+      }
+
+      // Construct the URL for the uploaded file
+      const imageUrl = `/uploads/stores/${req.file.filename}`;
+
+      return res.json({
+        success: true,
+        imageUrl,
+        message: "Image uploaded successfully",
+      });
+    } catch (error) {
+      console.error("Upload store image error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to upload image",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+);
 
 export default router;

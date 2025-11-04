@@ -1,22 +1,32 @@
-import { Router, Request, Response } from 'express';
-import { UserModel, CreateUserRequest, LoginRequest, SetupPasswordRequest } from '../models/UserModel';
-import { VerificationTokenModel } from '../models/VerificationTokenModel';
-import { validateLogin, validateSignup, validateSetupPassword, handleValidationErrors } from '../middleware/validation';
-import jwt from 'jsonwebtoken';
-import { ActivityLogModel, ActivityLog } from '../models/ActivityLogModel';
-import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
-import { emailService } from '../services/emailService';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import { Router, Request, Response } from "express";
+import {
+  UserModel,
+  CreateUserRequest,
+  LoginRequest,
+  SetupPasswordRequest,
+} from "../models/UserModel";
+import { VerificationTokenModel } from "../models/VerificationTokenModel";
+import {
+  validateLogin,
+  validateSignup,
+  validateSetupPassword,
+  handleValidationErrors,
+} from "../middleware/validation";
+import jwt from "jsonwebtoken";
+import { ActivityLogModel, ActivityLog } from "../models/ActivityLogModel";
+import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
+import { emailService } from "../services/emailService";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
 const router = Router();
 const userModel = new UserModel();
 const verificationTokenModel = new VerificationTokenModel();
 
 // JWT Secret - in production, this should be in environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_SECRET = process.env.JWT_SECRET || "supersecretjwtkey";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
 
 /**
  * @swagger
@@ -96,74 +106,127 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/signup', validateSignup, handleValidationErrors, async (req: Request, res: Response) => {
-  try {
-    const { email, firstName, lastName, phoneNumber }: CreateUserRequest = req.body;
-
-    // Check if email already exists
-    const emailExists = await userModel.emailExists(email);
-    if (emailExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email already registered'
-      });
-    }
-
-    // Create unverified user
-    const user = await userModel.createUser({
-      email,
-      firstName,
-      lastName,
-      phoneNumber
-    });
-
-    // Generate verification token
-    const verificationToken = emailService.generateVerificationToken();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // Store verification token
-    await verificationTokenModel.createToken({
-      userId: user.id,
-      token: verificationToken,
-      type: 'email_verification',
-      expiresAt
-    });
-
-    // Send verification email
-    const emailSent = await emailService.sendVerificationEmail(email, verificationToken);
-
-    // Log the activity
+router.post(
+  "/signup",
+  validateSignup,
+  handleValidationErrors,
+  async (req: Request, res: Response) => {
     try {
-      await ActivityLogModel.createLog({
-        type: 'user_registered',
-        message: `New user "${user.firstName} ${user.lastName}" registered with email ${user.email}. Verification email sent.`,
-        metadata: {
-          userId: user.id,
-          email: user.email,
-          role: user.role,
-          emailSent
-        }
-      });
-    } catch (logError) {
-      console.error('Failed to log user registration:', logError);
-      // Continue with registration even if logging fails
-    }
+      const { email, firstName, lastName, phoneNumber }: CreateUserRequest =
+        req.body;
 
-    // Return success message (no token until email is verified)
-    return res.status(201).json({
-      success: true,
-      message: 'Registration successful! Please check your email to verify your account and complete setup.',
-      emailSent
-    });
-  } catch (error) {
-    console.error('Signup error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to register user',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+      // Check if email already exists
+      let emailExists;
+      try {
+        emailExists = await userModel.emailExists(email);
+      } catch (dbError: any) {
+        // Handle database connection errors
+        if (
+          dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+          dbError.code === "ECONNREFUSED" ||
+          dbError.code === "ENOTFOUND" ||
+          dbError.code === "ETIMEDOUT"
+        ) {
+          console.error(
+            "Database connection error during signup:",
+            dbError.message
+          );
+          return res.status(503).json({
+            success: false,
+            message: "Service temporarily unavailable. Please try again later.",
+          });
+        }
+        throw dbError;
+      }
+
+      if (emailExists) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already registered",
+        });
+      }
+
+      // Create unverified user
+      let user;
+      try {
+        user = await userModel.createUser({
+          email,
+          firstName,
+          lastName,
+          phoneNumber,
+        });
+      } catch (dbError: any) {
+        // Handle database connection errors
+        if (
+          dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+          dbError.code === "ECONNREFUSED" ||
+          dbError.code === "ENOTFOUND" ||
+          dbError.code === "ETIMEDOUT"
+        ) {
+          console.error(
+            "Database connection error during signup:",
+            dbError.message
+          );
+          return res.status(503).json({
+            success: false,
+            message: "Service temporarily unavailable. Please try again later.",
+          });
+        }
+        throw dbError;
+      }
+
+      // Generate verification token
+      const verificationToken = emailService.generateVerificationToken();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      // Store verification token
+      await verificationTokenModel.createToken({
+        userId: user.id,
+        token: verificationToken,
+        type: "email_verification",
+        expiresAt,
+      });
+
+      // Send verification email
+      const emailSent = await emailService.sendVerificationEmail(
+        email,
+        verificationToken
+      );
+
+      // Log the activity
+      try {
+        await ActivityLogModel.createLog({
+          type: "user_registered",
+          message: `New user "${user.firstName} ${user.lastName}" registered with email ${user.email}. Verification email sent.`,
+          metadata: {
+            userId: user.id,
+            email: user.email,
+            role: user.role,
+            emailSent,
+          },
+        });
+      } catch (logError) {
+        console.error("Failed to log user registration:", logError);
+        // Continue with registration even if logging fails
+      }
+
+      // Return success message (no token until email is verified)
+      return res.status(201).json({
+        success: true,
+        message:
+          "Registration successful! Please check your email to verify your account and complete setup.",
+        emailSent,
+      });
+    } catch (error) {
+      console.error("Signup error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to register user",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -236,116 +299,129 @@ router.post('/signup', validateSignup, handleValidationErrors, async (req: Reque
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/login', validateLogin, handleValidationErrors, async (req: Request, res: Response) => {
-  try {
-    const { email, password }: LoginRequest = req.body;
-
-    // Get user by email
-    let user;
+router.post(
+  "/login",
+  validateLogin,
+  handleValidationErrors,
+  async (req: Request, res: Response) => {
     try {
-      user = await userModel.getUserByEmail(email);
-    } catch (dbError: any) {
-      // Handle database connection errors
-      if (dbError.code === 'ER_ACCESS_DENIED_ERROR' || 
-          dbError.code === 'ECONNREFUSED' || 
-          dbError.code === 'ENOTFOUND' ||
-          dbError.code === 'ETIMEDOUT') {
-        console.error('Database connection error during login:', dbError.message);
-        return res.status(503).json({
+      const { email, password }: LoginRequest = req.body;
+
+      // Get user by email
+      let user;
+      try {
+        user = await userModel.getUserByEmail(email);
+      } catch (dbError: any) {
+        // Handle database connection errors
+        if (
+          dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+          dbError.code === "ECONNREFUSED" ||
+          dbError.code === "ENOTFOUND" ||
+          dbError.code === "ETIMEDOUT"
+        ) {
+          console.error(
+            "Database connection error during login:",
+            dbError.message
+          );
+          return res.status(503).json({
+            success: false,
+            message: "Service temporarily unavailable. Please try again later.",
+          });
+        }
+        // Re-throw other database errors
+        throw dbError;
+      }
+
+      if (!user) {
+        return res.status(401).json({
           success: false,
-          message: 'Service temporarily unavailable. Please try again later.'
+          message: "Invalid email or password",
         });
       }
-      // Re-throw other database errors
-      throw dbError;
-    }
 
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
+      // Verify password
+      if (!user.password) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid email or password",
+        });
+      }
 
-    // Verify password
-    if (!user.password) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
-    
-    const isPasswordValid = await userModel.verifyPassword(password, user.password!);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
+      const isPasswordValid = await userModel.verifyPassword(
+        password,
+        user.password!
+      );
+      if (!isPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid email or password",
+        });
+      }
 
-    // Update last login (don't fail login if this fails)
-    try {
-      await userModel.updateLastLogin(user.id);
-    } catch (updateError) {
-      console.error('Failed to update last login:', updateError);
-      // Continue with login even if update fails
-    }
+      // Update last login (don't fail login if this fails)
+      try {
+        await userModel.updateLastLogin(user.id);
+      } catch (updateError) {
+        console.error("Failed to update last login:", updateError);
+        // Continue with login even if update fails
+      }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email, 
-        role: user.role 
-      },
-      JWT_SECRET as string,
-      { expiresIn: '1h' }
-    );
-
-    // Log the activity (don't fail login if this fails)
-    try {
-      await ActivityLogModel.createLog({
-        type: 'user_login',
-        message: `User "${user.firstName} ${user.lastName}" logged in`,
-        metadata: {
+      // Generate JWT token
+      const token = jwt.sign(
+        {
           userId: user.id,
           email: user.email,
-          role: user.role
-        }
+          role: user.role,
+        },
+        JWT_SECRET as string,
+        { expiresIn: "1h" }
+      );
+
+      // Log the activity (don't fail login if this fails)
+      try {
+        await ActivityLogModel.createLog({
+          type: "user_login",
+          message: `User "${user.firstName} ${user.lastName}" logged in`,
+          metadata: {
+            userId: user.id,
+            email: user.email,
+            role: user.role,
+          },
+        });
+      } catch (logError) {
+        console.error("Failed to log user login:", logError);
+        // Continue with login even if logging fails
+      }
+
+      // Set HTTP-only cookie with JWT token
+      res.cookie("auth_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: "/",
       });
-    } catch (logError) {
-      console.error('Failed to log user login:', logError);
-      // Continue with login even if logging fails
+
+      // Return user data without password (no token in response body)
+      const { password: _, ...userWithoutPassword } = user;
+
+      return res.json({
+        success: true,
+        message: "Login successful",
+        user: userWithoutPassword,
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to login. Please try again later.",
+        ...(process.env.NODE_ENV === "development" && {
+          error: error instanceof Error ? error.message : "Unknown error",
+        }),
+      });
     }
-
-    // Set HTTP-only cookie with JWT token
-    res.cookie('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/'
-    });
-
-    // Return user data without password (no token in response body)
-    const { password: _, ...userWithoutPassword } = user;
-
-    return res.json({
-      success: true,
-      message: 'Login successful',
-      user: userWithoutPassword
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to login. Please try again later.',
-      ...(process.env.NODE_ENV === 'development' && {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
-    });
   }
-});
+);
 
 /**
  * @swagger
@@ -395,112 +471,181 @@ router.post('/login', validateLogin, handleValidationErrors, async (req: Request
  *       500:
  *         description: Internal server error
  */
-router.post('/setup-password', validateSetupPassword, handleValidationErrors, async (req: Request, res: Response) => {
-  try {
-    const { token, password }: SetupPasswordRequest = req.body;
-
-    // Find verification token
-    const verificationToken = await verificationTokenModel.getTokenByTokenValue(token);
-    
-    if (!verificationToken) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid verification token'
-      });
-    }
-
-    // Check if token is expired
-    if (verificationToken.expiresAt < new Date()) {
-      return res.status(401).json({
-        success: false,
-        message: 'Verification token has expired'
-      });
-    }
-
-    // Check if token is already used
-    if (verificationToken.used) {
-      return res.status(401).json({
-        success: false,
-        message: 'Verification token has already been used'
-      });
-    }
-
-    // Check if token is for email verification
-    if (verificationToken.type !== 'email_verification') {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid token type'
-      });
-    }
-
-    // Get user
-    const user = await userModel.getUserById(verificationToken.userId);
-
-    // Setup password and activate user
-    await userModel.setupPassword(user.id, password);
-
-    // Mark token as used
-    await verificationTokenModel.markTokenAsUsed(verificationToken.id);
-
-    // Generate JWT token
-    const jwtToken = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email, 
-        role: user.role 
-      },
-      JWT_SECRET as string,
-      { expiresIn: '7d' }
-    );
-
-    // Update last login
-    await userModel.updateLastLogin(user.id);
-
-    // Get updated user data
-    const updatedUser = await userModel.getUserById(user.id);
-
-    // Log the activity
+router.post(
+  "/setup-password",
+  validateSetupPassword,
+  handleValidationErrors,
+  async (req: Request, res: Response) => {
     try {
-      await ActivityLogModel.createLog({
-        type: 'user_login',
-        message: `User "${updatedUser.firstName} ${updatedUser.lastName}" completed email verification and setup password`,
-        metadata: {
-          userId: updatedUser.id,
-          email: updatedUser.email,
-          role: updatedUser.role
+      const { token, password }: SetupPasswordRequest = req.body;
+
+      // Find verification token
+      let verificationToken;
+      try {
+        verificationToken = await verificationTokenModel.getTokenByTokenValue(
+          token
+        );
+      } catch (dbError: any) {
+        // Handle database connection errors
+        if (
+          dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+          dbError.code === "ECONNREFUSED" ||
+          dbError.code === "ENOTFOUND" ||
+          dbError.code === "ETIMEDOUT"
+        ) {
+          console.error(
+            "Database connection error during password setup:",
+            dbError.message
+          );
+          return res.status(503).json({
+            success: false,
+            message: "Service temporarily unavailable. Please try again later.",
+          });
         }
+        throw dbError;
+      }
+
+      if (!verificationToken) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid verification token",
+        });
+      }
+
+      // Check if token is expired
+      if (verificationToken.expiresAt < new Date()) {
+        return res.status(401).json({
+          success: false,
+          message: "Verification token has expired",
+        });
+      }
+
+      // Check if token is already used
+      if (verificationToken.used) {
+        return res.status(401).json({
+          success: false,
+          message: "Verification token has already been used",
+        });
+      }
+
+      // Check if token is for email verification
+      if (verificationToken.type !== "email_verification") {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid token type",
+        });
+      }
+
+      // Get user
+      let user;
+      try {
+        user = await userModel.getUserById(verificationToken.userId);
+      } catch (dbError: any) {
+        // Handle database connection errors
+        if (
+          dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+          dbError.code === "ECONNREFUSED" ||
+          dbError.code === "ENOTFOUND" ||
+          dbError.code === "ETIMEDOUT"
+        ) {
+          console.error(
+            "Database connection error during password setup:",
+            dbError.message
+          );
+          return res.status(503).json({
+            success: false,
+            message: "Service temporarily unavailable. Please try again later.",
+          });
+        }
+        throw dbError;
+      }
+
+      // Setup password and activate user
+      try {
+        await userModel.setupPassword(user.id, password);
+      } catch (dbError: any) {
+        // Handle database connection errors
+        if (
+          dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+          dbError.code === "ECONNREFUSED" ||
+          dbError.code === "ENOTFOUND" ||
+          dbError.code === "ETIMEDOUT"
+        ) {
+          console.error(
+            "Database connection error during password setup:",
+            dbError.message
+          );
+          return res.status(503).json({
+            success: false,
+            message: "Service temporarily unavailable. Please try again later.",
+          });
+        }
+        throw dbError;
+      }
+
+      // Mark token as used
+      await verificationTokenModel.markTokenAsUsed(verificationToken.id);
+
+      // Generate JWT token
+      const jwtToken = jwt.sign(
+        {
+          userId: user.id,
+          email: user.email,
+          role: user.role,
+        },
+        JWT_SECRET as string,
+        { expiresIn: "7d" }
+      );
+
+      // Update last login
+      await userModel.updateLastLogin(user.id);
+
+      // Get updated user data
+      const updatedUser = await userModel.getUserById(user.id);
+
+      // Log the activity
+      try {
+        await ActivityLogModel.createLog({
+          type: "user_login",
+          message: `User "${updatedUser.firstName} ${updatedUser.lastName}" completed email verification and setup password`,
+          metadata: {
+            userId: updatedUser.id,
+            email: updatedUser.email,
+            role: updatedUser.role,
+          },
+        });
+      } catch (logError) {
+        console.error("Failed to log password setup:", logError);
+        // Continue even if logging fails
+      }
+
+      // Set HTTP-only cookie with JWT token
+      res.cookie("auth_token", jwtToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: "/",
       });
-    } catch (logError) {
-      console.error('Failed to log password setup:', logError);
-      // Continue even if logging fails
+
+      // Return user data without password (no token in response body)
+      const { password: _, ...userWithoutPassword } = updatedUser;
+
+      return res.status(200).json({
+        success: true,
+        message: "Password setup successful! Your account is now active.",
+        user: userWithoutPassword,
+      });
+    } catch (error) {
+      console.error("Password setup error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to setup password",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
-
-    // Set HTTP-only cookie with JWT token
-    res.cookie('auth_token', jwtToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/'
-    });
-
-    // Return user data without password (no token in response body)
-    const { password: _, ...userWithoutPassword } = updatedUser;
-
-    return res.status(200).json({
-      success: true,
-      message: 'Password setup successful! Your account is now active.',
-      user: userWithoutPassword
-    });
-  } catch (error) {
-    console.error('Password setup error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to setup password',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
   }
-});
+);
 
 /**
  * @swagger
@@ -549,27 +694,52 @@ router.post('/setup-password', validateSetupPassword, handleValidationErrors, as
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    // User is already authenticated and available in req.user
-    const user = await userModel.getActiveUserById(req.user!.id);
+router.get(
+  "/me",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      // User is already authenticated and available in req.user
+      let user;
+      try {
+        user = await userModel.getActiveUserById(req.user!.id);
+      } catch (dbError: any) {
+        // Handle database connection errors
+        if (
+          dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+          dbError.code === "ECONNREFUSED" ||
+          dbError.code === "ENOTFOUND" ||
+          dbError.code === "ETIMEDOUT"
+        ) {
+          console.error(
+            "Database connection error during /me:",
+            dbError.message
+          );
+          return res.status(503).json({
+            success: false,
+            message: "Service temporarily unavailable. Please try again later.",
+          });
+        }
+        throw dbError;
+      }
 
-    // Return user data without password
-    const { password: _, ...userWithoutPassword } = user;
+      // Return user data without password
+      const { password: _, ...userWithoutPassword } = user;
 
-    return res.json({
-      success: true,
-      user: userWithoutPassword
-    });
-  } catch (error) {
-    console.error('Get profile error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to get user profile',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+      return res.json({
+        success: true,
+        user: userWithoutPassword,
+      });
+    } catch (error) {
+      console.error("Get profile error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to get user profile",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
-});
+);
 
 /**
  * @swagger
@@ -623,24 +793,46 @@ router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res: Resp
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/forgot-password', async (req: Request, res: Response) => {
+router.post("/forgot-password", async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
     if (!email) {
       return res.status(400).json({
         success: false,
-        message: 'Email is required'
+        message: "Email is required",
       });
     }
 
     // Check if user exists
-    const user = await userModel.getUserByEmail(email);
+    let user;
+    try {
+      user = await userModel.getUserByEmail(email);
+    } catch (dbError: any) {
+      // Handle database connection errors
+      if (
+        dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+        dbError.code === "ECONNREFUSED" ||
+        dbError.code === "ENOTFOUND" ||
+        dbError.code === "ETIMEDOUT"
+      ) {
+        console.error(
+          "Database connection error during forgot password:",
+          dbError.message
+        );
+        return res.status(503).json({
+          success: false,
+          message: "Service temporarily unavailable. Please try again later.",
+        });
+      }
+      throw dbError;
+    }
     if (!user) {
       // For security, don't reveal if email exists or not
       return res.json({
         success: true,
-        message: 'If an account with that email exists, a password reset link has been sent'
+        message:
+          "If an account with that email exists, a password reset link has been sent",
       });
     }
 
@@ -652,45 +844,49 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     await verificationTokenModel.createToken({
       userId: user.id,
       token: resetToken,
-      type: 'password_reset',
-      expiresAt
+      type: "password_reset",
+      expiresAt,
     });
 
     // Send reset email
-    const emailSent = await emailService.sendPasswordResetEmail(email, resetToken);
-    
+    const emailSent = await emailService.sendPasswordResetEmail(
+      email,
+      resetToken
+    );
+
     if (!emailSent) {
       return res.status(500).json({
         success: false,
-        message: 'Failed to send password reset email'
+        message: "Failed to send password reset email",
       });
     }
 
     // Log the activity
     try {
       await ActivityLogModel.createLog({
-        type: 'password_reset_requested',
+        type: "password_reset_requested",
         message: `Password reset requested for user "${user.firstName} ${user.lastName}"`,
         metadata: {
           userId: user.id,
           email: user.email,
-          emailSent
-        }
+          emailSent,
+        },
       });
     } catch (logError) {
-      console.error('Failed to log password reset request:', logError);
+      console.error("Failed to log password reset request:", logError);
     }
 
     return res.json({
       success: true,
-      message: 'If an account with that email exists, a password reset link has been sent'
+      message:
+        "If an account with that email exists, a password reset link has been sent",
     });
   } catch (error) {
-    console.error('Forgot password error:', error);
+    console.error("Forgot password error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to process password reset request',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Failed to process password reset request",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -751,31 +947,52 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/reset-password', async (req: Request, res: Response) => {
+router.post("/reset-password", async (req: Request, res: Response) => {
   try {
     const { token, password } = req.body;
 
     if (!token || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Token and password are required'
+        message: "Token and password are required",
       });
     }
 
     if (password.length < 6) {
       return res.status(400).json({
         success: false,
-        message: 'Password must be at least 6 characters long'
+        message: "Password must be at least 6 characters long",
       });
     }
 
     // Find reset token
-    const resetToken = await verificationTokenModel.getTokenByTokenValue(token);
-    
+    let resetToken;
+    try {
+      resetToken = await verificationTokenModel.getTokenByTokenValue(token);
+    } catch (dbError: any) {
+      // Handle database connection errors
+      if (
+        dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+        dbError.code === "ECONNREFUSED" ||
+        dbError.code === "ENOTFOUND" ||
+        dbError.code === "ETIMEDOUT"
+      ) {
+        console.error(
+          "Database connection error during password reset:",
+          dbError.message
+        );
+        return res.status(503).json({
+          success: false,
+          message: "Service temporarily unavailable. Please try again later.",
+        });
+      }
+      throw dbError;
+    }
+
     if (!resetToken) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid reset token'
+        message: "Invalid reset token",
       });
     }
 
@@ -783,7 +1000,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     if (resetToken.expiresAt < new Date()) {
       return res.status(401).json({
         success: false,
-        message: 'Reset token has expired'
+        message: "Reset token has expired",
       });
     }
 
@@ -791,23 +1008,64 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     if (resetToken.used) {
       return res.status(401).json({
         success: false,
-        message: 'Reset token has already been used'
+        message: "Reset token has already been used",
       });
     }
 
     // Check if token is for password reset
-    if (resetToken.type !== 'password_reset') {
+    if (resetToken.type !== "password_reset") {
       return res.status(400).json({
         success: false,
-        message: 'Invalid token type'
+        message: "Invalid token type",
       });
     }
 
     // Get user
-    const user = await userModel.getActiveUserById(resetToken.userId);
+    let user;
+    try {
+      user = await userModel.getActiveUserById(resetToken.userId);
+    } catch (dbError: any) {
+      // Handle database connection errors
+      if (
+        dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+        dbError.code === "ECONNREFUSED" ||
+        dbError.code === "ENOTFOUND" ||
+        dbError.code === "ETIMEDOUT"
+      ) {
+        console.error(
+          "Database connection error during password reset:",
+          dbError.message
+        );
+        return res.status(503).json({
+          success: false,
+          message: "Service temporarily unavailable. Please try again later.",
+        });
+      }
+      throw dbError;
+    }
 
     // Update password
-    await userModel.updatePassword(user.id, password);
+    try {
+      await userModel.updatePassword(user.id, password);
+    } catch (dbError: any) {
+      // Handle database connection errors
+      if (
+        dbError.code === "ER_ACCESS_DENIED_ERROR" ||
+        dbError.code === "ECONNREFUSED" ||
+        dbError.code === "ENOTFOUND" ||
+        dbError.code === "ETIMEDOUT"
+      ) {
+        console.error(
+          "Database connection error during password reset:",
+          dbError.message
+        );
+        return res.status(503).json({
+          success: false,
+          message: "Service temporarily unavailable. Please try again later.",
+        });
+      }
+      throw dbError;
+    }
 
     // Mark token as used
     await verificationTokenModel.markTokenAsUsed(resetToken.id);
@@ -815,27 +1073,27 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     // Log the activity
     try {
       await ActivityLogModel.createLog({
-        type: 'password_reset_completed',
+        type: "password_reset_completed",
         message: `Password reset completed for user "${user.firstName} ${user.lastName}"`,
         metadata: {
           userId: user.id,
-          email: user.email
-        }
+          email: user.email,
+        },
       });
     } catch (logError) {
-      console.error('Failed to log password reset completion:', logError);
+      console.error("Failed to log password reset completion:", logError);
     }
 
     return res.json({
       success: true,
-      message: 'Password reset successful'
+      message: "Password reset successful",
     });
   } catch (error) {
-    console.error('Reset password error:', error);
+    console.error("Reset password error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Failed to reset password',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: "Failed to reset password",
+      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 });
@@ -861,18 +1119,18 @@ router.post('/reset-password', async (req: Request, res: Response) => {
  *                   type: string
  *                   example: "Logout successful"
  */
-router.post('/logout', (req: Request, res: Response) => {
+router.post("/logout", (req: Request, res: Response) => {
   // Clear the HTTP-only cookie
-  res.clearCookie('auth_token', {
+  res.clearCookie("auth_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/'
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
   });
 
   return res.json({
     success: true,
-    message: 'Logout successful'
+    message: "Logout successful",
   });
 });
 
@@ -908,52 +1166,60 @@ router.post('/logout', (req: Request, res: Response) => {
  *       500:
  *         description: Internal server error
  */
-router.put('/profile', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const { firstName, lastName, phoneNumber } = req.body;
-
-    const updateData: { firstName?: string; lastName?: string; phoneNumber?: string } = {};
-    if (firstName !== undefined) updateData.firstName = firstName;
-    if (lastName !== undefined) updateData.lastName = lastName;
-    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
-
-    const updatedUser = await userModel.updateProfile(userId, updateData);
-
-    // Log the activity
+router.put(
+  "/profile",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
-      await ActivityLogModel.createLog({
-        type: 'profile_updated' as ActivityLog['type'],
-        message: `User "${updatedUser.firstName} ${updatedUser.lastName}" updated their profile`,
-        metadata: {
-          userId: updatedUser.id,
-          email: updatedUser.email,
-          updates: updateData
-        }
+      const userId = req.user!.id;
+      const { firstName, lastName, phoneNumber } = req.body;
+
+      const updateData: {
+        firstName?: string;
+        lastName?: string;
+        phoneNumber?: string;
+      } = {};
+      if (firstName !== undefined) updateData.firstName = firstName;
+      if (lastName !== undefined) updateData.lastName = lastName;
+      if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+
+      const updatedUser = await userModel.updateProfile(userId, updateData);
+
+      // Log the activity
+      try {
+        await ActivityLogModel.createLog({
+          type: "profile_updated" as ActivityLog["type"],
+          message: `User "${updatedUser.firstName} ${updatedUser.lastName}" updated their profile`,
+          metadata: {
+            userId: updatedUser.id,
+            email: updatedUser.email,
+            updates: updateData,
+          },
+        });
+      } catch (logError) {
+        console.error("Failed to log profile update:", logError);
+      }
+
+      const { password: _, ...userWithoutPassword } = updatedUser;
+
+      return res.json({
+        success: true,
+        message: "Profile updated successfully",
+        user: userWithoutPassword,
       });
-    } catch (logError) {
-      console.error('Failed to log profile update:', logError);
+    } catch (error) {
+      console.error("Update profile error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update profile",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
-
-    const { password: _, ...userWithoutPassword } = updatedUser;
-
-    return res.json({
-      success: true,
-      message: 'Profile updated successfully',
-      user: userWithoutPassword
-    });
-  } catch (error) {
-    console.error('Update profile error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to update profile',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
   }
-});
+);
 
 // Configure multer for file uploads
-const uploadDir = path.join(__dirname, '../../uploads/avatars');
+const uploadDir = path.join(__dirname, "../../uploads/avatars");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -967,15 +1233,19 @@ const storage = multer.diskStorage({
     const ext = path.extname(file.originalname);
     const filename = `avatar-${userId}-${Date.now()}${ext}`;
     cb(null, filename);
-  }
+  },
 });
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (
+  req: any,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
   // Accept only image files
-  if (file.mimetype.startsWith('image/')) {
+  if (file.mimetype.startsWith("image/")) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed'));
+    cb(new Error("Only image files are allowed"));
   }
 };
 
@@ -983,8 +1253,8 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
 });
 
 /**
@@ -1015,53 +1285,58 @@ const upload = multer({
  *       500:
  *         description: Internal server error
  */
-router.post('/avatar', authenticateToken, upload.single('avatar'), async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No file uploaded'
-      });
-    }
-
-    const userId = req.user!.id;
-    // Construct the URL for the uploaded file
-    // In production, you might want to use a CDN or cloud storage
-    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
-    
-    const updatedUser = await userModel.updateAvatar(userId, avatarUrl);
-
-    // Log the activity
+router.post(
+  "/avatar",
+  authenticateToken,
+  upload.single("avatar"),
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
-      await ActivityLogModel.createLog({
-        type: 'avatar_uploaded' as ActivityLog['type'],
-        message: `User "${updatedUser.firstName} ${updatedUser.lastName}" uploaded a new avatar`,
-        metadata: {
-          userId: updatedUser.id,
-          email: updatedUser.email,
-          avatarUrl
-        }
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded",
+        });
+      }
+
+      const userId = req.user!.id;
+      // Construct the URL for the uploaded file
+      // In production, you might want to use a CDN or cloud storage
+      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+      const updatedUser = await userModel.updateAvatar(userId, avatarUrl);
+
+      // Log the activity
+      try {
+        await ActivityLogModel.createLog({
+          type: "avatar_uploaded" as ActivityLog["type"],
+          message: `User "${updatedUser.firstName} ${updatedUser.lastName}" uploaded a new avatar`,
+          metadata: {
+            userId: updatedUser.id,
+            email: updatedUser.email,
+            avatarUrl,
+          },
+        });
+      } catch (logError) {
+        console.error("Failed to log avatar upload:", logError);
+      }
+
+      const { password: _, ...userWithoutPassword } = updatedUser;
+
+      return res.json({
+        success: true,
+        message: "Avatar uploaded successfully",
+        user: userWithoutPassword,
       });
-    } catch (logError) {
-      console.error('Failed to log avatar upload:', logError);
+    } catch (error) {
+      console.error("Upload avatar error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to upload avatar",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
-
-    const { password: _, ...userWithoutPassword } = updatedUser;
-
-    return res.json({
-      success: true,
-      message: 'Avatar uploaded successfully',
-      user: userWithoutPassword
-    });
-  } catch (error) {
-    console.error('Upload avatar error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to upload avatar',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
   }
-});
+);
 
 /**
  * @swagger
@@ -1123,80 +1398,88 @@ router.post('/avatar', authenticateToken, upload.single('avatar'), async (req: A
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/change-password', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Current password and new password are required'
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be at least 6 characters long'
-      });
-    }
-
-    if (currentPassword === newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'New password must be different from current password'
-      });
-    }
-
-    // Get user with password
-    const user = await userModel.getUserById(userId);
-
-    if (!user.password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Password has not been set yet. Please use reset password flow.'
-      });
-    }
-
-    // Verify current password
-    const isCurrentPasswordValid = await userModel.verifyPassword(currentPassword, user.password);
-    if (!isCurrentPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Current password is incorrect'
-      });
-    }
-
-    // Update password
-    await userModel.updatePassword(userId, newPassword);
-
-    // Log the activity
+router.post(
+  "/change-password",
+  authenticateToken,
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
-      await ActivityLogModel.createLog({
-        type: 'password_changed',
-        message: `User "${user.firstName} ${user.lastName}" changed their password`,
-        metadata: {
-          userId: user.id,
-          email: user.email
-        }
-      });
-    } catch (logError) {
-      console.error('Failed to log password change:', logError);
-    }
+      const userId = req.user!.id;
+      const { currentPassword, newPassword } = req.body;
 
-    return res.json({
-      success: true,
-      message: 'Password changed successfully'
-    });
-  } catch (error) {
-    console.error('Change password error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to change password',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "Current password and new password are required",
+        });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be at least 6 characters long",
+        });
+      }
+
+      if (currentPassword === newPassword) {
+        return res.status(400).json({
+          success: false,
+          message: "New password must be different from current password",
+        });
+      }
+
+      // Get user with password
+      const user = await userModel.getUserById(userId);
+
+      if (!user.password) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Password has not been set yet. Please use reset password flow.",
+        });
+      }
+
+      // Verify current password
+      const isCurrentPasswordValid = await userModel.verifyPassword(
+        currentPassword,
+        user.password
+      );
+      if (!isCurrentPasswordValid) {
+        return res.status(401).json({
+          success: false,
+          message: "Current password is incorrect",
+        });
+      }
+
+      // Update password
+      await userModel.updatePassword(userId, newPassword);
+
+      // Log the activity
+      try {
+        await ActivityLogModel.createLog({
+          type: "password_changed",
+          message: `User "${user.firstName} ${user.lastName}" changed their password`,
+          metadata: {
+            userId: user.id,
+            email: user.email,
+          },
+        });
+      } catch (logError) {
+        console.error("Failed to log password change:", logError);
+      }
+
+      return res.json({
+        success: true,
+        message: "Password changed successfully",
+      });
+    } catch (error) {
+      console.error("Change password error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to change password",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   }
-});
+);
 
 export default router;

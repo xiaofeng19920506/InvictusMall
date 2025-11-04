@@ -5,7 +5,7 @@ export interface User {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
-  role: 'customer' | 'admin' | 'store_owner';
+  role: "customer" | "admin" | "store_owner";
   isActive: boolean;
   emailVerified: boolean;
   avatar?: string;
@@ -63,9 +63,9 @@ class AuthService {
   private baseUrl: string;
 
   constructor() {
-    let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    let url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
     // Normalize URL to ensure it has a protocol
-    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+    if (url && !url.startsWith("http://") && !url.startsWith("https://")) {
       url = `http://${url}`;
     }
     this.baseUrl = url;
@@ -76,42 +76,48 @@ class AuthService {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
-      credentials: 'include', // Include cookies in requests
+      credentials: "include", // Include cookies in requests
       ...options,
     };
 
     try {
       const response = await fetch(url, config);
-      
+
       // Check content type to ensure we're getting JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
-        console.error('Non-JSON response received:', {
+        console.error("Non-JSON response received:", {
           url,
           status: response.status,
           contentType,
-          preview: text.substring(0, 200)
+          preview: text.substring(0, 200),
         });
-        throw new Error(`Expected JSON but received ${contentType}. Check if the API URL is correct: ${this.baseUrl}`);
+        throw new Error(
+          `Expected JSON but received ${contentType}. Check if the API URL is correct: ${this.baseUrl}`
+        );
       }
-      
+
       if (!response.ok) {
         const errorData: ApiError = await response.json();
         // For 401 errors, throw a special error that can be handled gracefully
         if (response.status === 401) {
-          const authError = new Error(errorData.message || 'Unauthorized') as any;
+          const authError = new Error(
+            errorData.message || "Unauthorized"
+          ) as any;
           authError.status = 401;
           authError.isAuthError = true;
           throw authError;
         }
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
       const data: T = await response.json();
@@ -119,10 +125,10 @@ class AuthService {
     } catch (error) {
       // Only log non-authentication errors (401 is expected when not logged in)
       if (!(error as any)?.isAuthError) {
-        console.error('Auth API request failed:', {
+        console.error("Auth API request failed:", {
           url,
           baseUrl: this.baseUrl,
-          error
+          error,
         });
       }
       throw error;
@@ -131,33 +137,33 @@ class AuthService {
 
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     const url = `${this.baseUrl}/api/auth/login`;
-    
+
     try {
       const response = await fetch(url, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify(credentials),
       });
 
       // Check content type
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
         throw new Error(`Expected JSON but received ${contentType}`);
       }
-      
+
       const data: AuthResponse = await response.json();
-      
+
       // For login, we want to return the response even if status is 401 (invalid credentials)
       // This allows the UI to show the error message to the user
       if (!response.ok) {
         // Return the error response from server
         return {
           success: false,
-          message: data.message || 'Login failed'
+          message: data.message || "Login failed",
         };
       }
 
@@ -165,96 +171,95 @@ class AuthService {
       return data;
     } catch (error: any) {
       // If it's a network error or parsing error, throw it
-      if (error.message && !error.message.includes('JSON')) {
-        console.error('Login request failed:', error);
+      if (error.message && !error.message.includes("JSON")) {
+        console.error("Login request failed:", error);
       }
       throw error;
     }
   }
 
   async signup(userData: SignupRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/signup', {
-      method: 'POST',
+    return this.request<AuthResponse>("/api/auth/signup", {
+      method: "POST",
       body: JSON.stringify(userData),
     });
   }
 
   async setupPassword(data: SetupPasswordRequest): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/api/auth/setup-password', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    
+    const response = await this.request<AuthResponse>(
+      "/api/auth/setup-password",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+
     // Token is now stored in HTTP-only cookie, no need to save it
     return response;
   }
 
   async getCurrentUser(): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/me', {
-      method: 'GET',
+    return this.request<AuthResponse>("/api/auth/me", {
+      method: "GET",
     });
   }
 
   async forgotPassword(data: ForgotPasswordRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/forgot-password', {
-      method: 'POST',
+    return this.request<AuthResponse>("/api/auth/forgot-password", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async resetPassword(data: ResetPasswordRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/reset-password', {
-      method: 'POST',
+    return this.request<AuthResponse>("/api/auth/reset-password", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async logout(): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/logout', {
-      method: 'POST',
+    return this.request<AuthResponse>("/api/auth/logout", {
+      method: "POST",
     });
   }
 
   async updateProfile(data: UpdateUserRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/profile', {
-      method: 'PUT',
+    return this.request<AuthResponse>("/api/auth/profile", {
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
   async uploadAvatar(file: File): Promise<AuthResponse> {
     const formData = new FormData();
-    formData.append('avatar', file);
+    formData.append("avatar", file);
 
     const url = `${this.baseUrl}/api/auth/avatar`;
-    
+
     const config: RequestInit = {
-      method: 'POST',
-      credentials: 'include',
+      method: "POST",
+      credentials: "include",
       body: formData,
     };
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData: ApiError = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! status: ${response.status}`
+        );
       }
 
       const data: AuthResponse = await response.json();
       return data;
     } catch (error) {
-      console.error('Avatar upload failed:', error);
+      console.error("Avatar upload failed:", error);
       throw error;
     }
   }
-
-
-
-
-
-
 
   // Check if user is authenticated (no token storage needed)
   isAuthenticated(): boolean {

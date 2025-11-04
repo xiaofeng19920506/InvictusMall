@@ -1,19 +1,20 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
-import cookieParser from 'cookie-parser';
-import path from 'path';
-import storeRoutes from './routes/storeRoutes';
-import systemRoutes from './routes/systemRoutes';
-import activityLogRoutes from './routes/activityLogRoutes';
-import authRoutes from './routes/authRoutes';
-import staffRoutes from './routes/staffRoutes';
-import orderRoutes from './routes/orderRoutes';
-import { errorHandler, notFound } from './middleware/errorHandler';
-import { testConnection, initializeDatabase } from './config/database';
-import { setupSwagger } from './config/swagger';
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
+import path from "path";
+import storeRoutes from "./routes/storeRoutes";
+import systemRoutes from "./routes/systemRoutes";
+import activityLogRoutes from "./routes/activityLogRoutes";
+import authRoutes from "./routes/authRoutes";
+import staffRoutes from "./routes/staffRoutes";
+import orderRoutes from "./routes/orderRoutes";
+import { errorHandler, notFound } from "./middleware/errorHandler";
+import { testConnection, initializeDatabase } from "./config/database";
+import { setupSwagger } from "./config/swagger";
+import { accountCleanupService } from "./services/accountCleanupService";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -22,11 +23,18 @@ const PORT = process.env.PORT || 3001;
 app.use(helmet());
 
 // CORS configuration
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003'],
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:3002",
+      "http://localhost:3003",
+    ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    credentials: true,
+  })
+);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -34,23 +42,23 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
   message: {
     success: false,
-    message: 'Too many requests from this IP, please try again later.'
-  }
+    message: "Too many requests from this IP, please try again later.",
+  },
 });
 app.use(limiter);
 
 // Logging middleware
-app.use(morgan('combined'));
+app.use(morgan("combined"));
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Cookie parsing middleware
 app.use(cookieParser());
 
 // Static file serving for uploaded avatars
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 /**
  * @swagger
@@ -79,12 +87,12 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
  *                   type: number
  *                   example: 123.456
  */
-app.get('/health', (req, res) => {
+app.get("/health", (req, res) => {
   res.json({
     success: true,
-    message: 'Server is running',
+    message: "Server is running",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 
@@ -92,12 +100,12 @@ app.get('/health', (req, res) => {
 setupSwagger(app);
 
 // API routes
-app.use('/api/stores', storeRoutes);
-app.use('/api/system', systemRoutes);
-app.use('/api/activity-logs', activityLogRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/staff', staffRoutes);
-app.use('/api/orders', orderRoutes);
+app.use("/api/stores", storeRoutes);
+app.use("/api/system", systemRoutes);
+app.use("/api/activity-logs", activityLogRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/staff", staffRoutes);
+app.use("/api/orders", orderRoutes);
 
 /**
  * @swagger
@@ -132,16 +140,16 @@ app.use('/api/orders', orderRoutes);
  *                       type: string
  *                       example: "/health"
  */
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.json({
     success: true,
-    message: 'Invictus Mall API',
-    version: '1.0.0',
+    message: "Invictus Mall API",
+    version: "1.0.0",
     endpoints: {
-      stores: '/api/stores',
-      health: '/health',
-      docs: '/api-docs'
-    }
+      stores: "/api/stores",
+      health: "/health",
+      docs: "/api-docs",
+    },
   });
 });
 
@@ -165,13 +173,43 @@ const startServer = async () => {
 
     // Start server
     app.listen(PORT, () => {
-      // Server started
+      console.log(`🚀 Server is running on port ${PORT}`);
+
+      // Start account cleanup service (runs daily)
+      // Only start if database is connected
+      if (isConnected) {
+        const cleanupIntervalHours = parseInt(
+          process.env.ACCOUNT_CLEANUP_INTERVAL_HOURS || "24"
+        );
+        accountCleanupService.start(cleanupIntervalHours);
+      } else {
+        console.log(
+          "⚠️ Account cleanup service disabled (database not connected)"
+        );
+      }
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error("❌ Failed to start server:", error);
     process.exit(1);
   }
 };
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log(
+    "SIGTERM signal received: closing HTTP server and cleanup scheduler"
+  );
+  accountCleanupService.stop();
+  process.exit(0);
+});
+
+process.on("SIGINT", () => {
+  console.log(
+    "SIGINT signal received: closing HTTP server and cleanup scheduler"
+  );
+  accountCleanupService.stop();
+  process.exit(0);
+});
 
 startServer();
 
