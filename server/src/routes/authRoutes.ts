@@ -17,8 +17,8 @@ import { ActivityLogModel, ActivityLog } from "../models/ActivityLogModel";
 import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
 import { emailService } from "../services/emailService";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
+import FormData from "form-data";
+import fetch from "node-fetch";
 
 const router = Router();
 const userModel = new UserModel();
@@ -1218,23 +1218,8 @@ router.put(
   }
 );
 
-// Configure multer for file uploads
-const uploadDir = path.join(__dirname, "../../uploads/avatars");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const userId = (req as AuthenticatedRequest).user!.id;
-    const ext = path.extname(file.originalname);
-    const filename = `avatar-${userId}-${Date.now()}${ext}`;
-    cb(null, filename);
-  },
-});
+// Configure multer for file uploads (memory storage to forward to external API)
+const storage = multer.memoryStorage();
 
 const fileFilter = (
   req: any,
@@ -1299,10 +1284,91 @@ router.post(
       }
 
       const userId = req.user!.id;
-      // Construct the URL for the uploaded file
-      // In production, you might want to use a CDN or cloud storage
-      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      
+      // Forward the file to the external MinIO storage API
+      const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "http://98.115.143.29:8888/api/files/upload";
+      
+      let uploadResult;
+      let avatarUrl;
+      
+      try {
+        // Create FormData to forward the file
+        const formData = new FormData();
+        formData.append("file", req.file.buffer, {
+          filename: req.file.originalname,
+          contentType: req.file.mimetype,
+        });
 
+        console.log(`Attempting to upload file to: ${externalUploadUrl}`);
+        console.log(`File details: ${req.file.originalname}, size: ${req.file.size} bytes, type: ${req.file.mimetype}`);
+
+        // Forward the file to external API
+        const uploadResponse = await fetch(externalUploadUrl, {
+          method: "POST",
+          body: formData,
+          headers: formData.getHeaders(),
+        });
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error("External upload API error:", {
+            status: uploadResponse.status,
+            statusText: uploadResponse.statusText,
+            error: errorText,
+          });
+          return res.status(uploadResponse.status || 500).json({
+            success: false,
+            message: "Failed to upload file to storage",
+            error: errorText || `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`,
+          });
+        }
+
+        // Parse the response to get the image URL
+        uploadResult = await uploadResponse.json();
+        console.log("Upload response received:", uploadResult);
+        
+        // Extract the image URL from the response
+        // Response format: { "data": "/images/...", "status": 200 }
+        avatarUrl = uploadResult.data;
+        
+        if (!avatarUrl) {
+          console.error("Upload response missing data field:", uploadResult);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to get image URL from upload service",
+            error: "Response did not contain image URL in data field",
+            response: uploadResult,
+          });
+        }
+      } catch (fetchError: any) {
+        console.error("Error connecting to external upload API:", {
+          url: externalUploadUrl,
+          error: fetchError.message,
+          code: fetchError.code,
+          errno: fetchError.errno,
+          type: fetchError.type,
+        });
+        
+        // Provide more specific error messages
+        let errorMessage = "Failed to connect to file upload service";
+        if (fetchError.code === "ECONNREFUSED") {
+          errorMessage = `Connection refused. The file upload service at ${externalUploadUrl} may be down or unreachable. Please check if the service is running.`;
+        } else if (fetchError.code === "ETIMEDOUT") {
+          errorMessage = `Connection timeout. The file upload service at ${externalUploadUrl} did not respond in time.`;
+        } else if (fetchError.code === "ENOTFOUND") {
+          errorMessage = `Host not found. Cannot resolve the address for ${externalUploadUrl}.`;
+        }
+        
+        return res.status(503).json({
+          success: false,
+          message: errorMessage,
+          error: fetchError.message,
+          code: fetchError.code,
+          url: externalUploadUrl,
+        });
+      }
+
+      // Save the image URL to the database
       const updatedUser = await userModel.updateAvatar(userId, avatarUrl);
 
       // Log the activity

@@ -8,9 +8,16 @@ import ChangePasswordForm from "@/components/ChangePasswordForm";
 import AddressManager from "@/components/AddressManager";
 import Header from "@/components/Header";
 import Link from "next/link";
+import { User } from "@/models/User";
 
-export default function ProfileContent() {
-  const { user } = useAuth();
+interface ProfileContentProps {
+  initialUser: User | null;
+}
+
+export default function ProfileContent({ initialUser }: ProfileContentProps) {
+  const { user: contextUser } = useAuth();
+  // Use server-fetched user if available, otherwise fall back to context
+  const user = initialUser || contextUser;
   const [activeTab, setActiveTab] = useState<
     "profile" | "password" | "addresses"
   >("profile");
@@ -61,12 +68,6 @@ export default function ProfileContent() {
                 >
                   Addresses
                 </button>
-                <Link
-                  href="/orders"
-                  className="border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                >
-                  Orders
-                </Link>
               </nav>
             </div>
 

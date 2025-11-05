@@ -1,23 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import HeaderWrapper from "@/components/HeaderWrapper";
 import StoreGrid from "@/components/StoreGrid";
 import { useRealTimeStores } from "@/hooks/useRealTimeStores";
 import { Store } from "@/services/api";
 
-export default function HomeContent() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [searchType, setSearchType] = useState("All");
+interface HomeContentProps {
+  initialStores: Store[];
+  initialSearch: string;
+  initialCategory: string;
+  initialSearchType: string;
+}
+
+export default function HomeContent({
+  initialStores,
+  initialSearch,
+  initialCategory,
+  initialSearchType,
+}: HomeContentProps) {
+  const router = useRouter();
+  
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [searchType, setSearchType] = useState(initialSearchType);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Use real-time stores hook with 15-second refresh interval
-  const { stores, loading, error, refetch, lastUpdated } = useRealTimeStores(
+  const { stores: realTimeStores, loading, error, refetch, lastUpdated } = useRealTimeStores(
     searchQuery,
     selectedCategory,
     searchType,
     15000 // Refresh every 15 seconds
   );
+
+  // Use initial stores on first load, then switch to real-time stores
+  const stores = isInitialLoad && initialStores.length > 0 ? initialStores : realTimeStores;
+  // Show loading only if we don't have initial data and we're loading
+  const isLoading = !isInitialLoad && loading;
+
+  // Update URL when search params change
+  const updateURL = useCallback((search: string, category: string, type: string) => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (category && category !== 'All') params.set('category', category);
+    if (type && type !== 'All') params.set('searchType', type);
+    
+    const queryString = params.toString();
+    const newURL = queryString ? `/?${queryString}` : '/';
+    router.push(newURL, { scroll: false });
+  }, [router]);
+
+  // Update URL when search params change
+  useEffect(() => {
+    if (!isInitialLoad) {
+      updateURL(searchQuery, selectedCategory, searchType);
+    }
+  }, [searchQuery, selectedCategory, searchType, isInitialLoad, updateURL]);
+
+  // Mark initial load as complete after first render
+  useEffect(() => {
+    setIsInitialLoad(false);
+  }, []);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -101,7 +146,7 @@ export default function HomeContent() {
         <StoreGrid
           stores={stores}
           onStoreClick={handleStoreClick}
-          loading={loading}
+          loading={isLoading}
         />
       </main>
 

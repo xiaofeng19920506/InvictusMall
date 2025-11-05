@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { getAvatarUrl } from '@/utils/imageUtils';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -157,7 +158,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                     {/* User Avatar or Initials */}
                     {user?.avatar ? (
                       <img
-                        src={user.avatar}
+                        src={getAvatarUrl(user.avatar)}
                         alt={`${user.firstName} ${user.lastName}`}
                         className="w-8 h-8 rounded-full border-2 border-white"
                       />
@@ -193,6 +194,16 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                         <div className="flex items-center space-x-2">
                           <span>👤</span>
                           <span>Profile</span>
+                        </div>
+                      </Link>
+                      <Link
+                        href="/orders"
+                        onClick={() => setShowDropdown(false)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span>📦</span>
+                          <span>Orders</span>
                         </div>
                       </Link>
                       <button

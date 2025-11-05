@@ -178,51 +178,119 @@ export class OrderModel {
     userId: string,
     options?: { status?: string; limit?: number; offset?: number }
   ): Promise<Order[]> {
-    let query = `
-      SELECT 
-        o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
-        o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
-        o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
-        o.payment_method, o.order_date, o.shipped_date, o.delivered_date,
-        o.tracking_number, o.created_at, o.updated_at,
-        JSON_ARRAYAGG(
-          JSON_OBJECT(
-            'id', oi.id,
-            'productId', oi.product_id,
-            'productName', oi.product_name,
-            'productImage', oi.product_image,
-            'quantity', oi.quantity,
-            'price', oi.price,
-            'subtotal', oi.subtotal
-          )
-        ) as items
-      FROM orders o
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE o.user_id = ?
-    `;
-
-    const params: any[] = [userId];
-
-    if (options?.status) {
-      query += ' AND o.status = ?';
-      params.push(options.status);
-    }
-
-    query += ' GROUP BY o.id ORDER BY o.order_date DESC';
-
-    if (options?.limit) {
-      query += ' LIMIT ?';
-      params.push(options.limit);
-      if (options?.offset) {
-        query += ' OFFSET ?';
-        params.push(options.offset);
+    try {
+      // First, check if orders table exists
+      const [tables] = await this.pool.execute(
+        `SELECT COUNT(*) as count FROM information_schema.tables 
+         WHERE table_schema = DATABASE() AND table_name = 'orders'`
+      ) as any;
+      
+      if (tables.length === 0 || tables[0].count === 0) {
+        console.warn('Orders table does not exist. Returning empty array.');
+        return [];
       }
+
+      // Get orders first (simpler query)
+      let query = `
+        SELECT 
+          o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
+          o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
+          o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
+          o.payment_method, o.order_date, o.shipped_date, o.delivered_date,
+          o.tracking_number, o.created_at, o.updated_at
+        FROM orders o
+        WHERE o.user_id = ?
+      `;
+
+      const params: any[] = [userId];
+
+      if (options?.status) {
+        query += ' AND o.status = ?';
+        params.push(options.status);
+      }
+
+      query += ' ORDER BY o.order_date DESC';
+
+      if (options?.limit) {
+        query += ' LIMIT ?';
+        params.push(options.limit);
+        if (options?.offset) {
+          query += ' OFFSET ?';
+          params.push(options.offset);
+        }
+      }
+
+      const [rows] = await this.pool.execute(query, params);
+      const orders = rows as any[];
+
+      if (orders.length === 0) {
+        return [];
+      }
+
+      // Get order items for each order separately
+      const orderIds = orders.map(order => order.id);
+      const itemsQuery = `
+        SELECT 
+          id, order_id, product_id, product_name, product_image,
+          quantity, price, subtotal
+        FROM order_items
+        WHERE order_id IN (${orderIds.map(() => '?').join(',')})
+      `;
+
+      const [itemsRows] = await this.pool.execute(itemsQuery, orderIds);
+      const items = itemsRows as any[];
+
+      // Group items by order_id
+      const itemsByOrderId = items.reduce((acc, item) => {
+        if (!acc[item.order_id]) {
+          acc[item.order_id] = [];
+        }
+        acc[item.order_id].push({
+          id: item.id,
+          productId: item.product_id,
+          productName: item.product_name,
+          productImage: item.product_image || undefined,
+          quantity: item.quantity,
+          price: parseFloat(item.price),
+          subtotal: parseFloat(item.subtotal)
+        });
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      // Map orders with their items
+      return orders.map(order => ({
+        id: order.id,
+        userId: order.user_id,
+        storeId: order.store_id,
+        storeName: order.store_name,
+        items: itemsByOrderId[order.id] || [],
+        totalAmount: parseFloat(order.total_amount),
+        status: order.status,
+        shippingAddress: {
+          streetAddress: order.shipping_street_address,
+          aptNumber: order.shipping_apt_number || undefined,
+          city: order.shipping_city,
+          stateProvince: order.shipping_state_province,
+          zipCode: order.shipping_zip_code,
+          country: order.shipping_country
+        },
+        paymentMethod: order.payment_method,
+        orderDate: order.order_date,
+        shippedDate: order.shipped_date || undefined,
+        deliveredDate: order.delivered_date || undefined,
+        trackingNumber: order.tracking_number || undefined,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at
+      }));
+    } catch (error) {
+      console.error('Error in getOrdersByUserId:', error);
+      console.error('Query params:', { userId, options });
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      throw error;
     }
-
-    const [rows] = await this.pool.execute(query, params);
-    const orders = rows as any[];
-
-    return orders.map(order => this.mapRowToOrder(order));
   }
 
   private mapRowToOrder(row: any): Order {

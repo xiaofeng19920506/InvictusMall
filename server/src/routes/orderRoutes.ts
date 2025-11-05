@@ -72,10 +72,12 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
     });
   } catch (error) {
     console.error('Get orders error:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return res.status(500).json({
       success: false,
       message: 'Failed to retrieve orders',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
     });
   }
 });

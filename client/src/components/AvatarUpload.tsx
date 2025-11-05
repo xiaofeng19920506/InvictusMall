@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getAvatarUrl } from '@/utils/imageUtils';
 
 interface AvatarUploadProps {
   currentAvatar?: string;
@@ -9,7 +10,7 @@ interface AvatarUploadProps {
 }
 
 export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarUploadProps) {
-  const [preview, setPreview] = useState<string | null>(currentAvatar || null);
+  const [preview, setPreview] = useState<string | null>(currentAvatar ? getAvatarUrl(currentAvatar) || null : null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +52,9 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
     try {
       const result = await uploadAvatar(file);
       if (result.success) {
-        setPreview(result.user?.avatar || preview);
+        // Update preview with the new avatar URL
+        const newAvatarUrl = result.user?.avatar ? getAvatarUrl(result.user.avatar) : null;
+        setPreview(newAvatarUrl || preview);
         onUploadSuccess?.();
       } else {
         setError(result.message || 'Failed to upload avatar');
@@ -77,7 +80,14 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
   return (
     <div className="flex flex-col items-center">
       <div className="relative">
-        <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg">
+        <div 
+          onClick={uploading ? undefined : handleClick}
+          className={`w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg transition-opacity ${
+            uploading 
+              ? 'cursor-not-allowed opacity-75' 
+              : 'cursor-pointer hover:opacity-90'
+          }`}
+        >
           {preview ? (
             <img
               src={preview}
@@ -99,9 +109,12 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
 
         <button
           type="button"
-          onClick={handleClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleClick();
+          }}
           disabled={uploading}
-          className="absolute bottom-0 right-0 bg-orange-500 text-white rounded-full p-2 shadow-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute bottom-0 right-0 bg-orange-500 text-white rounded-full p-2 shadow-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           title="Upload avatar"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

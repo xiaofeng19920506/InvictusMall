@@ -1,24 +1,21 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { resetPasswordAction } from './actions';
 
 interface ResetPasswordFormProps {
-  onSuccess?: () => void;
+  token?: string | null;
 }
 
-function ResetPasswordFormContent({ onSuccess }: ResetPasswordFormProps) {
+export default function ResetPasswordForm({ token }: ResetPasswordFormProps) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   
-  const { resetPassword } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get('token');
 
   useEffect(() => {
     if (!token) {
@@ -26,7 +23,7 @@ function ResetPasswordFormContent({ onSuccess }: ResetPasswordFormProps) {
     }
   }, [token]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
@@ -49,19 +46,15 @@ function ResetPasswordFormContent({ onSuccess }: ResetPasswordFormProps) {
       return;
     }
 
-    try {
-      const result = await resetPassword({ token, password });
-      if (result.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push('/');
-        }, 3000);
-      } else {
-        setError(result.message || 'Failed to reset password');
-      }
-    } catch (err) {
-      setError('An unexpected error occurred');
-    } finally {
+    const result = await resetPasswordAction(token, password);
+    
+    if (result.success) {
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/');
+      }, 3000);
+    } else {
+      setError(result.message || 'Failed to reset password');
       setIsLoading(false);
     }
   };
@@ -153,17 +146,3 @@ function ResetPasswordFormContent({ onSuccess }: ResetPasswordFormProps) {
   );
 }
 
-export default function ResetPasswordForm({ onSuccess }: ResetPasswordFormProps) {
-  return (
-    <Suspense fallback={
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    }>
-      <ResetPasswordFormContent onSuccess={onSuccess} />
-    </Suspense>
-  );
-}

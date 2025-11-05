@@ -59,24 +59,28 @@ function AddToCartButton({
   );
 }
 
-export default function StoreDetailContent() {
+interface StoreDetailContentProps {
+  initialStore: Store | null;
+}
+
+export default function StoreDetailContent({ initialStore }: StoreDetailContentProps) {
   const params = useParams();
   const router = useRouter();
   const storeId = params.id as string;
 
-  const [store, setStore] = useState<Store | null>(null);
+  const [store, setStore] = useState<Store | null>(initialStore);
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialStore);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
     "overview" | "products" | "reviews"
   >("overview");
 
   useEffect(() => {
-    if (storeId) {
+    if (storeId && !initialStore) {
       fetchStoreDetails();
-      fetchProducts();
     }
+    fetchProducts();
   }, [storeId]);
 
   const fetchStoreDetails = async () => {

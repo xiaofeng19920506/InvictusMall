@@ -1,8 +1,14 @@
-'use client';
+import { Suspense } from 'react';
+import ResetPasswordForm from './ResetPasswordForm';
 
-import ResetPasswordForm from '@/components/ResetPasswordForm';
+interface ResetPasswordPageProps {
+  searchParams: Promise<{ token?: string }>;
+}
 
-export default function ResetPasswordPage() {
+export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
+  const params = await searchParams;
+  const token = params.token;
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -14,7 +20,16 @@ export default function ResetPasswordPage() {
             Reset your password to continue shopping
           </p>
         </div>
-        <ResetPasswordForm />
+        <Suspense fallback={
+          <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+              <p className="mt-4 text-gray-600">Loading...</p>
+            </div>
+          </div>
+        }>
+          <ResetPasswordForm token={token} />
+        </Suspense>
       </div>
     </div>
   );
