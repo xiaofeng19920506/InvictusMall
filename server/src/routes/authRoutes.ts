@@ -1321,19 +1321,15 @@ router.post(
           
           // Only delete if it's an /images/ path (stored in MinIO)
           if (imagePath.startsWith('/images/')) {
-            const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "http://98.115.143.29:8087/api/files/upload";
+            const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
             const baseUrl = externalUploadUrl.replace("/api/files/upload", "");
-            const deleteUrl = `${baseUrl}/api/files/delete`;
+            const deleteUrl = `${baseUrl}/api/files/delete?fileName=${encodeURIComponent(imagePath)}`;
             
             console.log(`Attempting to delete previous avatar: ${imagePath}`);
             
             // Call delete API on MinIO storage service
             const deleteResponse = await fetch(deleteUrl, {
               method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ path: imagePath }),
             });
             
             if (deleteResponse.ok) {
