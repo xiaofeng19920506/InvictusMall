@@ -1,4 +1,4 @@
-import HomeContent from "@/components/HomeContent";
+import HomeContent from "./components/HomeContent";
 import { fetchStoresServer, Store } from "@/lib/server-api";
 
 interface HomeProps {

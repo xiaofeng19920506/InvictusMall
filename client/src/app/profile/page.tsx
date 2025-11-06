@@ -2,13 +2,13 @@ import { fetchUserServer, fetchShippingAddressesServer, ShippingAddress } from "
 import { User } from "@/models/User";
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import Header from "@/components/Header";
-import ProfileNavigationTabs from "@/components/ProfileNavigationTabs";
-import AccountInformation from "@/components/AccountInformation";
-import EditProfile from "@/components/EditProfile";
-import ChangePasswordForm from "@/components/ChangePasswordForm";
-import ProfileAddresses from "@/components/ProfileAddresses";
-import ProfilePageWrapper from "@/components/ProfilePageWrapper";
+import Header from "@/components/common/Header";
+import ProfileNavigationTabs from "./components/ProfileNavigationTabs";
+import AccountInformation from "./components/AccountInformation";
+import EditProfile from "./components/EditProfile";
+import ChangePasswordForm from "./components/ChangePasswordForm";
+import ProfileAddresses from "./components/ProfileAddresses";
+import ProfilePageWrapper from "./components/ProfilePageWrapper";
 
 interface ProfilePageProps {
   searchParams: Promise<{

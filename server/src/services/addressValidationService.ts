@@ -35,10 +35,18 @@ interface GeoapifyGeocodeResponse {
       postcode?: string;
       country?: string;
       country_code?: string;
-      confidence?: number;
       result_type?: string;
       lat?: number;
       lon?: number;
+      rank?: {
+        confidence?: number;
+        confidence_city_level?: number;
+        confidence_street_level?: number;
+        confidence_building_level?: number;
+        match_type?: string;
+        importance?: number;
+        popularity?: number;
+      };
     };
   }>;
 }
@@ -147,15 +155,55 @@ export class AddressValidationService {
       const properties = feature.properties;
       
       // Determine validity based on confidence score and result type
+      // According to Geoapify API, confidence is in properties.rank.confidence
+      // For building/house types, use building_level confidence for more accuracy
       // Confidence: 1 = exact match, lower = less precise
-      // Result type: 'building' or 'house' = most accurate
-      const confidence = properties.confidence || 0;
-      const resultType = properties.result_type || "";
+      const rank = properties.rank;
+      const resultType = (properties.result_type || "").toLowerCase();
       const isBuilding = resultType === "building" || resultType === "house";
-      const isStreet = resultType === "street";
       
-      // Consider valid if confidence is high (>0.7) or if it's a building/house match
-      const isValid = confidence > 0.7 || (isBuilding && confidence > 0.5);
+      // Use building-level confidence if available and it's a building/house type
+      // Otherwise use overall confidence
+      const confidence = isBuilding && rank?.confidence_building_level !== undefined
+        ? rank.confidence_building_level
+        : (rank?.confidence !== undefined 
+          ? rank.confidence 
+          : 0.8); // Default to 0.8 if confidence not found
+      
+      // Log the response for debugging
+      console.log('Geoapify validation response:', {
+        confidence,
+        resultType,
+        matchType: rank?.match_type,
+        buildingLevelConfidence: rank?.confidence_building_level,
+        streetLevelConfidence: rank?.confidence_street_level,
+        cityLevelConfidence: rank?.confidence_city_level,
+        formatted: properties.formatted,
+        city: properties.city,
+        state: properties.state,
+        postcode: properties.postcode,
+      });
+      
+      // Accept multiple valid result types
+      const isValidResultType = [
+        "building",
+        "house", 
+        "address",
+        "postcode",
+        "street",
+        "locality",
+        "city",
+      ].includes(resultType.toLowerCase());
+      
+      // More lenient validation criteria:
+      // 1. Moderate confidence (>0.5) - general acceptance
+      // 2. Building/house type with confidence >0.3 - most precise type, be lenient
+      // 3. Valid result types (address, postcode, etc.) with confidence >0.4
+      // Note: isBuilding is already declared above
+      const isValid = 
+        confidence > 0.5 || // Main threshold: accept if confidence > 50%
+        (isBuilding && confidence > 0.3) || // Building/house with at least 30% confidence
+        (isValidResultType && confidence > 0.4); // Valid result type with at least 40% confidence
 
       // Build normalized address from Geoapify response
       let normalizedAddress;
@@ -175,18 +223,30 @@ export class AddressValidationService {
         };
       }
 
+      // Provide more detailed feedback based on result type
+      let message = "";
+      if (isValid) {
+        if (isBuilding) {
+          message = "Address validated successfully";
+        } else if (resultType === "address") {
+          message = "Address validated successfully";
+        } else if (resultType === "street") {
+          message = "Street found. Address may need verification.";
+        } else if (confidence > 0.7) {
+          message = "Address validated successfully";
+        } else {
+          message = "Address partially verified. Please review and confirm.";
+        }
+      } else {
+        message = `Address validation failed. Confidence: ${(confidence * 100).toFixed(0)}%, Type: ${resultType}. Please check the address details.`;
+      }
+
       return {
         success: true,
         valid: isValid,
         normalizedAddress,
         confidence: confidence,
-        message: isValid
-          ? "Address validated successfully"
-          : isStreet
-          ? "Street found but building number may be missing. Please verify the address."
-          : confidence > 0.5
-          ? "Address partially verified. Please review and confirm the address details."
-          : "Address could not be verified. Please check the address details.",
+        message: message,
       };
     } catch (error: any) {
       console.error("Address validation error:", error);

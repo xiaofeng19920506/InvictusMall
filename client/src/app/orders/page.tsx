@@ -1,4 +1,4 @@
-import OrdersPageClient from '@/components/OrdersContent';
+import OrdersPageClient from './components/OrdersContent';
 import { fetchOrdersServer, Order } from '@/lib/server-api';
 import { cookies } from 'next/headers';
 

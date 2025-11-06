@@ -1,4 +1,4 @@
-import OrderDetailContent from '@/components/OrderDetailContent';
+import OrderDetailContent from '../components/OrderDetailContent';
 import { fetchOrderByIdServer, Order } from '@/lib/server-api';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';

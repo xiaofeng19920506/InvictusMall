@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import ProtectedRoute from './ProtectedRoute';
+import ProtectedRoute from '@/components/common/ProtectedRoute';
 
 interface ProfilePageWrapperProps {
   children: ReactNode;

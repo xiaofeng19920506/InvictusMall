@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ShippingAddress } from '@/services/shippingAddress';
-import ConfirmDeleteModal from './ConfirmDeleteModal';
+import ConfirmDeleteModal from '@/components/common/ConfirmDeleteModal';
 import { geoapifyAddressService, AddressSuggestion } from '@/services/geoapifyAddressService';
 
 interface AddressManagerProps {

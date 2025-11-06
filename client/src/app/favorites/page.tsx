@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useFavorites } from '@/contexts/FavoritesContext';
 import { apiService, Store } from '@/services/api';
-import Header from '@/components/Header';
-import StoreCard from '@/components/StoreCard';
+import Header from '@/components/common/Header';
+import StoreCard from '../stores/components/StoreCard';
 
 export default function FavoritesPage() {
   const { favorites, removeFavorite } = useFavorites();

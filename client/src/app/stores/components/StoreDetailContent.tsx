@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiService, Store } from "@/services/api";
 import { useCart } from "@/contexts/CartContext";
-import Header from "@/components/Header";
+import Header from "@/components/common/Header";
 import Link from "next/link";
 
 // Mock product interface (until backend product API is ready)

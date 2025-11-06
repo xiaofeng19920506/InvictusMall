@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
-import StoreGrid from "@/components/StoreGrid";
+import Header from "@/components/common/Header";
+import StoreGrid from "../stores/components/StoreGrid";
 import { useRealTimeStores } from "@/hooks/useRealTimeStores";
 import { Store } from "@/services/api";
 

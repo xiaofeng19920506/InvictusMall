@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Header from "@/components/Header";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
+import Header from "@/components/common/Header";
 import Link from "next/link";
 
 export default function CartContent() {

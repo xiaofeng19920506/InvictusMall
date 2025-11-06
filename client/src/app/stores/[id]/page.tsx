@@ -1,4 +1,4 @@
-import StoreDetailContent from "@/components/StoreDetailContent";
+import StoreDetailContent from "../components/StoreDetailContent";
 import { fetchStoreByIdServer, Store } from "@/lib/server-api";
 import { notFound } from "next/navigation";
 

@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import AuthModal from './AuthModal';
+import AuthModal from '../auth/AuthModal';
 import { useState } from 'react';
 
 interface ProtectedRouteProps {
