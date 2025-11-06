@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAvatarUrl } from '@/utils/imageUtils';
+import { validateImageFile } from '@/utils/imageValidation';
 
 interface AvatarUploadProps {
   currentAvatar?: string;
@@ -16,24 +17,23 @@ export default function AvatarUpload({ currentAvatar, onUploadSuccess }: AvatarU
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadAvatar, user } = useAuth();
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('Please select an image file');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image size must be less than 5MB');
-      return;
-    }
-
     setError('');
-    
+
+    // Validate image file with binary checking
+    const validation = await validateImageFile(file);
+    if (!validation.valid) {
+      setError(validation.error || 'Invalid image file');
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
     // Create preview
     const reader = new FileReader();
     reader.onloadend = () => {

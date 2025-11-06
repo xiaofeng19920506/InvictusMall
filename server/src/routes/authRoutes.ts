@@ -19,6 +19,7 @@ import { emailService } from "../services/emailService";
 import multer from "multer";
 import FormData from "form-data";
 import fetch from "node-fetch";
+import { validateImageFile } from "../utils/imageValidation";
 
 const router = Router();
 const userModel = new UserModel();
@@ -1283,10 +1284,83 @@ router.post(
         });
       }
 
+      // Perform binary validation on the uploaded file
+      const validation = validateImageFile(
+        req.file.buffer,
+        req.file.mimetype,
+        req.file.size
+      );
+
+      if (!validation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: validation.error || "Invalid image file",
+        });
+      }
+
       const userId = req.user!.id;
       
+      // Get current user to check for existing avatar
+      const currentUser = await userModel.getUserById(userId);
+      
+      // Delete previous avatar if it exists
+      if (currentUser.avatar) {
+        try {
+          // Extract the image path from the avatar URL
+          // Avatar URL format: /images/... or full URL
+          let imagePath = currentUser.avatar;
+          
+          // If it's a full URL, extract just the path
+          try {
+            const url = new URL(currentUser.avatar);
+            imagePath = url.pathname;
+          } catch {
+            // If it's not a full URL, assume it's already a path
+            imagePath = currentUser.avatar.startsWith('/') ? currentUser.avatar : `/${currentUser.avatar}`;
+          }
+          
+          // Only delete if it's an /images/ path (stored in MinIO)
+          if (imagePath.startsWith('/images/')) {
+            const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "http://98.115.143.29:8087/api/files/upload";
+            const baseUrl = externalUploadUrl.replace("/api/files/upload", "");
+            const deleteUrl = `${baseUrl}/api/files/delete`;
+            
+            console.log(`Attempting to delete previous avatar: ${imagePath}`);
+            
+            // Call delete API on MinIO storage service
+            const deleteResponse = await fetch(deleteUrl, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ path: imagePath }),
+            });
+            
+            if (deleteResponse.ok) {
+              console.log(`Successfully deleted previous avatar: ${imagePath}`);
+            } else {
+              const errorText = await deleteResponse.text();
+              console.warn(`Failed to delete previous avatar (continuing with new upload):`, {
+                path: imagePath,
+                status: deleteResponse.status,
+                error: errorText,
+              });
+              // Don't fail the upload if deletion fails - just log it
+            }
+          } else {
+            console.log(`Skipping deletion - avatar path is not in MinIO storage: ${imagePath}`);
+          }
+        } catch (deleteError: any) {
+          // Log error but don't fail the upload
+          console.error("Error deleting previous avatar (continuing with new upload):", {
+            error: deleteError.message,
+            avatar: currentUser.avatar,
+          });
+        }
+      }
+      
       // Forward the file to the external MinIO storage API
-      const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "http://98.115.143.29:8888/api/files/upload";
+      const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "http://98.115.143.29:8087/api/files/upload";
       
       let uploadResult;
       let avatarUrl;
