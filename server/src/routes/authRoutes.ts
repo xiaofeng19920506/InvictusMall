@@ -26,8 +26,8 @@ const userModel = new UserModel();
 const verificationTokenModel = new VerificationTokenModel();
 
 // JWT Secret - in production, this should be in environment variables
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretjwtkey";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 
 /**
  * @swagger
@@ -314,22 +314,43 @@ router.post(
         user = await userModel.getUserByEmail(email);
       } catch (dbError: any) {
         // Handle database connection errors
-        if (
+        const isConnectionError = 
           dbError.code === "ER_ACCESS_DENIED_ERROR" ||
           dbError.code === "ECONNREFUSED" ||
           dbError.code === "ENOTFOUND" ||
-          dbError.code === "ETIMEDOUT"
-        ) {
-          console.error(
-            "Database connection error during login:",
-            dbError.message
-          );
+          dbError.code === "ETIMEDOUT" ||
+          dbError.code === "PROTOCOL_CONNECTION_LOST" ||
+          dbError.code === "ER_BAD_DB_ERROR" ||
+          dbError.code === "ECONNRESET" ||
+          dbError.fatal === true ||
+          (dbError.errno && [2002, 2003, 1045, 1049, 2013].includes(dbError.errno)) ||
+          dbError.message?.includes("connect ECONNREFUSED") ||
+          dbError.message?.includes("getaddrinfo ENOTFOUND") ||
+          dbError.message?.includes("Connection lost");
+
+        if (isConnectionError) {
+          console.error("Database connection error during login:", {
+            code: dbError.code,
+            errno: dbError.errno,
+            message: dbError.message,
+            fatal: dbError.fatal,
+            stack: process.env.NODE_ENV === "development" ? dbError.stack : undefined
+          });
           return res.status(503).json({
             success: false,
             message: "Service temporarily unavailable. Please try again later.",
+            ...(process.env.NODE_ENV === "development" && {
+              error: `Database connection failed: ${dbError.message || dbError.code || "Unknown error"}`,
+            }),
           });
         }
         // Re-throw other database errors
+        console.error("Unexpected database error during login:", {
+          code: dbError.code,
+          errno: dbError.errno,
+          message: dbError.message,
+          stack: process.env.NODE_ENV === "development" ? dbError.stack : undefined
+        });
         throw dbError;
       }
 

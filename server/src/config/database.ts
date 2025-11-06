@@ -4,11 +4,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'password', // Updated default password
-  database: process.env.DB_NAME || 'invictus_mall',
+  host: process.env.DB_HOST as string,
+  port: parseInt(process.env.DB_PORT || '3306', 10),
+  user: process.env.DB_USER as string,
+  password: process.env.DB_PASSWORD as string,
+  database: process.env.DB_NAME as string,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -21,9 +21,16 @@ export const pool = mysql.createPool(dbConfig);
 export const testConnection = async (): Promise<boolean> => {
   try {
     const connection = await pool.getConnection();
+    await connection.ping();
     connection.release();
     return true;
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Database connection test failed:', {
+      code: error.code,
+      errno: error.errno,
+      message: error.message,
+      fatal: error.fatal,
+    });
     return false;
   }
 };
@@ -52,7 +59,7 @@ export const initializeDatabase = async (): Promise<void> => {
 
 const createTables = async (): Promise<void> => {
   const connection = await pool.getConnection();
-  
+
   try {
     // Create stores table
     await connection.execute(`
@@ -101,8 +108,8 @@ const createTables = async (): Promise<void> => {
       )
     `);
 
-            // Create users table
-            await connection.execute(`
+    // Create users table
+    await connection.execute(`
               CREATE TABLE IF NOT EXISTS users (
                 id VARCHAR(36) PRIMARY KEY,
                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -122,8 +129,8 @@ const createTables = async (): Promise<void> => {
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
-            // Create verification_tokens table (must be after users table due to foreign key)
-            await connection.execute(`
+    // Create verification_tokens table (must be after users table due to foreign key)
+    await connection.execute(`
               CREATE TABLE IF NOT EXISTS verification_tokens (
                 id VARCHAR(36) PRIMARY KEY,
                 user_id VARCHAR(36) NOT NULL,
@@ -140,8 +147,8 @@ const createTables = async (): Promise<void> => {
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
-            // Create staff table for admin app users
-            await connection.execute(`
+    // Create staff table for admin app users
+    await connection.execute(`
               CREATE TABLE IF NOT EXISTS staff (
                 id VARCHAR(36) PRIMARY KEY,
                 email VARCHAR(255) UNIQUE NOT NULL,
@@ -166,8 +173,8 @@ const createTables = async (): Promise<void> => {
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
-            // Create staff_invitations table
-            await connection.execute(`
+    // Create staff_invitations table
+    await connection.execute(`
               CREATE TABLE IF NOT EXISTS staff_invitations (
                 id VARCHAR(36) PRIMARY KEY,
                 email VARCHAR(255) NOT NULL,
@@ -205,41 +212,41 @@ const createTables = async (): Promise<void> => {
       )
     `);
 
-            // Update existing activity_logs table to include new enum values
-            try {
-              await connection.execute(`
+    // Update existing activity_logs table to include new enum values
+    try {
+      await connection.execute(`
                 ALTER TABLE activity_logs 
                 MODIFY COLUMN type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created') NOT NULL
               `);
-            } catch (error) {
-              // Table might not exist or already have the correct enum values
-            }
+    } catch (error) {
+      // Table might not exist or already have the correct enum values
+    }
 
-            // Update existing users table to allow null passwords and add avatar field
-            try {
-              await connection.execute(`
+    // Update existing users table to allow null passwords and add avatar field
+    try {
+      await connection.execute(`
                 ALTER TABLE users 
                 MODIFY COLUMN password VARCHAR(255) NULL,
                 MODIFY COLUMN is_active BOOLEAN DEFAULT false
               `);
-            } catch (error) {
-              // Table might not exist or already have the correct schema
-            }
+    } catch (error) {
+      // Table might not exist or already have the correct schema
+    }
 
-            // Add avatar column to users table if it doesn't exist
-            try {
-              await connection.execute(`
+    // Add avatar column to users table if it doesn't exist
+    try {
+      await connection.execute(`
                 ALTER TABLE users 
                 ADD COLUMN avatar VARCHAR(500) NULL
               `);
-            } catch (error: any) {
-              // Column might already exist
-            }
+    } catch (error: any) {
+      // Column might already exist
+    }
 
-            // Initialize OrderModel tables
-            const { OrderModel } = await import('../models/OrderModel');
-            const orderModel = new OrderModel();
-            await orderModel.createOrdersTable();
+    // Initialize OrderModel tables
+    const { OrderModel } = await import('../models/OrderModel');
+    const orderModel = new OrderModel();
+    await orderModel.createOrdersTable();
   } finally {
     connection.release();
   }

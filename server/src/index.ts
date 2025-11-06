@@ -123,12 +123,17 @@ app.get("/images/*", async (req, res) => {
  *                   type: number
  *                   example: 123.456
  */
-app.get("/health", (req, res) => {
+app.get("/health", async (req, res) => {
+  const dbStatus = await testConnection();
   res.json({
     success: true,
     message: "Server is running",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    database: {
+      connected: dbStatus,
+      status: dbStatus ? "connected" : "disconnected",
+    },
   });
 });
 
