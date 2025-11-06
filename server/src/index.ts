@@ -5,6 +5,7 @@ import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import cookieParser from "cookie-parser";
 import path from "path";
+import fetch from "node-fetch";
 import storeRoutes from "./routes/storeRoutes";
 import systemRoutes from "./routes/systemRoutes";
 import activityLogRoutes from "./routes/activityLogRoutes";
@@ -84,10 +85,10 @@ app.get("/images/*", async (req, res) => {
     
     // Stream the image data to the response
     const imageBuffer = await imageResponse.arrayBuffer();
-    res.send(Buffer.from(imageBuffer));
+    return res.send(Buffer.from(imageBuffer));
   } catch (error: any) {
     console.error("Error proxying image:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch image",
       error: error.message,
