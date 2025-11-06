@@ -117,7 +117,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                 />
                 <button
                   type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                 >
                   🔍
                 </button>
@@ -132,7 +132,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                 {user?.role === 'admin' && (
                   <Link 
                     href="/admin"
-                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors"
+                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors cursor-pointer"
                   >
                     <span>📊</span>
                     <span>Admin Dashboard</span>
@@ -142,7 +142,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                 {user?.role === 'store_owner' && (
                   <Link 
                     href="/store-owner"
-                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+                    className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors cursor-pointer"
                   >
                     <span>🏪</span>
                     <span>My Store</span>
@@ -153,7 +153,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setShowDropdown(!showDropdown)}
-                    className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
+                    className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
                   >
                     {/* User Avatar or Initials */}
                     {user?.avatar ? (
@@ -189,7 +189,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                       <Link
                         href="/profile"
                         onClick={() => setShowDropdown(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center space-x-2">
                           <span>👤</span>
@@ -199,7 +199,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                       <Link
                         href="/orders"
                         onClick={() => setShowDropdown(false)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center space-x-2">
                           <span>📦</span>
@@ -208,7 +208,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                       </Link>
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
                       >
                         <div className="flex items-center space-x-2">
                           <span>🚪</span>
@@ -223,14 +223,14 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
               <div className="flex items-center space-x-2">
                 <Link 
                   href="/login"
-                  className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer"
                 >
                   <span>👤</span>
                   <span>Sign In</span>
                 </Link>
                 <Link 
                   href="/signup"
-                  className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors"
+                  className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors cursor-pointer"
                 >
                   <span>📝</span>
                   <span>Sign Up</span>
@@ -240,7 +240,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
             
             <Link
               href="/cart"
-              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors relative"
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors relative cursor-pointer"
             >
               <span>🛒</span>
               <span>Cart</span>
@@ -260,7 +260,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
             {categories.map((category) => (
               <button
                 key={category}
-                className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors category-button ${
+                className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors category-button cursor-pointer ${
                   selectedCategory === category
                     ? 'bg-orange-500 text-white'
                     : 'text-gray-300'

@@ -42,7 +42,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
       <div className="relative bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold cursor-pointer"
           aria-label="Close"
         >
           ×

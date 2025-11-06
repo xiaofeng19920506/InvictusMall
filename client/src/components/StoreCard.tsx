@@ -61,7 +61,7 @@ export default function StoreCard({ store, onClick }: StoreCardProps) {
       )}
       <button
         onClick={handleFavoriteClick}
-        className={`absolute top-2 right-2 p-2 rounded-full z-10 transition-colors ${
+        className={`absolute top-2 right-2 p-2 rounded-full z-10 transition-colors cursor-pointer ${
           favorite
             ? 'bg-red-500 text-white'
             : 'bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100'

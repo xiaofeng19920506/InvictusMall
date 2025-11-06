@@ -130,7 +130,7 @@ export default function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormPro
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           {isLoading ? 'Creating Account...' : 'Create Account'}
         </button>
@@ -142,7 +142,7 @@ export default function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormPro
           <button
             type="button"
             onClick={onSwitchToLogin}
-            className="text-orange-500 hover:text-orange-600 font-medium"
+            className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
           >
             Sign in
           </button>

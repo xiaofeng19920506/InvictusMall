@@ -68,6 +68,32 @@ export const validateSetupPassword = [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
 ];
 
+export const validateCreateShippingAddress = [
+  body('label').optional().isString().withMessage('Label must be a string'),
+  body('fullName').notEmpty().withMessage('Full name is required'),
+  body('phoneNumber').isLength({ min: 10 }).withMessage('Phone number must be at least 10 characters long'),
+  body('streetAddress').notEmpty().withMessage('Street address is required'),
+  body('aptNumber').optional().isString().withMessage('Apt number must be a string'),
+  body('city').notEmpty().withMessage('City is required'),
+  body('stateProvince').notEmpty().withMessage('State/Province is required'),
+  body('zipCode').notEmpty().withMessage('ZIP code is required'),
+  body('country').notEmpty().withMessage('Country is required'),
+  body('isDefault').optional().isBoolean().withMessage('isDefault must be a boolean')
+];
+
+export const validateUpdateShippingAddress = [
+  body('label').optional().isString().withMessage('Label must be a string'),
+  body('fullName').optional().notEmpty().withMessage('Full name cannot be empty'),
+  body('phoneNumber').optional().isLength({ min: 10 }).withMessage('Phone number must be at least 10 characters long'),
+  body('streetAddress').optional().notEmpty().withMessage('Street address cannot be empty'),
+  body('aptNumber').optional().isString().withMessage('Apt number must be a string'),
+  body('city').optional().notEmpty().withMessage('City cannot be empty'),
+  body('stateProvince').optional().notEmpty().withMessage('State/Province cannot be empty'),
+  body('zipCode').optional().notEmpty().withMessage('ZIP code cannot be empty'),
+  body('country').optional().notEmpty().withMessage('Country cannot be empty'),
+  body('isDefault').optional().isBoolean().withMessage('isDefault must be a boolean')
+];
+
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {

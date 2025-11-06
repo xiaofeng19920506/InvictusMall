@@ -304,6 +304,76 @@ export async function fetchOrderByIdServer(
 // Re-export User type from models for consistency
 export type { User } from "@/models/User";
 
+// Shipping Address types
+export interface ShippingAddress {
+  id: string;
+  userId: string;
+  label?: string;
+  fullName: string;
+  phoneNumber: string;
+  streetAddress: string;
+  aptNumber?: string;
+  city: string;
+  stateProvince: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Server-side function to fetch shipping addresses
+ * Uses cookies for authentication
+ */
+export async function fetchShippingAddressesServer(
+  cookies: string | undefined
+): Promise<ApiResponse<ShippingAddress[]>> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const url = `${baseUrl}/api/shipping-addresses`;
+  
+  try {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Forward cookies for authentication
+    if (cookies && cookies.trim()) {
+      headers['Cookie'] = cookies;
+    }
+
+    const response = await fetch(url, {
+      headers,
+      next: { revalidate: 0 }, // Don't cache authenticated requests
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      // Try to get error message from response
+      let errorMessage = `Failed to fetch shipping addresses: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorMessage;
+      } catch {
+        // If response is not JSON, use status text
+      }
+      
+      // Handle authentication errors gracefully
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please log in to view addresses.');
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    const data: ApiResponse<ShippingAddress[]> = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching shipping addresses on server:', error);
+    throw error;
+  }
+}
+
 export interface AuthResponse {
   success: boolean;
   message?: string;

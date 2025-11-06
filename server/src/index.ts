@@ -12,6 +12,7 @@ import activityLogRoutes from "./routes/activityLogRoutes";
 import authRoutes from "./routes/authRoutes";
 import staffRoutes from "./routes/staffRoutes";
 import orderRoutes from "./routes/orderRoutes";
+import shippingAddressRoutes from "./routes/shippingAddressRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
@@ -147,6 +148,7 @@ app.use("/api/activity-logs", activityLogRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/shipping-addresses", shippingAddressRoutes);
 
 /**
  * @swagger

@@ -1,11 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import AvatarUpload from './AvatarUpload';
 
-export default function ProfileForm() {
-  const { user, updateUser } = useAuth();
+interface EditProfileProps {
+  initialUser: {
+    firstName: string;
+    lastName: string;
+    phoneNumber: string;
+    email: string;
+    avatar?: string;
+  } | null;
+}
+
+export default function EditProfile({ initialUser }: EditProfileProps) {
+  const { updateUser } = useAuth();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -16,16 +28,17 @@ export default function ProfileForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Use initialUser from server (always provided by parent server component)
   useEffect(() => {
-    if (user) {
+    if (initialUser) {
       setFormData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        phoneNumber: user.phoneNumber || '',
-        email: user.email || '',
+        firstName: initialUser.firstName || '',
+        lastName: initialUser.lastName || '',
+        phoneNumber: initialUser.phoneNumber || '',
+        email: initialUser.email || '',
       });
     }
-  }, [user]);
+  }, [initialUser]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -49,6 +62,8 @@ export default function ProfileForm() {
 
       if (result.success) {
         setSuccess('Profile updated successfully!');
+        // Refresh the page to refetch data from server
+        router.refresh();
       } else {
         setError(result.message || 'Failed to update profile');
       }
@@ -65,9 +80,11 @@ export default function ProfileForm() {
 
       <div className="mb-6">
         <AvatarUpload
-          currentAvatar={user?.avatar}
+          currentAvatar={initialUser?.avatar}
           onUploadSuccess={() => {
             setSuccess('Avatar updated successfully!');
+            // Refresh the page to refetch data from server
+            router.refresh();
           }}
         />
       </div>
@@ -150,7 +167,7 @@ export default function ProfileForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           {isLoading ? 'Saving...' : 'Save Changes'}
         </button>

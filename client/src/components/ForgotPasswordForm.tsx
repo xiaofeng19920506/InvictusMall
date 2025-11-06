@@ -52,7 +52,7 @@ export default function ForgotPasswordForm({ onSuccess, onSwitchToLogin }: Forgo
           </p>
           <button
             onClick={onSwitchToLogin}
-            className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors"
+            className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors cursor-pointer"
           >
             Back to Sign In
           </button>
@@ -90,7 +90,7 @@ export default function ForgotPasswordForm({ onSuccess, onSwitchToLogin }: Forgo
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
         >
           {isLoading ? 'Sending...' : 'Send Reset Link'}
         </button>
@@ -102,7 +102,7 @@ export default function ForgotPasswordForm({ onSuccess, onSwitchToLogin }: Forgo
           <button
             type="button"
             onClick={onSwitchToLogin}
-            className="text-orange-500 hover:text-orange-600 font-medium"
+            className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
           >
             Sign in
           </button>

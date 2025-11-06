@@ -53,7 +53,7 @@ export default function CartContent() {
             </p>
             <Link
               href="/"
-              className="inline-block bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors"
+              className="inline-block bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors cursor-pointer"
             >
               Continue Shopping
             </Link>
@@ -82,7 +82,7 @@ export default function CartContent() {
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 hover:text-red-700 cursor-pointer"
                         >
                           ✕
                         </button>
@@ -93,7 +93,7 @@ export default function CartContent() {
                             onClick={() =>
                               updateQuantity(item.id, item.quantity - 1)
                             }
-                            className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100"
+                            className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100 cursor-pointer"
                           >
                             −
                           </button>
@@ -104,7 +104,7 @@ export default function CartContent() {
                             onClick={() =>
                               updateQuantity(item.id, item.quantity + 1)
                             }
-                            className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100"
+                            className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100 cursor-pointer"
                           >
                             +
                           </button>
@@ -154,21 +154,21 @@ export default function CartContent() {
                 <button
                   onClick={handleCheckout}
                   disabled={isCheckingOut}
-                  className="w-full bg-orange-500 text-white py-3 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-4"
+                  className="w-full bg-orange-500 text-white py-3 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-4 cursor-pointer"
                 >
                   {isCheckingOut ? "Processing..." : "Proceed to Checkout"}
                 </button>
 
                 <button
                   onClick={clearCart}
-                  className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors"
+                  className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   Clear Cart
                 </button>
 
                 <Link
                   href="/"
-                  className="block text-center text-orange-500 hover:text-orange-600 mt-4"
+                  className="block text-center text-orange-500 hover:text-orange-600 mt-4 cursor-pointer"
                 >
                   Continue Shopping
                 </Link>

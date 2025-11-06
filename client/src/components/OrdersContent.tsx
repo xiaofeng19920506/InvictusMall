@@ -117,7 +117,7 @@ export default function OrdersContent({ initialOrders, initialStatus = 'all' }: 
               </p>
               <Link
                 href="/"
-                className="inline-block bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors"
+                className="inline-block bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors cursor-pointer"
               >
                 Start Shopping
               </Link>
@@ -201,17 +201,17 @@ export default function OrdersContent({ initialOrders, initialStatus = 'all' }: 
                     <div className="mt-4 flex space-x-4">
                       <Link
                         href={`/orders/${order.id}`}
-                        className="text-sm text-orange-500 hover:text-orange-600 font-medium"
+                        className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
                       >
                         View Details
                       </Link>
                       {order.status === 'delivered' && (
-                        <button className="text-sm text-blue-500 hover:text-blue-600 font-medium">
+                        <button className="text-sm text-blue-500 hover:text-blue-600 font-medium cursor-pointer">
                           Write Review
                         </button>
                       )}
                       {order.status === 'shipped' && (
-                        <button className="text-sm text-green-500 hover:text-green-600 font-medium">
+                        <button className="text-sm text-green-500 hover:text-green-600 font-medium cursor-pointer">
                           Track Package
                         </button>
                       )}

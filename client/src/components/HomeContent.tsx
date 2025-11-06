@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import HeaderWrapper from "@/components/HeaderWrapper";
+import Header from "@/components/Header";
 import StoreGrid from "@/components/StoreGrid";
 import { useRealTimeStores } from "@/hooks/useRealTimeStores";
 import { Store } from "@/services/api";
@@ -86,7 +86,7 @@ export default function HomeContent({
 
   return (
     <>
-      <HeaderWrapper
+      <Header
         onSearch={handleSearch}
         onCategoryFilter={handleCategoryFilter}
         onSearchTypeChange={handleSearchTypeChange}
@@ -135,7 +135,7 @@ export default function HomeContent({
               </div>
               <button
                 onClick={handleRetry}
-                className="ml-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                className="ml-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors cursor-pointer"
               >
                 Retry
               </button>
@@ -157,25 +157,25 @@ export default function HomeContent({
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a
                 href="#about"
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors cursor-pointer"
               >
                 About
               </a>
               <a
                 href="#contact"
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors cursor-pointer"
               >
                 Contact
               </a>
               <a
                 href="#privacy"
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors cursor-pointer"
               >
                 Privacy
               </a>
               <a
                 href="#terms"
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors cursor-pointer"
               >
                 Terms
               </a>

@@ -83,7 +83,7 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
           <div className="mb-6">
             <Link
               href="/orders"
-              className="text-orange-500 hover:text-orange-600 mb-4 inline-block"
+              className="text-orange-500 hover:text-orange-600 mb-4 inline-block cursor-pointer"
             >
               ← Back to Orders
             </Link>
@@ -204,7 +204,7 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
                     <p className="text-sm font-medium text-gray-500 mb-1">Tracking Number</p>
                     <p className="text-gray-900 font-mono">{order.trackingNumber}</p>
                   </div>
-                  <button className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors">
+                  <button className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors cursor-pointer">
                     Track Package
                   </button>
                 </div>
@@ -214,17 +214,17 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
             {/* Actions */}
             <div className="flex gap-4">
               {order.status === 'delivered' && (
-                <button className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors">
+                <button className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors cursor-pointer">
                   Write Review
                 </button>
               )}
               {order.status === 'shipped' && (
-                <button className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors">
+                <button className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors cursor-pointer">
                   Track Package
                 </button>
               )}
               {(order.status === 'pending' || order.status === 'processing') && (
-                <button className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors">
+                <button className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors cursor-pointer">
                   Cancel Order
                 </button>
               )}

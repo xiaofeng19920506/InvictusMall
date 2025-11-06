@@ -48,7 +48,7 @@ function AddToCartButton({
   return (
     <button
       onClick={handleAddToCart}
-      className={`w-full py-2 rounded-md transition-colors ${
+      className={`w-full py-2 rounded-md transition-colors cursor-pointer ${
         added
           ? "bg-green-500 text-white"
           : "bg-orange-500 text-white hover:bg-orange-600"
@@ -164,7 +164,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             </p>
             <Link
               href="/"
-              className="bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors"
+              className="bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors cursor-pointer"
             >
               Back to Stores
             </Link>
@@ -250,7 +250,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  className={`py-4 px-1 border-b-2 font-medium text-sm cursor-pointer ${
                     activeTab === tab.id
                       ? "border-orange-500 text-orange-600"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"

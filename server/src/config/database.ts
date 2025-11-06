@@ -243,6 +243,39 @@ const createTables = async (): Promise<void> => {
       // Column might already exist
     }
 
+    // Create shipping_addresses table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS shipping_addresses (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        label VARCHAR(100) NULL,
+        full_name VARCHAR(255) NOT NULL,
+        phone_number VARCHAR(20) NOT NULL,
+        street_address VARCHAR(255) NOT NULL,
+        apt_number VARCHAR(50) NULL,
+        city VARCHAR(100) NOT NULL,
+        state_province VARCHAR(100) NOT NULL,
+        zip_code VARCHAR(20) NOT NULL,
+        country VARCHAR(100) NOT NULL,
+        is_default BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id),
+        INDEX idx_is_default (is_default),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Add label column to existing shipping_addresses table if it doesn't exist
+    try {
+      await connection.execute(`
+        ALTER TABLE shipping_addresses 
+        ADD COLUMN label VARCHAR(100) NULL
+      `);
+    } catch (error: any) {
+      // Column might already exist
+    }
+
     // Initialize OrderModel tables
     const { OrderModel } = await import('../models/OrderModel');
     const orderModel = new OrderModel();
