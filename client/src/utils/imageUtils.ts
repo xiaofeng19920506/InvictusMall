@@ -5,7 +5,7 @@
 /**
  * Get the full URL for an avatar image
  * If the avatar URL is already a full URL, return it as is
- * Otherwise, prepend the API base URL
+ * Otherwise, prepend the appropriate base URL
  */
 export function getAvatarUrl(avatarUrl?: string | null): string | undefined {
   if (!avatarUrl) return undefined;
@@ -15,7 +15,13 @@ export function getAvatarUrl(avatarUrl?: string | null): string | undefined {
     return avatarUrl;
   }
   
-  // If it starts with /uploads, prepend the API base URL
+  // If it starts with /images/, use the storage service URL (port 9000)
+  if (avatarUrl.startsWith('/images/')) {
+    const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || 'http://98.115.143.29:9000';
+    return `${storageUrl}${avatarUrl}`;
+  }
+  
+  // If it starts with /uploads/, prepend the API base URL
   if (avatarUrl.startsWith('/uploads/')) {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     return `${baseUrl}${avatarUrl}`;
@@ -37,7 +43,13 @@ export function getImageUrl(imageUrl?: string | null): string | undefined {
     return imageUrl;
   }
   
-  // If it starts with /uploads, prepend the API base URL
+  // If it starts with /images/, use the storage service URL (port 9000)
+  if (imageUrl.startsWith('/images/')) {
+    const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || 'http://98.115.143.29:9000';
+    return `${storageUrl}${imageUrl}`;
+  }
+  
+  // If it starts with /uploads/, prepend the API base URL
   if (imageUrl.startsWith('/uploads/')) {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     return `${baseUrl}${imageUrl}`;
@@ -46,5 +58,6 @@ export function getImageUrl(imageUrl?: string | null): string | undefined {
   // Return as is if it doesn't match expected patterns
   return imageUrl;
 }
+
 
 

@@ -55,6 +55,46 @@ app.use(cookieParser());
 // Static file serving for uploaded avatars
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
+// Proxy route for images from external storage service
+app.get("/images/*", async (req, res) => {
+  try {
+    // Get the external storage base URL from environment or derive from upload URL
+    const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "http://98.115.143.29:8087/api/files/upload";
+    const storageBaseUrl = process.env.FILE_STORAGE_BASE_URL || externalUploadUrl.replace("/api/files/upload", "");
+    const imagePath = req.path; // This will be "/images/..."
+    
+    // Construct the full URL to the external storage service
+    const imageUrl = `${storageBaseUrl}${imagePath}`;
+    
+    // Fetch the image from the external storage service
+    const imageResponse = await fetch(imageUrl);
+    
+    if (!imageResponse.ok) {
+      return res.status(imageResponse.status).json({
+        success: false,
+        message: "Image not found",
+        error: `Failed to fetch image: ${imageResponse.statusText}`,
+      });
+    }
+    
+    // Set appropriate headers
+    const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=31536000"); // Cache for 1 year
+    
+    // Stream the image data to the response
+    const imageBuffer = await imageResponse.arrayBuffer();
+    res.send(Buffer.from(imageBuffer));
+  } catch (error: any) {
+    console.error("Error proxying image:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch image",
+      error: error.message,
+    });
+  }
+});
+
 /**
  * @swagger
  * /health:
