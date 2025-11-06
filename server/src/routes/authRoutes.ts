@@ -1356,7 +1356,7 @@ router.post(
       }
       
       // Forward the file to the external MinIO storage API
-      const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "http://98.115.143.29:8087/api/files/upload";
+      const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
       
       let uploadResult;
       let avatarUrl;

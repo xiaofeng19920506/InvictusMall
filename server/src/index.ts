@@ -60,7 +60,7 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.get("/images/*", async (req, res) => {
   try {
     // Get the external storage base URL from environment or derive from upload URL
-    const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "http://98.115.143.29:8087/api/files/upload";
+    const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
     const storageBaseUrl = process.env.FILE_STORAGE_BASE_URL || externalUploadUrl.replace("/api/files/upload", "");
     const imagePath = req.path; // This will be "/images/..."
     
