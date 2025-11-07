@@ -1639,4 +1639,158 @@ router.post(
   }
 );
 
+router.post("/refresh", async (req: Request, res: Response) => {
+  try {
+    const staffToken = req.cookies.staff_auth_token;
+    const userToken = req.cookies.auth_token;
+
+    const token = staffToken || userToken;
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Access token required",
+      });
+    }
+
+    let decoded: jwt.JwtPayload & {
+      userId?: string;
+      staffId?: string;
+      email?: string;
+      role?: string;
+      type?: string;
+    };
+
+    try {
+      decoded = jwt.verify(token, JWT_SECRET as string, {
+        ignoreExpiration: true,
+      }) as typeof decoded;
+    } catch (error) {
+      console.error("Token refresh verification failed:", error);
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    const tokenIsExpired = decoded.exp ? decoded.exp <= nowInSeconds : false;
+
+    if (staffToken || decoded.type === "staff") {
+      const { StaffModel } = await import("../models/StaffModel");
+      const staffModel = new StaffModel();
+      const staffId = decoded.staffId;
+
+      if (!staffId) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid staff token",
+        });
+      }
+
+      const staff = await staffModel.getStaffById(staffId);
+
+      if (!staff || !staff.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid or expired token",
+        });
+      }
+
+      if (!tokenIsExpired) {
+        return res.json({
+          success: true,
+          message: "Token still valid",
+        });
+      }
+
+      const refreshedToken = jwt.sign(
+        {
+          staffId: staff.id,
+          email: staff.email,
+          role: staff.role,
+          type: "staff",
+        },
+        JWT_SECRET as string,
+        { expiresIn: "7d" }
+      );
+
+      res.cookie("staff_auth_token", refreshedToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: "/",
+      });
+
+      const { password: _, ...staffWithoutPassword } = staff;
+
+      return res.json({
+        success: true,
+        message: "Token refreshed successfully",
+        user: staffWithoutPassword,
+      });
+    }
+
+    const userId = decoded.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token",
+      });
+    }
+
+    const user = await userModel.getActiveUserById(userId);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+    }
+
+    if (!tokenIsExpired) {
+      const { password: _, ...userWithoutPassword } = user;
+      return res.json({
+        success: true,
+        message: "Token still valid",
+        user: userWithoutPassword,
+      });
+    }
+
+    const refreshedToken = jwt.sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      JWT_SECRET as string,
+      { expiresIn: "1h" }
+    );
+
+    res.cookie("auth_token", refreshedToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/",
+    });
+
+    const { password: _, ...userWithoutPassword } = user;
+
+    return res.json({
+      success: true,
+      message: "Token refreshed successfully",
+      user: userWithoutPassword,
+    });
+  } catch (error) {
+    console.error("Token refresh error:", error);
+    return res.status(401).json({
+      success: false,
+      message: "Failed to refresh token",
+    });
+  }
+});
+
 export default router;

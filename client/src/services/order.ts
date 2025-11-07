@@ -45,6 +45,8 @@ export interface ApiError {
   error?: string;
 }
 
+import { authService } from './auth';
+
 class OrderService {
   private baseUrl: string;
 
@@ -59,49 +61,95 @@ class OrderService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    retried = false
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const config: RequestInit = {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
-      credentials: 'include',
+      credentials: "include",
       ...options,
     };
 
     try {
-      const response = await fetch(url, config);
-      
-      // Check content type to ensure we're getting JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      let response = await fetch(url, config);
+      let attemptedRefresh = false;
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
         const text = await response.text();
-        console.error('Non-JSON response received:', {
+        console.error("Non-JSON response received:", {
           url,
           status: response.status,
           contentType,
-          preview: text.substring(0, 200)
+          preview: text.substring(0, 200),
         });
-        throw new Error(`Expected JSON but received ${contentType}. Check if the API URL is correct: ${this.baseUrl}`);
+        throw new Error(
+          `Expected JSON but received ${contentType}. Check if the API URL is correct: ${this.baseUrl}`
+        );
       }
-      
+
+      if (!response.ok && response.status === 401 && !attemptedRefresh) {
+        const refreshed = await this.tryRefreshToken();
+        if (refreshed) {
+          attemptedRefresh = true;
+          response = await fetch(url, config);
+          const refreshedContentType = response.headers.get("content-type");
+          if (
+            !refreshedContentType ||
+            !refreshedContentType.includes("application/json")
+          ) {
+            const text = await response.text();
+            console.error("Non-JSON response received after refresh:", {
+              url,
+              status: response.status,
+              contentType: refreshedContentType,
+              preview: text.substring(0, 200),
+            });
+            throw new Error(
+              `Expected JSON but received ${refreshedContentType}. Check if the API URL is correct: ${this.baseUrl}`
+            );
+          }
+        } else {
+          attemptedRefresh = true;
+        }
+      }
+
       if (!response.ok) {
-        const errorData: ApiError = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+        let errorData: ApiError | undefined;
+        try {
+          errorData = await response.json();
+        } catch {
+          // ignore parsing error
+        }
+        throw new Error(
+          errorData?.message || `HTTP error! status: ${response.status}`
+        );
       }
 
       const data: T = await response.json();
       return data;
     } catch (error) {
-      console.error('Order API request failed:', {
+      console.error("Order API request failed:", {
         url,
         baseUrl: this.baseUrl,
-        error
+        error,
       });
       throw error;
+    }
+  }
+
+  private async tryRefreshToken(): Promise<boolean> {
+    try {
+      const result = await authService.refreshToken();
+      return Boolean(result?.success);
+    } catch (error) {
+      console.warn("Token refresh attempt failed:", error);
+      return false;
     }
   }
 

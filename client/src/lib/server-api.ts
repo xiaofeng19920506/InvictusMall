@@ -245,7 +245,12 @@ export async function fetchOrdersServer(
     const data: ApiResponse<Order[]> = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching orders on server:', error);
+    console.error('Error fetching orders on server:', {
+      error,
+      url,
+      params,
+      hasCookies: Boolean(cookies && cookies.trim()),
+    });
     throw error;
   }
 }

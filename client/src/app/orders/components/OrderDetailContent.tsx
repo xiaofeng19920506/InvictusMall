@@ -1,73 +1,46 @@
-'use client';
-
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
-import { orderService, Order } from '@/services/order';
+import { Order } from '@/services/order';
 import Link from 'next/link';
 
 interface OrderDetailContentProps {
   initialOrder: Order | null;
 }
 
-export default function OrderDetailContent({ initialOrder }: OrderDetailContentProps) {
-  const router = useRouter();
-  const { user } = useAuth();
-  
-  const [order, setOrder] = useState<Order | null>(initialOrder);
-  const [loading, setLoading] = useState(!initialOrder);
-  const [error, setError] = useState('');
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-purple-100 text-purple-800';
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  if (loading) {
-    return (
-      <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading order details...</p>
-            </div>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'processing':
+      return 'bg-blue-100 text-blue-800';
+    case 'shipped':
+      return 'bg-purple-100 text-purple-800';
+    case 'delivered':
+      return 'bg-green-100 text-green-800';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
   }
+};
 
-  if (error || !order) {
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+export default function OrderDetailContent({ initialOrder }: OrderDetailContentProps) {
+  if (!initialOrder) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gray-50">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-              {error || 'Order not found'}
+              Order not found.
             </div>
           </div>
         </div>
@@ -75,6 +48,7 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
     );
   }
 
+  const order = initialOrder;
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">

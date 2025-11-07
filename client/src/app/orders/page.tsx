@@ -1,4 +1,4 @@
-import OrdersPageClient from './components/OrdersContent';
+import OrdersContent from './components/OrdersContent';
 import { fetchOrdersServer, Order } from '@/lib/server-api';
 import { cookies } from 'next/headers';
 
@@ -39,10 +39,5 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     initialOrders = [];
   }
 
-  return (
-    <OrdersPageClient 
-      initialOrders={initialOrders}
-      initialStatus={status}
-    />
-  );
+  return <OrdersContent initialOrders={initialOrders} initialStatus={status} />;
 }

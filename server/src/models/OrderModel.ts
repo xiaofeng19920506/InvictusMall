@@ -211,16 +211,42 @@ export class OrderModel {
 
       query += ' ORDER BY o.order_date DESC';
 
-      if (options?.limit) {
-        query += ' LIMIT ?';
-        params.push(options.limit);
-        if (options?.offset) {
-          query += ' OFFSET ?';
-          params.push(options.offset);
+      const limitValue =
+        typeof options?.limit === 'number' && Number.isFinite(options.limit)
+          ? Math.max(0, Math.floor(options.limit))
+          : undefined;
+      const offsetValue =
+        typeof options?.offset === 'number' && Number.isFinite(options.offset)
+          ? Math.max(0, Math.floor(options.offset))
+          : undefined;
+
+      if (limitValue !== undefined) {
+        query += ` LIMIT ${limitValue}`;
+        if (offsetValue !== undefined) {
+          query += ` OFFSET ${offsetValue}`;
         }
+      } else if (offsetValue !== undefined) {
+        console.warn('Offset provided without limit. Ignoring offset to avoid malformed query.', {
+          userId,
+          offset: offsetValue,
+        });
       }
 
-      const [rows] = await this.pool.execute(query, params);
+      let rows: any;
+      try {
+        [rows] = await this.pool.execute(query, params);
+      } catch (error: any) {
+        if (this.isConnectionError(error) || error?.code === 'ER_NO_SUCH_TABLE') {
+          console.warn('Orders query failed. Returning empty array.', {
+            error: error?.message || error,
+            code: error?.code,
+            errno: error?.errno,
+            fatal: error?.fatal,
+          });
+          return [];
+        }
+        throw error;
+      }
       const orders = rows as any[];
 
       if (orders.length === 0) {
@@ -237,8 +263,26 @@ export class OrderModel {
         WHERE order_id IN (${orderIds.map(() => '?').join(',')})
       `;
 
-      const [itemsRows] = await this.pool.execute(itemsQuery, orderIds);
-      const items = itemsRows as any[];
+      let items: any[] = [];
+      try {
+        const [itemsRows] = await this.pool.execute(itemsQuery, orderIds);
+        items = itemsRows as any[];
+      } catch (error: any) {
+        if (error?.code === 'ER_NO_SUCH_TABLE') {
+          console.warn('Order items table missing. Returning orders without items.');
+          items = [];
+        } else if (this.isConnectionError(error)) {
+          console.warn('Order items query failed due to connection issue. Returning orders without items.', {
+            error: error?.message || error,
+            code: error?.code,
+            errno: error?.errno,
+            fatal: error?.fatal,
+          });
+          items = [];
+        } else {
+          throw error;
+        }
+      }
 
       // Group items by order_id
       const itemsByOrderId = items.reduce((acc, item) => {
@@ -288,6 +332,10 @@ export class OrderModel {
       if (error instanceof Error) {
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
+      }
+      if (this.isConnectionError(error) || (error as any)?.code === 'ER_NO_SUCH_TABLE') {
+        console.warn('Database unavailable when fetching orders. Returning empty array for client.');
+        return [];
       }
       throw error;
     }
@@ -389,6 +437,48 @@ export class OrderModel {
     } finally {
       connection.release();
     }
+  }
+
+  private isConnectionError(error: any): boolean {
+    if (!error) {
+      return false;
+    }
+
+    const connectionErrorCodes = new Set([
+      'ER_ACCESS_DENIED_ERROR',
+      'ECONNREFUSED',
+      'ENOTFOUND',
+      'ETIMEDOUT',
+      'PROTOCOL_CONNECTION_LOST',
+      'ER_BAD_DB_ERROR',
+      'ECONNRESET',
+    ]);
+
+    const connectionErrnos = new Set([2002, 2003, 1045, 1049, 2013]);
+
+    if ('code' in error && typeof error.code === 'string' && connectionErrorCodes.has(error.code)) {
+      return true;
+    }
+
+    if ('errno' in error && typeof error.errno === 'number' && connectionErrnos.has(error.errno)) {
+      return true;
+    }
+
+    if (error?.fatal === true) {
+      return true;
+    }
+
+    if (typeof error?.message === 'string') {
+      const message = error.message;
+      return (
+        message.includes('connect ECONNREFUSED') ||
+        message.includes('Connection lost') ||
+        message.includes('getaddrinfo ENOTFOUND') ||
+        message.includes('read ECONNRESET')
+      );
+    }
+
+    return false;
   }
 }
 

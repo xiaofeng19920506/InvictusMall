@@ -199,9 +199,25 @@ class AuthService {
   }
 
   async getCurrentUser(): Promise<AuthResponse> {
-    return this.request<AuthResponse>("/api/auth/me", {
-      method: "GET",
-    });
+    try {
+      return await this.request<AuthResponse>("/api/auth/me", {
+        method: "GET",
+      });
+    } catch (error: any) {
+      if (error?.isAuthError || error?.status === 401) {
+        try {
+          const refreshResult = await this.refreshToken();
+          if (refreshResult.success) {
+            return await this.request<AuthResponse>("/api/auth/me", {
+              method: "GET",
+            });
+          }
+        } catch (refreshError) {
+          throw refreshError;
+        }
+      }
+      throw error;
+    }
   }
 
   async forgotPassword(data: ForgotPasswordRequest): Promise<AuthResponse> {
@@ -266,6 +282,12 @@ class AuthService {
     // We can't check token validity from frontend anymore since it's HTTP-only
     // This will be determined by the /me endpoint response
     return true; // Always return true, let the server determine validity
+  }
+
+  async refreshToken(): Promise<AuthResponse> {
+    return this.request<AuthResponse>("/api/auth/refresh", {
+      method: "POST",
+    });
   }
 }
 
