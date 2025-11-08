@@ -2,6 +2,14 @@ import { Pool } from 'mysql2/promise';
 import { pool } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
 
+export type OrderStatus =
+  | 'pending_payment'
+  | 'pending'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled';
+
 export interface OrderItem {
   id: string;
   orderId: string;
@@ -20,7 +28,7 @@ export interface Order {
   storeName: string;
   items: OrderItem[];
   totalAmount: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status: OrderStatus;
   shippingAddress: {
     streetAddress: string;
     aptNumber?: string;
@@ -60,6 +68,7 @@ export interface CreateOrderRequest {
   };
   paymentMethod: string;
   stripeSessionId?: string | null;
+  status?: OrderStatus;
 }
 
 export class OrderModel {
@@ -119,13 +128,15 @@ export class OrderModel {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
+      const status: OrderStatus = orderData.status ?? 'pending';
+
       await connection.execute(orderQuery, [
         orderId,
         orderData.userId,
         orderData.storeId,
         orderData.storeName,
         totalAmount,
-        'pending',
+        status,
         orderData.shippingAddress.streetAddress,
         orderData.shippingAddress.aptNumber || null,
         orderData.shippingAddress.city,
@@ -171,6 +182,114 @@ export class OrderModel {
     } finally {
       connection.release();
     }
+  }
+
+  async deleteOrdersByStripeSession(sessionId: string): Promise<void> {
+    if (!sessionId) {
+      return;
+    }
+
+    const connection = await this.pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      const [rows] = await connection.execute(
+        `SELECT id FROM orders WHERE stripe_session_id = ? AND status = 'pending_payment'`,
+        [sessionId]
+      );
+
+      const orderIds = (rows as any[]).map((row) => row.id);
+
+      if (orderIds.length > 0) {
+        const placeholders = orderIds.map(() => '?').join(', ');
+        await connection.execute(
+          `DELETE FROM order_items WHERE order_id IN (${placeholders})`,
+          orderIds
+        );
+        await connection.execute(
+          `DELETE FROM orders WHERE id IN (${placeholders})`,
+          orderIds
+        );
+      }
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async updateOrderAfterPayment(
+    orderId: string,
+    updates: {
+      status?: OrderStatus;
+      paymentMethod?: string;
+      stripeSessionId?: string | null;
+      orderDate?: Date;
+      shippingAddress?: {
+        streetAddress: string;
+        aptNumber?: string;
+        city: string;
+        stateProvince: string;
+        zipCode: string;
+        country: string;
+      };
+    }
+  ): Promise<void> {
+    if (!orderId) {
+      return;
+    }
+
+    const fields: string[] = [];
+    const params: any[] = [];
+
+    if (updates.status) {
+      fields.push('status = ?');
+      params.push(updates.status);
+    }
+
+    if (updates.paymentMethod) {
+      fields.push('payment_method = ?');
+      params.push(updates.paymentMethod);
+    }
+
+    if (updates.stripeSessionId !== undefined) {
+      fields.push('stripe_session_id = ?');
+      params.push(updates.stripeSessionId);
+    }
+
+    if (updates.orderDate) {
+      fields.push('order_date = ?');
+      params.push(updates.orderDate);
+    }
+
+    if (updates.shippingAddress) {
+      fields.push('shipping_street_address = ?');
+      params.push(updates.shippingAddress.streetAddress);
+      fields.push('shipping_apt_number = ?');
+      params.push(updates.shippingAddress.aptNumber ?? null);
+      fields.push('shipping_city = ?');
+      params.push(updates.shippingAddress.city);
+      fields.push('shipping_state_province = ?');
+      params.push(updates.shippingAddress.stateProvince);
+      fields.push('shipping_zip_code = ?');
+      params.push(updates.shippingAddress.zipCode);
+      fields.push('shipping_country = ?');
+      params.push(updates.shippingAddress.country);
+    }
+
+    if (fields.length === 0) {
+      return;
+    }
+
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+
+    const query = `UPDATE orders SET ${fields.join(', ')} WHERE id = ?`;
+    params.push(orderId);
+
+    await this.pool.execute(query, params);
   }
 
   async getOrderById(orderId: string): Promise<Order> {
@@ -428,7 +547,7 @@ export class OrderModel {
           store_id VARCHAR(36) NOT NULL,
           store_name VARCHAR(255) NOT NULL,
           total_amount DECIMAL(10, 2) NOT NULL,
-          status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
+          status ENUM('pending_payment', 'pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
           shipping_street_address VARCHAR(255) NOT NULL,
           shipping_apt_number VARCHAR(50) NULL,
           shipping_city VARCHAR(100) NOT NULL,
@@ -452,6 +571,14 @@ export class OrderModel {
       `;
 
       await connection.execute(ordersTableQuery);
+
+      try {
+        await connection.execute(
+          `ALTER TABLE orders MODIFY COLUMN status ENUM('pending_payment', 'pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending'`
+        );
+      } catch (error: any) {
+        // Ignore if status column already updated
+      }
 
       try {
         await connection.execute(

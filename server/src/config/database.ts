@@ -280,6 +280,7 @@ const createTables = async (): Promise<void> => {
     const { OrderModel } = await import('../models/OrderModel');
     const orderModel = new OrderModel();
     await orderModel.createOrdersTable();
+
   } finally {
     connection.release();
   }

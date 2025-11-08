@@ -3,7 +3,6 @@ import Stripe from "stripe";
 import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
 import { ShippingAddressModel } from "../models/ShippingAddressModel";
 import { OrderModel } from "../models/OrderModel";
-
 const router = Router();
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -48,6 +47,20 @@ interface CheckoutPayload {
   saveNewAddress?: boolean;
 }
 
+interface PendingOrderItem {
+  productId: string;
+  productName: string;
+  productImage?: string;
+  quantity: number;
+  price: number;
+}
+
+interface PendingOrderGroup {
+  storeId: string;
+  storeName: string;
+  items: PendingOrderItem[];
+}
+
 router.post(
   "/checkout-session",
   authenticateToken,
@@ -68,20 +81,16 @@ router.post(
         });
       }
 
-  const {
-    items,
-    shippingAddressId,
-    newShippingAddress,
-    saveNewAddress,
-  } = req.body as CheckoutPayload;
+      const { items, shippingAddressId, newShippingAddress, saveNewAddress } =
+        req.body as CheckoutPayload;
 
-  const userEmail = req.user?.email;
-  if (!userEmail) {
-    return res.status(400).json({
-      success: false,
-      message: "User email is required to start checkout.",
-    });
-  }
+      const userEmail = req.user?.email;
+      if (!userEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "User email is required to start checkout.",
+        });
+      }
 
       if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({
@@ -95,6 +104,10 @@ router.post(
           ...item,
           quantity: Number(item.quantity) || 0,
           price: Number(item.price) || 0,
+          productImage:
+            typeof item.productImage === "string" && item.productImage.trim()
+              ? item.productImage.trim()
+              : undefined,
         }))
         .filter((item) => item.quantity > 0 && item.price > 0);
 
@@ -105,14 +118,33 @@ router.post(
         });
       }
 
-      let shippingAddress:
-        | CheckoutPayload["newShippingAddress"]
-        | undefined;
+      const itemsByStore = new Map<string, PendingOrderGroup>();
+
+      for (const item of sanitizedItems) {
+        if (!itemsByStore.has(item.storeId)) {
+          itemsByStore.set(item.storeId, {
+            storeId: item.storeId,
+            storeName: item.storeName,
+            items: [],
+          });
+        }
+
+        itemsByStore.get(item.storeId)!.items.push({
+          productId: item.productId,
+          productName: item.productName,
+          productImage: item.productImage,
+          quantity: item.quantity,
+          price: item.price,
+        });
+      }
+
+      let shippingAddress: CheckoutPayload["newShippingAddress"] | undefined;
 
       if (shippingAddressId) {
         try {
-          const existingAddress =
-            await shippingAddressModel.getAddressById(shippingAddressId);
+          const existingAddress = await shippingAddressModel.getAddressById(
+            shippingAddressId
+          );
           if (existingAddress.userId !== userId) {
             return res.status(403).json({
               success: false,
@@ -198,29 +230,45 @@ router.post(
         process.env.CLIENT_URL ||
         "http://localhost:3000";
 
-      const lineItems = sanitizedItems.map((item) => ({
-        quantity: item.quantity,
-        price_data: {
-          currency: "usd",
-          unit_amount: Math.round(item.price * 100),
-          product_data: {
-            name: item.productName,
-            metadata: {
-              productId: item.productId,
-              storeId: item.storeId,
-              storeName: item.storeName,
-              productName: item.productName,
+      const lineItems = sanitizedItems.map((item) => {
+        const rawImage =
+          typeof item.productImage === "string" ? item.productImage.trim() : "";
+        const isAbsoluteImage =
+          rawImage.startsWith("http://") || rawImage.startsWith("https://");
+
+        return {
+          quantity: item.quantity,
+          price_data: {
+            currency: "usd",
+            unit_amount: Math.round(item.price * 100),
+            product_data: {
+              name: item.productName,
+              metadata: {
+                productId: item.productId,
+                storeId: item.storeId,
+                storeName: item.storeName,
+                productName: item.productName,
+              },
+              ...(isAbsoluteImage
+                ? {
+                    images: [rawImage],
+                  }
+                : {}),
             },
-            ...(item.productImage
-              ? {
-                  images: [item.productImage],
-                }
-              : {}),
           },
-        },
-      }));
+        };
+      });
 
       const resolvedShippingAddress = shippingAddress;
+
+      const persistedShippingAddress = {
+        streetAddress: shippingAddress.streetAddress,
+        aptNumber: shippingAddress.aptNumber,
+        city: shippingAddress.city,
+        stateProvince: shippingAddress.stateProvince,
+        zipCode: shippingAddress.zipCode,
+        country: shippingAddress.country,
+      };
 
       if (!resolvedShippingAddress) {
         return res.status(500).json({
@@ -282,6 +330,52 @@ router.post(
         });
       }
 
+      try {
+        await orderModel.deleteOrdersByStripeSession(session.id);
+
+        for (const { storeId, storeName, items } of itemsByStore.values()) {
+          await orderModel.createOrder({
+            userId,
+            storeId,
+            storeName,
+            items,
+            shippingAddress: persistedShippingAddress,
+            paymentMethod: "stripe_checkout:pending",
+            stripeSessionId: session.id,
+            status: "pending_payment",
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Failed to prepare pending orders for checkout session:",
+          error
+        );
+
+        try {
+          await orderModel.deleteOrdersByStripeSession(session.id);
+        } catch (cleanupError) {
+          console.warn(
+            "Unable to clean up staged orders after failure:",
+            cleanupError
+          );
+        }
+
+        try {
+          await stripeClient.checkout.sessions.expire(session.id);
+        } catch (expireError) {
+          console.warn(
+            "Unable to expire Stripe checkout session after failure:",
+            expireError
+          );
+        }
+
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to prepare your checkout session. Please try again in a moment.",
+        });
+      }
+
       return res.json({
         success: true,
         checkoutUrl: session.url,
@@ -328,22 +422,9 @@ router.post(
         });
       }
 
-      const existingOrders = await orderModel.getOrdersByStripeSession(
-        sessionId
-      );
-
-      if (existingOrders.length > 0) {
-        return res.json({
-          success: true,
-          message: "Order already processed.",
-          orderIds: existingOrders.map((order) => order.id),
-        });
-      }
-
-      const session = await stripeClient.checkout.sessions.retrieve(
-        sessionId,
-        { expand: ["customer"] }
-      );
+      const session = await stripeClient.checkout.sessions.retrieve(sessionId, {
+        expand: ["customer"],
+      });
 
       if (!session) {
         return res.status(404).json({
@@ -366,14 +447,6 @@ router.post(
             "Payment has not been completed for this session. Please try again after payment is confirmed.",
         });
       }
-
-      const lineItems = await stripeClient.checkout.sessions.listLineItems(
-        sessionId,
-        {
-          limit: 100,
-          expand: ["data.price.product"],
-        }
-      );
 
       const shippingAddressMetadata = session.metadata?.shipping_address;
       let resolvedShippingAddress:
@@ -432,109 +505,134 @@ router.post(
         });
       }
 
-      const itemsByStore = new Map<
-        string,
-        {
-          storeId: string;
-          storeName: string;
-          items: {
-            productId: string;
-            productName: string;
-            productImage?: string;
-            quantity: number;
-            price: number;
-          }[];
-        }
-      >();
+      const existingOrders = await orderModel.getOrdersByStripeSession(
+        sessionId
+      );
 
-      for (const lineItem of lineItems.data) {
-        const quantity = lineItem.quantity ?? 0;
-        if (quantity <= 0) {
-          continue;
-        }
+      const orderIds: string[] = [];
 
-        const price = lineItem.price;
-        const product =
-          price && price.product && typeof price.product !== "string"
-            ? (price.product as Stripe.Product | Stripe.DeletedProduct)
-            : undefined;
-        const metadata =
-          product && "metadata" in product && product.metadata
-            ? product.metadata
-            : {};
+      if (existingOrders.length === 0) {
+        const lineItems = await stripeClient.checkout.sessions.listLineItems(
+          sessionId,
+          {
+            limit: 100,
+            expand: ["data.price.product"],
+          }
+        );
 
-        const storeId = metadata.storeId || metadata.store_id;
-        const storeName =
-          metadata.storeName ||
-          metadata.store_name ||
-          "Invictus Mall Store";
-        const productId =
-          metadata.productId || metadata.product_id || lineItem.id;
-        const productName =
-          lineItem.description ||
-          metadata.productName ||
-          metadata.product_name ||
-          "Product";
-        const productImage =
-          product &&
-          "images" in product &&
-          Array.isArray(product.images) &&
-          product.images.length > 0
-            ? product.images[0]
-            : undefined;
-        const unitAmountCents = price?.unit_amount ?? 0;
-        const unitPrice = unitAmountCents / 100;
+        const itemsByStore = new Map<string, PendingOrderGroup>();
 
-        if (!storeId || unitPrice <= 0) {
-          continue;
-        }
+        for (const lineItem of lineItems.data) {
+          const quantity = lineItem.quantity ?? 0;
+          if (quantity <= 0) {
+            continue;
+          }
 
-        if (!itemsByStore.has(storeId)) {
-          itemsByStore.set(storeId, {
-            storeId,
-            storeName,
-            items: [],
+          const price = lineItem.price;
+          const product =
+            price && price.product && typeof price.product !== "string"
+              ? (price.product as Stripe.Product | Stripe.DeletedProduct)
+              : undefined;
+          const metadata =
+            product && "metadata" in product && product.metadata
+              ? product.metadata
+              : {};
+
+          const storeId =
+            metadata.storeId ||
+            metadata.store_id ||
+            lineItem.price?.metadata?.storeId;
+          const storeName =
+            metadata.storeName || metadata.store_name || "Invictus Mall Store";
+          const productId =
+            metadata.productId || metadata.product_id || lineItem.id;
+          const productName =
+            lineItem.description ||
+            metadata.productName ||
+            metadata.product_name ||
+            "Product";
+          const productImage =
+            product &&
+            "images" in product &&
+            Array.isArray(product.images) &&
+            product.images.length > 0
+              ? product.images[0]
+              : undefined;
+          const unitAmountCents = price?.unit_amount ?? 0;
+          const unitPrice = unitAmountCents / 100;
+
+          if (!storeId || unitPrice <= 0) {
+            continue;
+          }
+
+          if (!itemsByStore.has(storeId)) {
+            itemsByStore.set(storeId, {
+              storeId,
+              storeName,
+              items: [],
+            });
+          }
+
+          itemsByStore.get(storeId)!.items.push({
+            productId,
+            productName,
+            productImage,
+            quantity,
+            price: unitPrice,
           });
         }
 
-        itemsByStore.get(storeId)!.items.push({
-          productId,
-          productName,
-          productImage,
-          quantity,
-          price: unitPrice,
-        });
-      }
+        if (itemsByStore.size === 0) {
+          return res.status(400).json({
+            success: false,
+            message:
+              "No purchasable items were found for this session. Please contact support.",
+          });
+        }
 
-      if (itemsByStore.size === 0) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "No purchasable items were found for this session. Please contact support.",
-        });
-      }
+        for (const { storeId, storeName, items } of itemsByStore.values()) {
+          const order = await orderModel.createOrder({
+            userId,
+            storeId,
+            storeName,
+            items,
+            shippingAddress: {
+              streetAddress: resolvedShippingAddress.streetAddress,
+              aptNumber: resolvedShippingAddress.aptNumber,
+              city: resolvedShippingAddress.city,
+              stateProvince: resolvedShippingAddress.stateProvince,
+              zipCode: resolvedShippingAddress.zipCode,
+              country: resolvedShippingAddress.country,
+            },
+            paymentMethod: `stripe_checkout:${sessionId}`,
+            stripeSessionId: sessionId,
+            status: "pending",
+          });
 
-      const createdOrders: string[] = [];
+          orderIds.push(order.id);
+        }
+      } else {
+        const now = new Date();
 
-      for (const { storeId, storeName, items } of itemsByStore.values()) {
-        const order = await orderModel.createOrder({
-          userId,
-          storeId,
-          storeName,
-          items,
-          shippingAddress: {
-            streetAddress: resolvedShippingAddress.streetAddress,
-            aptNumber: resolvedShippingAddress.aptNumber,
-            city: resolvedShippingAddress.city,
-            stateProvince: resolvedShippingAddress.stateProvince,
-            zipCode: resolvedShippingAddress.zipCode,
-            country: resolvedShippingAddress.country,
-          },
-          paymentMethod: `stripe_checkout:${sessionId}`,
-          stripeSessionId: sessionId,
-        });
+        for (const order of existingOrders) {
+          await orderModel.updateOrderAfterPayment(order.id, {
+            status:
+              order.status === "pending_payment" ? "pending" : order.status,
+            paymentMethod: `stripe_checkout:${sessionId}`,
+            stripeSessionId: sessionId,
+            orderDate: now,
+            shippingAddress: {
+              streetAddress: resolvedShippingAddress.streetAddress,
+              aptNumber: resolvedShippingAddress.aptNumber,
+              city: resolvedShippingAddress.city,
+              stateProvince: resolvedShippingAddress.stateProvince,
+              zipCode: resolvedShippingAddress.zipCode,
+              country: resolvedShippingAddress.country,
+            },
+          });
 
-        createdOrders.push(order.id);
+          orderIds.push(order.id);
+        }
       }
 
       try {
@@ -554,7 +652,7 @@ router.post(
       return res.json({
         success: true,
         message: "Order has been recorded successfully.",
-        orderIds: createdOrders,
+        orderIds,
       });
     } catch (error) {
       console.error("Failed to finalize Stripe checkout session:", error);
@@ -570,5 +668,3 @@ router.post(
 );
 
 export default router;
-
-
