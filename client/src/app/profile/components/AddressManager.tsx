@@ -12,6 +12,7 @@ interface AddressManagerProps {
   onDelete?: (id: string) => Promise<void>;
   onSetDefault?: (id: string) => Promise<void>;
   loading?: boolean;
+  showAddButton?: boolean;
 }
 
 export default function AddressManager({
@@ -20,7 +21,8 @@ export default function AddressManager({
   onUpdate,
   onDelete,
   onSetDefault,
-  loading = false
+  loading = false,
+  showAddButton = true
 }: AddressManagerProps) {
   const [addresses, setAddresses] = useState<ShippingAddress[]>(initialAddresses);
   const [isAdding, setIsAdding] = useState(false);
@@ -361,12 +363,17 @@ export default function AddressManager({
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900">Addresses</h2>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors cursor-pointer"
-        >
-          + Add Address
-        </button>
+        {showAddButton && (
+          <button
+            onClick={() => {
+              resetForm();
+              setIsAdding(true);
+            }}
+            className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors cursor-pointer"
+          >
+            + Add Address
+          </button>
+        )}
       </div>
 
       {/* Add/Edit Form */}

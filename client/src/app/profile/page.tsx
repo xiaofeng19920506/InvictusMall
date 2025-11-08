@@ -8,6 +8,7 @@ import AccountInformation from "./components/AccountInformation";
 import EditProfile from "./components/EditProfile";
 import ChangePasswordForm from "./components/ChangePasswordForm";
 import ProfileAddresses from "./components/ProfileAddresses";
+import AddAddressForm from "./components/AddAddressForm";
 import ProfilePageWrapper from "./components/ProfilePageWrapper";
 
 interface ProfilePageProps {
@@ -15,6 +16,7 @@ interface ProfilePageProps {
     tab?: string;
     status?: string;
     message?: string;
+    showAdd?: string;
   }>;
 }
 
@@ -24,6 +26,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const feedbackStatus =
     params.status === 'success' || params.status === 'error' ? params.status : undefined;
   const feedbackMessage = feedbackStatus ? params.message : undefined;
+  const showAddAddress = params.showAdd === '1';
   
   const cookieStore = await cookies();
   
@@ -106,7 +109,13 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
             <ChangePasswordForm status={feedbackStatus} message={feedbackMessage} />
           )}
           {activeTab === "addresses" && (
-            <ProfileAddresses initialAddresses={initialAddresses || []} />
+            <>
+              <ProfileAddresses
+                initialAddresses={initialAddresses || []}
+                showAddForm={showAddAddress}
+              />
+              {showAddAddress && <AddAddressForm />}
+            </>
           )}
         </div>
       </div>
