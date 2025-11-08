@@ -13,12 +13,17 @@ import ProfilePageWrapper from "./components/ProfilePageWrapper";
 interface ProfilePageProps {
   searchParams: Promise<{
     tab?: string;
+    status?: string;
+    message?: string;
   }>;
 }
 
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const params = await searchParams;
   const activeTab = (params.tab as "profile" | "password" | "addresses") || "profile";
+  const feedbackStatus =
+    params.status === 'success' || params.status === 'error' ? params.status : undefined;
+  const feedbackMessage = feedbackStatus ? params.message : undefined;
   
   const cookieStore = await cookies();
   
@@ -97,7 +102,9 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
               } : null}
             />
           )}
-          {activeTab === "password" && <ChangePasswordForm />}
+          {activeTab === "password" && (
+            <ChangePasswordForm status={feedbackStatus} message={feedbackMessage} />
+          )}
           {activeTab === "addresses" && (
             <ProfileAddresses initialAddresses={initialAddresses || []} />
           )}

@@ -32,13 +32,11 @@ export default async function Home({ searchParams }: HomeProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
       <HomeContent 
         initialStores={initialStores}
         initialSearch={params.search || ''}
         initialCategory={params.category || 'All'}
         initialSearchType={params.searchType || 'All'}
       />
-    </div>
   );
 }

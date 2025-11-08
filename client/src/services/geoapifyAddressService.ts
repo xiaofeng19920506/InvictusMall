@@ -77,6 +77,35 @@ class GeoapifyAddressService {
     }
   }
 
+  private normalizeCountryCode(countryCode?: string | null): string | null {
+    if (!countryCode) return null;
+    const trimmed = countryCode.trim().toLowerCase();
+    if (!trimmed) return null;
+
+    const directMap: Record<string, string> = {
+      usa: 'us',
+      'united states': 'us',
+      'united states of america': 'us',
+      us: 'us',
+      canada: 'ca',
+      can: 'ca',
+      ca: 'ca',
+      mexico: 'mx',
+      mex: 'mx',
+      mx: 'mx',
+    };
+
+    if (directMap[trimmed]) {
+      return directMap[trimmed];
+    }
+
+    if (trimmed.length >= 2) {
+      return trimmed.slice(0, 2);
+    }
+
+    return null;
+  }
+
   /**
    * Get address suggestions/autocomplete as user types
    */
@@ -89,12 +118,14 @@ class GeoapifyAddressService {
       // Use Geoapify Autocomplete API
       // Note: The 'type' parameter format may cause 400 errors
       // Using only filter parameter for country restriction
+      const normalizedCountry = this.normalizeCountryCode(countryCode) || 'us';
+
       const params = new URLSearchParams({
         text: query,
         apiKey: this.apiKey,
         limit: '5',
         format: 'geojson',
-        filter: `countrycode:${countryCode}`,
+        filter: `countrycode:${normalizedCountry}`,
       });
 
       const response = await fetch(

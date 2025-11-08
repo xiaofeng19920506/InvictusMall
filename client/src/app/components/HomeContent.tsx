@@ -85,13 +85,13 @@ export default function HomeContent({
   };
 
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Header
         onSearch={handleSearch}
         onCategoryFilter={handleCategoryFilter}
         onSearchTypeChange={handleSearchTypeChange}
       />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 text-center">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             {searchType === "All"
@@ -150,7 +150,7 @@ export default function HomeContent({
         />
       </main>
 
-      <footer className="bg-gray-900 text-white py-8 mt-12">
+      <footer className="bg-gray-900 text-white py-8 mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p>&copy; 2024 Invictus Mall. All rights reserved.</p>
@@ -183,6 +183,6 @@ export default function HomeContent({
           </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }
