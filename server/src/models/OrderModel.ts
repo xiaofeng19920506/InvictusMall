@@ -36,6 +36,7 @@ export interface Order {
   trackingNumber?: string;
   createdAt: string;
   updatedAt: string;
+  stripeSessionId?: string | null;
 }
 
 export interface CreateOrderRequest {
@@ -58,6 +59,7 @@ export interface CreateOrderRequest {
     country: string;
   };
   paymentMethod: string;
+  stripeSessionId?: string | null;
 }
 
 export class OrderModel {
@@ -65,6 +67,37 @@ export class OrderModel {
 
   constructor() {
     this.pool = pool;
+  }
+
+  async getOrdersByStripeSession(sessionId: string): Promise<Order[]> {
+    const query = `
+      SELECT 
+        o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
+        o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
+        o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
+        o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
+        o.tracking_number, o.created_at, o.updated_at,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', oi.id,
+            'productId', oi.product_id,
+            'productName', oi.product_name,
+            'productImage', oi.product_image,
+            'quantity', oi.quantity,
+            'price', oi.price,
+            'subtotal', oi.subtotal
+          )
+        ) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE o.stripe_session_id = ?
+      GROUP BY o.id
+    `;
+
+    const [rows] = await this.pool.execute(query, [sessionId]);
+    const orders = rows as any[];
+
+    return orders.map((row) => this.mapRowToOrder(row));
   }
 
   async createOrder(orderData: CreateOrderRequest): Promise<Order> {
@@ -82,8 +115,8 @@ export class OrderModel {
           id, user_id, store_id, store_name, total_amount, status,
           shipping_street_address, shipping_apt_number, shipping_city,
           shipping_state_province, shipping_zip_code, shipping_country,
-          payment_method, order_date, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          payment_method, stripe_session_id, order_date, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       await connection.execute(orderQuery, [
@@ -100,6 +133,7 @@ export class OrderModel {
         orderData.shippingAddress.zipCode,
         orderData.shippingAddress.country,
         orderData.paymentMethod,
+        orderData.stripeSessionId || null,
         now,
         now,
         now
@@ -145,7 +179,7 @@ export class OrderModel {
         o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
         o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
         o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
-        o.payment_method, o.order_date, o.shipped_date, o.delivered_date,
+        o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
         o.tracking_number, o.created_at, o.updated_at,
         JSON_ARRAYAGG(
           JSON_OBJECT(
@@ -196,7 +230,7 @@ export class OrderModel {
           o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
           o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
           o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
-          o.payment_method, o.order_date, o.shipped_date, o.delivered_date,
+          o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
           o.tracking_number, o.created_at, o.updated_at
         FROM orders o
         WHERE o.user_id = ?
@@ -319,6 +353,7 @@ export class OrderModel {
           country: order.shipping_country
         },
         paymentMethod: order.payment_method,
+        stripeSessionId: order.stripe_session_id || null,
         orderDate: order.order_date,
         shippedDate: order.shipped_date || undefined,
         deliveredDate: order.delivered_date || undefined,
@@ -377,7 +412,8 @@ export class OrderModel {
       deliveredDate: row.delivered_date || undefined,
       trackingNumber: row.tracking_number || undefined,
       createdAt: row.created_at,
-      updatedAt: row.updated_at
+      updatedAt: row.updated_at,
+      stripeSessionId: row.stripe_session_id || null
     };
   }
 
@@ -399,7 +435,8 @@ export class OrderModel {
           shipping_state_province VARCHAR(100) NOT NULL,
           shipping_zip_code VARCHAR(20) NOT NULL,
           shipping_country VARCHAR(100) NOT NULL,
-          payment_method VARCHAR(50) NOT NULL,
+          payment_method VARCHAR(100) NOT NULL,
+          stripe_session_id VARCHAR(255) NULL,
           order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           shipped_date TIMESTAMP NULL,
           delivered_date TIMESTAMP NULL,
@@ -409,11 +446,36 @@ export class OrderModel {
           INDEX idx_user_id (user_id),
           INDEX idx_store_id (store_id),
           INDEX idx_status (status),
-          INDEX idx_order_date (order_date)
+          INDEX idx_order_date (order_date),
+          INDEX idx_stripe_session (stripe_session_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `;
 
       await connection.execute(ordersTableQuery);
+
+      try {
+        await connection.execute(
+          `ALTER TABLE orders ADD COLUMN stripe_session_id VARCHAR(255) NULL`
+        );
+      } catch (error: any) {
+        // Ignore if column already exists
+      }
+
+      try {
+        await connection.execute(
+          `ALTER TABLE orders MODIFY COLUMN payment_method VARCHAR(100) NOT NULL`
+        );
+      } catch (error: any) {
+        // Ignore if column already updated
+      }
+
+      try {
+        await connection.execute(
+          `ALTER TABLE orders ADD INDEX idx_stripe_session (stripe_session_id)`
+        );
+      } catch (error: any) {
+        // Ignore if index already exists
+      }
 
       // Create order_items table
       const orderItemsTableQuery = `

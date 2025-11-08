@@ -350,6 +350,56 @@ export interface ShippingAddress {
   updatedAt: string;
 }
 
+export interface CheckoutCompletionResponse {
+  success: boolean;
+  message?: string;
+  orderIds?: string[];
+}
+
+export async function completeCheckoutSessionServer(
+  cookiesHeader: string | undefined,
+  sessionId: string
+): Promise<CheckoutCompletionResponse> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const url = `${baseUrl}/api/payments/checkout-complete`;
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (cookiesHeader && cookiesHeader.trim()) {
+    headers["Cookie"] = cookiesHeader;
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ sessionId }),
+    cache: "no-store",
+  });
+
+  const data = (await response.json()) as CheckoutCompletionResponse & {
+    success?: boolean;
+    message?: string;
+    orderIds?: string[];
+  };
+
+  if (!response.ok) {
+    return {
+      success: false,
+      message:
+        data?.message ||
+        `Failed to complete checkout session. Status code: ${response.status}`,
+    };
+  }
+
+  return {
+    success: Boolean(data?.success),
+    message: data?.message,
+    orderIds: Array.isArray(data?.orderIds) ? data.orderIds : undefined,
+  };
+}
+
 /**
  * Server-side function to fetch shipping addresses
  * Uses cookies for authentication

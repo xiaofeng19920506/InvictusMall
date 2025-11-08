@@ -38,6 +38,7 @@
     "nodemailer": "^7.0.10",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "stripe": "^17.4.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

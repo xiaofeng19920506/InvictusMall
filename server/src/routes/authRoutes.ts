@@ -419,7 +419,7 @@ router.post(
       res.cookie("auth_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: "/",
       });
@@ -645,7 +645,7 @@ router.post(
       res.cookie("auth_token", jwtToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: "/",
       });
@@ -1146,7 +1146,7 @@ router.post("/logout", (req: Request, res: Response) => {
   res.clearCookie("auth_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
   });
 
@@ -1718,7 +1718,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
       res.cookie("staff_auth_token", refreshedToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+      sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       });
@@ -1772,7 +1772,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
     res.cookie("auth_token", refreshedToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
       path: "/",
     });

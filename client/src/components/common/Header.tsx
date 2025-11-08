@@ -88,7 +88,21 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-orange-500">Invictus Mall</h1>
+            <h1
+              role="link"
+              tabIndex={0}
+              onClick={() => router.push('/')}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  router.push('/');
+                }
+              }}
+              className="text-2xl font-bold text-orange-500 hover:text-orange-400 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+              aria-label="Invictus Mall home"
+            >
+              Invictus Mall
+            </h1>
           </div>
           
           <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-8">
