@@ -1,33 +1,29 @@
-import { changePasswordAction } from '../actions';
+import { changePasswordAction } from "../actions";
 
 interface ChangePasswordFormProps {
-  status?: 'success' | 'error';
+  status?: "success" | "error";
   message?: string;
 }
 
-export default function ChangePasswordForm({ status, message }: ChangePasswordFormProps) {
-  const isSuccess = status === 'success';
-  const isError = status === 'error';
-
+export default function ChangePasswordForm({
+  status,
+  message,
+}: ChangePasswordFormProps) {
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Change Password</h2>
 
-      {isSuccess && message && (
-        <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md">
-          {message}
-        </div>
-      )}
-
-      {isError && message && (
-        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-          {message}
-        </div>
-      )}
+      <p className="mb-4 text-sm text-gray-600">
+        Enter your current password and choose a new one that’s at least 6
+        characters long.
+      </p>
 
       <form action={changePasswordAction} className="space-y-4">
         <div>
-          <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="currentPassword"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Current Password
           </label>
           <input
@@ -41,7 +37,10 @@ export default function ChangePasswordForm({ status, message }: ChangePasswordFo
         </div>
 
         <div>
-          <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="newPassword"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             New Password
           </label>
           <input
@@ -56,7 +55,10 @@ export default function ChangePasswordForm({ status, message }: ChangePasswordFo
         </div>
 
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+          <label
+            htmlFor="confirmPassword"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
             Confirm New Password
           </label>
           <input
@@ -80,4 +82,3 @@ export default function ChangePasswordForm({ status, message }: ChangePasswordFo
     </div>
   );
 }
-

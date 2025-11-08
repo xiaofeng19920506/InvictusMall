@@ -1,28 +1,41 @@
-import ProtectedRoute from '@/components/common/ProtectedRoute';
-import Header from '@/components/common/Header';
-import { Order } from '@/services/order';
-import OrdersClient from './OrdersClient';
+import Header from "@/components/common/Header";
+import OrdersPageWrapper from "./OrdersPageWrapper";
+import OrdersStatusFilter from "./OrdersStatusFilter";
+import OrdersList from "./OrdersList";
+import OrdersEmptyState from "./OrdersEmptyState";
+import { Order } from "@/lib/server-api";
 
 interface OrdersContentProps {
-  initialOrders: Order[];
-  initialStatus?: string;
+  orders: Order[];
+  status: string;
 }
 
-export default function OrdersContent({ initialOrders, initialStatus = 'all' }: OrdersContentProps) {
+export default function OrdersContent({
+  orders,
+  status,
+}: OrdersContentProps) {
   return (
-    <ProtectedRoute>
+    <OrdersPageWrapper>
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
-            <p className="text-gray-600 mt-2">View and track your order history</p>
+            <p className="text-gray-600 mt-2">
+              View and track your recent purchases.
+            </p>
           </div>
 
-          <OrdersClient initialOrders={initialOrders} initialStatus={initialStatus} />
+          <OrdersStatusFilter activeStatus={status} />
+
+          {orders.length > 0 ? (
+            <OrdersList orders={orders} />
+          ) : (
+            <OrdersEmptyState status={status} />
+          )}
         </main>
       </div>
-    </ProtectedRoute>
+    </OrdersPageWrapper>
   );
 }
 

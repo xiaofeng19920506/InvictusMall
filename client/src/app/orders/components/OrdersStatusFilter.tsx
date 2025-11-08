@@ -1,43 +1,45 @@
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 interface OrdersStatusFilterProps {
-  initialStatus: string;
+  activeStatus: string;
+}
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All Orders" },
+  { value: "pending", label: "Pending" },
+  { value: "processing", label: "Processing" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+function buildStatusHref(status: string) {
+  return status === "all" ? "/orders" : `/orders?status=${status}`;
 }
 
 export default function OrdersStatusFilter({
-  initialStatus,
+  activeStatus,
 }: OrdersStatusFilterProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const handleStatusChange = (status: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (status === "all") {
-      params.delete("status");
-    } else {
-      params.set("status", status);
-    }
-    router.push(`/orders?${params.toString()}`);
-  };
-
   return (
-    <div className="mb-6">
-      <select
-        value={initialStatus}
-        onChange={(e) => handleStatusChange(e.target.value)}
-        className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-      >
-        <option value="all">All Orders</option>
-        <option value="pending">Pending</option>
-        <option value="processing">Processing</option>
-        <option value="shipped">Shipped</option>
-        <option value="delivered">Delivered</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-    </div>
+    <nav className="flex flex-wrap gap-2 border-b border-gray-200 pb-4">
+      {STATUS_OPTIONS.map((option) => {
+        const isActive = activeStatus === option.value;
+        return (
+          <Link
+            key={option.value}
+            href={buildStatusHref(option.value)}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              isActive
+                ? "bg-orange-500 text-white shadow"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }`}
+            prefetch={false}
+          >
+            {option.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
-
 

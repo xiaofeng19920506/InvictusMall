@@ -51,8 +51,8 @@ export default function AddressManager({
             getEditHref={getEditHref}
             deleteAddressAction={deleteAddressAction}
             setDefaultAddressAction={setDefaultAddressAction}
-          />
-        </div>
+            />
+          </div>
       </section>
 
       <AddressModal

@@ -8,6 +8,7 @@ import type {
   UpdateShippingAddressRequest,
   ShippingAddress,
 } from '@/services/shippingAddress';
+import type { AuthResponse } from '@/services/auth';
 
 const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const API_BASE_URL = rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://')
@@ -23,6 +24,7 @@ interface FetchResult<T = unknown> {
 
 const PROFILE_PATH = '/profile';
 const PROFILE_PASSWORD_TAB = 'password';
+const PROFILE_PROFILE_TAB = 'profile';
 
 async function buildCookieHeader(): Promise<string | undefined> {
   const cookieStore = await cookies();
@@ -96,8 +98,12 @@ async function authFetch<T = unknown>(
   }
 }
 
-function redirectWithStatus(status: 'success' | 'error', message?: string) {
-  const params = new URLSearchParams({ tab: PROFILE_PASSWORD_TAB, status });
+function redirectToTab(
+  tab: 'profile' | 'password' | 'addresses',
+  status: 'success' | 'error',
+  message?: string
+) {
+  const params = new URLSearchParams({ tab, status });
   if (message) {
     params.set('message', message.slice(0, 200));
   }
@@ -110,23 +116,23 @@ export async function changePasswordAction(formData: FormData): Promise<void> {
   const confirmPassword = formData.get('confirmPassword')?.toString().trim() || '';
 
   if (!currentPassword) {
-    redirectWithStatus('error', 'Current password is required.');
+    redirectToTab(PROFILE_PASSWORD_TAB, 'error', 'Current password is required.');
   }
 
   if (!newPassword) {
-    redirectWithStatus('error', 'New password is required.');
+    redirectToTab(PROFILE_PASSWORD_TAB, 'error', 'New password is required.');
   }
 
   if (newPassword.length < 6) {
-    redirectWithStatus('error', 'Password must be at least 6 characters long.');
+    redirectToTab(PROFILE_PASSWORD_TAB, 'error', 'Password must be at least 6 characters long.');
   }
 
   if (!confirmPassword) {
-    redirectWithStatus('error', 'Please confirm your new password.');
+    redirectToTab(PROFILE_PASSWORD_TAB, 'error', 'Please confirm your new password.');
   }
 
   if (confirmPassword !== newPassword) {
-    redirectWithStatus('error', 'Passwords do not match.');
+    redirectToTab(PROFILE_PASSWORD_TAB, 'error', 'Passwords do not match.');
   }
 
   const result = await authFetch<{ success: boolean; message?: string }>('/api/auth/change-password', {
@@ -138,13 +144,110 @@ export async function changePasswordAction(formData: FormData): Promise<void> {
   });
 
   if (!result.ok || !result.data?.success) {
-    redirectWithStatus('error', result.data?.message || result.error || 'Failed to change password.');
+    redirectToTab(
+      PROFILE_PASSWORD_TAB,
+      'error',
+      result.data?.message || result.error || 'Failed to change password.'
+    );
   }
 
   revalidatePath(PROFILE_PATH);
   const successMessage =
     (result.data && result.data.message) || 'Password changed successfully.';
-  redirectWithStatus('success', successMessage);
+  redirectToTab(PROFILE_PASSWORD_TAB, 'success', successMessage);
+}
+
+export async function updateProfileAction(formData: FormData): Promise<void> {
+  const firstName = formData.get('firstName')?.toString().trim() ?? '';
+  const lastName = formData.get('lastName')?.toString().trim() ?? '';
+  const phoneNumber = formData.get('phoneNumber')?.toString().trim() ?? '';
+
+  if (!firstName || !lastName) {
+    redirectToTab(
+      PROFILE_PROFILE_TAB,
+      'error',
+      'First name and last name are required.'
+    );
+  }
+
+  const result = await authFetch<AuthResponse>('/api/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify({
+      firstName,
+      lastName,
+      phoneNumber: phoneNumber || undefined,
+    }),
+  });
+
+  if (!result.ok || !result.data?.success) {
+    redirectToTab(
+      PROFILE_PROFILE_TAB,
+      'error',
+      result.data?.message || result.error || 'Failed to update profile.'
+    );
+  }
+
+  revalidatePath(PROFILE_PATH);
+  redirectToTab(
+    PROFILE_PROFILE_TAB,
+    'success',
+    result.data?.message || 'Profile updated successfully.'
+  );
+}
+
+export async function uploadAvatarAction(formData: FormData): Promise<void> {
+  const file = formData.get('avatar');
+
+  if (!(file instanceof File) || file.size === 0) {
+    redirectToTab(
+      PROFILE_PROFILE_TAB,
+      'error',
+      'Please select an image to upload.'
+    );
+  }
+
+  const cookieHeader = await buildCookieHeader();
+  const body = new FormData();
+  if (file instanceof File) {
+    body.append('avatar', file, file.name);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/api/auth/avatar`, {
+      method: 'POST',
+      headers: cookieHeader ? { Cookie: cookieHeader } : undefined,
+      body,
+    });
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    redirectToTab(
+      PROFILE_PROFILE_TAB,
+      'error',
+      'Failed to upload avatar. Please try again.'
+    );
+  }
+
+  let payload: AuthResponse | undefined;
+  try {
+    payload = (await response!.json()) as AuthResponse;
+  } catch {
+    // Ignore JSON parse errors; handled below
+  }
+
+  if (!response!.ok || !payload?.success) {
+    const message =
+      payload?.message ||
+      `Failed to upload avatar (status ${response!.status}).`;
+    redirectToTab(PROFILE_PROFILE_TAB, 'error', message);
+  }
+
+  revalidatePath(PROFILE_PATH);
+  redirectToTab(
+    PROFILE_PROFILE_TAB,
+    'success',
+    payload?.message || 'Avatar updated successfully.'
+  );
 }
 
 type AddressActionResult<T = unknown> = {
