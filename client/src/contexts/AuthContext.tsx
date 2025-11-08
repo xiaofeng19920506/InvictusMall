@@ -61,9 +61,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           sessionStorage.removeItem('has_logged_in');
         } else {
           // Only log actual errors (network failures, etc.)
-          console.error('Failed to restore auth state:', error);
-          setUser(null);
-          setIsAuthenticated(false);
+        console.error('Failed to restore auth state:', error);
+        setUser(null);
+        setIsAuthenticated(false);
         }
       }
       setLoading(false);
@@ -156,8 +156,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error?.isAuthError || error?.status === 401) {
         logout();
       } else {
-        console.error('Failed to refresh user data:', error);
-        logout();
+      console.error('Failed to refresh user data:', error);
+      logout();
       }
     }
   };

@@ -13,15 +13,15 @@ export class StoreModel {
           s.*,
           COALESCE(GROUP_CONCAT(DISTINCT sc.category), '') as categories,
           COALESCE(
-            JSON_ARRAYAGG(
-              JSON_OBJECT(
-                'streetAddress', sl.street_address,
-                'aptNumber', sl.apt_number,
-                'city', sl.city,
-                'stateProvince', sl.state_province,
-                'zipCode', sl.zip_code,
-                'country', sl.country
-              )
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'streetAddress', sl.street_address,
+              'aptNumber', sl.apt_number,
+              'city', sl.city,
+              'stateProvince', sl.state_province,
+              'zipCode', sl.zip_code,
+              'country', sl.country
+            )
             ),
             JSON_ARRAY()
           ) as locations
@@ -54,7 +54,7 @@ export class StoreModel {
       throw error;
     } finally {
       if (connection) {
-        connection.release();
+      connection.release();
       }
     }
   }
@@ -69,15 +69,15 @@ export class StoreModel {
           s.*,
           COALESCE(GROUP_CONCAT(DISTINCT sc.category), '') as categories,
           COALESCE(
-            JSON_ARRAYAGG(
-              JSON_OBJECT(
-                'streetAddress', sl.street_address,
-                'aptNumber', sl.apt_number,
-                'city', sl.city,
-                'stateProvince', sl.state_province,
-                'zipCode', sl.zip_code,
-                'country', sl.country
-              )
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'streetAddress', sl.street_address,
+              'aptNumber', sl.apt_number,
+              'city', sl.city,
+              'stateProvince', sl.state_province,
+              'zipCode', sl.zip_code,
+              'country', sl.country
+            )
             ),
             JSON_ARRAY()
           ) as locations
@@ -107,7 +107,7 @@ export class StoreModel {
       throw error;
     } finally {
       if (connection) {
-        connection.release();
+      connection.release();
       }
     }
   }
@@ -416,7 +416,7 @@ export class StoreModel {
       throw error;
     } finally {
       if (connection) {
-        connection.release();
+      connection.release();
       }
     }
   }

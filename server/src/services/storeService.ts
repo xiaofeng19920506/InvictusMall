@@ -6,7 +6,7 @@ export class StoreService {
 
   async getAllStores(): Promise<Store[]> {
     try {
-      return await StoreModel.findAll();
+    return await StoreModel.findAll();
     } catch (error) {
       console.error('StoreService.getAllStores error:', error);
       // Return empty array on any error to prevent 500
@@ -16,10 +16,10 @@ export class StoreService {
 
   async getStoresByCategory(category: string): Promise<Store[]> {
     try {
-      if (category === 'All') {
-        return await StoreModel.findAll();
-      }
-      return await StoreModel.findByCategory(category);
+    if (category === 'All') {
+      return await StoreModel.findAll();
+    }
+    return await StoreModel.findByCategory(category);
     } catch (error) {
       console.error('StoreService.getStoresByCategory error:', error);
       return [];
@@ -28,7 +28,7 @@ export class StoreService {
 
   async searchStores(query: string): Promise<Store[]> {
     try {
-      return await StoreModel.search(query);
+    return await StoreModel.search(query);
     } catch (error) {
       console.error('StoreService.searchStores error:', error);
       return [];
@@ -64,7 +64,7 @@ export class StoreService {
 
   async getCategories(): Promise<string[]> {
     try {
-      return await StoreModel.getCategories();
+    return await StoreModel.getCategories();
     } catch (error) {
       console.error('StoreService.getCategories error:', error);
       // Return empty array on any error to prevent 500
@@ -74,8 +74,8 @@ export class StoreService {
 
   async getMembershipStores(): Promise<Store[]> {
     try {
-      const allStores = await StoreModel.findAll();
-      return allStores.filter(store => store.membership);
+    const allStores = await StoreModel.findAll();
+    return allStores.filter(store => store.membership);
     } catch (error) {
       console.error('StoreService.getMembershipStores error:', error);
       return [];
@@ -88,11 +88,11 @@ export class StoreService {
 
   async getPremiumStores(): Promise<Store[]> {
     try {
-      const allStores = await StoreModel.findAll();
-      return allStores.filter(store => 
-        store.membership && 
-        (store.membership.type === 'premium' || store.membership.type === 'platinum')
-      );
+    const allStores = await StoreModel.findAll();
+    return allStores.filter(store => 
+      store.membership && 
+      (store.membership.type === 'premium' || store.membership.type === 'platinum')
+    );
     } catch (error) {
       console.error('StoreService.getPremiumStores error:', error);
       return [];
