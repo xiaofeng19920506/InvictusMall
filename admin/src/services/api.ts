@@ -127,24 +127,33 @@ export const storeApi = {
   uploadStoreImage: async (
     file: File,
     storeId?: string
-  ): Promise<ApiResponse<{ imageUrl: string }>> => {
+  ): Promise<
+    ApiResponse<{
+      imageUrl: string;
+      metadata?: { originalName: string; mimeType: string; size: number };
+    }>
+  > => {
     const formData = new FormData();
-    formData.append("image", file, file.name);
     formData.append("file", file, file.name);
+
+    const metadata = {
+      originalName: file.name,
+      mimeType: file.type,
+      size: file.size,
+    };
+
+    formData.append("metadata", JSON.stringify(metadata));
 
     if (storeId) {
       formData.append("storeId", storeId);
     }
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/stores/upload-image`,
-        {
-          method: "POST",
-          credentials: "include",
-          body: formData,
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/stores/upload-image`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
 
       if (!response.ok) {
         let errorMessage = `Failed to upload image (status ${response.status})`;

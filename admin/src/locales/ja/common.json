@@ -322,6 +322,88 @@
         "default": "アクティビティが発生すると、ここにログが表示されます。"
       }
     }
+  },
+  "systemOverview": {
+    "architecture": {
+      "title": "システムアーキテクチャ",
+      "subtitle": "Invictus Mall エコシステム全体のフロー",
+      "openLink": "開く",
+      "flow": {
+        "customer": {
+          "name": "顧客",
+          "description": "ストアを閲覧"
+        },
+        "frontend": {
+          "name": "フロントエンド",
+          "description": "Next.js ストアインターフェース"
+        },
+        "backend": {
+          "name": "バックエンド API",
+          "description": "Express.js サーバー"
+        },
+        "database": {
+          "name": "データベース",
+          "description": "MySQL ストアデータ"
+        },
+        "admin": {
+          "name": "管理",
+          "description": "管理ダッシュボード"
+        }
+      }
+    },
+    "integration": {
+      "title": "統合機能",
+      "subtitle": "すべてのアプリを結ぶ連携機能",
+      "features": {
+        "navigation": {
+          "title": "アプリ間ナビゲーション",
+          "description": "3 つのアプリ間を簡単に移動",
+          "status": "✅ 有効"
+        },
+        "sync": {
+          "title": "リアルタイム同期",
+          "description": "管理画面の変更が即座にフロントに反映",
+          "status": "✅ 有効"
+        },
+        "monitoring": {
+          "title": "システム監視",
+          "description": "全アプリの状態と稼働状況を監視",
+          "status": "✅ 有効"
+        },
+        "branding": {
+          "title": "ブランド統一",
+          "description": "アプリ全体で一貫した Invictus Mall ブランド",
+          "status": "✅ 有効"
+        },
+        "documentation": {
+          "title": "API ドキュメント",
+          "description": "充実した Swagger ドキュメント",
+          "status": "✅ 有効"
+        }
+      }
+    },
+    "quickAccess": {
+      "title": "クイックアクセス",
+      "subtitle": "すべてのシステムコンポーネントへのショートカット",
+      "currentBadge": "現在",
+      "cards": {
+        "store": {
+          "title": "顧客向けストア",
+          "description": "顧客としてストアを閲覧",
+          "host": "localhost:3000"
+        },
+        "api": {
+          "title": "API ドキュメント",
+          "description": "API エンドポイントを確認",
+          "host": "localhost:3001/api-docs"
+        },
+        "admin": {
+          "title": "管理ダッシュボード",
+          "description": "ストアとシステムを管理",
+          "host": "localhost:3003"
+        }
+      }
+    }
   }
 }
 

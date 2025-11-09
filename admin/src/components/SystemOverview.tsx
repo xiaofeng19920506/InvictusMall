@@ -1,187 +1,217 @@
-import React from 'react';
-import { ExternalLink, Database, Globe, Monitor, ArrowRight } from 'lucide-react';
+import React from "react";
+import { ExternalLink, Database, Globe, Monitor, ArrowRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import styles from "./SystemOverview.module.css";
+
+type FlowKey = "customer" | "frontend" | "backend" | "database" | "admin";
+
+type FeatureKey =
+  | "navigation"
+  | "sync"
+  | "monitoring"
+  | "branding"
+  | "documentation";
+
+type QuickKey = "store" | "api" | "admin";
 
 const SystemOverview: React.FC = () => {
-  const systemFlow = [
+  const { t } = useTranslation();
+
+  const systemFlow: Array<{
+    key: FlowKey;
+    icon: React.ReactNode | string;
+    className: string;
+    url?: string;
+  }> = [
     {
-      name: 'Customer',
-      description: 'Browses stores',
-      icon: '👤',
-      color: 'bg-blue-100 text-blue-800'
+      key: "customer",
+      icon: "👤",
+      className: styles.flowCustomer,
     },
     {
-      name: 'Frontend',
-      description: 'Next.js Store Interface',
+      key: "frontend",
       icon: <Globe className="w-5 h-5" />,
-      url: 'http://localhost:3000',
-      color: 'bg-green-100 text-green-800'
+      className: styles.flowFrontend,
+      url: "http://localhost:3000",
     },
     {
-      name: 'Backend API',
-      description: 'Express.js Server',
+      key: "backend",
       icon: <Database className="w-5 h-5" />,
-      url: 'http://localhost:3001',
-      color: 'bg-purple-100 text-purple-800'
+      className: styles.flowBackend,
+      url: "http://localhost:3001",
     },
     {
-      name: 'Database',
-      description: 'MySQL Store Data',
-      icon: '🗄️',
-      color: 'bg-orange-100 text-orange-800'
+      key: "database",
+      icon: "🗄️",
+      className: styles.flowDatabase,
     },
     {
-      name: 'Admin',
-      description: 'Management Dashboard',
+      key: "admin",
       icon: <Monitor className="w-5 h-5" />,
-      url: 'http://localhost:3003',
-      color: 'bg-red-100 text-red-800'
-    }
+      className: styles.flowAdmin,
+      url: "http://localhost:3003",
+    },
   ];
 
-  const integrationFeatures = [
+  const integrationFeatures: FeatureKey[] = [
+    "navigation",
+    "sync",
+    "monitoring",
+    "branding",
+    "documentation",
+  ];
+
+  const quickAccess: Array<{
+    key: QuickKey;
+    href?: string;
+    icon: React.ReactNode;
+    linkClass?: string;
+  }> = [
     {
-      title: 'Cross-App Navigation',
-      description: 'Easy navigation between all three applications',
-      status: '✅ Active'
+      key: "store",
+      href: "http://localhost:3000",
+      icon: <Globe className={`${styles.quickIconStore} w-6 h-6`} />,
+      linkClass: `${styles.quickLink} ${styles.linkStore}`,
     },
     {
-      title: 'Real-time Data Sync',
-      description: 'Changes in admin immediately reflect in frontend',
-      status: '✅ Active'
+      key: "api",
+      href: "http://localhost:3001/api-docs",
+      icon: <Database className={`${styles.quickIconApi} w-6 h-6`} />,
+      linkClass: `${styles.quickLink} ${styles.linkApi}`,
     },
     {
-      title: 'System Monitoring',
-      description: 'Monitor health and status of all applications',
-      status: '✅ Active'
+      key: "admin",
+      icon: <Monitor className={`${styles.quickIconAdmin} w-6 h-6`} />,
+      linkClass: `${styles.quickLink} ${styles.linkAdmin}`,
     },
-    {
-      title: 'Unified Branding',
-      description: 'Consistent Invictus Mall branding across apps',
-      status: '✅ Active'
-    },
-    {
-      title: 'API Documentation',
-      description: 'Comprehensive Swagger documentation',
-      status: '✅ Active'
-    }
   ];
 
   return (
-    <div className="space-y-6">
-      {/* System Architecture Flow */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">System Architecture</h3>
-          <p className="card-subtitle">
-            Complete flow of the Invictus Mall ecosystem
+    <div className={styles.container}>
+      <section className={styles.cardSection}>
+        <div className={styles.cardHeader}>
+          <h3 className={styles.cardTitle}>{t("systemOverview.architecture.title")}</h3>
+          <p className={styles.cardSubtitle}>
+            {t("systemOverview.architecture.subtitle")}
           </p>
         </div>
 
-        <div className="flex items-center justify-between overflow-x-auto pb-4">
+        <div className={styles.flowWrapper}>
           {systemFlow.map((item, index) => (
-            <React.Fragment key={index}>
-              <div className="flex flex-col items-center min-w-0 flex-1">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${item.color} mb-3`}>
-                  {typeof item.icon === 'string' ? (
-                    <span className="text-2xl">{item.icon}</span>
-                  ) : (
-                    item.icon
-                  )}
+            <React.Fragment key={item.key}>
+              <div className={styles.flowNode}>
+                <div className={`${styles.flowIcon} ${item.className}`}>
+                  {item.icon}
                 </div>
-                <h4 className="font-semibold text-gray-900 text-center">{item.name}</h4>
-                <p className="text-sm text-gray-600 text-center mb-2">{item.description}</p>
-                {item.url && (
+                <h4 className={styles.flowName}>
+                  {t(`systemOverview.architecture.flow.${item.key}.name`)}
+                </h4>
+                <p className={styles.flowDescription}>
+                  {t(`systemOverview.architecture.flow.${item.key}.description`)}
+                </p>
+                {item.url ? (
                   <a
                     href={item.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    className={styles.flowLink}
                   >
-                    Open <ExternalLink className="w-3 h-3" />
+                    {t("systemOverview.architecture.openLink")}
+                    <ExternalLink className="w-3 h-3" />
                   </a>
-                )}
+                ) : null}
               </div>
-              {index < systemFlow.length - 1 && (
-                <ArrowRight className="w-6 h-6 text-gray-400 mx-4 flex-shrink-0" />
-              )}
+              {index < systemFlow.length - 1 ? (
+                <ArrowRight className={styles.arrow} aria-hidden />
+              ) : null}
             </React.Fragment>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Integration Features */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Integration Features</h3>
-          <p className="card-subtitle">
-            Connected features across all applications
+      <section className={styles.cardSection}>
+        <div className={styles.cardHeader}>
+          <h3 className={styles.cardTitle}>{t("systemOverview.integration.title")}</h3>
+          <p className={styles.cardSubtitle}>
+            {t("systemOverview.integration.subtitle")}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {integrationFeatures.map((feature, index) => (
-            <div key={index} className="p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-medium text-gray-900">{feature.title}</h4>
-                <span className="text-sm text-green-600 font-medium">{feature.status}</span>
+        <div className={styles.integrationGrid}>
+          {integrationFeatures.map((feature) => (
+            <div key={feature} className={styles.featureCard}>
+              <div className={styles.featureHeader}>
+                <h4 className={styles.featureTitle}>
+                  {t(`systemOverview.integration.features.${feature}.title`)}
+                </h4>
+                <span className={styles.featureStatus}>
+                  {t(`systemOverview.integration.features.${feature}.status`)}
+                </span>
               </div>
-              <p className="text-sm text-gray-600">{feature.description}</p>
+              <p className={styles.featureDescription}>
+                {t(`systemOverview.integration.features.${feature}.description`)}
+              </p>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
-      {/* Quick Access Panel */}
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Quick Access</h3>
-          <p className="card-subtitle">
-            Direct links to all system components
+      <section className={styles.cardSection}>
+        <div className={styles.cardHeader}>
+          <h3 className={styles.cardTitle}>{t("systemOverview.quickAccess.title")}</h3>
+          <p className={styles.cardSubtitle}>
+            {t("systemOverview.quickAccess.subtitle")}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <a
-            href="http://localhost:3000"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors group"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <Globe className="w-6 h-6 text-blue-600" />
-              <h4 className="font-semibold text-gray-900">Customer Store</h4>
-              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 ml-auto" />
-            </div>
-            <p className="text-sm text-gray-600">Browse stores as a customer</p>
-            <div className="text-xs text-blue-600 mt-2">localhost:3000</div>
-          </a>
+        <div className={styles.quickGrid}>
+          {quickAccess.map((item) => {
+            const content = (
+              <>
+                <div className={styles.quickHeader}>
+                  {item.icon}
+                  <h4 className={styles.quickTitle}>
+                    {t(`systemOverview.quickAccess.cards.${item.key}.title`)}
+                  </h4>
+                  {item.key === "store" || item.key === "api" ? (
+                    <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+                  ) : (
+                    <span className={styles.currentBadge}>
+                      {t("systemOverview.quickAccess.currentBadge")}
+                    </span>
+                  )}
+                </div>
+                <p className={styles.quickDescription}>
+                  {t(`systemOverview.quickAccess.cards.${item.key}.description`)}
+                </p>
+                <div className={styles.quickAddress}>
+                  {t(`systemOverview.quickAccess.cards.${item.key}.host`)}
+                </div>
+              </>
+            );
 
-          <a
-            href="http://localhost:3001/api-docs"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors group"
-          >
-            <div className="flex items-center gap-3 mb-2">
-              <Database className="w-6 h-6 text-purple-600" />
-              <h4 className="font-semibold text-gray-900">API Documentation</h4>
-              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-purple-600 ml-auto" />
-            </div>
-            <p className="text-sm text-gray-600">Explore API endpoints</p>
-            <div className="text-xs text-purple-600 mt-2">localhost:3001/api-docs</div>
-          </a>
+            if (item.href) {
+              return (
+                <a
+                  key={item.key}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={item.linkClass || styles.quickLink}
+                >
+                  {content}
+                </a>
+              );
+            }
 
-          <div className="p-4 border-2 border-orange-200 bg-orange-50 rounded-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <Monitor className="w-6 h-6 text-orange-600" />
-              <h4 className="font-semibold text-gray-900">Admin Dashboard</h4>
-              <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded ml-auto">Current</span>
-            </div>
-            <p className="text-sm text-gray-600">Manage stores and system</p>
-            <div className="text-xs text-orange-600 mt-2">localhost:3003</div>
-          </div>
+            return (
+              <div key={item.key} className={item.linkClass || styles.quickLink}>
+                {content}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

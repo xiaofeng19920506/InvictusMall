@@ -179,6 +179,52 @@
       "offline": "Fuera de línea"
     }
   },
+  "users": {
+    "title": "Gestión de Usuarios",
+    "lastUpdated": "Última actualización: {{time}}",
+    "refresh": "Actualizar",
+    "addUser": "Agregar usuario",
+    "searchPlaceholder": "Buscar usuarios...",
+    "allRoles": "Todos los roles",
+    "confirmDelete": "¿Está seguro de que desea eliminar este usuario?",
+    "deleteError": "No se pudo eliminar el usuario",
+    "empty": "No se encontraron usuarios",
+    "loading": "Cargando usuarios...",
+    "table": {
+      "title": "Usuarios ({{count}})",
+      "user": "Usuario",
+      "role": "Rol",
+      "email": "Correo electrónico",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "actions": {
+      "edit": "Editar usuario",
+      "delete": "Eliminar usuario"
+    }
+  },
+  "adminLogin": {
+    "title": "Inicio de sesión de administrador",
+    "subtitle": "Inicia sesión para acceder al panel de administración Invictus Mall",
+    "loading": "Cargando...",
+    "form": {
+      "emailPlaceholder": "Correo electrónico",
+      "passwordPlaceholder": "Contraseña"
+    },
+    "actions": {
+      "submit": "Iniciar sesión",
+      "signingIn": "Iniciando sesión..."
+    },
+    "footer": "Solo los administradores autorizados pueden acceder a este panel",
+    "errors": {
+      "loginFailed": "No se pudo iniciar sesión",
+      "unexpected": "Ocurrió un error inesperado"
+    }
+  },
   "registerStaff": {
     "title": "Invitar nuevo personal",
     "subtitle": "Envía una invitación a un nuevo miembro del equipo",
@@ -320,6 +366,88 @@
         "title": "No se encontraron registros",
         "filtered": "Intenta ajustar la búsqueda o los filtros.",
         "default": "Los registros aparecerán aquí a medida que se generen eventos."
+      }
+    }
+  },
+  "systemOverview": {
+    "architecture": {
+      "title": "Arquitectura del sistema",
+      "subtitle": "Flujo completo del ecosistema Invictus Mall",
+      "openLink": "Abrir",
+      "flow": {
+        "customer": {
+          "name": "Cliente",
+          "description": "Explora las tiendas"
+        },
+        "frontend": {
+          "name": "Frontend",
+          "description": "Interfaz de la tienda en Next.js"
+        },
+        "backend": {
+          "name": "API backend",
+          "description": "Servidor Express.js"
+        },
+        "database": {
+          "name": "Base de datos",
+          "description": "Datos de la tienda en MySQL"
+        },
+        "admin": {
+          "name": "Administración",
+          "description": "Panel de gestión"
+        }
+      }
+    },
+    "integration": {
+      "title": "Funciones de integración",
+      "subtitle": "Capacidades conectadas en todas las aplicaciones",
+      "features": {
+        "navigation": {
+          "title": "Navegación entre apps",
+          "description": "Navegación sencilla entre las tres aplicaciones",
+          "status": "✅ Activo"
+        },
+        "sync": {
+          "title": "Sincronización en tiempo real",
+          "description": "Los cambios en administración aparecen al instante en el frontend",
+          "status": "✅ Activo"
+        },
+        "monitoring": {
+          "title": "Monitoreo del sistema",
+          "description": "Supervisa el estado y la salud de todas las aplicaciones",
+          "status": "✅ Activo"
+        },
+        "branding": {
+          "title": "Identidad unificada",
+          "description": "Marca Invictus Mall coherente en todas las apps",
+          "status": "✅ Activo"
+        },
+        "documentation": {
+          "title": "Documentación API",
+          "description": "Documentación Swagger completa",
+          "status": "✅ Activo"
+        }
+      }
+    },
+    "quickAccess": {
+      "title": "Accesos rápidos",
+      "subtitle": "Enlaces directos a todos los componentes del sistema",
+      "currentBadge": "Actual",
+      "cards": {
+        "store": {
+          "title": "Tienda para clientes",
+          "description": "Explora las tiendas como cliente",
+          "host": "localhost:3000"
+        },
+        "api": {
+          "title": "Documentación API",
+          "description": "Explora los endpoints del API",
+          "host": "localhost:3001/api-docs"
+        },
+        "admin": {
+          "title": "Panel de administración",
+          "description": "Gestiona tiendas y el sistema",
+          "host": "localhost:3003"
+        }
       }
     }
   }

@@ -168,6 +168,24 @@
       "description": "User management features are being developed. Currently, you can view user information. Edit and management functions will be available soon."
     }
   },
+  "adminLogin": {
+    "title": "Admin Login",
+    "subtitle": "Sign in to access the Invictus Mall Admin Panel",
+    "loading": "Loading...",
+    "form": {
+      "emailPlaceholder": "Email address",
+      "passwordPlaceholder": "Password"
+    },
+    "actions": {
+      "submit": "Sign in",
+      "signingIn": "Signing in..."
+    },
+    "footer": "Only authorized administrators can access this panel",
+    "errors": {
+      "loginFailed": "Login failed",
+      "unexpected": "An unexpected error occurred"
+    }
+  },
   "registerStaff": {
     "title": "Invite New Staff",
     "subtitle": "Send an invitation to a new staff member",
@@ -309,6 +327,88 @@
         "title": "No logs found",
         "filtered": "Try adjusting your search or filter criteria.",
         "default": "Logs will appear here as activity occurs."
+      }
+    }
+  },
+  "systemOverview": {
+    "architecture": {
+      "title": "System Architecture",
+      "subtitle": "Complete flow of the Invictus Mall ecosystem",
+      "openLink": "Open",
+      "flow": {
+        "customer": {
+          "name": "Customer",
+          "description": "Browses stores"
+        },
+        "frontend": {
+          "name": "Frontend",
+          "description": "Next.js store interface"
+        },
+        "backend": {
+          "name": "Backend API",
+          "description": "Express.js server"
+        },
+        "database": {
+          "name": "Database",
+          "description": "MySQL store data"
+        },
+        "admin": {
+          "name": "Admin",
+          "description": "Management dashboard"
+        }
+      }
+    },
+    "integration": {
+      "title": "Integration Features",
+      "subtitle": "Connected capabilities across all applications",
+      "features": {
+        "navigation": {
+          "title": "Cross-App Navigation",
+          "description": "Easy navigation between all three applications",
+          "status": "✅ Active"
+        },
+        "sync": {
+          "title": "Real-time Data Sync",
+          "description": "Changes in admin immediately reflect in frontend",
+          "status": "✅ Active"
+        },
+        "monitoring": {
+          "title": "System Monitoring",
+          "description": "Monitor health and status of all applications",
+          "status": "✅ Active"
+        },
+        "branding": {
+          "title": "Unified Branding",
+          "description": "Consistent Invictus Mall branding across apps",
+          "status": "✅ Active"
+        },
+        "documentation": {
+          "title": "API Documentation",
+          "description": "Comprehensive Swagger documentation",
+          "status": "✅ Active"
+        }
+      }
+    },
+    "quickAccess": {
+      "title": "Quick Access",
+      "subtitle": "Direct links to all system components",
+      "currentBadge": "Current",
+      "cards": {
+        "store": {
+          "title": "Customer Store",
+          "description": "Browse stores as a customer",
+          "host": "localhost:3000"
+        },
+        "api": {
+          "title": "API Documentation",
+          "description": "Explore API endpoints",
+          "host": "localhost:3001/api-docs"
+        },
+        "admin": {
+          "title": "Admin Dashboard",
+          "description": "Manage stores and system",
+          "host": "localhost:3003"
+        }
       }
     }
   },

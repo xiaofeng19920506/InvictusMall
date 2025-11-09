@@ -322,6 +322,88 @@
         "default": "활동이 발생하면 로그가 여기에 표시됩니다."
       }
     }
+  },
+  "systemOverview": {
+    "architecture": {
+      "title": "시스템 아키텍처",
+      "subtitle": "Invictus Mall 생태계의 전체 흐름",
+      "openLink": "열기",
+      "flow": {
+        "customer": {
+          "name": "고객",
+          "description": "스토어 탐색"
+        },
+        "frontend": {
+          "name": "프런트엔드",
+          "description": "Next.js 스토어 인터페이스"
+        },
+        "backend": {
+          "name": "백엔드 API",
+          "description": "Express.js 서버"
+        },
+        "database": {
+          "name": "데이터베이스",
+          "description": "MySQL 스토어 데이터"
+        },
+        "admin": {
+          "name": "관리자",
+          "description": "관리 대시보드"
+        }
+      }
+    },
+    "integration": {
+      "title": "통합 기능",
+      "subtitle": "모든 애플리케이션을 연결하는 기능",
+      "features": {
+        "navigation": {
+          "title": "앱 간 내비게이션",
+          "description": "세 가지 애플리케이션을 손쉽게 이동",
+          "status": "✅ 활성화"
+        },
+        "sync": {
+          "title": "실시간 데이터 동기화",
+          "description": "관리자에서 변경한 내용이 즉시 프런트엔드에 반영",
+          "status": "✅ 활성화"
+        },
+        "monitoring": {
+          "title": "시스템 모니터링",
+          "description": "모든 애플리케이션의 상태와 건강을 모니터링",
+          "status": "✅ 활성화"
+        },
+        "branding": {
+          "title": "브랜딩 일관성",
+          "description": "앱 전반에 통일된 Invictus Mall 브랜드",
+          "status": "✅ 활성화"
+        },
+        "documentation": {
+          "title": "API 문서",
+          "description": "포괄적인 Swagger 문서",
+          "status": "✅ 활성화"
+        }
+      }
+    },
+    "quickAccess": {
+      "title": "빠른 접근",
+      "subtitle": "모든 시스템 구성요소로 바로 이동",
+      "currentBadge": "현재",
+      "cards": {
+        "store": {
+          "title": "고객 스토어",
+          "description": "고객 시점에서 스토어 탐색",
+          "host": "localhost:3000"
+        },
+        "api": {
+          "title": "API 문서",
+          "description": "API 엔드포인트 살펴보기",
+          "host": "localhost:3001/api-docs"
+        },
+        "admin": {
+          "title": "관리자 대시보드",
+          "description": "스토어와 시스템 관리",
+          "host": "localhost:3003"
+        }
+      }
+    }
   }
 }
 

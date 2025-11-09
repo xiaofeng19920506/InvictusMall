@@ -322,6 +322,88 @@
         "default": "Les journaux s'afficheront ici dès qu'une activité sera enregistrée."
       }
     }
+  },
+  "systemOverview": {
+    "architecture": {
+      "title": "Architecture du système",
+      "subtitle": "Flux complet de l'écosystème Invictus Mall",
+      "openLink": "Ouvrir",
+      "flow": {
+        "customer": {
+          "name": "Client",
+          "description": "Parcourt les boutiques"
+        },
+        "frontend": {
+          "name": "Front-end",
+          "description": "Interface boutique Next.js"
+        },
+        "backend": {
+          "name": "API back-end",
+          "description": "Serveur Express.js"
+        },
+        "database": {
+          "name": "Base de données",
+          "description": "Données boutiques MySQL"
+        },
+        "admin": {
+          "name": "Administration",
+          "description": "Tableau de bord de gestion"
+        }
+      }
+    },
+    "integration": {
+      "title": "Fonctionnalités d'intégration",
+      "subtitle": "Capacités connectées entre toutes les applications",
+      "features": {
+        "navigation": {
+          "title": "Navigation inter-applications",
+          "description": "Navigation fluide entre les trois applications",
+          "status": "✅ Actif"
+        },
+        "sync": {
+          "title": "Synchronisation en temps réel",
+          "description": "Les changements côté administration se reflètent immédiatement sur le front",
+          "status": "✅ Actif"
+        },
+        "monitoring": {
+          "title": "Supervision du système",
+          "description": "Surveille l'état et la santé de toutes les applications",
+          "status": "✅ Actif"
+        },
+        "branding": {
+          "title": "Identité unifiée",
+          "description": "Branding Invictus Mall cohérent sur toutes les apps",
+          "status": "✅ Actif"
+        },
+        "documentation": {
+          "title": "Documentation API",
+          "description": "Documentation Swagger complète",
+          "status": "✅ Actif"
+        }
+      }
+    },
+    "quickAccess": {
+      "title": "Accès rapides",
+      "subtitle": "Liens directs vers tous les composants du système",
+      "currentBadge": "Actuel",
+      "cards": {
+        "store": {
+          "title": "Boutique clients",
+          "description": "Parcourez les boutiques en tant que client",
+          "host": "localhost:3000"
+        },
+        "api": {
+          "title": "Documentation API",
+          "description": "Consultez les points d'API",
+          "host": "localhost:3001/api-docs"
+        },
+        "admin": {
+          "title": "Tableau de bord admin",
+          "description": "Gérez les boutiques et le système",
+          "host": "localhost:3003"
+        }
+      }
+    }
   }
 }
 

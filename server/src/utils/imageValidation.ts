@@ -63,12 +63,12 @@ export function validateImageFile(
   mimetype: string,
   size: number
 ): { valid: boolean; error?: string } {
-  // Check file size (max 5MB)
-  const maxSize = 5 * 1024 * 1024; // 5MB
+  // Check file size (max 15MB)
+  const maxSize = 15 * 1024 * 1024; // 15MB
   if (size > maxSize) {
     return {
       valid: false,
-      error: 'Image size must be less than 5MB'
+      error: 'Image size must be less than 15MB'
     };
   }
 

@@ -621,10 +621,10 @@ const storeImageFilter = (
 };
 
 const uploadStoreImage = multer({
-  storage: multer.memoryStorage(), // Use memory storage to access file buffer
+  storage: multer.memoryStorage(),
   fileFilter: storeImageFilter,
   limits: {
-    fileSize: 15 * 1024 * 1024, // 15MB limit
+    fileSize: 15 * 1024 * 1024,
   },
 });
 
@@ -669,28 +669,25 @@ const uploadStoreImage = multer({
 router.post(
   "/upload-image",
   authenticateStaffToken,
-  uploadStoreImage.fields([
-    { name: "image", maxCount: 1 },
-    { name: "file", maxCount: 1 },
-  ]),
+  uploadStoreImage.single("file"),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       console.log("[Store Upload] Request headers:", req.headers);
-      const files = req.files as {
-        [field: string]: Express.Multer.File[];
-      } | undefined;
-      const uploadedFile =
-        files?.image?.[0] ?? files?.file?.[0] ?? (req as any).file;
+      const uploadedFile = (req as any).file as Express.Multer.File | undefined;
 
-      console.log(
-        "[Store Upload] Incoming file:",
+      const { metadata: metadataRaw, storeId } = req.body || {};
+      console.log("[Store Upload] Request body fields:", {
+        metadataRaw,
+        storeId,
+      });
+      console.log("[Store Upload] Multer single file:",
         uploadedFile
           ? {
               originalname: uploadedFile.originalname,
               mimetype: uploadedFile.mimetype,
               size: uploadedFile.size,
             }
-          : "No file provided"
+          : null
       );
 
       if (!uploadedFile) {
@@ -700,12 +697,40 @@ router.post(
         });
       }
 
-      // Perform binary validation on the uploaded file
+      let metadata: {
+        originalName: string;
+        mimeType: string;
+        size: number;
+        [key: string]: unknown;
+      } | null = null;
+
+      if (typeof metadataRaw === "string") {
+        try {
+          metadata = JSON.parse(metadataRaw);
+        } catch (parseError) {
+          console.warn(
+            "[Store Upload] Failed to parse metadata, falling back to defaults:",
+            parseError
+          );
+        }
+      } else if (metadataRaw && typeof metadataRaw === "object") {
+        metadata = metadataRaw as any;
+      }
+
+      if (!metadata) {
+        metadata = {
+          originalName: uploadedFile.originalname,
+          mimeType: uploadedFile.mimetype,
+          size: uploadedFile.size,
+        };
+      }
+
       const validation = validateImageFile(
         uploadedFile.buffer,
         uploadedFile.mimetype,
         uploadedFile.size
       );
+      console.log("[Store Upload] Validation result:", validation);
 
       if (!validation.valid) {
         return res.status(400).json({
@@ -714,7 +739,7 @@ router.post(
         });
       }
 
-      // Forward the file to the external MinIO storage API
+      // Forward the file to the external MinIO storage API only after validation passes
       const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
       console.log("[Store Upload] External upload URL:", externalUploadUrl);
 
@@ -728,6 +753,12 @@ router.post(
           contentType: uploadedFile.mimetype,
           knownLength: uploadedFile.size,
         });
+
+        formData.append("metadata", JSON.stringify(metadata));
+
+        if (storeId) {
+          formData.append("storeId", storeId);
+        }
         console.log("[Store Upload] Forwarding file to storage service...");
 
         // Forward the file to external API
@@ -804,6 +835,7 @@ router.post(
         success: true,
         data: {
           imageUrl,
+          metadata,
         },
         message: "Image uploaded successfully",
       });
