@@ -6,34 +6,19 @@ import {
   handleValidationErrors,
 } from "../middleware/validation";
 import { ActivityLogModel } from "../models/ActivityLogModel";
-import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
+import {
+  authenticateStaffToken,
+  AuthenticatedRequest,
+} from "../middleware/auth";
+import { validateImageFile } from "../utils/imageValidation";
 import multer from "multer";
-import path from "path";
-import fs from "fs";
+import FormData from "form-data";
 
 const router = Router();
 // Use real database service now that database is connected
 const storeService = new StoreService();
 
-// Configure multer for store image uploads
-const storeUploadDir = path.join(__dirname, "../../uploads/stores");
-if (!fs.existsSync(storeUploadDir)) {
-  fs.mkdirSync(storeUploadDir, { recursive: true });
-}
-
-const storeImageStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, storeUploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `store-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(7)}${ext}`;
-    cb(null, filename);
-  },
-});
-
+// Configure multer for store image uploads (memory storage for external upload)
 const storeImageFilter = (
   req: any,
   file: Express.Multer.File,
@@ -48,10 +33,10 @@ const storeImageFilter = (
 };
 
 const uploadStoreImage = multer({
-  storage: storeImageStorage,
+  storage: multer.memoryStorage(), // Use memory storage to access file buffer
   fileFilter: storeImageFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 15 * 1024 * 1024, // 15MB limit
   },
 });
 
@@ -189,230 +174,9 @@ router.get("/categories", async (req: Request, res: Response) => {
   }
 });
 
-/**
- * @swagger
- * /api/stores/membership:
- *   get:
- *     summary: Get stores with membership (Public endpoint - no authentication required)
- *     tags: [Stores]
- *     security: []  # No authentication required
- *     responses:
- *       200:
- *         description: List of stores with membership retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Store'
- *                 count:
- *                   type: integer
- *                   example: 5
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-// Public endpoint - no authentication required
-router.get("/membership", async (req: Request, res: Response) => {
-  try {
-    const stores = await storeService.getMembershipStores();
-    return res.json({
-      success: true,
-      data: stores,
-      count: stores.length,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch membership stores",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-});
 
-/**
- * @swagger
- * /api/stores/membership/{type}:
- *   get:
- *     summary: Get stores by membership type (Public endpoint - no authentication required)
- *     tags: [Stores]
- *     security: []  # No authentication required
- *     parameters:
- *       - in: path
- *         name: type
- *         required: true
- *         schema:
- *           type: string
- *           enum: [basic, premium, platinum]
- *         description: Membership type to filter by
- *     responses:
- *       200:
- *         description: List of stores with specified membership type retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Store'
- *                 count:
- *                   type: integer
- *                   example: 3
- *       400:
- *         description: Invalid membership type
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-// Public endpoint - no authentication required
-router.get("/membership/:type", async (req: Request, res: Response) => {
-  try {
-    const { type } = req.params;
-    if (!type || !["basic", "premium", "platinum"].includes(type)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid membership type. Must be basic, premium, or platinum",
-      });
-    }
 
-    const stores = await storeService.getStoresByMembershipType(
-      type as "basic" | "premium" | "platinum"
-    );
-    return res.json({
-      success: true,
-      data: stores,
-      count: stores.length,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch stores by membership type",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-});
 
-/**
- * @swagger
- * /api/stores/premium:
- *   get:
- *     summary: Get premium and platinum stores (Public endpoint - no authentication required)
- *     tags: [Stores]
- *     security: []  # No authentication required
- *     responses:
- *       200:
- *         description: List of premium and platinum stores retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Store'
- *                 count:
- *                   type: integer
- *                   example: 4
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-// Public endpoint - no authentication required
-router.get("/premium", async (req: Request, res: Response) => {
-  try {
-    const stores = await storeService.getPremiumStores();
-    return res.json({
-      success: true,
-      data: stores,
-      count: stores.length,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch premium stores",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-});
-
-/**
- * @swagger
- * /api/stores/featured:
- *   get:
- *     summary: Get featured stores (premium and platinum) (Public endpoint - no authentication required)
- *     tags: [Stores]
- *     security: []  # No authentication required
- *     responses:
- *       200:
- *         description: List of featured stores retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/Store'
- *                 count:
- *                   type: integer
- *                   example: 4
- *       500:
- *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-// Public endpoint - no authentication required
-router.get("/featured", async (req: Request, res: Response) => {
-  try {
-    // Featured stores are premium and platinum stores
-    const stores = await storeService.getPremiumStores();
-    return res.json({
-      success: true,
-      data: stores,
-      count: stores.length,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch featured stores",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-});
 
 // All specific routes must come before the /:id route to avoid route conflicts
 /**
@@ -808,7 +572,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
  */
 router.put(
   "/:id/verify",
-  authenticateToken,
+  authenticateStaffToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
@@ -901,10 +665,20 @@ router.put(
  */
 router.post(
   "/upload-image",
-  authenticateToken,
+  authenticateStaffToken,
   uploadStoreImage.single("image"),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
+      console.log("[Store Upload] Incoming request headers:", req.headers);
+      console.log(
+        "[Store Upload] Incoming file:",
+        req.file ? {
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+        } : "None"
+      );
+
       if (!req.file) {
         return res.status(400).json({
           success: false,
@@ -912,16 +686,130 @@ router.post(
         });
       }
 
-      // Construct the URL for the uploaded file
-      const imageUrl = `/uploads/stores/${req.file.filename}`;
+      // Perform binary validation on the uploaded file
+      const validation = validateImageFile(
+        req.file.buffer,
+        req.file.mimetype,
+        req.file.size
+      );
+
+      if (!validation.valid) {
+        console.warn(
+          "[Store Upload] Image validation failed:",
+          validation.error
+        );
+        return res.status(400).json({
+          success: false,
+          message: validation.error || "Invalid image file",
+        });
+      }
+
+      // Forward the file to the external MinIO storage API
+      const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
+      console.log(
+        "[Store Upload] Using external upload URL:",
+        externalUploadUrl
+      );
+
+      let imageUrl;
+
+      try {
+        // Create FormData to forward the file
+        const formData = new FormData();
+        formData.append("file", req.file.buffer, {
+          filename: req.file.originalname,
+          contentType: req.file.mimetype,
+        });
+
+        console.log("[Store Upload] Forwarding file to storage service...");
+
+        // Forward the file to external API
+        const uploadResponse = await fetch(externalUploadUrl, {
+          method: "POST",
+          body: formData,
+          headers: formData.getHeaders(),
+        });
+
+        console.log(
+          "[Store Upload] Storage service responded:",
+          uploadResponse.status,
+          uploadResponse.statusText
+        );
+
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error("[Store Upload] External upload API error:", {
+            status: uploadResponse.status,
+            statusText: uploadResponse.statusText,
+            error: errorText,
+            url: externalUploadUrl,
+          });
+          return res.status(uploadResponse.status || 500).json({
+            success: false,
+            message: "Failed to upload file to storage",
+            error:
+              errorText ||
+              `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`,
+          });
+        }
+
+        // Parse the response to get the image URL
+        const uploadResult: any = await uploadResponse.json();
+        console.log("[Store Upload] Parsed response:", uploadResult);
+
+        // Extract the image URL from the response
+        // Response format: { "data": "/images/...", "status": 200 }
+        imageUrl = uploadResult.data;
+
+        if (!imageUrl) {
+          console.error(
+            "[Store Upload] Upload response missing data field:",
+            uploadResult
+          );
+          return res.status(500).json({
+            success: false,
+            message: "Failed to get image URL from upload service",
+            error: "Response did not contain image URL in data field",
+            response: uploadResult,
+          });
+        }
+      } catch (fetchError: any) {
+        console.error("[Store Upload] Error connecting to external upload API:", {
+          url: externalUploadUrl,
+          error: fetchError.message,
+          code: fetchError.code,
+          errno: fetchError.errno,
+          type: fetchError.type,
+        });
+
+        // Provide more specific error messages
+        let errorMessage = "Failed to connect to file upload service";
+        if (fetchError.code === "ECONNREFUSED") {
+          errorMessage = `Connection refused. The file upload service at ${externalUploadUrl} may be down or unreachable. Please check if the service is running.`;
+        } else if (fetchError.code === "ETIMEDOUT") {
+          errorMessage = `Connection timeout. The file upload service at ${externalUploadUrl} did not respond in time.`;
+        } else if (fetchError.code === "ENOTFOUND") {
+          errorMessage = `Host not found. Cannot resolve the address for ${externalUploadUrl}.`;
+        }
+
+        return res.status(503).json({
+          success: false,
+          message: errorMessage,
+          error: fetchError.message,
+          code: fetchError.code,
+          url: externalUploadUrl,
+        });
+      }
 
       return res.json({
         success: true,
-        imageUrl,
+        data: {
+          imageUrl,
+        },
         message: "Image uploaded successfully",
       });
     } catch (error) {
-      console.error("Upload store image error:", error);
+      console.error("[Store Upload] Unhandled error:", error);
       return res.status(500).json({
         success: false,
         message: "Failed to upload image",

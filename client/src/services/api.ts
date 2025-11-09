@@ -8,6 +8,7 @@ interface ServerStore {
   reviewCount: number;
   imageUrl: string;
   isVerified: boolean;
+  isActive: boolean;
   location: Array<{
     streetAddress: string;
     aptNumber?: string;
@@ -19,12 +20,6 @@ interface ServerStore {
   productsCount: number;
   establishedYear: number;
   discount?: string;
-  membership?: {
-    type: 'basic' | 'premium' | 'platinum';
-    benefits: string[];
-    discountPercentage: number;
-    prioritySupport: boolean;
-  };
   createdAt: string;
   updatedAt: string;
 }
@@ -39,11 +34,11 @@ export interface Store {
   reviewCount: number;
   imageUrl: string;
   isVerified: boolean;
+  isActive: boolean;
   location: string;
   productsCount: number;
   establishedYear: number;
   discount?: string;
-  featured?: boolean;
 }
 
 export interface ApiResponse<T> {
@@ -83,13 +78,13 @@ class ApiService {
       reviewCount: serverStore.reviewCount,
       imageUrl: serverStore.imageUrl,
       isVerified: serverStore.isVerified,
-      location: serverStore.location.length > 0 
+      isActive: serverStore.isActive,
+      location: serverStore.location.length > 0
         ? `${serverStore.location[0].city}, ${serverStore.location[0].stateProvince}`
         : 'Unknown Location',
       productsCount: serverStore.productsCount,
       establishedYear: serverStore.establishedYear,
       discount: serverStore.discount,
-      featured: serverStore.membership?.type === 'premium' || serverStore.membership?.type === 'platinum'
     };
   }
 
@@ -183,14 +178,6 @@ class ApiService {
     };
   }
 
-  async getFeaturedStores(): Promise<ApiResponse<Store[]>> {
-    const response = await this.request<ApiResponse<ServerStore[]>>('/api/stores/featured');
-    
-    return {
-      ...response,
-      data: this.transformStores(response.data)
-    };
-  }
 
   async getStoresByCategory(category: string): Promise<ApiResponse<Store[]>> {
     const response = await this.request<ApiResponse<ServerStore[]>>(`/api/stores?category=${encodeURIComponent(category)}`);

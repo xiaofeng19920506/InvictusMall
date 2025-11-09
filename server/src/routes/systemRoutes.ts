@@ -1,6 +1,9 @@
 import { Router, Request, Response } from "express";
 import { accountCleanupService } from "../services/accountCleanupService";
-import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
+import {
+  authenticateStaffToken,
+  AuthenticatedRequest,
+} from "../middleware/auth";
 
 const router = Router();
 
@@ -161,7 +164,7 @@ router.get("/apps", (req: Request, res: Response) => {
  */
 router.get(
   "/cleanup/status",
-  authenticateToken,
+  authenticateStaffToken,
   (req: AuthenticatedRequest, res: Response) => {
     const status = accountCleanupService.getStatus();
     res.json({
@@ -203,7 +206,7 @@ router.get(
  */
 router.post(
   "/cleanup/run",
-  authenticateToken,
+  authenticateStaffToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const stats = await accountCleanupService.cleanupUnactivatedAccounts();

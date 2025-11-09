@@ -1,6 +1,9 @@
 import { Router, Response } from 'express';
 import { OrderModel, CreateOrderRequest } from '../models/OrderModel';
-import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import {
+  authenticateUserToken,
+  AuthenticatedRequest,
+} from "../middleware/auth";
 import { ActivityLogModel } from '../models/ActivityLogModel';
 
 const router = Router();
@@ -54,7 +57,10 @@ const orderModel = new OrderModel();
  *       500:
  *         description: Internal server error
  */
-router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get(
+  "/",
+  authenticateUserToken,
+  async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const { status, limit, offset } = req.query;
@@ -116,7 +122,10 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
  *       500:
  *         description: Internal server error
  */
-router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.get(
+  "/:id",
+  authenticateUserToken,
+  async (req: AuthenticatedRequest, res: Response) => {
   try {
     const orderId = req.params.id as string;
     if (!orderId) {
@@ -212,7 +221,10 @@ router.get('/:id', authenticateToken, async (req: AuthenticatedRequest, res: Res
  *       500:
  *         description: Internal server error
  */
-router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Response) => {
+router.post(
+  "/",
+  authenticateUserToken,
+  async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userId = req.user!.id;
     const orderData: CreateOrderRequest = {

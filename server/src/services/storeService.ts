@@ -72,30 +72,4 @@ export class StoreService {
     }
   }
 
-  async getMembershipStores(): Promise<Store[]> {
-    try {
-    const allStores = await StoreModel.findAll();
-    return allStores.filter(store => store.membership);
-    } catch (error) {
-      console.error('StoreService.getMembershipStores error:', error);
-      return [];
-    }
-  }
-
-  async getStoresByMembershipType(membershipType: 'basic' | 'premium' | 'platinum'): Promise<Store[]> {
-    return await StoreModel.findByMembershipType(membershipType);
-  }
-
-  async getPremiumStores(): Promise<Store[]> {
-    try {
-    const allStores = await StoreModel.findAll();
-    return allStores.filter(store => 
-      store.membership && 
-      (store.membership.type === 'premium' || store.membership.type === 'platinum')
-    );
-    } catch (error) {
-      console.error('StoreService.getPremiumStores error:', error);
-      return [];
-    }
-  }
 }

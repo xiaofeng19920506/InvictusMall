@@ -16,7 +16,13 @@ export interface Order {
   storeName: string;
   items: OrderItem[];
   totalAmount: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  status:
+    | "pending_payment"
+    | "pending"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
   shippingAddress: {
     streetAddress: string;
     aptNumber?: string;

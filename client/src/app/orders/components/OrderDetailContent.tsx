@@ -1,35 +1,22 @@
-import ProtectedRoute from '@/components/common/ProtectedRoute';
-import { Order } from '@/services/order';
-import Link from 'next/link';
+import ProtectedRoute from "@/components/common/ProtectedRoute";
+import { Order } from "@/lib/server-api";
+import Link from "next/link";
+import {
+  getOrderStatusBadgeStyle,
+  getOrderStatusLabel,
+} from "../orderStatusConfig";
 
 interface OrderDetailContentProps {
   initialOrder: Order | null;
 }
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'processing':
-      return 'bg-blue-100 text-blue-800';
-    case 'shipped':
-      return 'bg-purple-100 text-purple-800';
-    case 'delivered':
-      return 'bg-green-100 text-green-800';
-    case 'cancelled':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -69,8 +56,8 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
             <div className="bg-white rounded-lg shadow-md p-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                    Order #{order.id.slice(0, 8).toUpperCase()}
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2 break-all">
+                    Order #{order.id}
                   </h2>
                   <p className="text-sm text-gray-600">
                     Placed on {formatDate(order.orderDate)}
@@ -78,11 +65,11 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
                 </div>
                 <div className="mt-4 md:mt-0">
                   <span
-                    className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(
+                    className={`px-4 py-2 rounded-full text-sm font-medium ${getOrderStatusBadgeStyle(
                       order.status
                     )}`}
                   >
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    {getOrderStatusLabel(order.status)}
                   </span>
                 </div>
               </div>

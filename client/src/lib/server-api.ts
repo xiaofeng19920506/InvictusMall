@@ -12,6 +12,7 @@ interface ServerStore {
   reviewCount: number;
   imageUrl: string;
   isVerified: boolean;
+  isActive: boolean;
   location: Array<{
     streetAddress: string;
     aptNumber?: string;
@@ -23,12 +24,6 @@ interface ServerStore {
   productsCount: number;
   establishedYear: number;
   discount?: string;
-  membership?: {
-    type: "basic" | "premium" | "platinum";
-    benefits: string[];
-    discountPercentage: number;
-    prioritySupport: boolean;
-  };
   createdAt: string;
   updatedAt: string;
 }
@@ -54,6 +49,7 @@ function transformStore(serverStore: ServerStore): Store {
     reviewCount: serverStore.reviewCount,
     imageUrl: serverStore.imageUrl,
     isVerified: serverStore.isVerified,
+    isActive: serverStore.isActive,
     location:
       serverStore.location.length > 0
         ? `${serverStore.location[0].city}, ${serverStore.location[0].stateProvince}`
@@ -61,9 +57,6 @@ function transformStore(serverStore: ServerStore): Store {
     productsCount: serverStore.productsCount,
     establishedYear: serverStore.establishedYear,
     discount: serverStore.discount,
-    featured:
-      serverStore.membership?.type === "premium" ||
-      serverStore.membership?.type === "platinum",
   };
 }
 
@@ -176,7 +169,13 @@ export interface Order {
   storeName: string;
   items: OrderItem[];
   totalAmount: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status:
+    | "pending_payment"
+    | "pending"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled";
   shippingAddress: {
     streetAddress: string;
     aptNumber?: string;
@@ -488,6 +487,14 @@ export async function fetchUserServer(
     });
 
     if (!response.ok) {
+      // Handle authentication errors gracefully
+      if (response.status === 401) {
+        return {
+          success: false,
+          message: "Authentication required. Please log in to view profile.",
+        };
+      }
+
       // Try to get error message from response
       let errorMessage = `Failed to fetch user: ${response.statusText}`;
       try {
@@ -495,13 +502,6 @@ export async function fetchUserServer(
         errorMessage = errorData.message || errorMessage;
       } catch {
         // If response is not JSON, use status text
-      }
-
-      // Handle authentication errors gracefully
-      if (response.status === 401) {
-        throw new Error(
-          "Authentication required. Please log in to view profile."
-        );
       }
 
       throw new Error(errorMessage);

@@ -16,16 +16,11 @@ export interface Store {
   reviewCount: number;
   imageUrl: string;
   isVerified: boolean;
+  isActive: boolean;
   location: Location[];
   productsCount: number;
   establishedYear: number;
   discount?: string;
-  membership?: {
-    type: 'basic' | 'premium' | 'platinum';
-    benefits: string[];
-    discountPercentage: number;
-    prioritySupport: boolean;
-  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,16 +33,11 @@ export interface CreateStoreRequest {
   reviewCount: number;
   imageUrl: string;
   isVerified: boolean;
+  isActive: boolean;
   location: Location[];
   productsCount: number;
   establishedYear: number;
   discount?: string;
-  membership?: {
-    type: 'basic' | 'premium' | 'platinum';
-    benefits: string[];
-    discountPercentage: number;
-    prioritySupport: boolean;
-  };
 }
 
 export interface UpdateStoreRequest extends Partial<CreateStoreRequest> {}

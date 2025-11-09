@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import AuthGuard from './components/AuthGuard';
 import AdminLayout from './components/AdminLayout';
@@ -41,9 +41,9 @@ function App() {
   );
 }
 
-function AdminApp({ notifications, onRemoveNotification }: { 
-  notifications: Notification[], 
-  onRemoveNotification: (id: string) => void 
+function AdminApp({ notifications: _notifications, onRemoveNotification: _onRemoveNotification }: {
+  notifications: Notification[],
+  onRemoveNotification: (id: string) => void
 }) {
   const [currentPage, setCurrentPage] = useState('dashboard');
 

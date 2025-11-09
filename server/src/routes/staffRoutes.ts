@@ -5,12 +5,15 @@ import { StaffModel, CreateStaffRequest } from '../models/StaffModel';
 import { StaffInvitationModel, CreateInvitationRequest } from '../models/StaffInvitationModel';
 import { ActivityLogModel } from '../models/ActivityLogModel';
 import { emailService } from '../services/emailService';
-import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import {
+  authenticateStaffToken,
+  AuthenticatedRequest,
+} from "../middleware/auth";
 
 const router = Router();
 const staffModel = new StaffModel();
 const invitationModel = new StaffInvitationModel();
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkey';
+const JWT_SECRET = process.env.JWT_SECRET || "";
 
 /**
  * @swagger
@@ -106,16 +109,34 @@ router.post('/login', [
     await staffModel.updateLastLogin(staff.id);
 
     // Generate JWT token
+    const tokenPayload = {
+      staffId: staff.id,
+      email: staff.email,
+      role: staff.role,
+      type: 'staff'
+    };
+
+    console.log('JWT Payload:', tokenPayload);
+    console.log('JWT_SECRET length:', JWT_SECRET?.length || 0);
+
+    // Calculate expiration time explicitly (7 days from now)
+    const now = Math.floor(Date.now() / 1000);
+    const exp = now + (7 * 24 * 60 * 60); // 7 days in seconds
+
+    console.log('JWT signing - now:', now, 'exp:', exp, 'exp date:', new Date(exp * 1000));
+
     const token = jwt.sign(
-      { 
-        staffId: staff.id, 
-        email: staff.email, 
-        role: staff.role,
-        type: 'staff'
+      {
+        ...tokenPayload,
+        iat: now,
+        exp: exp
       },
-      JWT_SECRET as string,
-      { expiresIn: '7d' }
+      JWT_SECRET as string
     );
+
+    // Decode and log the token to check expiration
+    const decoded = jwt.decode(token) as any;
+    console.log('JWT decoded:', { iat: decoded.iat, exp: decoded.exp, expDate: new Date(decoded.exp * 1000) });
 
     // Log the activity
     try {
@@ -138,7 +159,7 @@ router.post('/login', [
     res.cookie('staff_auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/'
     });
@@ -197,7 +218,7 @@ router.post('/login', [
  *       401:
  *         description: Unauthorized
  */
-router.get('/me', authenticateToken, async (req: Request, res: Response) => {
+router.get("/me", authenticateStaffToken, async (req: Request, res: Response) => {
   try {
     // Check if this is a staff token
     const token = req.cookies.staff_auth_token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
@@ -291,7 +312,7 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
  *       409:
  *         description: Email or employee ID already exists
  */
-router.post('/register', authenticateToken, [
+router.post("/register", authenticateStaffToken, [
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 6 }),
   body('firstName').trim().isLength({ min: 1 }),
@@ -423,7 +444,7 @@ router.post('/register', authenticateToken, [
  *       409:
  *         description: Email already exists
  */
-router.post('/invite', authenticateToken, [
+router.post("/invite", authenticateStaffToken, [
   body('email').isEmail().normalizeEmail(),
   body('firstName').trim().isLength({ min: 1 }),
   body('lastName').trim().isLength({ min: 1 }),
@@ -615,7 +636,7 @@ router.post('/setup-password', [
     res.cookie('staff_auth_token', jwtToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/'
     });
@@ -688,7 +709,7 @@ router.post('/logout', (req: Request, res: Response) => {
   res.clearCookie('staff_auth_token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
     path: '/'
   });
 

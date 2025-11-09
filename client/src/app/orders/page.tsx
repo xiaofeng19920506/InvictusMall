@@ -6,6 +6,7 @@ import {
 } from "@/lib/server-api";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { parseOrderStatusQuery } from "./orderStatusConfig";
 
 interface OrdersPageProps {
   searchParams: Promise<{
@@ -33,11 +34,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   }
 
   let initialOrders: Order[] = [];
-  const status = params.status || "all";
+  const parsedStatus = parseOrderStatusQuery(params.status);
 
   try {
     const response = await fetchOrdersServer(cookieHeader || undefined, {
-      status: status !== "all" ? status : undefined,
+      status: parsedStatus !== "all" ? parsedStatus : undefined,
       limit: 50,
     });
     if (response.success) {
@@ -54,5 +55,5 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     initialOrders = [];
   }
 
-  return <OrdersContent orders={initialOrders} status={status} />;
+  return <OrdersContent orders={initialOrders} status={parsedStatus} />;
 }

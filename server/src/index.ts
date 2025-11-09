@@ -13,7 +13,9 @@ import authRoutes from "./routes/authRoutes";
 import staffRoutes from "./routes/staffRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import shippingAddressRoutes from "./routes/shippingAddressRoutes";
-import paymentRoutes from "./routes/paymentRoutes";
+import paymentRoutes, {
+  stripeWebhookHandler,
+} from "./routes/paymentRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
@@ -47,6 +49,13 @@ app.use(limiter);
 
 // Logging middleware
 app.use(morgan("combined"));
+
+// Stripe webhook endpoint must be registered before body parsers
+app.post(
+  "/api/payments/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhookHandler
+);
 
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));

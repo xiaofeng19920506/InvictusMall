@@ -1,12 +1,18 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { orderService, Order } from '@/services/order';
-import Link from 'next/link';
+import { useState, useEffect, useRef } from "react";
+import { orderService, Order } from "@/services/order";
+import Link from "next/link";
+import {
+  ORDER_STATUS_FILTERS,
+  getOrderStatusBadgeStyle,
+  getOrderStatusLabel,
+  type OrderStatusTabValue,
+} from "../orderStatusConfig";
 
 interface OrdersClientProps {
   initialOrders: Order[];
-  initialStatus: string;
+  initialStatus: OrderStatusTabValue;
 }
 
 export default function OrdersClient({
@@ -15,16 +21,9 @@ export default function OrdersClient({
 }: OrdersClientProps) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<string>(initialStatus);
-  const statusTabs = [
-    { value: 'all', label: 'All Orders' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'processing', label: 'Processing' },
-    { value: 'shipped', label: 'Shipped' },
-    { value: 'delivered', label: 'Delivered' },
-    { value: 'cancelled', label: 'Cancelled' },
-  ];
+  const [error, setError] = useState("");
+  const [selectedStatus, setSelectedStatus] =
+    useState<OrderStatusTabValue>(initialStatus);
 
   useEffect(() => {
     setOrders(initialOrders);
@@ -48,10 +47,10 @@ export default function OrdersClient({
     let isMounted = true;
     const fetchOrders = async () => {
       setLoading(true);
-      setError('');
+      setError("");
       try {
         const response = await orderService.getOrderHistory({
-          status: selectedStatus !== 'all' ? selectedStatus : undefined,
+          status: selectedStatus !== "all" ? selectedStatus : undefined,
           limit: 50,
         });
         if (!isMounted) return;
@@ -60,11 +59,11 @@ export default function OrdersClient({
           const fetchedOrders = response.data || [];
           setOrders(fetchedOrders);
         } else {
-          setError('Failed to load orders');
+          setError("Failed to load orders");
         }
       } catch (err: any) {
         if (!isMounted) return;
-        setError(err.message || 'Failed to load orders');
+        setError(err.message || "Failed to load orders");
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -79,28 +78,11 @@ export default function OrdersClient({
     };
   }, [initialOrders.length, initialStatus, selectedStatus]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-purple-100 text-purple-800';
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -108,14 +90,16 @@ export default function OrdersClient({
     <>
       <div className="mb-8">
         <nav className="flex space-x-2 overflow-x-auto pb-2 border-b border-gray-200">
-          {statusTabs.map(tab => {
+          {ORDER_STATUS_FILTERS.map((tab) => {
             const isActive = selectedStatus === tab.value;
             return (
               <button
                 key={tab.value}
                 onClick={() => setSelectedStatus(tab.value)}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors cursor-pointer ${
-                  isActive ? 'bg-orange-500 text-white shadow' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  isActive
+                    ? "bg-orange-500 text-white shadow"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
                 {tab.label}
@@ -137,8 +121,8 @@ export default function OrdersClient({
           <div className="text-6xl mb-4">📦</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No orders found</h3>
           <p className="text-gray-600 mb-6">
-            {selectedStatus !== 'all'
-              ? `You don't have any ${selectedStatus} orders.`
+            {selectedStatus !== "all"
+              ? `You don't have any ${getOrderStatusLabel(selectedStatus)} orders.`
               : "You haven't placed any orders yet."}
           </p>
           <Link
@@ -155,11 +139,15 @@ export default function OrdersClient({
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
                   <div className="flex items-center space-x-4 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">Order #{order.id.slice(0, 8)}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 break-all">
+                      Order #{order.id}
+                    </h3>
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusBadgeStyle(
+                        order.status
+                      )}`}
                     >
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      {getOrderStatusLabel(order.status)}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">Placed on {formatDate(order.orderDate)}</p>

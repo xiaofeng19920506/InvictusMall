@@ -8,11 +8,14 @@ export interface User {
   lastName: string;
   phoneNumber: string;
   role: 'admin' | 'owner' | 'manager' | 'employee';
+  department?: string;
+  employeeId?: string;
   isActive: boolean;
   emailVerified: boolean;
   createdAt: string;
   updatedAt: string;
   lastLoginAt: string;
+  createdBy?: string;
 }
 
 export interface LoginRequest {

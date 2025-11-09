@@ -71,13 +71,10 @@ const createTables = async (): Promise<void> => {
         review_count INT NOT NULL DEFAULT 0,
         image_url VARCHAR(500) NOT NULL,
         is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
         products_count INT NOT NULL DEFAULT 0,
         established_year INT NOT NULL,
         discount VARCHAR(50),
-        membership_type ENUM('basic', 'premium', 'platinum') NULL,
-        membership_benefits JSON NULL,
-        membership_discount_percentage INT NULL,
-        membership_priority_support BOOLEAN NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )

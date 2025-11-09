@@ -14,7 +14,10 @@ import {
 } from "../middleware/validation";
 import jwt from "jsonwebtoken";
 import { ActivityLogModel, ActivityLog } from "../models/ActivityLogModel";
-import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
+import {
+  authenticateUserToken,
+  AuthenticatedRequest,
+} from "../middleware/auth";
 import { emailService } from "../services/emailService";
 import multer from "multer";
 import FormData from "form-data";
@@ -718,7 +721,7 @@ router.post(
  */
 router.get(
   "/me",
-  authenticateToken,
+  authenticateUserToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       // User is already authenticated and available in req.user
@@ -1190,7 +1193,7 @@ router.post("/logout", (req: Request, res: Response) => {
  */
 router.put(
   "/profile",
-  authenticateToken,
+  authenticateUserToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user!.id;
@@ -1260,7 +1263,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 15 * 1024 * 1024, // 15MB limit
   },
 });
 
@@ -1294,7 +1297,7 @@ const upload = multer({
  */
 router.post(
   "/avatar",
-  authenticateToken,
+  authenticateUserToken,
   upload.single("avatar"),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -1557,7 +1560,7 @@ router.post(
  */
 router.post(
   "/change-password",
-  authenticateToken,
+  authenticateUserToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user!.id;

@@ -17,13 +17,13 @@ export function getAvatarUrl(avatarUrl?: string | null): string | undefined {
   
   // If it starts with /images/, use the storage service URL (port 9000)
   if (avatarUrl.startsWith('/images/')) {
-    const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || 'http://98.115.143.29:9000';
+    const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || "";
     return `${storageUrl}${avatarUrl}`;
   }
   
   // If it starts with /uploads/, prepend the API base URL
   if (avatarUrl.startsWith('/uploads/')) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
     return `${baseUrl}${avatarUrl}`;
   }
   
@@ -45,13 +45,13 @@ export function getImageUrl(imageUrl?: string | null): string | undefined {
   
   // If it starts with /images/, use the storage service URL (port 9000)
   if (imageUrl.startsWith('/images/')) {
-    const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || 'http://98.115.143.29:9000';
+    const storageUrl = process.env.NEXT_PUBLIC_STORAGE_URL || '';
     return `${storageUrl}${imageUrl}`;
   }
   
   // If it starts with /uploads/, prepend the API base URL
   if (imageUrl.startsWith('/uploads/')) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
     return `${baseUrl}${imageUrl}`;
   }
   

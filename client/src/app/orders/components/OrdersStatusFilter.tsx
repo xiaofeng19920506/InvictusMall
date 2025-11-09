@@ -1,17 +1,8 @@
 import Link from "next/link";
-
-interface OrdersStatusFilterProps {
-  activeStatus: string;
-}
-
-const STATUS_OPTIONS = [
-  { value: "all", label: "All Orders" },
-  { value: "pending", label: "Pending" },
-  { value: "processing", label: "Processing" },
-  { value: "shipped", label: "Shipped" },
-  { value: "delivered", label: "Delivered" },
-  { value: "cancelled", label: "Cancelled" },
-];
+import {
+  ORDER_STATUS_FILTERS,
+  type OrderStatusTabValue,
+} from "../orderStatusConfig";
 
 function buildStatusHref(status: string) {
   return status === "all" ? "/orders" : `/orders?status=${status}`;
@@ -19,10 +10,12 @@ function buildStatusHref(status: string) {
 
 export default function OrdersStatusFilter({
   activeStatus,
-}: OrdersStatusFilterProps) {
+}: {
+  activeStatus: OrderStatusTabValue;
+}) {
   return (
     <nav className="flex flex-wrap gap-2 border-b border-gray-200 pb-4">
-      {STATUS_OPTIONS.map((option) => {
+      {ORDER_STATUS_FILTERS.map((option) => {
         const isActive = activeStatus === option.value;
         return (
           <Link

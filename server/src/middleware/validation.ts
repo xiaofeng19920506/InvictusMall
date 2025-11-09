@@ -10,6 +10,7 @@ export const validateStore = [
   body('reviewCount').isInt({ min: 0 }).withMessage('Review count must be a positive integer'),
   body('imageUrl').isURL().withMessage('Image URL must be a valid URL'),
   body('isVerified').isBoolean().withMessage('isVerified must be a boolean'),
+  body('isActive').isBoolean().withMessage('isActive must be a boolean'),
   body('location').isArray().withMessage('Location must be an array'),
   body('location.*.streetAddress').notEmpty().withMessage('Street address is required'),
   body('location.*.city').notEmpty().withMessage('City is required'),
@@ -18,12 +19,7 @@ export const validateStore = [
   body('location.*.country').notEmpty().withMessage('Country is required'),
   body('productsCount').isInt({ min: 0 }).withMessage('Products count must be a positive integer'),
   body('establishedYear').isInt({ min: 1900, max: new Date().getFullYear() }).withMessage('Established year must be between 1900 and current year'),
-  body('discount').optional().isString().withMessage('Discount must be a string'),
-  body('membership.type').optional().isIn(['basic', 'premium', 'platinum']).withMessage('Membership type must be basic, premium, or platinum'),
-  body('membership.benefits').optional().isArray().withMessage('Membership benefits must be an array'),
-  body('membership.benefits.*').optional().isString().withMessage('Each benefit must be a string'),
-  body('membership.discountPercentage').optional().isInt({ min: 0, max: 100 }).withMessage('Discount percentage must be between 0 and 100'),
-  body('membership.prioritySupport').optional().isBoolean().withMessage('Priority support must be a boolean')
+  body('discount').optional().isString().withMessage('Discount must be a string')
 ];
 
 export const validateUpdateStore = [
@@ -35,6 +31,7 @@ export const validateUpdateStore = [
   body('reviewCount').optional().isInt({ min: 0 }).withMessage('Review count must be a positive integer'),
   body('imageUrl').optional().isURL().withMessage('Image URL must be a valid URL'),
   body('isVerified').optional().isBoolean().withMessage('isVerified must be a boolean'),
+  body('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
   body('location').optional().isArray().withMessage('Location must be an array'),
   body('location.*.streetAddress').optional().notEmpty().withMessage('Street address cannot be empty'),
   body('location.*.city').optional().notEmpty().withMessage('City cannot be empty'),
@@ -43,12 +40,7 @@ export const validateUpdateStore = [
   body('location.*.country').optional().notEmpty().withMessage('Country cannot be empty'),
   body('productsCount').optional().isInt({ min: 0 }).withMessage('Products count must be a positive integer'),
   body('establishedYear').optional().isInt({ min: 1900, max: new Date().getFullYear() }).withMessage('Established year must be between 1900 and current year'),
-  body('discount').optional().isString().withMessage('Discount must be a string'),
-  body('membership.type').optional().isIn(['basic', 'premium', 'platinum']).withMessage('Membership type must be basic, premium, or platinum'),
-  body('membership.benefits').optional().isArray().withMessage('Membership benefits must be an array'),
-  body('membership.benefits.*').optional().isString().withMessage('Each benefit must be a string'),
-  body('membership.discountPercentage').optional().isInt({ min: 0, max: 100 }).withMessage('Discount percentage must be between 0 and 100'),
-  body('membership.prioritySupport').optional().isBoolean().withMessage('Priority support must be a boolean')
+  body('discount').optional().isString().withMessage('Discount must be a string')
 ];
 
 export const validateLogin = [

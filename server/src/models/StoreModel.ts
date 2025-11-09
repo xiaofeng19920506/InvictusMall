@@ -124,11 +124,9 @@ export class StoreModel {
       // Insert store
       await connection.execute(`
         INSERT INTO stores (
-          id, name, description, rating, review_count, image_url, is_verified,
-          products_count, established_year, discount, membership_type,
-          membership_benefits, membership_discount_percentage, membership_priority_support,
-          created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          id, name, description, rating, review_count, image_url, is_verified, is_active,
+          products_count, established_year, discount, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         storeId,
         storeData.name,
@@ -137,13 +135,10 @@ export class StoreModel {
         storeData.reviewCount,
         storeData.imageUrl,
         storeData.isVerified,
+        storeData.isActive,
         storeData.productsCount,
         storeData.establishedYear,
         storeData.discount || null,
-        storeData.membership?.type || null,
-        storeData.membership ? JSON.stringify(storeData.membership.benefits) : null,
-        storeData.membership?.discountPercentage || null,
-        storeData.membership?.prioritySupport || null,
         now,
         now
       ]);
@@ -205,13 +200,10 @@ export class StoreModel {
           review_count = COALESCE(?, review_count),
           image_url = COALESCE(?, image_url),
           is_verified = COALESCE(?, is_verified),
+          is_active = COALESCE(?, is_active),
           products_count = COALESCE(?, products_count),
           established_year = COALESCE(?, established_year),
           discount = COALESCE(?, discount),
-          membership_type = COALESCE(?, membership_type),
-          membership_benefits = COALESCE(?, membership_benefits),
-          membership_discount_percentage = COALESCE(?, membership_discount_percentage),
-          membership_priority_support = COALESCE(?, membership_priority_support),
           updated_at = ?
         WHERE id = ?
       `, [
@@ -221,13 +213,10 @@ export class StoreModel {
         updateData.reviewCount,
         updateData.imageUrl,
         updateData.isVerified,
+        updateData.isActive,
         updateData.productsCount,
         updateData.establishedYear,
         updateData.discount,
-        updateData.membership?.type,
-        updateData.membership ? JSON.stringify(updateData.membership.benefits) : null,
-        updateData.membership?.discountPercentage,
-        updateData.membership?.prioritySupport,
         now,
         id
       ]);
@@ -354,37 +343,6 @@ export class StoreModel {
     }
   }
 
-  // Get stores by membership type
-  static async findByMembershipType(membershipType: string): Promise<Store[]> {
-    const connection = await pool.getConnection();
-    try {
-      const [stores] = await connection.execute(`
-        SELECT 
-          s.*,
-          GROUP_CONCAT(sc.category) as categories,
-          JSON_ARRAYAGG(
-            JSON_OBJECT(
-              'streetAddress', sl.street_address,
-              'aptNumber', sl.apt_number,
-              'city', sl.city,
-              'stateProvince', sl.state_province,
-              'zipCode', sl.zip_code,
-              'country', sl.country
-            )
-          ) as locations
-        FROM stores s
-        LEFT JOIN store_categories sc ON s.id = sc.store_id
-        LEFT JOIN store_locations sl ON s.id = sl.store_id
-        WHERE s.membership_type = ?
-        GROUP BY s.id
-        ORDER BY s.created_at DESC
-      `, [membershipType]);
-
-      return (stores as any[]).map(this.mapRowToStore);
-    } finally {
-      connection.release();
-    }
-  }
 
   // Get all categories
   static async getCategories(): Promise<string[]> {
@@ -432,6 +390,7 @@ export class StoreModel {
       reviewCount: row.review_count,
       imageUrl: row.image_url,
       isVerified: Boolean(row.is_verified),
+      isActive: Boolean(row.is_active),
       location: [],
       productsCount: row.products_count,
       establishedYear: row.established_year,
@@ -461,36 +420,6 @@ export class StoreModel {
       }
     }
 
-    // Add membership if it exists
-    if (row.membership_type) {
-      store.membership = {
-        type: row.membership_type,
-        benefits: [],
-        discountPercentage: row.membership_discount_percentage,
-        prioritySupport: Boolean(row.membership_priority_support)
-      };
-
-      // Parse membership benefits safely
-      if (row.membership_benefits) {
-        try {
-          // Handle different types of invalid data
-          if (typeof row.membership_benefits === 'string') {
-            if (row.membership_benefits === '[object Object]' || row.membership_benefits === '' || !row.membership_benefits.startsWith('[')) {
-              store.membership.benefits = [];
-            } else {
-              store.membership.benefits = JSON.parse(row.membership_benefits);
-            }
-          } else if (Array.isArray(row.membership_benefits)) {
-            store.membership.benefits = row.membership_benefits;
-          } else {
-            store.membership.benefits = [];
-          }
-        } catch (error) {
-          console.error('Error parsing membership benefits:', error);
-          store.membership.benefits = [];
-        }
-      }
-    }
 
     return store;
   }

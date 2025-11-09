@@ -1,6 +1,9 @@
 import { Router, Response } from "express";
 import { ShippingAddressModel, CreateShippingAddressRequest, UpdateShippingAddressRequest } from "../models/ShippingAddressModel";
-import { authenticateToken, AuthenticatedRequest } from "../middleware/auth";
+import {
+  authenticateUserToken,
+  AuthenticatedRequest,
+} from "../middleware/auth";
 import {
   validateCreateShippingAddress,
   validateUpdateShippingAddress,
@@ -36,7 +39,7 @@ const shippingAddressModel = new ShippingAddressModel();
  */
 router.get(
   "/",
-  authenticateToken,
+  authenticateUserToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -86,7 +89,7 @@ router.get(
  */
 router.get(
   "/default",
-  authenticateToken,
+  authenticateUserToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
@@ -142,7 +145,7 @@ router.get(
  */
 router.get(
   "/:id",
-  authenticateToken,
+  authenticateUserToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
@@ -241,7 +244,7 @@ router.get(
  */
 router.post(
   "/",
-  authenticateToken,
+  authenticateUserToken,
   validateCreateShippingAddress,
   handleValidationErrors,
   async (req: AuthenticatedRequest, res: Response) => {
@@ -367,7 +370,7 @@ router.post(
  */
 router.put(
   "/:id",
-  authenticateToken,
+  authenticateUserToken,
   validateUpdateShippingAddress,
   handleValidationErrors,
   async (req: AuthenticatedRequest, res: Response) => {
@@ -500,7 +503,7 @@ router.put(
  */
 router.post(
   "/:id/set-default",
-  authenticateToken,
+  authenticateUserToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
@@ -580,7 +583,7 @@ router.post(
  */
 router.delete(
   "/:id",
-  authenticateToken,
+  authenticateUserToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;

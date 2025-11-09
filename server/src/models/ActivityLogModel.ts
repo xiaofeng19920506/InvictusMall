@@ -66,15 +66,18 @@ export class ActivityLogModel {
    * Get recent activity logs
    */
   static async getRecentLogs(limit: number = 20): Promise<ActivityLog[]> {
+    // Ensure limit is a valid number and within reasonable bounds
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 100);
+
     const query = `
       SELECT id, type, message, store_name, store_id, metadata, created_at
       FROM activity_logs
       ORDER BY created_at DESC
-      LIMIT ?
+      LIMIT ${safeLimit}
     `;
-    
+
     try {
-      const [rows] = await pool.execute(query, [limit]);
+      const [rows] = await pool.execute(query);
       
       return (rows as any[]).map(row => ({
         id: row.id.toString(),

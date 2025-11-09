@@ -10,20 +10,20 @@ async function createAdminStaff() {
     const staffModel = new StaffModel();
     
     // Check if admin already exists
-    const existingAdmin = await staffModel.getStaffByEmail('admin@invictusmall.com');
+    const existingAdmin = await staffModel.getStaffByEmail('aaronliu05061992@gmail.com');
     if (existingAdmin) {
+      console.log('Admin user already exists');
       return;
     }
 
     // Create admin staff member
     await staffModel.createStaff({
-      email: 'admin@invictusmall.com',
-      password: 'admin123',
-      firstName: 'Admin',
-      lastName: 'User',
+      email: 'aaronliu05061992@gmail.com',
+      password: 'Liu1141..',
+      firstName: 'Aaron',
+      lastName: 'Liu',
       phoneNumber: '1234567890',
       role: 'admin',
-      department: 'IT',
       employeeId: 'ADMIN001'
     });
     

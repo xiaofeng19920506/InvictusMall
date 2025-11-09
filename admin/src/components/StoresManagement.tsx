@@ -16,6 +16,7 @@ import { storeApi } from "../services/api";
 import type { Store } from "../types/store";
 import { useRealTimeStores } from "../hooks/useRealTimeStores";
 import { useAuth } from "../contexts/AuthContext";
+import { getImageUrl } from "../utils/imageUtils";
 
 const StoresManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -184,7 +185,7 @@ const StoresManagement: React.FC = () => {
                   <td>
                     <div className="flex items-center gap-3">
                       <img
-                        src={store.imageUrl}
+                        src={getImageUrl(store.imageUrl)}
                         alt={store.name}
                         className="w-12 h-12 rounded-lg object-cover"
                       />
@@ -644,7 +645,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
               {formData.imagePreview && (
                 <div className="mt-4">
                   <img
-                    src={formData.imagePreview}
+                    src={getImageUrl(formData.imagePreview)}
                     alt="Store preview"
                     className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-300"
                   />

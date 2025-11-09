@@ -1,7 +1,11 @@
 import Link from "next/link";
+import {
+  getOrderStatusLabel,
+  type OrderStatusTabValue,
+} from "../orderStatusConfig";
 
 interface OrdersEmptyStateProps {
-  status: string;
+  status: OrderStatusTabValue;
 }
 
 export default function OrdersEmptyState({ status }: OrdersEmptyStateProps) {
@@ -13,7 +17,7 @@ export default function OrdersEmptyState({ status }: OrdersEmptyStateProps) {
       </h3>
       <p className="text-gray-600 mb-6">
         {status !== "all"
-          ? `You don't have any ${status} orders.`
+          ? `You don't have any ${getOrderStatusLabel(status)} orders.`
           : "You haven't placed any orders yet."}
       </p>
       <Link

@@ -4,10 +4,11 @@ import OrdersStatusFilter from "./OrdersStatusFilter";
 import OrdersList from "./OrdersList";
 import OrdersEmptyState from "./OrdersEmptyState";
 import { Order } from "@/lib/server-api";
+import type { OrderStatusTabValue } from "../orderStatusConfig";
 
 interface OrdersContentProps {
   orders: Order[];
-  status: string;
+  status: OrderStatusTabValue;
 }
 
 export default function OrdersContent({

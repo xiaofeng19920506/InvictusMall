@@ -49,11 +49,6 @@ export default function StoreCard({ store, onClick }: StoreCardProps) {
       className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-200 hover:border-orange-500 relative overflow-hidden group"
       onClick={handleClick}
     >
-      {store.featured && (
-        <div className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 rounded text-xs font-bold z-10">
-          Featured
-        </div>
-      )}
       {store.discount && (
         <div className="absolute top-2 right-2 bg-orange-500 text-white px-2 py-1 rounded text-xs font-bold z-10">
           {store.discount}

@@ -60,6 +60,7 @@ async function ensureSampleStores(): Promise<Store[]> {
       imageUrl:
         "https://images.unsplash.com/photo-1510552776732-01acc9a4c1c9?auto=format&fit=crop&w=800&q=80",
       isVerified: true,
+      isActive: true,
       location: [
         {
           streetAddress: "125 Market Street",
@@ -71,12 +72,6 @@ async function ensureSampleStores(): Promise<Store[]> {
       ],
       productsCount: 240,
       establishedYear: 2012,
-      membership: {
-        type: "premium" as const,
-        benefits: ["Priority shipping", "Extended warranty", "VIP support"],
-        discountPercentage: 12,
-        prioritySupport: true,
-      },
     },
     {
       name: "Summit Outdoors",
@@ -88,6 +83,7 @@ async function ensureSampleStores(): Promise<Store[]> {
       imageUrl:
         "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80",
       isVerified: true,
+      isActive: true,
       location: [
         {
           streetAddress: "890 Canyon Drive",
@@ -99,12 +95,6 @@ async function ensureSampleStores(): Promise<Store[]> {
       ],
       productsCount: 185,
       establishedYear: 2010,
-      membership: {
-        type: "basic" as const,
-        benefits: ["Seasonal deals", "Exclusive workshops"],
-        discountPercentage: 5,
-        prioritySupport: false,
-      },
     },
     {
       name: "Harvest Pantry",
@@ -116,6 +106,7 @@ async function ensureSampleStores(): Promise<Store[]> {
       imageUrl:
         "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?auto=format&fit=crop&w=800&q=80",
       isVerified: true,
+      isActive: true,
       location: [
         {
           streetAddress: "42 Greenfield Avenue",

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { getAvatarUrl } from '@/utils/imageUtils';
 
 interface HeaderProps {
@@ -23,6 +23,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
   const { user, logout, isAuthenticated } = useAuth();
   const { getItemCount } = useCart();
   const router = useRouter();
+  const pathname = usePathname();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -82,6 +83,9 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
     setShowDropdown(false);
     router.push('/');
   };
+
+  const shouldShowCategoryNav =
+    pathname === '/' && typeof onCategoryFilter === 'function';
 
   return (
     <header className="bg-gray-900 text-white sticky top-0 z-50 shadow-lg">
@@ -268,25 +272,27 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
         </div>
       </div>
       
-      <nav className="bg-gray-800 border-t border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1 overflow-x-auto py-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors category-button cursor-pointer ${
-                  selectedCategory === category
-                    ? 'bg-orange-500 text-white'
-                    : 'text-gray-300'
-                }`}
-                onClick={() => handleCategoryChange(category)}
-              >
-                {category}
-              </button>
-            ))}
+      {shouldShowCategoryNav && (
+        <nav className="bg-gray-800 border-t border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex space-x-1 overflow-x-auto py-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors category-button cursor-pointer ${
+                    selectedCategory === category
+                      ? 'bg-orange-500 text-white'
+                      : 'text-gray-300'
+                  }`}
+                  onClick={() => handleCategoryChange(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
     </header>
   );
 }

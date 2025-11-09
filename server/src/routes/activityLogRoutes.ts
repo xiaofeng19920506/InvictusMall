@@ -22,7 +22,8 @@ const router = Router();
  */
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const limit = parseInt(req.query.limit as string) || 20;
+    const limitParam = req.query.limit as string;
+    const limit = limitParam && !isNaN(parseInt(limitParam)) ? parseInt(limitParam) : 20;
     const logs = await ActivityLogModel.getRecentLogs(limit);
     
     res.json({

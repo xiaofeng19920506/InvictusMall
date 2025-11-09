@@ -130,17 +130,33 @@ export const storeApi = {
     const formData = new FormData();
     formData.append("image", file);
 
-    const response = await axios.post(
-      `${API_BASE_URL}/api/stores/upload-image`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true, // Include cookies for authentication
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/stores/upload-image`,
+        {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = `Failed to upload image (status ${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // ignore parse errors, use default message
+        }
+        throw new Error(errorMessage);
       }
-    );
-    return response.data;
+
+      const data = (await response.json()) as ApiResponse<{ imageUrl: string }>;
+      return data;
+    } catch (error) {
+      console.error("Store image upload failed:", error);
+      throw error;
+    }
   },
 };
 
