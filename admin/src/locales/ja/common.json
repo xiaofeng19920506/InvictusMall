@@ -283,6 +283,45 @@
       "save": "設定を保存",
       "saving": "保存中..."
     }
+  },
+  "systemLogs": {
+    "title": "システムログ",
+    "subtitle": "システムの動作を監視し、問題をトラブルシュートします",
+    "searchPlaceholder": "ログを検索...",
+    "filters": {
+      "all": "すべてのレベル",
+      "levels": {
+        "info": "情報",
+        "warning": "警告",
+        "error": "エラー"
+      }
+    },
+    "actions": {
+      "refresh": "再読み込み",
+      "export": "エクスポート",
+      "retry": "再試行"
+    },
+    "feedback": {
+      "loadError": "ログを読み込めませんでした"
+    },
+    "table": {
+      "timestamp": "タイムスタンプ",
+      "level": "レベル",
+      "message": "メッセージ",
+      "source": "ソース",
+      "user": "ユーザー",
+      "type": "種類: {{type}}",
+      "systemSource": "システム",
+      "unknownUser": "不明"
+    },
+    "states": {
+      "loading": "ログを読み込み中...",
+      "empty": {
+        "title": "ログが見つかりません",
+        "filtered": "検索条件やフィルターを調整してください。",
+        "default": "アクティビティが発生すると、ここにログが表示されます。"
+      }
+    }
   }
 }
 

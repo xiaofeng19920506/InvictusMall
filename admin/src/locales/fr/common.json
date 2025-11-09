@@ -283,6 +283,45 @@
       "save": "Enregistrer",
       "saving": "Enregistrement..."
     }
+  },
+  "systemLogs": {
+    "title": "Journaux système",
+    "subtitle": "Surveillez l'activité du système et résolvez les incidents",
+    "searchPlaceholder": "Rechercher dans les journaux...",
+    "filters": {
+      "all": "Tous les niveaux",
+      "levels": {
+        "info": "Information",
+        "warning": "Avertissement",
+        "error": "Erreur"
+      }
+    },
+    "actions": {
+      "refresh": "Actualiser",
+      "export": "Exporter",
+      "retry": "Réessayer"
+    },
+    "feedback": {
+      "loadError": "Impossible de charger les journaux"
+    },
+    "table": {
+      "timestamp": "Horodatage",
+      "level": "Niveau",
+      "message": "Message",
+      "source": "Source",
+      "user": "Utilisateur",
+      "type": "Type : {{type}}",
+      "systemSource": "Système",
+      "unknownUser": "Inconnu"
+    },
+    "states": {
+      "loading": "Chargement des journaux...",
+      "empty": {
+        "title": "Aucun journal trouvé",
+        "filtered": "Essayez de modifier votre recherche ou vos filtres.",
+        "default": "Les journaux s'afficheront ici dès qu'une activité sera enregistrée."
+      }
+    }
   }
 }
 
