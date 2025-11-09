@@ -1,0 +1,204 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 16rem;
+  gap: 12px;
+  color: var(--text-secondary);
+}
+
+.statsGrid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.statCard {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.statHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.statLabel {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.statIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+}
+
+.iconBlue {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.iconGreen {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.iconPurple {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.iconYellow {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cardTitle {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cardSubtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.activityCard {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  gap: 12px;
+  background-color: var(--bg-secondary);
+}
+
+.activityCreated {
+  background-color: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.activityUpdated {
+  background-color: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+.activityDeleted {
+  background-color: #fee2e2;
+  border-color: #fecaca;
+}
+
+.activityVerified {
+  background-color: #ede9fe;
+  border-color: #ddd6fe;
+}
+
+.activityDefault {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.activityIcon {
+  flex-shrink: 0;
+  margin-top: 4px;
+  color: var(--text-secondary);
+}
+
+.activityText {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.activityMessage {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.activityMeta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.emptyState {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.statusRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.statusOnline {
+  background-color: #dcfce7;
+  color: #047857;
+}
+
+.statusOffline {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+

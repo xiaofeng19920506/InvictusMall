@@ -15,7 +15,7 @@ export const revalidate = 0;
 export const dynamicParams = true;
 
 interface SuccessPageProps {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: { session_id?: string };
 }
 
 async function finalizeCheckout(
@@ -29,7 +29,7 @@ async function finalizeCheckout(
   }
 
   const cookieStore = cookies();
-  const serializedCookies = (await cookieStore).getAll();
+  const serializedCookies = cookieStore.getAll();
   const cookieHeader =
     serializedCookies.length > 0
       ? serializedCookies.map(({ name, value }) => `${name}=${value}`).join("; ")
@@ -52,8 +52,7 @@ async function finalizeCheckout(
 export default async function CheckoutSuccessPage({
   searchParams,
 }: SuccessPageProps) {
-  const params = await searchParams;
-  const sessionId = params.session_id;
+  const sessionId = searchParams.session_id;
   const completionResult = await finalizeCheckout(sessionId);
   const orderIds = completionResult.success && completionResult.orderIds
     ? completionResult.orderIds

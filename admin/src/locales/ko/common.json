@@ -1,0 +1,43 @@
+{
+  "brand": "인빅터스 몰 관리자",
+  "nav": {
+    "dashboard": "대시보드",
+    "stores": "스토어 관리",
+    "users": "사용자 관리",
+    "analytics": "분석",
+    "registerStaff": "직원 등록",
+    "settings": "설정",
+    "systemLogs": "시스템 로그",
+    "open": "내비게이션 열기",
+    "close": "내비게이션 닫기"
+  },
+  "header": {
+    "logout": "로그아웃",
+    "language": "언어",
+    "role": {
+      "admin": "관리자",
+      "owner": "소유자",
+      "manager": "매니저",
+      "employee": "직원",
+      "default": "사용자"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "zh": "중국어",
+    "es": "스페인어",
+    "fr": "프랑스어",
+    "ko": "한국어",
+    "ja": "일본어"
+  },
+  "pages": {
+    "dashboard": "대시보드",
+    "stores": "스토어 관리",
+    "users": "사용자 관리",
+    "analytics": "분석",
+    "registerStaff": "직원 등록",
+    "settings": "설정",
+    "systemLogs": "시스템 로그"
+  }
+}
+

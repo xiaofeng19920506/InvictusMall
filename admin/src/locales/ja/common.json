@@ -1,0 +1,43 @@
+{
+  "brand": "インビクタスモール管理",
+  "nav": {
+    "dashboard": "ダッシュボード",
+    "stores": "店舗管理",
+    "users": "ユーザー管理",
+    "analytics": "分析",
+    "registerStaff": "スタッフ登録",
+    "settings": "設定",
+    "systemLogs": "システムログ",
+    "open": "ナビゲーションを開く",
+    "close": "ナビゲーションを閉じる"
+  },
+  "header": {
+    "logout": "ログアウト",
+    "language": "言語",
+    "role": {
+      "admin": "管理者",
+      "owner": "オーナー",
+      "manager": "マネージャー",
+      "employee": "スタッフ",
+      "default": "ユーザー"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "zh": "中国語",
+    "es": "スペイン語",
+    "fr": "フランス語",
+    "ko": "韓国語",
+    "ja": "日本語"
+  },
+  "pages": {
+    "dashboard": "ダッシュボード",
+    "stores": "店舗管理",
+    "users": "ユーザー管理",
+    "analytics": "分析",
+    "registerStaff": "スタッフ登録",
+    "settings": "設定",
+    "systemLogs": "システムログ"
+  }
+}
+

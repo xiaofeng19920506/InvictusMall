@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { X } from "lucide-react";
 import { storeApi } from "../services/api";
@@ -68,6 +68,14 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
 
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const updateLocationField = (field: keyof Location, value: string) => {
     setFormData((prev) => ({
@@ -218,20 +226,19 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-    >
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center px-4 py-8">
       <div
-        className="relative flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
-        onClick={(event) => event.stopPropagation()}
+        className="absolute inset-0 bg-gray-900/70 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div
+        className="relative flex h-full max-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+        role="dialog"
+        aria-modal="true"
       >
-        <div className="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-4">
-          <h3 className="text-xl font-semibold text-gray-900">
+        <div className="sticky top-0 flex items-center justify-between border-b bg-white px-6 py-5">
+          <h3 className="text-2xl font-semibold text-gray-900">
             {isEditing ? "Edit Store" : "Add New Store"}
           </h3>
           <button
@@ -244,7 +251,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           </button>
         </div>
 
-        <div className="overflow-y-auto px-6 py-6">
+        <div className="custom-scrollbar flex-1 overflow-y-auto px-6 py-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div
               className={`grid gap-4 ${
@@ -257,7 +264,10 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
                   type="text"
                   value={formData.name}
                   onChange={(event) =>
-                    setFormData((prev) => ({ ...prev, name: event.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      name: event.target.value,
+                    }))
                   }
                   className="form-input"
                   required
@@ -378,8 +388,8 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
                   Store images can be added later
                 </h4>
                 <p className="text-sm">
-                  Create the store first, then edit it to upload photos and other
-                  details.
+                  Create the store first, then edit it to upload photos and
+                  other details.
                 </p>
               </div>
             )}
@@ -599,4 +609,3 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
 };
 
 export default StoreModal;
-

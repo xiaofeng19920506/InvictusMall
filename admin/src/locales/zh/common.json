@@ -1,0 +1,43 @@
+{
+  "brand": "英维克特斯商城后台",
+  "nav": {
+    "dashboard": "仪表盘",
+    "stores": "商店管理",
+    "users": "用户管理",
+    "analytics": "数据分析",
+    "registerStaff": "注册员工",
+    "settings": "设置",
+    "systemLogs": "系统日志",
+    "open": "打开导航",
+    "close": "关闭导航"
+  },
+  "header": {
+    "logout": "退出登录",
+    "language": "语言",
+    "role": {
+      "admin": "管理员",
+      "owner": "店主",
+      "manager": "经理",
+      "employee": "员工",
+      "default": "用户"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "zh": "中文",
+    "es": "西班牙语",
+    "fr": "法语",
+    "ko": "韩语",
+    "ja": "日语"
+  },
+  "pages": {
+    "dashboard": "仪表盘",
+    "stores": "商店管理",
+    "users": "用户管理",
+    "analytics": "数据分析",
+    "registerStaff": "注册员工",
+    "settings": "设置",
+    "systemLogs": "系统日志"
+  }
+}
+

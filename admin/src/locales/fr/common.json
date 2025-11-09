@@ -1,0 +1,43 @@
+{
+  "brand": "Administration Invictus Mall",
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "stores": "Magasins",
+    "users": "Utilisateurs",
+    "analytics": "Analyses",
+    "registerStaff": "Enregistrer le personnel",
+    "settings": "Paramètres",
+    "systemLogs": "Journaux système",
+    "open": "Ouvrir la navigation",
+    "close": "Fermer la navigation"
+  },
+  "header": {
+    "logout": "Se déconnecter",
+    "language": "Langue",
+    "role": {
+      "admin": "Administrateur",
+      "owner": "Propriétaire",
+      "manager": "Gestionnaire",
+      "employee": "Employé",
+      "default": "Utilisateur"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "zh": "Chinois",
+    "es": "Espagnol",
+    "fr": "Français",
+    "ko": "Coréen",
+    "ja": "Japonais"
+  },
+  "pages": {
+    "dashboard": "Tableau de bord",
+    "stores": "Magasins",
+    "users": "Utilisateurs",
+    "analytics": "Analyses",
+    "registerStaff": "Enregistrer le personnel",
+    "settings": "Paramètres",
+    "systemLogs": "Journaux système"
+  }
+}
+

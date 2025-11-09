@@ -1,0 +1,42 @@
+{
+  "brand": "Invictus Mall Admin",
+  "nav": {
+    "dashboard": "Dashboard",
+    "stores": "Stores",
+    "users": "Users",
+    "analytics": "Analytics",
+    "registerStaff": "Register Staff",
+    "settings": "Settings",
+    "systemLogs": "System Logs",
+    "open": "Open navigation",
+    "close": "Close navigation"
+  },
+  "header": {
+    "logout": "Logout",
+    "language": "Language",
+    "role": {
+      "admin": "Administrator",
+      "owner": "Owner",
+      "manager": "Manager",
+      "employee": "Employee",
+      "default": "User"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "zh": "中文",
+    "es": "Español",
+    "fr": "Français",
+    "ko": "한국어",
+    "ja": "日本語"
+  },
+  "pages": {
+    "dashboard": "Dashboard",
+    "stores": "Stores",
+    "users": "Users",
+    "analytics": "Analytics",
+    "registerStaff": "Register Staff",
+    "settings": "Settings",
+    "systemLogs": "System Logs"
+  }
+}

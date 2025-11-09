@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Plus, Edit, Trash2, Search, Star, RefreshCw, CheckCircle } from "lucide-react";
 import { storeApi } from "../services/api";
@@ -13,7 +13,12 @@ const StoresManagement: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const { user } = useAuth();
+
+  useEffect(() => {
+    setIsClient(typeof window !== "undefined");
+  }, []);
 
   // Use real-time stores hook with 10-second refresh interval
   const { stores, loading, refetch, lastUpdated } = useRealTimeStores(10000);
@@ -271,7 +276,8 @@ const StoresManagement: React.FC = () => {
       </div>
 
       {/* Store Modal - Rendered via Portal */}
-      {showModal &&
+      {isClient &&
+        showModal &&
         createPortal(
           <StoreModal
             store={editingStore}

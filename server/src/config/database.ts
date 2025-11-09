@@ -80,6 +80,19 @@ const createTables = async (): Promise<void> => {
       )
     `);
 
+    // Ensure legacy tables also include the is_active column
+    try {
+      await connection.execute(`
+        ALTER TABLE stores
+        ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE
+      `);
+    } catch (error: any) {
+      // Ignore if the column already exists (ER_DUP_FIELDNAME)
+      if (error?.code !== 'ER_DUP_FIELDNAME') {
+        console.warn('Unable to add is_active column to stores table:', error);
+      }
+    }
+
     // Create store_categories table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS store_categories (

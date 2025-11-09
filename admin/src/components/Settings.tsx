@@ -1,9 +1,31 @@
-import React, { useState } from 'react';
-import { Settings as SettingsIcon, Save, User, Bell, Shield, Globe } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useMemo, useState } from "react";
+import {
+  Settings as SettingsIcon,
+  Save,
+  User,
+  Bell,
+  Shield,
+  Globe,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../contexts/AuthContext";
+
+const languageOptions = [
+  { value: "en", label: "English" },
+  { value: "zh", label: "中文" },
+  { value: "es", label: "Español" },
+  { value: "fr", label: "Français" },
+  { value: "ko", label: "한국어" },
+  { value: "ja", label: "日本語" },
+];
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
+  const { i18n } = useTranslation();
+  const initialLanguage = useMemo(() => {
+    const lang = i18n.resolvedLanguage || i18n.language || "en";
+    return lang.split("-")[0];
+  }, [i18n.resolvedLanguage, i18n.language]);
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -12,7 +34,7 @@ const Settings: React.FC = () => {
     },
     preferences: {
       theme: 'light',
-      language: 'en',
+      language: initialLanguage,
       timezone: 'UTC'
     },
     security: {
@@ -190,15 +212,24 @@ const Settings: React.FC = () => {
             <label className="form-label">Language</label>
             <select
               value={settings.preferences.language}
-              onChange={(e) => setSettings({
-                ...settings,
-                preferences: { ...settings.preferences, language: e.target.value }
-              })}
+              onChange={(e) => {
+                const newLanguage = e.target.value;
+                setSettings((prev) => ({
+                  ...prev,
+                  preferences: {
+                    ...prev.preferences,
+                    language: newLanguage,
+                  },
+                }));
+                i18n.changeLanguage(newLanguage);
+              }}
               className="form-input form-select"
             >
-              <option value="en">English</option>
-              <option value="zh">中文</option>
-              <option value="es">Español</option>
+              {languageOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
           <div className="form-group">
