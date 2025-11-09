@@ -38,5 +38,341 @@
     "registerStaff": "Register Staff",
     "settings": "Settings",
     "systemLogs": "System Logs"
+  },
+  "stores": {
+    "title": "Stores Management",
+    "lastUpdated": "Last updated: {{time}}",
+    "refresh": "Refresh",
+    "addStore": "Add Store",
+    "searchPlaceholder": "Search stores...",
+    "allCategories": "All Categories",
+    "confirmDelete": "Are you sure you want to delete this store?",
+    "confirmVerify": "Are you sure you want to verify this store?",
+    "deleteError": "Failed to delete store",
+    "verifyError": "Failed to verify store",
+    "verifyForbidden": "Only administrators can verify stores",
+    "empty": "No stores found",
+    "loading": "Loading stores...",
+    "table": {
+      "title": "Stores ({{count}})",
+      "store": "Store",
+      "category": "Category",
+      "rating": "Rating",
+      "status": "Status",
+      "products": "Products",
+      "actions": "Actions"
+    },
+    "status": {
+      "verified": "Verified",
+      "unverified": "Unverified"
+    },
+    "actions": {
+      "verify": "Verify Store",
+      "edit": "Edit Store",
+      "delete": "Delete Store"
+    }
+  },
+  "storeModal": {
+    "createTitle": "Add New Store",
+    "editTitle": "Edit Store",
+    "fields": {
+      "name": "Store Name",
+      "description": "Description",
+      "categories": "Categories",
+      "categoryPlaceholder": "Add category and press Enter",
+      "addCategory": "Add",
+      "storeImage": "Store Image",
+      "uploading": "Uploading image...",
+      "imageHintTitle": "Store images can be added later",
+      "imageHintDescription": "Create the store first, then edit it to upload photos and other details.",
+      "locationTitle": "Location",
+      "street": "Street Address",
+      "apt": "Apt/Unit Number",
+      "city": "City",
+      "state": "State/Province",
+      "zip": "ZIP Code",
+      "country": "Country",
+      "rating": "Rating",
+      "reviewCount": "Review Count",
+      "productsCount": "Products Count",
+      "establishedYear": "Established Year",
+      "discount": "Discount",
+      "discountPlaceholder": "e.g., 20% OFF",
+      "verified": "Verified Store",
+      "active": "Active Store"
+    },
+    "actions": {
+      "invalidImageType": "Please select an image file.",
+      "imageTooLarge": "Image file size must be less than 15MB.",
+      "uploadSuccess": "Image uploaded successfully.",
+      "uploadFail": "Failed to upload image. Please try again.",
+      "locationMissing": "Please fill in all required location fields.",
+      "saveError": "Failed to save store. Please try again.",
+      "removeCategory": "Remove category {{category}}",
+      "saving": "Saving...",
+      "update": "Update Store",
+      "create": "Create Store",
+      "cancel": "Cancel",
+      "close": "Close modal"
+    }
+  },
+  "users": {
+    "title": "Users Management",
+    "subtitle": "Manage system users and permissions",
+    "loadError": "Failed to load users.",
+    "loading": "Loading users...",
+    "searchPlaceholder": "Search users by name, email, or phone...",
+    "filters": {
+      "allRoles": "All Roles",
+      "admin": "Admin",
+      "storeOwner": "Store Owner",
+      "customer": "Customer"
+    },
+    "table": {
+      "title": "Users ({{count}})",
+      "user": "User",
+      "role": "Role",
+      "contact": "Contact",
+      "status": "Status",
+      "joined": "Joined",
+      "actions": "Actions"
+    },
+    "roles": {
+      "admin": "ADMIN",
+      "store_owner": "STORE OWNER",
+      "customer": "CUSTOMER"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "emailVerified": "Verified",
+      "emailUnverified": "Unverified"
+    },
+    "actions": {
+      "editSoon": "Edit user functionality coming soon",
+      "editTitle": "Edit User",
+      "deactivate": "Deactivate",
+      "activate": "Activate",
+      "deactivateTitle": "Deactivate User",
+      "activateTitle": "Activate User",
+      "confirmToggle": "Are you sure you want to {{action}} this user?",
+      "toggleSoon": "Toggle user status functionality coming soon"
+    },
+    "empty": {
+      "title": "No users found",
+      "filtered": "Try adjusting your search or filter criteria.",
+      "default": "No users in the system yet."
+    },
+    "note": {
+      "title": "Note:",
+      "description": "User management features are being developed. Currently, you can view user information. Edit and management functions will be available soon."
+    }
+  },
+  "registerStaff": {
+    "title": "Invite New Staff",
+    "subtitle": "Send an invitation to a new staff member",
+    "accessDenied": {
+      "title": "Access Denied",
+      "message": "Only administrators and owners can register new staff members."
+    },
+    "form": {
+      "firstName": "First Name",
+      "firstNamePlaceholder": "John",
+      "lastName": "Last Name",
+      "lastNamePlaceholder": "Doe",
+      "email": "Email",
+      "emailPlaceholder": "name@example.com",
+      "role": "Role",
+      "roles": {
+        "employee": "Employee",
+        "manager": "Manager",
+        "owner": "Owner",
+        "admin": "Admin"
+      },
+      "department": "Department",
+      "departmentPlaceholder": "Department (optional)",
+      "employeeId": "Employee ID",
+      "employeeIdPlaceholder": "Employee ID (optional)",
+      "optional": "(optional)",
+      "submit": "Send Invitation",
+      "sending": "Sending Invitation...",
+      "info": "The invited staff member will receive an email with setup instructions."
+    },
+    "feedback": {
+      "success": "Staff invitation sent successfully to {{email}}! They will receive an email with setup instructions.",
+      "error": "Failed to send staff invitation.",
+      "unexpected": "An unexpected error occurred."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account settings and preferences",
+    "feedback": {
+      "success": "Settings saved successfully!",
+      "error": "Failed to save settings."
+    },
+    "profile": {
+      "title": "Profile Information",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "role": "Role",
+      "note": "Profile information can be updated through your account settings."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "email": {
+        "title": "Email Notifications",
+        "description": "Receive email notifications for important updates."
+      },
+      "push": {
+        "title": "Push Notifications",
+        "description": "Receive push notifications in your browser."
+      },
+      "sms": {
+        "title": "SMS Notifications",
+        "description": "Receive SMS notifications for critical alerts."
+      }
+    },
+    "preferences": {
+      "title": "Preferences",
+      "theme": {
+        "title": "Theme",
+        "options": {
+          "light": "Light",
+          "dark": "Dark",
+          "auto": "Auto"
+        }
+      },
+      "language": {
+        "title": "Language"
+      },
+      "timezone": {
+        "title": "Timezone",
+        "options": {
+          "UTC": "UTC",
+          "America/New_York": "Eastern Time (US)",
+          "America/Los_Angeles": "Pacific Time (US)",
+          "Asia/Shanghai": "China Standard Time"
+        }
+      }
+    },
+    "security": {
+      "title": "Security",
+      "twoFactor": {
+        "title": "Two-Factor Authentication",
+        "description": "Add an extra layer of security to your account."
+      },
+      "sessionTimeout": {
+        "title": "Session Timeout (minutes)",
+        "description": "Automatically log out after inactivity period."
+      }
+    },
+    "actions": {
+      "save": "Save Settings",
+      "saving": "Saving..."
+    }
+  },
+  "systemLogs": {
+    "title": "System Logs",
+    "subtitle": "Monitor system activity and troubleshoot issues",
+    "searchPlaceholder": "Search logs...",
+    "filters": {
+      "all": "All Levels",
+      "levels": {
+        "info": "Info",
+        "warning": "Warning",
+        "error": "Error"
+      }
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "export": "Export",
+      "retry": "Retry"
+    },
+    "feedback": {
+      "loadError": "Failed to load logs"
+    },
+    "table": {
+      "timestamp": "Timestamp",
+      "level": "Level",
+      "message": "Message",
+      "source": "Source",
+      "user": "User",
+      "type": "Type: {{type}}",
+      "systemSource": "System",
+      "unknownUser": "Unknown"
+    },
+    "states": {
+      "loading": "Loading logs...",
+      "empty": {
+        "title": "No logs found",
+        "filtered": "Try adjusting your search or filter criteria.",
+        "default": "Logs will appear here as activity occurs."
+      }
+    }
+  },
+  "analytics": {
+    "title": "Analytics Overview",
+    "subtitle": "Key performance indicators and metrics",
+    "stats": {
+      "changeLabel": "from last month",
+      "revenue": { "title": "Total Revenue" },
+      "stores": { "title": "Active Stores" },
+      "users": { "title": "Total Users" },
+      "growth": { "title": "Growth Rate" }
+    },
+    "charts": {
+      "revenue": "Revenue Trends",
+      "revenuePlaceholder": "Chart placeholder – revenue trends over time",
+      "stores": "Store Performance",
+      "storesPlaceholder": "Chart placeholder – store performance metrics"
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "items": {
+        "newStore": {
+          "action": "New store registered",
+          "time": "2 hours ago"
+        },
+        "purchase": {
+          "action": "User completed purchase",
+          "time": "4 hours ago"
+        },
+        "inventory": {
+          "action": "Store updated inventory",
+          "time": "6 hours ago"
+        },
+        "registration": {
+          "action": "New user registration",
+          "time": "8 hours ago"
+        }
+      }
+    }
+  },
+  "dashboard": {
+    "loading": "Loading dashboard...",
+    "quickActions": {
+      "title": "Quick Actions",
+      "addStore": "Add New Store",
+      "viewAnalytics": "View Analytics",
+      "manageUsers": "Manage Users"
+    },
+    "stats": {
+      "totalStores": "Total Stores",
+      "verifiedStores": "Verified Stores",
+      "categories": "Categories",
+      "averageRating": "Average Rating"
+    },
+    "activity": {
+      "title": "Recent Activity",
+      "subtitle": "Latest store management activities",
+      "empty": "No recent activity"
+    },
+    "serverStatus": "Server status",
+    "status": {
+      "online": "Online",
+      "offline": "Offline"
+    }
   }
 }

@@ -1,11 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Search, Filter, Download, RefreshCw } from 'lucide-react';
-import { activityLogApi } from '../services/api';
-import type { ActivityLog } from '../types/store';
+import React, { useState, useEffect } from "react";
+import { FileText, Search, Filter, Download, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { activityLogApi } from "../services/api";
+import type { ActivityLog } from "../types/store";
+import styles from "./SystemLogs.module.css";
+
+type LogLevel = "info" | "warning" | "error";
+
+type FilterOption = "all" | LogLevel;
 
 const SystemLogs: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterLevel, setFilterLevel] = useState<string>('all');
+  const { t } = useTranslation();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterLevel, setFilterLevel] = useState<FilterOption>("all");
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,179 +29,206 @@ const SystemLogs: React.FC = () => {
       if (response.success && response.data) {
         setLogs(response.data);
       } else {
-        setError('Failed to load logs');
+        setError(t("systemLogs.feedback.loadError"));
       }
     } catch (err: any) {
-      console.error('Error loading logs:', err);
-      setError(err.message || 'Failed to load logs');
+      console.error("Error loading logs:", err);
+      setError(err.message || t("systemLogs.feedback.loadError"));
     } finally {
       setLoading(false);
     }
   };
 
-  const getLogLevel = (type: ActivityLog['type']): 'info' | 'warning' | 'error' => {
-    if (type.includes('error') || type.includes('deleted') || type.includes('failed')) {
-      return 'error';
+  const getLogLevel = (type: ActivityLog["type"]): LogLevel => {
+    const normalized = type.toLowerCase();
+    if (
+      normalized.includes("error") ||
+      normalized.includes("deleted") ||
+      normalized.includes("failed")
+    ) {
+      return "error";
     }
-    if (type.includes('warning') || type.includes('updated')) {
-      return 'warning';
+    if (normalized.includes("warning") || normalized.includes("updated")) {
+      return "warning";
     }
-    return 'info';
+    return "info";
   };
 
-  const filteredLogs = logs.filter(log => {
+  const filteredLogs = logs.filter((log) => {
     const logLevel = getLogLevel(log.type);
-    const matchesSearch = log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (log.storeName && log.storeName.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesFilter = filterLevel === 'all' || logLevel === filterLevel;
+    const matchesSearch =
+      log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.storeName &&
+        log.storeName.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesFilter = filterLevel === "all" || logLevel === filterLevel;
     return matchesSearch && matchesFilter;
   });
 
-  const getLevelColor = (level: string) => {
+  const getLevelStyles = (level: LogLevel) => {
     switch (level) {
-      case 'error': return 'text-red-600 bg-red-100';
-      case 'warning': return 'text-yellow-600 bg-yellow-100';
-      case 'info': return 'text-blue-600 bg-blue-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case "error":
+        return styles.levelError;
+      case "warning":
+        return styles.levelWarning;
+      default:
+        return styles.levelInfo;
     }
   };
 
+  const getLevelLabel = (level: LogLevel) =>
+    t(`systemLogs.filters.levels.${level}`);
+
   return (
-    <div className="space-y-6">
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">System Logs</h3>
-          <p className="text-gray-600">Monitor system activity and troubleshoot issues</p>
+    <div className={styles.container}>
+      <section className={styles.card}>
+        <div className={styles.header}>
+          <h3 className={styles.headerTitle}>{t("systemLogs.title")}</h3>
+          <p className={styles.headerSubtitle}>{t("systemLogs.subtitle")}</p>
         </div>
-        
-        <div className="p-6">
-          {/* Search and Filter Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+
+        <div className={styles.controls}>
+          <div className={styles.controlsRow}>
+            <div className={styles.searchWrapper}>
+              <Search className={styles.searchIcon} />
               <input
                 type="text"
-                placeholder="Search logs..."
+                placeholder={t("systemLogs.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className={styles.searchInput}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Filter className="text-gray-400 h-4 w-4" />
+            <div className={styles.filters}>
+              <Filter className={styles.filterIcon} />
               <select
                 value={filterLevel}
-                onChange={(e) => setFilterLevel(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={(e) => setFilterLevel(e.target.value as FilterOption)}
+                className={styles.filterSelect}
               >
-                <option value="all">All Levels</option>
-                <option value="error">Errors</option>
-                <option value="warning">Warnings</option>
-                <option value="info">Info</option>
+                <option value="all">{t("systemLogs.filters.all")}</option>
+                <option value="error">{getLevelLabel("error")}</option>
+                <option value="warning">{getLevelLabel("warning")}</option>
+                <option value="info">{getLevelLabel("info")}</option>
               </select>
             </div>
-            <button 
+          </div>
+
+          <div className={styles.actions}>
+            <button
               onClick={loadLogs}
-              className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+              className={`${styles.actionButton} ${styles.refreshButton}`}
               disabled={loading}
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              <RefreshCw
+                className={loading ? "animate-spin h-4 w-4" : "h-4 w-4"}
+              />
+              {t("systemLogs.actions.refresh")}
             </button>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+            <button
+              type="button"
+              className={`${styles.actionButton} ${styles.exportButton}`}
+            >
               <Download className="h-4 w-4" />
-              Export
+              {t("systemLogs.actions.export")}
             </button>
           </div>
+        </div>
 
-          {/* Logs Table */}
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Timestamp
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Level
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Message
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Source
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User
-                    </th>
+        <div className={styles.tableWrapper}>
+          <table className={styles.table}>
+            <thead className={styles.tableHead}>
+              <tr>
+                <th className={styles.tableHeadCell}>
+                  {t("systemLogs.table.timestamp")}
+                </th>
+                <th className={styles.tableHeadCell}>
+                  {t("systemLogs.table.level")}
+                </th>
+                <th className={styles.tableHeadCell}>
+                  {t("systemLogs.table.message")}
+                </th>
+                <th className={styles.tableHeadCell}>
+                  {t("systemLogs.table.source")}
+                </th>
+                <th className={styles.tableHeadCell}>
+                  {t("systemLogs.table.user")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredLogs.map((log) => {
+                const logLevel = getLogLevel(log.type);
+                const timestamp =
+                  log.timestamp instanceof Date
+                    ? log.timestamp.toLocaleString()
+                    : new Date(log.timestamp).toLocaleString();
+
+                return (
+                  <tr key={log.id} className={styles.tableRow}>
+                    <td className={styles.tableCell}>{timestamp}</td>
+                    <td className={styles.tableCell}>
+                      <span
+                        className={`${styles.levelBadge} ${getLevelStyles(
+                          logLevel
+                        )}`}
+                      >
+                        {getLevelLabel(logLevel)}
+                      </span>
+                    </td>
+                    <td className={styles.tableCell}>
+                      <div className={styles.message}>{log.message}</div>
+                      <div className={styles.messageMeta}>
+                        {t("systemLogs.table.type", { type: log.type })}
+                      </div>
+                    </td>
+                    <td className={styles.tableCell}>
+                      {log.storeName || t("systemLogs.table.systemSource")}
+                    </td>
+                    <td className={styles.tableCell}>
+                      {log.metadata?.userId ||
+                        log.metadata?.verifiedBy ||
+                        t("systemLogs.table.unknownUser")}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredLogs.map((log) => {
-                    const logLevel = getLogLevel(log.type);
-                    const timestamp = log.timestamp instanceof Date 
-                      ? log.timestamp.toLocaleString() 
-                      : new Date(log.timestamp).toLocaleString();
-                    return (
-                      <tr key={log.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {timestamp}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getLevelColor(logLevel)}`}>
-                            {logLevel.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          <div className="font-medium">{log.message}</div>
-                          <div className="text-xs text-gray-500 mt-1">Type: {log.type}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {log.storeName || 'System'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {log.metadata?.userId || log.metadata?.verifiedBy || '-'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                );
+              })}
+            </tbody>
+          </table>
 
           {loading && (
-            <div className="text-center py-8">
-              <div className="loading mx-auto"></div>
-              <p className="mt-2 text-sm text-gray-500">Loading logs...</p>
+            <div className={styles.loadingState}>
+              <div className={styles.loadingSpinner} aria-hidden />
+              <p className={styles.emptyDescription}>
+                {t("systemLogs.states.loading")}
+              </p>
             </div>
           )}
-          
-          {error && (
-            <div className="text-center py-8">
-              <p className="text-sm text-red-600">{error}</p>
-              <button 
-                onClick={loadLogs}
-                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Retry
+
+          {error && !loading && (
+            <div className={styles.errorState}>
+              <p className={styles.emptyDescription}>{error}</p>
+              <button onClick={loadLogs} className={styles.retryButton}>
+                {t("systemLogs.actions.retry")}
               </button>
             </div>
           )}
 
           {!loading && !error && filteredLogs.length === 0 && (
-            <div className="text-center py-8">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No logs found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Try adjusting your search or filter criteria.
+            <div className={styles.emptyState}>
+              <FileText className={styles.emptyIcon} />
+              <h3 className={styles.emptyTitle}>
+                {t("systemLogs.states.empty.title")}
+              </h3>
+              <p className={styles.emptyDescription}>
+                {searchTerm || filterLevel !== "all"
+                  ? t("systemLogs.states.empty.filtered")
+                  : t("systemLogs.states.empty.default")}
               </p>
             </div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

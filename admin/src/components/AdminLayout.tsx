@@ -127,6 +127,11 @@ const AdminLayout = ({
     navigationItems.find((item) => item.id === currentPage)?.pageTitleKey ||
     "pages.dashboard";
 
+  const handleNavigate = (page: AdminPageKey) => {
+    onPageChange(page);
+    setSidebarOpen(false);
+  };
+
   return (
     <div className={styles.layout}>
       {sidebarOpen && (
@@ -160,10 +165,7 @@ const AdminLayout = ({
                     <li key={item.id} className={styles.navItem}>
                       <button
                         type="button"
-                        onClick={() => {
-                          onPageChange(item.id);
-                          setSidebarOpen(false);
-                        }}
+                        onClick={() => handleNavigate(item.id)}
                         className={
                           isActive
                             ? `${styles.navButton} ${styles.navButtonActive}`

@@ -38,6 +38,342 @@
     "registerStaff": "注册员工",
     "settings": "设置",
     "systemLogs": "系统日志"
+  },
+  "stores": {
+    "title": "门店管理",
+    "lastUpdated": "上次更新：{{time}}",
+    "refresh": "刷新",
+    "addStore": "新增门店",
+    "searchPlaceholder": "搜索门店...",
+    "allCategories": "全部分类",
+    "confirmDelete": "确定要删除此门店吗？",
+    "confirmVerify": "确定要审核通过此门店吗？",
+    "deleteError": "删除门店失败",
+    "verifyError": "审核门店失败",
+    "verifyForbidden": "只有管理员可以审核门店",
+    "empty": "暂无门店",
+    "loading": "正在加载门店...",
+    "table": {
+      "title": "门店（{{count}}）",
+      "store": "门店",
+      "category": "分类",
+      "rating": "评分",
+      "status": "状态",
+      "products": "商品数量",
+      "actions": "操作"
+    },
+    "status": {
+      "verified": "已审核",
+      "unverified": "未审核"
+    },
+    "actions": {
+      "verify": "审核门店",
+      "edit": "编辑门店",
+      "delete": "删除门店"
+    }
+  },
+  "storeModal": {
+    "createTitle": "新增门店",
+    "editTitle": "编辑门店",
+    "fields": {
+      "name": "门店名称",
+      "description": "门店描述",
+      "categories": "分类",
+      "categoryPlaceholder": "输入分类后按回车添加",
+      "addCategory": "添加",
+      "storeImage": "门店图片",
+      "uploading": "正在上传图片...",
+      "imageHintTitle": "门店图片可稍后上传",
+      "imageHintDescription": "请先创建门店，之后可编辑并上传照片及其他信息。",
+      "locationTitle": "地址信息",
+      "street": "街道地址",
+      "apt": "单元/房号",
+      "city": "城市",
+      "state": "州/省份",
+      "zip": "邮编",
+      "country": "国家",
+      "rating": "评分",
+      "reviewCount": "评价数量",
+      "productsCount": "商品数量",
+      "establishedYear": "成立年份",
+      "discount": "优惠信息",
+      "discountPlaceholder": "例如：8折优惠",
+      "verified": "已认证门店",
+      "active": "启用门店"
+    },
+    "actions": {
+      "invalidImageType": "请选择图片文件。",
+      "imageTooLarge": "图片大小需小于15MB。",
+      "uploadSuccess": "图片上传成功。",
+      "uploadFail": "图片上传失败，请稍后重试。",
+      "locationMissing": "请填写完整的地址信息。",
+      "saveError": "保存门店失败，请稍后重试。",
+      "removeCategory": "移除分类{{category}}",
+      "saving": "正在保存...",
+      "update": "更新门店",
+      "create": "创建门店",
+      "cancel": "取消",
+      "close": "关闭弹窗"
+    }
+  },
+  "users": {
+    "title": "用户管理",
+    "subtitle": "管理系统用户及其权限",
+    "loadError": "加载用户失败。",
+    "loading": "正在加载用户...",
+    "searchPlaceholder": "按姓名、邮箱或电话搜索用户...",
+    "filters": {
+      "allRoles": "全部角色",
+      "admin": "管理员",
+      "storeOwner": "店主",
+      "customer": "顾客"
+    },
+    "table": {
+      "title": "用户（{{count}}）",
+      "user": "用户",
+      "role": "角色",
+      "contact": "联系方式",
+      "status": "状态",
+      "joined": "加入时间",
+      "actions": "操作"
+    },
+    "roles": {
+      "admin": "管理员",
+      "store_owner": "店主",
+      "customer": "顾客"
+    },
+    "status": {
+      "active": "已启用",
+      "inactive": "已禁用",
+      "emailVerified": "邮箱已验证",
+      "emailUnverified": "邮箱未验证"
+    },
+    "actions": {
+      "editSoon": "用户编辑功能即将上线",
+      "editTitle": "编辑用户",
+      "deactivate": "禁用",
+      "activate": "启用",
+      "deactivateTitle": "禁用用户",
+      "activateTitle": "启用用户",
+      "confirmToggle": "确定要{{action}}该用户吗？",
+      "toggleSoon": "启用/禁用功能即将上线"
+    },
+    "empty": {
+      "title": "未找到用户",
+      "filtered": "请尝试调整搜索或筛选条件。",
+      "default": "系统中暂时没有用户。"
+    },
+    "note": {
+      "title": "提示：",
+      "description": "用户管理功能正在开发中，目前仅支持查看用户信息，编辑和管理功能将于稍后提供。"
+    }
+  },
+  "registerStaff": {
+    "title": "邀请新员工",
+    "subtitle": "向新成员发送邀请邮件",
+    "accessDenied": {
+      "title": "没有访问权限",
+      "message": "只有管理员或店主可以邀请新的员工。"
+    },
+    "form": {
+      "firstName": "名字",
+      "firstNamePlaceholder": "张",
+      "lastName": "姓氏",
+      "lastNamePlaceholder": "三",
+      "email": "邮箱",
+      "emailPlaceholder": "name@example.com",
+      "role": "角色",
+      "roles": {
+        "employee": "员工",
+        "manager": "经理",
+        "owner": "店主",
+        "admin": "管理员"
+      },
+      "department": "部门",
+      "departmentPlaceholder": "部门（可选）",
+      "employeeId": "员工编号",
+      "employeeIdPlaceholder": "员工编号（可选）",
+      "optional": "（可选）",
+      "submit": "发送邀请",
+      "sending": "正在发送邀请...",
+      "info": "被邀请的员工将会收到包含设置说明的电子邮件。"
+    },
+    "feedback": {
+      "success": "已成功向 {{email}} 发送员工邀请，他们将收到包含设置说明的邮件。",
+      "error": "发送员工邀请失败。",
+      "unexpected": "发生了意外错误。"
+    }
+  },
+  "settings": {
+    "title": "设置",
+    "subtitle": "管理账户设置和个性化偏好",
+    "feedback": {
+      "success": "设置已成功保存！",
+      "error": "保存设置失败。"
+    },
+    "profile": {
+      "title": "个人信息",
+      "firstName": "名字",
+      "lastName": "姓氏",
+      "email": "邮箱",
+      "role": "角色",
+      "note": "个人信息可在账户设置中更新。"
+    },
+    "notifications": {
+      "title": "通知设置",
+      "email": {
+        "title": "邮件通知",
+        "description": "接收重要更新的邮件通知。"
+      },
+      "push": {
+        "title": "推送通知",
+        "description": "在浏览器中接收推送通知。"
+      },
+      "sms": {
+        "title": "短信通知",
+        "description": "针对关键告警接收短信通知。"
+      }
+    },
+    "preferences": {
+      "title": "偏好设置",
+      "theme": {
+        "title": "主题",
+        "options": {
+          "light": "浅色",
+          "dark": "深色",
+          "auto": "自动"
+        }
+      },
+      "language": {
+        "title": "语言"
+      },
+      "timezone": {
+        "title": "时区",
+        "options": {
+          "UTC": "协调世界时 (UTC)",
+          "America/New_York": "北美东部时间",
+          "America/Los_Angeles": "北美太平洋时间",
+          "Asia/Shanghai": "中国标准时间"
+        }
+      }
+    },
+    "security": {
+      "title": "安全",
+      "twoFactor": {
+        "title": "双因素认证",
+        "description": "为账户增加一道安全防线。"
+      },
+      "sessionTimeout": {
+        "title": "会话超时（分钟）",
+        "description": "在长时间未操作后自动退出登录。"
+      }
+    },
+    "actions": {
+      "save": "保存设置",
+      "saving": "正在保存..."
+    }
+  },
+  "systemLogs": {
+    "title": "系统日志",
+    "subtitle": "监控系统活动并排查问题",
+    "searchPlaceholder": "搜索日志...",
+    "filters": {
+      "all": "全部级别",
+      "levels": {
+        "info": "信息",
+        "warning": "警告",
+        "error": "错误"
+      }
+    },
+    "actions": {
+      "refresh": "刷新",
+      "export": "导出",
+      "retry": "重试"
+    },
+    "feedback": {
+      "loadError": "加载日志失败"
+    },
+    "table": {
+      "timestamp": "时间戳",
+      "level": "级别",
+      "message": "消息",
+      "source": "来源",
+      "user": "用户",
+      "type": "类型：{{type}}",
+      "systemSource": "系统",
+      "unknownUser": "未知"
+    },
+    "states": {
+      "loading": "正在加载日志...",
+      "empty": {
+        "title": "暂无日志",
+        "filtered": "请尝试调整搜索或筛选条件。",
+        "default": "当有活动发生时，这里会显示日志记录。"
+      }
+    }
+  },
+  "analytics": {
+    "title": "数据分析概览",
+    "subtitle": "关键业绩指标和度量",
+    "stats": {
+      "changeLabel": "相比上个月",
+      "revenue": { "title": "总收入" },
+      "stores": { "title": "活跃门店" },
+      "users": { "title": "用户总数" },
+      "growth": { "title": "增长率" }
+    },
+    "charts": {
+      "revenue": "收入趋势",
+      "revenuePlaceholder": "图表占位符——展示收入随时间的变化趋势",
+      "stores": "门店表现",
+      "storesPlaceholder": "图表占位符——门店绩效指标"
+    },
+    "activity": {
+      "title": "最近活动",
+      "items": {
+        "newStore": {
+          "action": "新增门店注册",
+          "time": "2 小时前"
+        },
+        "purchase": {
+          "action": "用户完成购买",
+          "time": "4 小时前"
+        },
+        "inventory": {
+          "action": "门店更新库存",
+          "time": "6 小时前"
+        },
+        "registration": {
+          "action": "新用户注册",
+          "time": "8 小时前"
+        }
+      }
+    }
+  },
+  "dashboard": {
+    "loading": "仪表盘加载中...",
+    "quickActions": {
+      "title": "快捷操作",
+      "addStore": "新增商店",
+      "viewAnalytics": "查看分析",
+      "manageUsers": "管理用户"
+    },
+    "stats": {
+      "totalStores": "商店总数",
+      "verifiedStores": "已验证商店",
+      "categories": "类别数量",
+      "averageRating": "平均评分"
+    },
+    "activity": {
+      "title": "最新活动",
+      "subtitle": "最近的商店管理操作",
+      "empty": "暂无最近活动"
+    },
+    "serverStatus": "服务器状态",
+    "status": {
+      "online": "在线",
+      "offline": "离线"
+    }
   }
 }
 

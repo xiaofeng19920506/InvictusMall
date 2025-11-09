@@ -38,5 +38,289 @@
     "registerStaff": "Registrar Personal",
     "settings": "Configuración",
     "systemLogs": "Registros del Sistema"
+  },
+  "stores": {
+    "title": "Gestión de Tiendas",
+    "lastUpdated": "Última actualización: {{time}}",
+    "refresh": "Actualizar",
+    "addStore": "Agregar tienda",
+    "searchPlaceholder": "Buscar tiendas...",
+    "allCategories": "Todas las categorías",
+    "confirmDelete": "¿Está seguro de que desea eliminar esta tienda?",
+    "confirmVerify": "¿Está seguro de que desea verificar esta tienda?",
+    "deleteError": "No se pudo eliminar la tienda",
+    "verifyError": "No se pudo verificar la tienda",
+    "verifyForbidden": "Solo los administradores pueden verificar tiendas",
+    "empty": "No se encontraron tiendas",
+    "loading": "Cargando tiendas...",
+    "table": {
+      "title": "Tiendas ({{count}})",
+      "store": "Tienda",
+      "category": "Categoría",
+      "rating": "Valoración",
+      "status": "Estado",
+      "products": "Productos",
+      "actions": "Acciones"
+    },
+    "status": {
+      "verified": "Verificada",
+      "unverified": "No verificada"
+    },
+    "actions": {
+      "verify": "Verificar tienda",
+      "edit": "Editar tienda",
+      "delete": "Eliminar tienda"
+    }
+  },
+  "storeModal": {
+    "createTitle": "Agregar nueva tienda",
+    "editTitle": "Editar tienda",
+    "fields": {
+      "name": "Nombre de la tienda",
+      "description": "Descripción",
+      "categories": "Categorías",
+      "categoryPlaceholder": "Añade una categoría y presiona Enter",
+      "addCategory": "Añadir",
+      "storeImage": "Imagen de la tienda",
+      "uploading": "Subiendo imagen...",
+      "imageHintTitle": "Las imágenes de la tienda se pueden añadir más tarde",
+      "imageHintDescription": "Crea la tienda primero y luego edítala para subir fotos y otros detalles.",
+      "locationTitle": "Ubicación",
+      "street": "Dirección",
+      "apt": "Apartamento/Unidad",
+      "city": "Ciudad",
+      "state": "Estado/Provincia",
+      "zip": "Código postal",
+      "country": "País",
+      "rating": "Valoración",
+      "reviewCount": "Número de reseñas",
+      "productsCount": "Cantidad de productos",
+      "establishedYear": "Año de fundación",
+      "discount": "Descuento",
+      "discountPlaceholder": "Ej.: 20% OFF",
+      "verified": "Tienda verificada",
+      "active": "Tienda activa"
+    },
+    "actions": {
+      "invalidImageType": "Seleccione un archivo de imagen.",
+      "imageTooLarge": "El archivo de imagen debe ser menor de 15 MB.",
+      "uploadSuccess": "Imagen subida correctamente.",
+      "uploadFail": "No se pudo subir la imagen. Inténtelo de nuevo.",
+      "locationMissing": "Complete todos los campos obligatorios de la ubicación.",
+      "saveError": "No se pudo guardar la tienda. Inténtelo de nuevo.",
+      "removeCategory": "Eliminar categoría {{category}}",
+      "saving": "Guardando...",
+      "update": "Actualizar tienda",
+      "create": "Crear tienda",
+      "cancel": "Cancelar",
+      "close": "Cerrar modal"
+    }
+  },
+  "analytics": {
+    "title": "Resumen analítico",
+    "subtitle": "Indicadores clave de rendimiento y métricas",
+    "stats": {
+      "changeLabel": "respecto al mes anterior",
+      "revenue": { "title": "Ingresos totales" },
+      "stores": { "title": "Tiendas activas" },
+      "users": { "title": "Usuarios totales" },
+      "growth": { "title": "Tasa de crecimiento" }
+    },
+    "charts": {
+      "revenue": "Tendencias de ingresos",
+      "revenuePlaceholder": "Marcador de posición del gráfico: tendencias de ingresos a lo largo del tiempo",
+      "stores": "Rendimiento de tiendas",
+      "storesPlaceholder": "Marcador de posición del gráfico: métricas de rendimiento de tiendas"
+    },
+    "activity": {
+      "title": "Actividad reciente",
+      "items": {
+        "newStore": {
+          "action": "Nueva tienda registrada",
+          "time": "Hace 2 horas"
+        },
+        "purchase": {
+          "action": "Usuario completó una compra",
+          "time": "Hace 4 horas"
+        },
+        "inventory": {
+          "action": "La tienda actualizó su inventario",
+          "time": "Hace 6 horas"
+        },
+        "registration": {
+          "action": "Nuevo usuario registrado",
+          "time": "Hace 8 horas"
+        }
+      }
+    }
+  },
+  "dashboard": {
+    "loading": "Cargando panel...",
+    "quickActions": {
+      "title": "Acciones rápidas",
+      "addStore": "Agregar nueva tienda",
+      "viewAnalytics": "Ver analítica",
+      "manageUsers": "Gestionar usuarios"
+    },
+    "stats": {
+      "totalStores": "Tiendas totales",
+      "verifiedStores": "Tiendas verificadas",
+      "categories": "Categorías",
+      "averageRating": "Calificación promedio"
+    },
+    "activity": {
+      "title": "Actividad reciente",
+      "subtitle": "Últimas actividades de gestión de tiendas",
+      "empty": "No hay actividad reciente"
+    },
+    "serverStatus": "Estado del servidor",
+    "status": {
+      "online": "En línea",
+      "offline": "Fuera de línea"
+    }
+  },
+  "registerStaff": {
+    "title": "Invitar nuevo personal",
+    "subtitle": "Envía una invitación a un nuevo miembro del equipo",
+    "accessDenied": {
+      "title": "Acceso denegado",
+      "message": "Solo los administradores y propietarios pueden invitar nuevo personal."
+    },
+    "form": {
+      "firstName": "Nombre",
+      "firstNamePlaceholder": "Juan",
+      "lastName": "Apellido",
+      "lastNamePlaceholder": "Pérez",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "nombre@ejemplo.com",
+      "role": "Rol",
+      "roles": {
+        "employee": "Empleado",
+        "manager": "Gerente",
+        "owner": "Propietario",
+        "admin": "Administrador"
+      },
+      "department": "Departamento",
+      "departmentPlaceholder": "Departamento (opcional)",
+      "employeeId": "ID de empleado",
+      "employeeIdPlaceholder": "ID de empleado (opcional)",
+      "optional": "(opcional)",
+      "submit": "Enviar invitación",
+      "sending": "Enviando invitación...",
+      "info": "El personal invitado recibirá un correo electrónico con las instrucciones de configuración."
+    },
+    "feedback": {
+      "success": "La invitación se envió correctamente a {{email}}. Recibirá un correo con las instrucciones de configuración.",
+      "error": "No se pudo enviar la invitación.",
+      "unexpected": "Ocurrió un error inesperado."
+    }
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Administra la configuración y las preferencias de tu cuenta",
+    "feedback": {
+      "success": "¡Configuración guardada correctamente!",
+      "error": "No se pudieron guardar los cambios."
+    },
+    "profile": {
+      "title": "Información del perfil",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Correo electrónico",
+      "role": "Rol",
+      "note": "La información del perfil se puede actualizar desde la configuración de tu cuenta."
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "email": {
+        "title": "Notificaciones por correo",
+        "description": "Recibe correos electrónicos con actualizaciones importantes."
+      },
+      "push": {
+        "title": "Notificaciones push",
+        "description": "Recibe notificaciones push en tu navegador."
+      },
+      "sms": {
+        "title": "Notificaciones SMS",
+        "description": "Recibe SMS para alertas críticas."
+      }
+    },
+    "preferences": {
+      "title": "Preferencias",
+      "theme": {
+        "title": "Tema",
+        "options": {
+          "light": "Claro",
+          "dark": "Oscuro",
+          "auto": "Automático"
+        }
+      },
+      "language": {
+        "title": "Idioma"
+      },
+      "timezone": {
+        "title": "Zona horaria",
+        "options": {
+          "UTC": "Horario universal coordinado (UTC)",
+          "America/New_York": "Hora del este (EE. UU.)",
+          "America/Los_Angeles": "Hora del Pacífico (EE. UU.)",
+          "Asia/Shanghai": "Hora estándar de China"
+        }
+      }
+    },
+    "security": {
+      "title": "Seguridad",
+      "twoFactor": {
+        "title": "Autenticación de dos factores",
+        "description": "Añade una capa adicional de seguridad a tu cuenta."
+      },
+      "sessionTimeout": {
+        "title": "Tiempo de cierre de sesión (minutos)",
+        "description": "Cerrar sesión automáticamente tras un periodo de inactividad."
+      }
+    },
+    "actions": {
+      "save": "Guardar configuración",
+      "saving": "Guardando..."
+    }
+  },
+  "systemLogs": {
+    "title": "Registros del sistema",
+    "subtitle": "Supervisa la actividad del sistema y resuelve incidencias",
+    "searchPlaceholder": "Buscar en los registros...",
+    "filters": {
+      "all": "Todos los niveles",
+      "levels": {
+        "info": "Información",
+        "warning": "Advertencia",
+        "error": "Error"
+      }
+    },
+    "actions": {
+      "refresh": "Actualizar",
+      "export": "Exportar",
+      "retry": "Reintentar"
+    },
+    "feedback": {
+      "loadError": "No se pudieron cargar los registros"
+    },
+    "table": {
+      "timestamp": "Marca de tiempo",
+      "level": "Nivel",
+      "message": "Mensaje",
+      "source": "Origen",
+      "user": "Usuario",
+      "type": "Tipo: {{type}}",
+      "systemSource": "Sistema",
+      "unknownUser": "Desconocido"
+    },
+    "states": {
+      "loading": "Cargando registros...",
+      "empty": {
+        "title": "No se encontraron registros",
+        "filtered": "Intenta ajustar la búsqueda o los filtros.",
+        "default": "Los registros aparecerán aquí a medida que se generen eventos."
+      }
+    }
   }
 }

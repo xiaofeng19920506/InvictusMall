@@ -1,123 +1,147 @@
-import React from 'react';
-import { TrendingUp, Users, Store, DollarSign } from 'lucide-react';
+import React from "react";
+import { TrendingUp, Users, Store, DollarSign } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import styles from "./Analytics.module.css";
+
+interface StatDefinition {
+  key: "revenue" | "stores" | "users" | "growth";
+  value: string;
+  change: string;
+  changeType: "positive" | "negative";
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+interface ActivityDefinition {
+  key: "newStore" | "purchase" | "inventory" | "registration";
+  type: "store" | "user";
+}
 
 const Analytics: React.FC = () => {
-  const stats = [
+  const { t } = useTranslation();
+
+  const stats: StatDefinition[] = [
     {
-      title: 'Total Revenue',
-      value: '$45,231',
-      change: '+20.1%',
-      changeType: 'positive',
+      key: "revenue",
+      value: "$45,231",
+      change: "+20.1%",
+      changeType: "positive",
       icon: DollarSign,
     },
     {
-      title: 'Active Stores',
-      value: '12',
-      change: '+2',
-      changeType: 'positive',
+      key: "stores",
+      value: "12",
+      change: "+2",
+      changeType: "positive",
       icon: Store,
     },
     {
-      title: 'Total Users',
-      value: '2,350',
-      change: '+180',
-      changeType: 'positive',
+      key: "users",
+      value: "2,350",
+      change: "+180",
+      changeType: "positive",
       icon: Users,
     },
     {
-      title: 'Growth Rate',
-      value: '12.5%',
-      change: '+2.4%',
-      changeType: 'positive',
+      key: "growth",
+      value: "12.5%",
+      change: "+2.4%",
+      changeType: "positive",
       icon: TrendingUp,
     },
   ];
 
+  const activities: ActivityDefinition[] = [
+    { key: "newStore", type: "store" },
+    { key: "purchase", type: "user" },
+    { key: "inventory", type: "store" },
+    { key: "registration", type: "user" },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Analytics Overview</h3>
-          <p className="text-gray-600">Key performance indicators and metrics</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => {
+    <div className={styles.container}>
+      <section className={styles.statsCard}>
+        <header className="card-header">
+          <h3 className="card-title">{t("analytics.title")}</h3>
+          <p className="card-subtitle">{t("analytics.subtitle")}</p>
+        </header>
+
+        <div className={styles.statsGrid}>
+          {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <div key={index} className="bg-white p-6 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
+              <div key={stat.key} className={styles.statCard}>
+                <div className={styles.statHeader}>
                   <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    <p className={styles.statTitle}>
+                      {t(`analytics.stats.${stat.key}.title`)}
+                    </p>
+                    <p className={styles.statValue}>{stat.value}</p>
                   </div>
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <Icon className="h-6 w-6 text-blue-600" />
-                  </div>
+                  <span className={styles.statIcon}>
+                    <Icon className="h-6 w-6" />
+                  </span>
                 </div>
-                <div className="mt-4">
-                  <span className={`text-sm font-medium ${
-                    stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                <div className={styles.statFooter}>
+                  <span
+                    className={`${styles.statChange} ${
+                      stat.changeType === "positive"
+                        ? styles.changePositive
+                        : styles.changeNegative
+                    }`}
+                  >
                     {stat.change}
                   </span>
-                  <span className="text-sm text-gray-500 ml-2">from last month</span>
+                  <span className={styles.changeLabel}>
+                    {t("analytics.stats.changeLabel")}
+                  </span>
                 </div>
               </div>
             );
           })}
         </div>
-      </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Revenue Trends</h3>
+      <section className={styles.chartsGrid}>
+        <article className={styles.chartCard}>
+          <h3 className={styles.chartTitle}>{t("analytics.charts.revenue")}</h3>
+          <div className={styles.chartPlaceholder}>
+            {t("analytics.charts.revenuePlaceholder")}
           </div>
-          <div className="p-6">
-            <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-              <p className="text-gray-500">Chart placeholder - Revenue trends over time</p>
-            </div>
-          </div>
-        </div>
+        </article>
 
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title">Store Performance</h3>
+        <article className={styles.chartCard}>
+          <h3 className={styles.chartTitle}>{t("analytics.charts.stores")}</h3>
+          <div className={styles.chartPlaceholder}>
+            {t("analytics.charts.storesPlaceholder")}
           </div>
-          <div className="p-6">
-            <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-              <p className="text-gray-500">Chart placeholder - Store performance metrics</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        </article>
+      </section>
 
-      <div className="card">
-        <div className="card-header">
-          <h3 className="card-title">Recent Activity</h3>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            {[
-              { action: 'New store registered', time: '2 hours ago', type: 'store' },
-              { action: 'User completed purchase', time: '4 hours ago', type: 'user' },
-              { action: 'Store updated inventory', time: '6 hours ago', type: 'store' },
-              { action: 'New user registration', time: '8 hours ago', type: 'user' },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <div className={`w-2 h-2 rounded-full ${
-                  activity.type === 'store' ? 'bg-blue-500' : 'bg-green-500'
-                }`}></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
-                </div>
+      <section className={styles.activityCard}>
+        <h3 className={styles.activityTitle}>{t("analytics.activity.title")}</h3>
+        <div className={styles.activityList}>
+          {activities.map((activity) => (
+            <div key={activity.key} className={styles.activityItem}>
+              <span
+                className={`${styles.activityDot} ${
+                  activity.type === "store"
+                    ? styles.activityDotStore
+                    : styles.activityDotUser
+                }`}
+                aria-hidden="true"
+              />
+              <div className={styles.activityContent}>
+                <p className={styles.activityAction}>
+                  {t(`analytics.activity.items.${activity.key}.action`)}
+                </p>
+                <p className={styles.activityTime}>
+                  {t(`analytics.activity.items.${activity.key}.time`)}
+                </p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

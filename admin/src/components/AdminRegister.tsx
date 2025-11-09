@@ -1,143 +1,166 @@
-import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import type { User } from '../services/auth';
-import './AdminLogin.css';
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useAuth } from "../contexts/AuthContext";
+import type { User } from "../services/auth";
+import styles from "./AdminRegister.module.css";
 
 interface RegisterFormData {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'owner' | 'manager' | 'employee';
+  role: "admin" | "owner" | "manager" | "employee";
   department: string;
   employeeId: string;
 }
 
+function buildRoleLabel(role: RegisterFormData["role"], t: (key: string) => string) {
+  return t(`registerStaff.form.roles.${role}`);
+}
+
 export default function AdminRegister() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<RegisterFormData>({
-    email: '',
-    firstName: '',
-    lastName: '',
-    role: 'employee',
-    department: '',
-    employeeId: ''
+    email: "",
+    firstName: "",
+    lastName: "",
+    role: "employee",
+    department: "",
+    employeeId: "",
   });
-  const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<string>('');
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     try {
-      const response = await fetch('http://localhost:3001/api/staff/invite', {
-        method: 'POST',
+      const response = await fetch("http://localhost:3001/api/staff/invite", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
+        credentials: "include",
         body: JSON.stringify({
           email: formData.email,
           firstName: formData.firstName,
           lastName: formData.lastName,
           role: formData.role,
           department: formData.department || undefined,
-          employeeId: formData.employeeId || undefined
-        })
+          employeeId: formData.employeeId || undefined,
+        }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        setSuccess(`Staff invitation sent successfully to ${formData.email}! They will receive an email with setup instructions.`);
+        setSuccess(
+          t("registerStaff.feedback.success", { email: formData.email })
+        );
         setFormData({
-          email: '',
-          firstName: '',
-          lastName: '',
-          role: 'employee',
-          department: '',
-          employeeId: ''
+          email: "",
+          firstName: "",
+          lastName: "",
+          role: "employee",
+          department: "",
+          employeeId: "",
         });
       } else {
-        setError(data.message || 'Failed to send staff invitation');
+        setError(data.message || t("registerStaff.feedback.error"));
       }
     } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+      setError(err.message || t("registerStaff.feedback.unexpected"));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Check if current user can register staff
-  if (!user || (user.role !== 'admin' && user.role !== 'owner')) {
+  if (!user || (user.role !== "admin" && user.role !== "owner")) {
     return (
-      <div className="admin-login-container">
-        <div className="admin-login-form">
-          <div className="admin-login-header">
-            <div className="admin-login-icon">
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <h2 className="admin-login-title">Access Denied</h2>
-            <p className="admin-login-subtitle">
-              Only administrators and owners can register new staff members
-            </p>
+      <div className={styles.container}>
+        <div className={`${styles.card} ${styles.accessDenied}`}>
+          <div className={styles.icon} aria-hidden>
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
           </div>
+          <h2 className={styles.title}>{t("registerStaff.accessDenied.title")}</h2>
+          <p className={styles.subtitle}>
+            {t("registerStaff.accessDenied.message")}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="admin-login-container">
-      <div className="admin-login-form" style={{ maxWidth: '32rem' }}>
-        <div className="admin-login-header">
-          <div className="admin-login-icon">
+    <div className={styles.container}>
+      <div className={styles.card}>
+        <header className={styles.header}>
+          <div className={styles.icon} aria-hidden>
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+              />
             </svg>
           </div>
-          <h2 className="admin-login-title">Invite New Staff</h2>
-          <p className="admin-login-subtitle">
-            Send an invitation to a new staff member
-          </p>
-        </div>
-        
-        <form className="admin-login-form-container" onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div className="admin-login-input-group">
+          <h2 className={styles.title}>{t("registerStaff.title")}</h2>
+          <p className={styles.subtitle}>{t("registerStaff.subtitle")}</p>
+        </header>
+
+        <form className={styles.form} onSubmit={handleSubmit}>
+          <div className={styles.gridTwo}>
+            <div className={styles.inputGroup}>
+              <label className={styles.label} htmlFor="firstName">
+                {t("registerStaff.form.firstName")}
+              </label>
               <input
+                id="firstName"
                 name="firstName"
                 type="text"
                 required
-                className="admin-login-input"
-                placeholder="First Name"
+                className={styles.input}
+                placeholder={t("registerStaff.form.firstNamePlaceholder")}
                 value={formData.firstName}
                 onChange={handleChange}
                 disabled={isSubmitting}
               />
             </div>
-            <div className="admin-login-input-group">
+            <div className={styles.inputGroup}>
+              <label className={styles.label} htmlFor="lastName">
+                {t("registerStaff.form.lastName")}
+              </label>
               <input
+                id="lastName"
                 name="lastName"
                 type="text"
                 required
-                className="admin-login-input"
-                placeholder="Last Name"
+                className={styles.input}
+                placeholder={t("registerStaff.form.lastNamePlaceholder")}
                 value={formData.lastName}
                 onChange={handleChange}
                 disabled={isSubmitting}
@@ -145,41 +168,59 @@ export default function AdminRegister() {
             </div>
           </div>
 
-          <div className="admin-login-input-group">
+          <div className={styles.inputGroup}>
+            <label className={styles.label} htmlFor="email">
+              {t("registerStaff.form.email")}
+            </label>
             <input
+              id="email"
               name="email"
               type="email"
               required
-              className="admin-login-input"
-              placeholder="Email address"
+              className={styles.input}
+              placeholder={t("registerStaff.form.emailPlaceholder")}
               value={formData.email}
               onChange={handleChange}
               disabled={isSubmitting}
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div className="admin-login-input-group">
+          <div className={styles.gridTwo}>
+            <div className={styles.inputGroup}>
+              <label className={styles.label} htmlFor="role">
+                {t("registerStaff.form.role")}
+              </label>
               <select
+                id="role"
                 name="role"
                 required
-                className="admin-login-input"
+                className={styles.select}
                 value={formData.role}
                 onChange={handleChange}
                 disabled={isSubmitting}
               >
-                <option value="employee">Employee</option>
-                <option value="manager">Manager</option>
-                <option value="owner">Owner</option>
-                <option value="admin">Admin</option>
+                {(["employee", "manager", "owner", "admin"] as RegisterFormData["role"][]).map(
+                  (role) => (
+                    <option key={role} value={role}>
+                      {buildRoleLabel(role, t)}
+                    </option>
+                  )
+                )}
               </select>
             </div>
-            <div className="admin-login-input-group">
+            <div className={styles.inputGroup}>
+              <label className={styles.label} htmlFor="department">
+                {t("registerStaff.form.department")}
+                <span className={styles.optional}>
+                  {t("registerStaff.form.optional")}
+                </span>
+              </label>
               <input
+                id="department"
                 name="department"
                 type="text"
-                className="admin-login-input"
-                placeholder="Department (optional)"
+                className={styles.input}
+                placeholder={t("registerStaff.form.departmentPlaceholder")}
                 value={formData.department}
                 onChange={handleChange}
                 disabled={isSubmitting}
@@ -187,12 +228,19 @@ export default function AdminRegister() {
             </div>
           </div>
 
-          <div className="admin-login-input-group">
+          <div className={styles.inputGroup}>
+            <label className={styles.label} htmlFor="employeeId">
+              {t("registerStaff.form.employeeId")}
+              <span className={styles.optional}>
+                {t("registerStaff.form.optional")}
+              </span>
+            </label>
             <input
+              id="employeeId"
               name="employeeId"
               type="text"
-              className="admin-login-input"
-              placeholder="Employee ID (optional)"
+              className={styles.input}
+              placeholder={t("registerStaff.form.employeeIdPlaceholder")}
               value={formData.employeeId}
               onChange={handleChange}
               disabled={isSubmitting}
@@ -200,57 +248,43 @@ export default function AdminRegister() {
           </div>
 
           {error && (
-            <div className="admin-login-error">
-              <div className="admin-login-error-content">
-                <svg className="admin-login-error-icon" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                <div className="admin-login-error-text">
-                  {error}
-                </div>
-              </div>
+            <div className={styles.error} role="alert">
+              <svg className={styles.alertIcon} viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3a1 1 0 102 0V7zm-1 5a1.25 1.25 0 100 2.5A1.25 1.25 0 0010 12z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div style={{ 
-              backgroundColor: '#f0f9ff', 
-              border: '1px solid #bae6fd', 
-              borderRadius: '0.375rem', 
-              padding: '1rem', 
-              marginBottom: '1.5rem' 
-            }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                <svg style={{ width: '1.25rem', height: '1.25rem', color: '#0ea5e9', marginRight: '0.75rem', flexShrink: 0 }} viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#0c4a6e' }}>
-                  {success}
-                </div>
-              </div>
+            <div className={styles.success} role="status">
+              <svg className={styles.alertIcon} viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 10-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{success}</span>
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="admin-login-button"
-          >
+          <button type="submit" disabled={isSubmitting} className={styles.button}>
             {isSubmitting ? (
-              <div className="admin-login-button-content">
-                <div className="admin-login-spinner"></div>
-                Sending Invitation...
-              </div>
+              <span className={styles.buttonText}>
+                <span className={styles.spinner} aria-hidden />
+                {t("registerStaff.form.sending")}
+              </span>
             ) : (
-              'Send Invitation'
+              t("registerStaff.form.submit")
             )}
           </button>
 
-          <div className="admin-login-footer">
-            <p className="admin-login-footer-text">
-              The invited staff member will receive an email with setup instructions
-            </p>
-          </div>
+          <p className={styles.footer}>{t("registerStaff.form.info")}</p>
         </form>
       </div>
     </div>

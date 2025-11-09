@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { Plus, Edit, Trash2, Search, Star, RefreshCw, CheckCircle } from "lucide-react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Search,
+  Star,
+  RefreshCw,
+  CheckCircle,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { storeApi } from "../services/api";
 import type { Store } from "../types/store";
 import { useRealTimeStores } from "../hooks/useRealTimeStores";
 import { useAuth } from "../contexts/AuthContext";
 import { getImageUrl } from "../utils/imageUtils";
 import StoreModal from "./StoreModal";
+import styles from "./StoresManagement.module.css";
 
 const StoresManagement: React.FC = () => {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -27,33 +37,34 @@ const StoresManagement: React.FC = () => {
   const isAdmin = user?.role === "admin";
 
   const handleDeleteStore = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this store?")) {
-      try {
-        await storeApi.deleteStore(id);
-        // Refetch data to get real-time updates
-        refetch();
-      } catch (error) {
-        console.error("Error deleting store:", error);
-        alert("Failed to delete store");
-      }
+    if (!window.confirm(t("stores.confirmDelete"))) {
+      return;
+    }
+
+    try {
+      await storeApi.deleteStore(id);
+      refetch();
+    } catch (error) {
+      console.error("Error deleting store:", error);
+      window.alert(t("stores.deleteError"));
     }
   };
 
   const handleVerifyStore = async (id: string) => {
-    if (window.confirm("Are you sure you want to verify this store?")) {
-      try {
-        await storeApi.verifyStore(id);
-        // Refetch data to get real-time updates
-        refetch();
-      } catch (error: any) {
-        console.error("Error verifying store:", error);
-        const errorMessage =
-          error.response?.data?.message || "Failed to verify store";
-        if (errorMessage.includes("Only administrators")) {
-          alert("Only administrators can verify stores");
-        } else {
-          alert(errorMessage);
-        }
+    if (!window.confirm(t("stores.confirmVerify"))) {
+      return;
+    }
+
+    try {
+      await storeApi.verifyStore(id);
+      refetch();
+    } catch (error: any) {
+      console.error("Error verifying store:", error);
+      const errorMessage = error.response?.data?.message;
+      if (errorMessage?.includes("Only administrators")) {
+        window.alert(t("stores.verifyForbidden"));
+      } else {
+        window.alert(t("stores.verifyError"));
       }
     }
   };
@@ -83,29 +94,29 @@ const StoresManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="loading"></div>
-        <span className="ml-2">Loading stores...</span>
+      <div className={styles.loading}>
+        <div className="loading" />
+        <span>{t("stores.loading")}</span>
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Stores Management
-          </h2>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <div className={styles.headerInfo}>
+          <h2 className={styles.title}>{t("stores.title")}</h2>
           {lastUpdated && (
-            <p className="text-sm text-gray-500 mt-1">
-              🔄 Last updated: {lastUpdated.toLocaleTimeString()}
-              <span className="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <p className={styles.lastUpdated}>
+              🔄{" "}
+              {t("stores.lastUpdated", {
+                time: lastUpdated.toLocaleTimeString(),
+              })}
+              <span className={styles.pulseDot} aria-hidden="true" />
             </p>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className={styles.headerActions}>
           <button
             onClick={refetch}
             className="btn btn-secondary"
@@ -114,37 +125,34 @@ const StoresManagement: React.FC = () => {
             <RefreshCw
               className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
             />
-            Refresh
+            {t("stores.refresh")}
           </button>
           <button onClick={handleAddStore} className="btn btn-primary">
             <Plus className="w-4 h-4 mr-2" />
-            Add Store
+            {t("stores.addStore")}
           </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="card mb-6">
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search stores..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="form-input pl-10"
-              />
-            </div>
+      <div className="card">
+        <div className={styles.filters}>
+          <div className={styles.searchWrapper}>
+            <Search className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder={t("stores.searchPlaceholder")}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`form-input ${styles.searchInput}`}
+            />
           </div>
-          <div className="w-48">
+          <div>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="form-input form-select"
+              className={`form-input form-select ${styles.categorySelect}`}
             >
-              <option value="">All Categories</option>
+              <option value="">{t("stores.allCategories")}</option>
               {categories.map((category) => (
                 <option key={category} value={category}>
                   {category}
@@ -158,90 +166,89 @@ const StoresManagement: React.FC = () => {
       {/* Stores Table */}
       <div className="card">
         <div className="card-header">
-          <h3 className="card-title">Stores ({filteredStores.length})</h3>
+          <h3 className="card-title">
+            {t("stores.table.title", { count: filteredStores.length })}
+          </h3>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className={styles.tableWrapper}>
           <table className="table">
             <thead>
               <tr>
-                <th>Store</th>
-                <th>Category</th>
-                <th>Rating</th>
-                <th>Status</th>
-                <th>Products</th>
-                <th>Actions</th>
+                <th>{t("stores.table.store")}</th>
+                <th>{t("stores.table.category")}</th>
+                <th>{t("stores.table.rating")}</th>
+                <th>{t("stores.table.status")}</th>
+                <th>{t("stores.table.products")}</th>
+                <th>{t("stores.table.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {filteredStores.map((store) => (
                 <tr key={store.id}>
                   <td>
-                    <div className="flex items-center gap-3">
+                    <div className={styles.storeCell}>
                       <img
                         src={getImageUrl(store.imageUrl)}
                         alt={store.name}
-                        className="w-12 h-12 rounded-lg object-cover"
+                        className={styles.storeImage}
                       />
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {store.name}
-                        </div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                      <div className={styles.storeInfo}>
+                        <div className={styles.storeName}>{store.name}</div>
+                        <div className={styles.storeDescription}>
                           {store.description}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td>
-                    <div className="flex flex-wrap gap-1">
+                    <div className={styles.categoryPills}>
                       {store.category.slice(0, 2).map((cat, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-                        >
+                        <span key={index} className={styles.categoryPill}>
                           {cat}
                         </span>
                       ))}
                       {store.category.length > 2 && (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        <span className={styles.extraCategories}>
                           +{store.category.length - 2}
                         </span>
                       )}
                     </div>
                   </td>
                   <td>
-                    <div className="flex items-center gap-1">
+                    <div className={styles.ratingCell}>
                       <Star className="w-4 h-4 text-yellow-400 fill-current" />
                       <span className="font-medium">{store.rating}</span>
-                      <span className="text-gray-500">
+                      <span className={styles.ratingCount}>
                         ({store.reviewCount})
                       </span>
                     </div>
                   </td>
                   <td>
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      className={`${styles.statusBadge} ${
                         store.isVerified
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
+                          ? styles.statusVerified
+                          : styles.statusPending
                       }`}
                     >
-                      {store.isVerified ? "Verified" : "Unverified"}
+                      {store.isVerified
+                        ? t("stores.status.verified")
+                        : t("stores.status.unverified")}
                     </span>
                   </td>
                   <td>
-                    <span className="text-gray-900">
+                    <span className={styles.productsValue}>
                       {store.productsCount.toLocaleString()}
                     </span>
                   </td>
                   <td>
-                    <div className="flex gap-2">
+                    <div className={styles.actionButtons}>
                       {isAdmin && !store.isVerified && (
                         <button
                           onClick={() => handleVerifyStore(store.id)}
                           className="btn btn-success btn-sm"
-                          title="Verify Store"
+                          title={t("stores.actions.verify")}
                         >
                           <CheckCircle className="w-4 h-4" />
                         </button>
@@ -249,14 +256,14 @@ const StoresManagement: React.FC = () => {
                       <button
                         onClick={() => handleEditStore(store)}
                         className="btn btn-secondary btn-sm"
-                        title="Edit Store"
+                        title={t("stores.actions.edit")}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteStore(store.id)}
                         className="btn btn-danger btn-sm"
-                        title="Delete Store"
+                        title={t("stores.actions.delete")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -269,30 +276,25 @@ const StoresManagement: React.FC = () => {
         </div>
 
         {filteredStores.length === 0 && (
-          <div className="text-center py-8">
-            <div className="text-gray-500">No stores found</div>
-          </div>
+          <div className={styles.emptyState}>{t("stores.empty")}</div>
         )}
       </div>
 
       {/* Store Modal - Rendered via Portal */}
-      {isClient &&
-        showModal &&
-        createPortal(
-          <StoreModal
-            store={editingStore}
-            onClose={() => {
-              setShowModal(false);
-              setEditingStore(null);
-            }}
-            onSave={() => {
-              refetch();
-              setShowModal(false);
-              setEditingStore(null);
-            }}
-          />,
-          document.body
-        )}
+      {isClient && showModal && (
+        <StoreModal
+          store={editingStore}
+          onClose={() => {
+            setShowModal(false);
+            setEditingStore(null);
+          }}
+          onSave={() => {
+            refetch();
+            setShowModal(false);
+            setEditingStore(null);
+          }}
+        />
+      )}
     </div>
   );
 };

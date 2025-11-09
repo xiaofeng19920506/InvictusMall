@@ -57,6 +57,18 @@
   border-radius: var(--radius-lg);
 }
 
+.quickActions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quickActionsButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .iconBlue {
   background: #dbeafe;
   color: #1d4ed8;
@@ -173,6 +185,13 @@
   text-align: center;
   color: var(--text-secondary);
   font-size: 0.9rem;
+}
+
+.emptyStateIcon {
+  width: 32px;
+  height: 32px;
+  margin: 0 auto 8px;
+  color: var(--text-muted);
 }
 
 .statusRow {

@@ -38,6 +38,251 @@
     "registerStaff": "スタッフ登録",
     "settings": "設定",
     "systemLogs": "システムログ"
+  },
+  "stores": {
+    "title": "店舗管理",
+    "lastUpdated": "最終更新: {{time}}",
+    "refresh": "更新",
+    "addStore": "店舗を追加",
+    "searchPlaceholder": "店舗を検索...",
+    "allCategories": "すべてのカテゴリ",
+    "confirmDelete": "この店舗を削除してもよろしいですか？",
+    "confirmVerify": "この店舗を承認してもよろしいですか？",
+    "deleteError": "店舗の削除に失敗しました",
+    "verifyError": "店舗の承認に失敗しました",
+    "verifyForbidden": "管理者のみが店舗を承認できます",
+    "empty": "店舗が見つかりません",
+    "loading": "店舗を読み込み中...",
+    "table": {
+      "title": "店舗 ({{count}})",
+      "store": "店舗",
+      "category": "カテゴリ",
+      "rating": "評価",
+      "status": "ステータス",
+      "products": "商品数",
+      "actions": "操作"
+    },
+    "status": {
+      "verified": "承認済み",
+      "unverified": "未承認"
+    },
+    "actions": {
+      "verify": "店舗を承認",
+      "edit": "店舗を編集",
+      "delete": "店舗を削除"
+    }
+  },
+  "storeModal": {
+    "createTitle": "新しい店舗を追加",
+    "editTitle": "店舗を編集",
+    "fields": {
+      "name": "店舗名",
+      "description": "説明",
+      "categories": "カテゴリ",
+      "categoryPlaceholder": "カテゴリを入力して Enter キーを押してください",
+      "addCategory": "追加",
+      "storeImage": "店舗画像",
+      "uploading": "画像をアップロード中...",
+      "imageHintTitle": "店舗画像は後で追加できます",
+      "imageHintDescription": "まず店舗を作成し、その後編集して写真や詳細を追加してください。",
+      "locationTitle": "所在地",
+      "street": "住所",
+      "apt": "建物名／部屋番号",
+      "city": "市区町村",
+      "state": "都道府県",
+      "zip": "郵便番号",
+      "country": "国",
+      "rating": "評価",
+      "reviewCount": "レビュー数",
+      "productsCount": "商品数",
+      "establishedYear": "設立年",
+      "discount": "割引",
+      "discountPlaceholder": "例：20% OFF",
+      "verified": "認証済み店舗",
+      "active": "有効な店舗"
+    },
+    "actions": {
+      "invalidImageType": "画像ファイルを選択してください。",
+      "imageTooLarge": "画像ファイルは 15MB 未満である必要があります。",
+      "uploadSuccess": "画像を正常にアップロードしました。",
+      "uploadFail": "画像をアップロードできませんでした。再度お試しください。",
+      "locationMissing": "必須の所在地情報をすべて入力してください。",
+      "saveError": "店舗を保存できませんでした。再度お試しください。",
+      "removeCategory": "カテゴリ {{category}} を削除",
+      "saving": "保存中...",
+      "update": "店舗を更新",
+      "create": "店舗を作成",
+      "cancel": "キャンセル",
+      "close": "モーダルを閉じる"
+    }
+  },
+  "analytics": {
+    "title": "分析概要",
+    "subtitle": "主要なパフォーマンス指標とメトリクス",
+    "stats": {
+      "changeLabel": "前月比",
+      "revenue": { "title": "総収益" },
+      "stores": { "title": "アクティブ店舗" },
+      "users": { "title": "ユーザー総数" },
+      "growth": { "title": "成長率" }
+    },
+    "charts": {
+      "revenue": "収益トレンド",
+      "revenuePlaceholder": "グラフのプレースホルダー：時間経過による収益トレンド",
+      "stores": "店舗パフォーマンス",
+      "storesPlaceholder": "グラフのプレースホルダー：店舗パフォーマンス指標"
+    },
+    "activity": {
+      "title": "最近のアクティビティ",
+      "items": {
+        "newStore": {
+          "action": "新しい店舗が登録されました",
+          "time": "2 時間前"
+        },
+        "purchase": {
+          "action": "ユーザーが購入を完了しました",
+          "time": "4 時間前"
+        },
+        "inventory": {
+          "action": "店舗が在庫を更新しました",
+          "time": "6 時間前"
+        },
+        "registration": {
+          "action": "新規ユーザー登録",
+          "time": "8 時間前"
+        }
+      }
+    }
+  },
+  "dashboard": {
+    "loading": "ダッシュボードを読み込んでいます...",
+    "quickActions": {
+      "title": "クイック操作",
+      "addStore": "新しい店舗を追加",
+      "viewAnalytics": "分析を見る",
+      "manageUsers": "ユーザー管理"
+    },
+    "stats": {
+      "totalStores": "総店舗数",
+      "verifiedStores": "認証済み店舗",
+      "categories": "カテゴリー数",
+      "averageRating": "平均評価"
+    },
+    "activity": {
+      "title": "最近のアクティビティ",
+      "subtitle": "最新の店舗管理アクション",
+      "empty": "最近のアクティビティはありません"
+    },
+    "serverStatus": "サーバー状態",
+    "status": {
+      "online": "オンライン",
+      "offline": "オフライン"
+    }
+  },
+  "registerStaff": {
+    "title": "新しいスタッフを招待",
+    "subtitle": "新しいメンバーに招待メールを送信します",
+    "accessDenied": {
+      "title": "アクセスが拒否されました",
+      "message": "管理者またはオーナーのみがスタッフを招待できます。"
+    },
+    "form": {
+      "firstName": "名",
+      "firstNamePlaceholder": "太郎",
+      "lastName": "姓",
+      "lastNamePlaceholder": "山田",
+      "email": "メールアドレス",
+      "emailPlaceholder": "name@example.com",
+      "role": "役割",
+      "roles": {
+        "employee": "スタッフ",
+        "manager": "マネージャー",
+        "owner": "オーナー",
+        "admin": "管理者"
+      },
+      "department": "部署",
+      "departmentPlaceholder": "部署（任意）",
+      "employeeId": "従業員ID",
+      "employeeIdPlaceholder": "従業員ID（任意）",
+      "optional": "（任意）",
+      "submit": "招待を送信",
+      "sending": "招待を送信しています...",
+      "info": "招待されたスタッフには設定手順が記載されたメールが送信されます。"
+    },
+    "feedback": {
+      "success": "{{email}} への招待が正常に送信されました。まもなく設定手順のメールが届きます。",
+      "error": "スタッフの招待を送信できませんでした。",
+      "unexpected": "予期しないエラーが発生しました。"
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "subtitle": "アカウント設定と環境設定を管理します",
+    "feedback": {
+      "success": "設定を保存しました。",
+      "error": "設定を保存できませんでした。"
+    },
+    "profile": {
+      "title": "プロフィール情報",
+      "firstName": "名",
+      "lastName": "姓",
+      "email": "メールアドレス",
+      "role": "役割",
+      "note": "プロフィール情報はアカウント設定から更新できます。"
+    },
+    "notifications": {
+      "title": "通知",
+      "email": {
+        "title": "メール通知",
+        "description": "重要な更新情報をメールで受け取ります。"
+      },
+      "push": {
+        "title": "プッシュ通知",
+        "description": "ブラウザでプッシュ通知を受け取ります。"
+      },
+      "sms": {
+        "title": "SMS通知",
+        "description": "重要なアラートをSMSで受け取ります。"
+      }
+    },
+    "preferences": {
+      "title": "環境設定",
+      "theme": {
+        "title": "テーマ",
+        "options": {
+          "light": "ライト",
+          "dark": "ダーク",
+          "auto": "自動"
+        }
+      },
+      "language": {
+        "title": "言語"
+      },
+      "timezone": {
+        "title": "タイムゾーン",
+        "options": {
+          "UTC": "協定世界時 (UTC)",
+          "America/New_York": "米国東部時間",
+          "America/Los_Angeles": "米国太平洋時間",
+          "Asia/Shanghai": "中国標準時"
+        }
+      }
+    },
+    "security": {
+      "title": "セキュリティ",
+      "twoFactor": {
+        "title": "二要素認証",
+        "description": "アカウントをさらに安全に保護します。"
+      },
+      "sessionTimeout": {
+        "title": "セッションタイムアウト（分）",
+        "description": "一定時間操作がない場合は自動的にログアウトします。"
+      }
+    },
+    "actions": {
+      "save": "設定を保存",
+      "saving": "保存中..."
+    }
   }
 }
 

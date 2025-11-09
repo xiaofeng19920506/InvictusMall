@@ -9,208 +9,277 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
+import styles from "./Settings.module.css";
 
-const languageOptions = [
-  { value: "en", label: "English" },
-  { value: "zh", label: "中文" },
-  { value: "es", label: "Español" },
-  { value: "fr", label: "Français" },
-  { value: "ko", label: "한국어" },
-  { value: "ja", label: "日本語" },
+type ThemeOption = "light" | "dark" | "auto";
+
+type TimezoneOption =
+  | "UTC"
+  | "America/New_York"
+  | "America/Los_Angeles"
+  | "Asia/Shanghai";
+
+const timezoneOptions: TimezoneOption[] = [
+  "UTC",
+  "America/New_York",
+  "America/Los_Angeles",
+  "Asia/Shanghai",
 ];
+
+const themeOptions: ThemeOption[] = ["light", "dark", "auto"];
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const initialLanguage = useMemo(() => {
     const lang = i18n.resolvedLanguage || i18n.language || "en";
     return lang.split("-")[0];
   }, [i18n.resolvedLanguage, i18n.language]);
+
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
       push: false,
-      sms: false
+      sms: false,
     },
     preferences: {
-      theme: 'light',
+      theme: "light" as ThemeOption,
       language: initialLanguage,
-      timezone: 'UTC'
+      timezone: "UTC" as TimezoneOption,
     },
     security: {
       twoFactor: false,
-      sessionTimeout: 30
-    }
+      sessionTimeout: 30,
+    },
   });
   const [saving, setSaving] = useState(false);
+
+  const languageOptions = useMemo(
+    () =>
+      i18n.languages
+        .filter((lang) => lang.length === 2)
+        .map((lang) => ({
+          value: lang,
+          label: t(`languages.${lang}`),
+        })),
+    [i18n.languages, t]
+  );
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Settings saved successfully!');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      window.alert(t("settings.feedback.success"));
     } catch (error) {
-      alert('Failed to save settings');
+      window.alert(t("settings.feedback.error"));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-        <p className="text-sm text-gray-500 mt-1">Manage your account settings and preferences</p>
-      </div>
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <h2 className={styles.title}>{t("settings.title")}</h2>
+        <p className={styles.subtitle}>{t("settings.subtitle")}</p>
+      </header>
 
-      {/* Profile Section */}
-      <div className="card">
+      <section className="card">
         <div className="card-header">
-          <div className="flex items-center gap-2">
+          <div className={styles.sectionHeader}>
             <User className="w-5 h-5 text-gray-600" />
-            <h3 className="card-title">Profile Information</h3>
+            <h3 className={styles.sectionTitle}>{t("settings.profile.title")}</h3>
           </div>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="form-group">
-              <label className="form-label">First Name</label>
+        <div className={styles.sectionBody}>
+          <div className={styles.gridTwo}>
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="firstName">
+                {t("settings.profile.firstName")}
+              </label>
               <input
+                id="firstName"
                 type="text"
                 defaultValue={user?.firstName}
-                className="form-input"
+                className={styles.input}
                 disabled
               />
             </div>
-            <div className="form-group">
-              <label className="form-label">Last Name</label>
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="lastName">
+                {t("settings.profile.lastName")}
+              </label>
               <input
+                id="lastName"
                 type="text"
                 defaultValue={user?.lastName}
-                className="form-input"
+                className={styles.input}
                 disabled
               />
             </div>
           </div>
-          <div className="form-group">
-            <label className="form-label">Email</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="email">
+              {t("settings.profile.email")}
+            </label>
             <input
+              id="email"
               type="email"
               defaultValue={user?.email}
-              className="form-input"
+              className={styles.input}
               disabled
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">Role</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label}>{t("settings.profile.role")}</label>
             <input
               type="text"
-              defaultValue={user?.role.toUpperCase()}
-              className="form-input"
+              defaultValue={user?.role?.toUpperCase()}
+              className={`${styles.input} ${styles.roleValue}`}
               disabled
             />
           </div>
-          <p className="text-sm text-gray-500">
-            Profile information can be updated through your account settings.
-          </p>
+          <p className={styles.description}>{t("settings.profile.note")}</p>
         </div>
-      </div>
+      </section>
 
-      {/* Notifications Section */}
-      <div className="card">
+      <section className="card">
         <div className="card-header">
-          <div className="flex items-center gap-2">
+          <div className={styles.sectionHeader}>
             <Bell className="w-5 h-5 text-gray-600" />
-            <h3 className="card-title">Notifications</h3>
+            <h3 className={styles.sectionTitle}>{t("settings.notifications.title")}</h3>
           </div>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
+        <div className={styles.sectionBody}>
+          <div className={styles.toggleRow}>
             <div>
-              <label className="form-label">Email Notifications</label>
-              <p className="text-sm text-gray-500">Receive email notifications for important updates</p>
+              <label className={styles.label} htmlFor="emailNotifications">
+                {t("settings.notifications.email.title")}
+              </label>
+              <p className={styles.description}>
+                {t("settings.notifications.email.description")}
+              </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className={styles.toggleSwitch} htmlFor="emailNotifications">
               <input
+                id="emailNotifications"
                 type="checkbox"
                 checked={settings.notifications.email}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  notifications: { ...settings.notifications, email: e.target.checked }
-                })}
-                className="sr-only peer"
+                onChange={(e) =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    notifications: {
+                      ...prev.notifications,
+                      email: e.target.checked,
+                    },
+                  }))
+                }
+                className={styles.toggleInput}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <span className={styles.toggleSlider} aria-hidden />
             </label>
           </div>
-          <div className="flex items-center justify-between">
+
+          <div className={styles.toggleRow}>
             <div>
-              <label className="form-label">Push Notifications</label>
-              <p className="text-sm text-gray-500">Receive push notifications in your browser</p>
+              <label className={styles.label} htmlFor="pushNotifications">
+                {t("settings.notifications.push.title")}
+              </label>
+              <p className={styles.description}>
+                {t("settings.notifications.push.description")}
+              </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className={styles.toggleSwitch} htmlFor="pushNotifications">
               <input
+                id="pushNotifications"
                 type="checkbox"
                 checked={settings.notifications.push}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  notifications: { ...settings.notifications, push: e.target.checked }
-                })}
-                className="sr-only peer"
+                onChange={(e) =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    notifications: {
+                      ...prev.notifications,
+                      push: e.target.checked,
+                    },
+                  }))
+                }
+                className={styles.toggleInput}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <span className={styles.toggleSlider} aria-hidden />
             </label>
           </div>
-          <div className="flex items-center justify-between">
+
+          <div className={styles.toggleRow}>
             <div>
-              <label className="form-label">SMS Notifications</label>
-              <p className="text-sm text-gray-500">Receive SMS notifications for critical alerts</p>
+              <label className={styles.label} htmlFor="smsNotifications">
+                {t("settings.notifications.sms.title")}
+              </label>
+              <p className={styles.description}>
+                {t("settings.notifications.sms.description")}
+              </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className={styles.toggleSwitch} htmlFor="smsNotifications">
               <input
+                id="smsNotifications"
                 type="checkbox"
                 checked={settings.notifications.sms}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  notifications: { ...settings.notifications, sms: e.target.checked }
-                })}
-                className="sr-only peer"
+                onChange={(e) =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    notifications: {
+                      ...prev.notifications,
+                      sms: e.target.checked,
+                    },
+                  }))
+                }
+                className={styles.toggleInput}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <span className={styles.toggleSlider} aria-hidden />
             </label>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Preferences Section */}
-      <div className="card">
+      <section className="card">
         <div className="card-header">
-          <div className="flex items-center gap-2">
+          <div className={styles.sectionHeader}>
             <Globe className="w-5 h-5 text-gray-600" />
-            <h3 className="card-title">Preferences</h3>
+            <h3 className={styles.sectionTitle}>{t("settings.preferences.title")}</h3>
           </div>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="form-group">
-            <label className="form-label">Theme</label>
+        <div className={styles.sectionBody}>
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="theme">
+              {t("settings.preferences.theme.title")}
+            </label>
             <select
+              id="theme"
               value={settings.preferences.theme}
-              onChange={(e) => setSettings({
-                ...settings,
-                preferences: { ...settings.preferences, theme: e.target.value }
-              })}
-              className="form-input form-select"
+              onChange={(e) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  preferences: {
+                    ...prev.preferences,
+                    theme: e.target.value as ThemeOption,
+                  },
+                }))
+              }
+              className={styles.select}
             >
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="auto">Auto</option>
+              {themeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {t(`settings.preferences.theme.options.${option}`)}
+                </option>
+              ))}
             </select>
           </div>
-          <div className="form-group">
-            <label className="form-label">Language</label>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="language">
+              {t("settings.preferences.language.title")}
+            </label>
             <select
+              id="language"
               value={settings.preferences.language}
               onChange={(e) => {
                 const newLanguage = e.target.value;
@@ -223,7 +292,7 @@ const Settings: React.FC = () => {
                 }));
                 i18n.changeLanguage(newLanguage);
               }}
-              className="form-input form-select"
+              className={styles.select}
             >
               {languageOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -232,81 +301,107 @@ const Settings: React.FC = () => {
               ))}
             </select>
           </div>
-          <div className="form-group">
-            <label className="form-label">Timezone</label>
+
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="timezone">
+              {t("settings.preferences.timezone.title")}
+            </label>
             <select
+              id="timezone"
               value={settings.preferences.timezone}
-              onChange={(e) => setSettings({
-                ...settings,
-                preferences: { ...settings.preferences, timezone: e.target.value }
-              })}
-              className="form-input form-select"
+              onChange={(e) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  preferences: {
+                    ...prev.preferences,
+                    timezone: e.target.value as TimezoneOption,
+                  },
+                }))
+              }
+              className={`${styles.select} ${styles.timezoneOptions}`}
             >
-              <option value="UTC">UTC</option>
-              <option value="America/New_York">Eastern Time</option>
-              <option value="America/Los_Angeles">Pacific Time</option>
-              <option value="Asia/Shanghai">China Standard Time</option>
+              {timezoneOptions.map((option) => (
+                <option key={option} value={option}>
+                  {t(`settings.preferences.timezone.options.${option}`)}
+                </option>
+              ))}
             </select>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Security Section */}
-      <div className="card">
+      <section className="card">
         <div className="card-header">
-          <div className="flex items-center gap-2">
+          <div className={styles.sectionHeader}>
             <Shield className="w-5 h-5 text-gray-600" />
-            <h3 className="card-title">Security</h3>
+            <h3 className={styles.sectionTitle}>{t("settings.security.title")}</h3>
           </div>
         </div>
-        <div className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
+        <div className={styles.sectionBody}>
+          <div className={styles.toggleRow}>
             <div>
-              <label className="form-label">Two-Factor Authentication</label>
-              <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+              <label className={styles.label} htmlFor="twoFactor">
+                {t("settings.security.twoFactor.title")}
+              </label>
+              <p className={styles.description}>
+                {t("settings.security.twoFactor.description")}
+              </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className={styles.toggleSwitch} htmlFor="twoFactor">
               <input
+                id="twoFactor"
                 type="checkbox"
                 checked={settings.security.twoFactor}
-                onChange={(e) => setSettings({
-                  ...settings,
-                  security: { ...settings.security, twoFactor: e.target.checked }
-                })}
-                className="sr-only peer"
+                onChange={(e) =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    security: {
+                      ...prev.security,
+                      twoFactor: e.target.checked,
+                    },
+                  }))
+                }
+                className={styles.toggleInput}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <span className={styles.toggleSlider} aria-hidden />
             </label>
           </div>
-          <div className="form-group">
-            <label className="form-label">Session Timeout (minutes)</label>
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="sessionTimeout">
+              {t("settings.security.sessionTimeout.title")}
+            </label>
             <input
+              id="sessionTimeout"
               type="number"
-              min="5"
-              max="120"
+              min={5}
+              max={120}
               value={settings.security.sessionTimeout}
-              onChange={(e) => setSettings({
-                ...settings,
-                security: { ...settings.security, sessionTimeout: parseInt(e.target.value) }
-              })}
-              className="form-input"
+              onChange={(e) =>
+                setSettings((prev) => ({
+                  ...prev,
+                  security: {
+                    ...prev.security,
+                    sessionTimeout: parseInt(e.target.value, 10),
+                  },
+                }))
+              }
+              className={styles.input}
             />
-            <p className="text-sm text-gray-500 mt-1">
-              Automatically log out after inactivity period
+            <p className={styles.description}>
+              {t("settings.security.sessionTimeout.description")}
             </p>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Save Button */}
-      <div className="flex justify-end">
+      <div className={styles.saveRow}>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="btn btn-primary flex items-center gap-2"
+          className={`btn btn-primary ${styles.saveButton}`}
         >
-          <Save className="w-4 h-4" />
-          {saving ? 'Saving...' : 'Save Settings'}
+          {saving ? <span className={styles.spinner} aria-hidden /> : <Save className="w-4 h-4" />}
+          {saving ? t("settings.actions.saving") : t("settings.actions.save")}
         </button>
       </div>
     </div>

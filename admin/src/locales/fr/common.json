@@ -38,6 +38,251 @@
     "registerStaff": "Enregistrer le personnel",
     "settings": "Paramètres",
     "systemLogs": "Journaux système"
+  },
+  "stores": {
+    "title": "Gestion des boutiques",
+    "lastUpdated": "Dernière mise à jour : {{time}}",
+    "refresh": "Actualiser",
+    "addStore": "Ajouter une boutique",
+    "searchPlaceholder": "Rechercher des boutiques...",
+    "allCategories": "Toutes les catégories",
+    "confirmDelete": "Voulez-vous vraiment supprimer cette boutique ?",
+    "confirmVerify": "Voulez-vous vraiment vérifier cette boutique ?",
+    "deleteError": "Échec de la suppression de la boutique",
+    "verifyError": "Échec de la vérification de la boutique",
+    "verifyForbidden": "Seuls les administrateurs peuvent vérifier les boutiques",
+    "empty": "Aucune boutique trouvée",
+    "loading": "Chargement des boutiques...",
+    "table": {
+      "title": "Boutiques ({{count}})",
+      "store": "Boutique",
+      "category": "Catégorie",
+      "rating": "Note",
+      "status": "Statut",
+      "products": "Produits",
+      "actions": "Actions"
+    },
+    "status": {
+      "verified": "Vérifiée",
+      "unverified": "Non vérifiée"
+    },
+    "actions": {
+      "verify": "Vérifier la boutique",
+      "edit": "Modifier la boutique",
+      "delete": "Supprimer la boutique"
+    }
+  },
+  "storeModal": {
+    "createTitle": "Ajouter une nouvelle boutique",
+    "editTitle": "Modifier la boutique",
+    "fields": {
+      "name": "Nom de la boutique",
+      "description": "Description",
+      "categories": "Catégories",
+      "categoryPlaceholder": "Ajoutez une catégorie puis appuyez sur Entrée",
+      "addCategory": "Ajouter",
+      "storeImage": "Image de la boutique",
+      "uploading": "Téléchargement de l'image...",
+      "imageHintTitle": "Les images pourront être ajoutées plus tard",
+      "imageHintDescription": "Créez d'abord la boutique, puis modifiez-la pour ajouter des photos et d'autres détails.",
+      "locationTitle": "Localisation",
+      "street": "Adresse",
+      "apt": "Appartement/Unité",
+      "city": "Ville",
+      "state": "État/Province",
+      "zip": "Code postal",
+      "country": "Pays",
+      "rating": "Note",
+      "reviewCount": "Nombre d'avis",
+      "productsCount": "Nombre de produits",
+      "establishedYear": "Année de création",
+      "discount": "Promotion",
+      "discountPlaceholder": "Ex. : -20%",
+      "verified": "Boutique vérifiée",
+      "active": "Boutique active"
+    },
+    "actions": {
+      "invalidImageType": "Veuillez sélectionner un fichier image.",
+      "imageTooLarge": "L'image doit être inférieure à 15 Mo.",
+      "uploadSuccess": "Image téléchargée avec succès.",
+      "uploadFail": "Échec du téléchargement de l'image. Veuillez réessayer.",
+      "locationMissing": "Veuillez renseigner tous les champs obligatoires de l'adresse.",
+      "saveError": "Échec de l'enregistrement de la boutique. Veuillez réessayer.",
+      "removeCategory": "Supprimer la catégorie {{category}}",
+      "saving": "Enregistrement...",
+      "update": "Mettre à jour la boutique",
+      "create": "Créer la boutique",
+      "cancel": "Annuler",
+      "close": "Fermer la fenêtre"
+    }
+  },
+  "analytics": {
+    "title": "Vue d'ensemble analytique",
+    "subtitle": "Indicateurs de performance clés et métriques",
+    "stats": {
+      "changeLabel": "par rapport au mois dernier",
+      "revenue": { "title": "Revenus totaux" },
+      "stores": { "title": "Boutiques actives" },
+      "users": { "title": "Utilisateurs totaux" },
+      "growth": { "title": "Taux de croissance" }
+    },
+    "charts": {
+      "revenue": "Tendances des revenus",
+      "revenuePlaceholder": "Espace réservé du graphique – tendances des revenus dans le temps",
+      "stores": "Performance des boutiques",
+      "storesPlaceholder": "Espace réservé du graphique – métriques de performance des boutiques"
+    },
+    "activity": {
+      "title": "Activité récente",
+      "items": {
+        "newStore": {
+          "action": "Nouvelle boutique enregistrée",
+          "time": "Il y a 2 heures"
+        },
+        "purchase": {
+          "action": "Un utilisateur a finalisé un achat",
+          "time": "Il y a 4 heures"
+        },
+        "inventory": {
+          "action": "La boutique a mis à jour son stock",
+          "time": "Il y a 6 heures"
+        },
+        "registration": {
+          "action": "Nouvelle inscription utilisateur",
+          "time": "Il y a 8 heures"
+        }
+      }
+    }
+  },
+  "dashboard": {
+    "loading": "Chargement du tableau de bord...",
+    "quickActions": {
+      "title": "Actions rapides",
+      "addStore": "Ajouter un magasin",
+      "viewAnalytics": "Voir les analyses",
+      "manageUsers": "Gérer les utilisateurs"
+    },
+    "stats": {
+      "totalStores": "Nombre total de magasins",
+      "verifiedStores": "Magasins vérifiés",
+      "categories": "Catégories",
+      "averageRating": "Note moyenne"
+    },
+    "activity": {
+      "title": "Activité récente",
+      "subtitle": "Dernières activités de gestion des magasins",
+      "empty": "Aucune activité récente"
+    },
+    "serverStatus": "Statut du serveur",
+    "status": {
+      "online": "En ligne",
+      "offline": "Hors ligne"
+    }
+  },
+  "registerStaff": {
+    "title": "Inviter un nouveau membre",
+    "subtitle": "Envoyez une invitation à un nouveau membre de l'équipe",
+    "accessDenied": {
+      "title": "Accès refusé",
+      "message": "Seuls les administrateurs et propriétaires peuvent inviter du personnel."
+    },
+    "form": {
+      "firstName": "Prénom",
+      "firstNamePlaceholder": "Jean",
+      "lastName": "Nom",
+      "lastNamePlaceholder": "Dupont",
+      "email": "Adresse e-mail",
+      "emailPlaceholder": "nom@exemple.com",
+      "role": "Rôle",
+      "roles": {
+        "employee": "Employé",
+        "manager": "Gestionnaire",
+        "owner": "Propriétaire",
+        "admin": "Administrateur"
+      },
+      "department": "Département",
+      "departmentPlaceholder": "Département (facultatif)",
+      "employeeId": "Matricule",
+      "employeeIdPlaceholder": "Matricule (facultatif)",
+      "optional": "(facultatif)",
+      "submit": "Envoyer l'invitation",
+      "sending": "Envoi de l'invitation...",
+      "info": "Le membre invité recevra un courriel avec les instructions de configuration."
+    },
+    "feedback": {
+      "success": "Invitation envoyée avec succès à {{email}}. Un courriel contenant les instructions de configuration lui sera adressé.",
+      "error": "Échec de l'envoi de l'invitation.",
+      "unexpected": "Une erreur inattendue est survenue."
+    }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "subtitle": "Gérez les paramètres et préférences de votre compte",
+    "feedback": {
+      "success": "Paramètres enregistrés avec succès !",
+      "error": "Impossible d'enregistrer les paramètres."
+    },
+    "profile": {
+      "title": "Informations du profil",
+      "firstName": "Prénom",
+      "lastName": "Nom",
+      "email": "Adresse e-mail",
+      "role": "Rôle",
+      "note": "Les informations du profil peuvent être mises à jour via les paramètres du compte."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "email": {
+        "title": "Notifications par e-mail",
+        "description": "Recevez des e-mails pour les mises à jour importantes."
+      },
+      "push": {
+        "title": "Notifications push",
+        "description": "Recevez des notifications push dans votre navigateur."
+      },
+      "sms": {
+        "title": "Notifications SMS",
+        "description": "Recevez des SMS pour les alertes critiques."
+      }
+    },
+    "preferences": {
+      "title": "Préférences",
+      "theme": {
+        "title": "Thème",
+        "options": {
+          "light": "Clair",
+          "dark": "Sombre",
+          "auto": "Auto"
+        }
+      },
+      "language": {
+        "title": "Langue"
+      },
+      "timezone": {
+        "title": "Fuseau horaire",
+        "options": {
+          "UTC": "Temps universel coordonné (UTC)",
+          "America/New_York": "Fuseau de l'Est (États-Unis)",
+          "America/Los_Angeles": "Fuseau du Pacifique (États-Unis)",
+          "Asia/Shanghai": "Heure normale de Chine"
+        }
+      }
+    },
+    "security": {
+      "title": "Sécurité",
+      "twoFactor": {
+        "title": "Authentification à deux facteurs",
+        "description": "Ajoutez une couche de sécurité supplémentaire à votre compte."
+      },
+      "sessionTimeout": {
+        "title": "Durée de session (minutes)",
+        "description": "Déconnexion automatique après une période d'inactivité."
+      }
+    },
+    "actions": {
+      "save": "Enregistrer",
+      "saving": "Enregistrement..."
+    }
   }
 }
 
