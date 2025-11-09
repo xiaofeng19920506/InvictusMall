@@ -4,20 +4,36 @@ import { body, validationResult } from 'express-validator';
 export const validateStore = [
   body('name').notEmpty().withMessage('Name is required'),
   body('description').notEmpty().withMessage('Description is required'),
-  body('category').isArray().withMessage('Category must be an array'),
-  body('category.*').isString().withMessage('Each category must be a string'),
-  body('rating').isFloat({ min: 0, max: 5 }).withMessage('Rating must be between 0 and 5'),
-  body('reviewCount').isInt({ min: 0 }).withMessage('Review count must be a positive integer'),
-  body('imageUrl').isURL().withMessage('Image URL must be a valid URL'),
-  body('isVerified').isBoolean().withMessage('isVerified must be a boolean'),
-  body('isActive').isBoolean().withMessage('isActive must be a boolean'),
-  body('location').isArray().withMessage('Location must be an array'),
+  body('category').optional().isArray().withMessage('Category must be an array'),
+  body('category.*').optional().isString().withMessage('Each category must be a string'),
+  body('rating').optional().isFloat({ min: 0, max: 5 }).withMessage('Rating must be between 0 and 5'),
+  body('reviewCount').optional().isInt({ min: 0 }).withMessage('Review count must be a positive integer'),
+  body('imageUrl')
+    .optional()
+    .custom((value) => {
+      if (typeof value !== 'string') {
+        throw new Error('Image URL must be a string');
+      }
+      if (value.startsWith('/')) {
+        return true;
+      }
+      try {
+        // eslint-disable-next-line no-new
+        new URL(value);
+        return true;
+      } catch {
+        throw new Error('Image URL must be a valid URL');
+      }
+    }),
+  body('isVerified').optional().isBoolean().withMessage('isVerified must be a boolean'),
+  body('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
+  body('location').isArray({ min: 1 }).withMessage('At least one location is required'),
   body('location.*.streetAddress').notEmpty().withMessage('Street address is required'),
   body('location.*.city').notEmpty().withMessage('City is required'),
   body('location.*.stateProvince').notEmpty().withMessage('State/Province is required'),
   body('location.*.zipCode').notEmpty().withMessage('ZIP code is required'),
   body('location.*.country').notEmpty().withMessage('Country is required'),
-  body('productsCount').isInt({ min: 0 }).withMessage('Products count must be a positive integer'),
+  body('productsCount').optional().isInt({ min: 0 }).withMessage('Products count must be a positive integer'),
   body('establishedYear').isInt({ min: 1900, max: new Date().getFullYear() }).withMessage('Established year must be between 1900 and current year'),
   body('discount').optional().isString().withMessage('Discount must be a string')
 ];
@@ -29,7 +45,23 @@ export const validateUpdateStore = [
   body('category.*').optional().isString().withMessage('Each category must be a string'),
   body('rating').optional().isFloat({ min: 0, max: 5 }).withMessage('Rating must be between 0 and 5'),
   body('reviewCount').optional().isInt({ min: 0 }).withMessage('Review count must be a positive integer'),
-  body('imageUrl').optional().isURL().withMessage('Image URL must be a valid URL'),
+  body('imageUrl')
+    .optional()
+    .custom((value) => {
+      if (typeof value !== 'string') {
+        throw new Error('Image URL must be a string');
+      }
+      if (value.startsWith('/')) {
+        return true;
+      }
+      try {
+        // eslint-disable-next-line no-new
+        new URL(value);
+        return true;
+      } catch {
+        throw new Error('Image URL must be a valid URL');
+      }
+    }),
   body('isVerified').optional().isBoolean().withMessage('isVerified must be a boolean'),
   body('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),
   body('location').optional().isArray().withMessage('Location must be an array'),

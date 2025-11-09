@@ -273,25 +273,25 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
       </div>
       
       {shouldShowCategoryNav && (
-        <nav className="bg-gray-800 border-t border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex space-x-1 overflow-x-auto py-2">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors category-button cursor-pointer ${
-                    selectedCategory === category
-                      ? 'bg-orange-500 text-white'
-                      : 'text-gray-300'
-                  }`}
-                  onClick={() => handleCategoryChange(category)}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
+      <nav className="bg-gray-800 border-t border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-1 overflow-x-auto py-2">
+            {categories.map((category) => (
+              <button
+                key={category}
+                className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors category-button cursor-pointer ${
+                  selectedCategory === category
+                    ? 'bg-orange-500 text-white'
+                    : 'text-gray-300'
+                }`}
+                onClick={() => handleCategoryChange(category)}
+              >
+                {category}
+              </button>
+            ))}
           </div>
-        </nav>
+        </div>
+      </nav>
       )}
     </header>
   );

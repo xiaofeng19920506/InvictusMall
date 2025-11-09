@@ -125,10 +125,16 @@ export const storeApi = {
 
   // Upload store image
   uploadStoreImage: async (
-    file: File
+    file: File,
+    storeId?: string
   ): Promise<ApiResponse<{ imageUrl: string }>> => {
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", file, file.name);
+    formData.append("file", file, file.name);
+
+    if (storeId) {
+      formData.append("storeId", storeId);
+    }
 
     try {
       const response = await fetch(

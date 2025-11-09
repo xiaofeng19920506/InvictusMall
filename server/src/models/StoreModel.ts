@@ -121,6 +121,22 @@ export class StoreModel {
       const storeId = uuidv4();
       const now = new Date();
 
+      const categories = storeData.category ?? [];
+      const rating = storeData.rating ?? 0;
+      const reviewCount = storeData.reviewCount ?? 0;
+      const imageUrl = storeData.imageUrl ?? "/images/default-store.png";
+      const isVerified = storeData.isVerified ?? false;
+      const isActive = storeData.isActive ?? true;
+      const productsCount = storeData.productsCount ?? 0;
+      const discount = storeData.discount ?? null;
+      const locations = storeData.location && storeData.location.length > 0
+        ? storeData.location
+        : null;
+
+      if (!locations) {
+        throw new Error("At least one location is required");
+      }
+
       // Insert store
       await connection.execute(`
         INSERT INTO stores (
@@ -131,27 +147,29 @@ export class StoreModel {
         storeId,
         storeData.name,
         storeData.description,
-        storeData.rating,
-        storeData.reviewCount,
-        storeData.imageUrl,
-        storeData.isVerified,
-        storeData.isActive,
-        storeData.productsCount,
+        rating,
+        reviewCount,
+        imageUrl,
+        isVerified,
+        isActive,
+        productsCount,
         storeData.establishedYear,
-        storeData.discount || null,
+        discount,
         now,
         now
       ]);
 
       // Insert categories
-      for (const category of storeData.category) {
-        await connection.execute(`
-          INSERT INTO store_categories (store_id, category) VALUES (?, ?)
-        `, [storeId, category]);
+      if (categories.length > 0) {
+        for (const category of categories) {
+          await connection.execute(`
+            INSERT INTO store_categories (store_id, category) VALUES (?, ?)
+          `, [storeId, category]);
+        }
       }
 
       // Insert locations
-      for (const location of storeData.location) {
+      for (const location of locations) {
         await connection.execute(`
           INSERT INTO store_locations (
             store_id, street_address, apt_number, city, state_province, zip_code, country

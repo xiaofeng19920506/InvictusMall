@@ -13,32 +13,13 @@ import {
 import { validateImageFile } from "../utils/imageValidation";
 import multer from "multer";
 import FormData from "form-data";
+import fetch from "node-fetch";
 
 const router = Router();
 // Use real database service now that database is connected
 const storeService = new StoreService();
 
 // Configure multer for store image uploads (memory storage for external upload)
-const storeImageFilter = (
-  req: any,
-  file: Express.Multer.File,
-  cb: multer.FileFilterCallback
-) => {
-  // Accept only image files
-  if (file.mimetype.startsWith("image/")) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only image files are allowed"));
-  }
-};
-
-const uploadStoreImage = multer({
-  storage: multer.memoryStorage(), // Use memory storage to access file buffer
-  fileFilter: storeImageFilter,
-  limits: {
-    fileSize: 15 * 1024 * 1024, // 15MB limit
-  },
-});
 
 /**
  * @swagger
@@ -626,6 +607,28 @@ router.put(
   }
 );
 
+const storeImageFilter = (
+  req: any,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  // Accept only image files
+  if (file.mimetype.startsWith("image/")) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only image files are allowed"));
+  }
+};
+
+const uploadStoreImage = multer({
+  storage: multer.memoryStorage(), // Use memory storage to access file buffer
+  fileFilter: storeImageFilter,
+  limits: {
+    fileSize: 15 * 1024 * 1024, // 15MB limit
+  },
+});
+
+
 /**
  * @swagger
  * /api/stores/upload-image:
@@ -666,20 +669,31 @@ router.put(
 router.post(
   "/upload-image",
   authenticateStaffToken,
-  uploadStoreImage.single("image"),
+  uploadStoreImage.fields([
+    { name: "image", maxCount: 1 },
+    { name: "file", maxCount: 1 },
+  ]),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      console.log("[Store Upload] Incoming request headers:", req.headers);
+      console.log("[Store Upload] Request headers:", req.headers);
+      const files = req.files as {
+        [field: string]: Express.Multer.File[];
+      } | undefined;
+      const uploadedFile =
+        files?.image?.[0] ?? files?.file?.[0] ?? (req as any).file;
+
       console.log(
         "[Store Upload] Incoming file:",
-        req.file ? {
-          originalname: req.file.originalname,
-          mimetype: req.file.mimetype,
-          size: req.file.size,
-        } : "None"
+        uploadedFile
+          ? {
+              originalname: uploadedFile.originalname,
+              mimetype: uploadedFile.mimetype,
+              size: uploadedFile.size,
+            }
+          : "No file provided"
       );
 
-      if (!req.file) {
+      if (!uploadedFile) {
         return res.status(400).json({
           success: false,
           message: "No image file uploaded",
@@ -688,16 +702,12 @@ router.post(
 
       // Perform binary validation on the uploaded file
       const validation = validateImageFile(
-        req.file.buffer,
-        req.file.mimetype,
-        req.file.size
+        uploadedFile.buffer,
+        uploadedFile.mimetype,
+        uploadedFile.size
       );
 
       if (!validation.valid) {
-        console.warn(
-          "[Store Upload] Image validation failed:",
-          validation.error
-        );
         return res.status(400).json({
           success: false,
           message: validation.error || "Invalid image file",
@@ -706,21 +716,18 @@ router.post(
 
       // Forward the file to the external MinIO storage API
       const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
-      console.log(
-        "[Store Upload] Using external upload URL:",
-        externalUploadUrl
-      );
+      console.log("[Store Upload] External upload URL:", externalUploadUrl);
 
       let imageUrl;
 
       try {
         // Create FormData to forward the file
         const formData = new FormData();
-        formData.append("file", req.file.buffer, {
-          filename: req.file.originalname,
-          contentType: req.file.mimetype,
+        formData.append("file", uploadedFile.buffer, {
+          filename: uploadedFile.originalname,
+          contentType: uploadedFile.mimetype,
+          knownLength: uploadedFile.size,
         });
-
         console.log("[Store Upload] Forwarding file to storage service...");
 
         // Forward the file to external API
@@ -729,20 +736,18 @@ router.post(
           body: formData,
           headers: formData.getHeaders(),
         });
-
         console.log(
-          "[Store Upload] Storage service responded:",
+          "[Store Upload] Storage response:",
           uploadResponse.status,
           uploadResponse.statusText
         );
 
         if (!uploadResponse.ok) {
           const errorText = await uploadResponse.text();
-          console.error("[Store Upload] External upload API error:", {
+          console.error("[Store Upload] Upload failed:", {
             status: uploadResponse.status,
             statusText: uploadResponse.statusText,
-            error: errorText,
-            url: externalUploadUrl,
+            body: errorText,
           });
           return res.status(uploadResponse.status || 500).json({
             success: false,
@@ -762,10 +767,6 @@ router.post(
         imageUrl = uploadResult.data;
 
         if (!imageUrl) {
-          console.error(
-            "[Store Upload] Upload response missing data field:",
-            uploadResult
-          );
           return res.status(500).json({
             success: false,
             message: "Failed to get image URL from upload service",
@@ -774,14 +775,12 @@ router.post(
           });
         }
       } catch (fetchError: any) {
-        console.error("[Store Upload] Error connecting to external upload API:", {
-          url: externalUploadUrl,
-          error: fetchError.message,
+        console.error("[Store Upload] Error calling storage service:", {
+          message: fetchError.message,
           code: fetchError.code,
           errno: fetchError.errno,
           type: fetchError.type,
         });
-
         // Provide more specific error messages
         let errorMessage = "Failed to connect to file upload service";
         if (fetchError.code === "ECONNREFUSED") {
@@ -809,7 +808,7 @@ router.post(
         message: "Image uploaded successfully",
       });
     } catch (error) {
-      console.error("[Store Upload] Unhandled error:", error);
+      console.error("[Store Upload] Unexpected error:", error);
       return res.status(500).json({
         success: false,
         message: "Failed to upload image",
