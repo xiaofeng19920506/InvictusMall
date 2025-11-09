@@ -155,10 +155,6 @@ router.get("/categories", async (req: Request, res: Response) => {
   }
 });
 
-
-
-
-
 // All specific routes must come before the /:id route to avoid route conflicts
 /**
  * @swagger
@@ -628,7 +624,6 @@ const uploadStoreImage = multer({
   },
 });
 
-
 /**
  * @swagger
  * /api/stores/upload-image:
@@ -680,7 +675,8 @@ router.post(
         metadataRaw,
         storeId,
       });
-      console.log("[Store Upload] Multer single file:",
+      console.log(
+        "[Store Upload] Multer single file:",
         uploadedFile
           ? {
               originalname: uploadedFile.originalname,
@@ -754,7 +750,7 @@ router.post(
           knownLength: uploadedFile.size,
         });
 
-        formData.append("metadata", JSON.stringify(metadata));
+        // Do not forward additional metadata to the external service to keep compatibility
 
         if (storeId) {
           formData.append("storeId", storeId);
