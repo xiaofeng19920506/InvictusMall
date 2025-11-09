@@ -84,15 +84,6 @@ const NAV_ITEMS: NavigationItem[] = [
   },
 ];
 
-const languageOptions = [
-  { code: "en", labelKey: "languages.en" },
-  { code: "zh", labelKey: "languages.zh" },
-  { code: "es", labelKey: "languages.es" },
-  { code: "fr", labelKey: "languages.fr" },
-  { code: "ko", labelKey: "languages.ko" },
-  { code: "ja", labelKey: "languages.ja" },
-];
-
 const AdminLayout = ({
   children,
   currentPage,
@@ -100,19 +91,13 @@ const AdminLayout = ({
 }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const navigationItems = user
     ? NAV_ITEMS.filter((item) =>
         authService.hasPermission(user, item.permission)
       )
     : [];
-
-  const currentLanguage = (
-    i18n.resolvedLanguage ||
-    i18n.language ||
-    "en"
-  ).split("-")[0];
 
   const sidebarClasses = [
     styles.sidebar,
@@ -197,11 +182,11 @@ const AdminLayout = ({
 
           <div className={styles.sidebarFooter}>
             <div className={styles.sidebarUser}>
-              <div className={styles.userInitialLarge}>
-                {user ? user.firstName.charAt(0).toUpperCase() : "U"}
-              </div>
               <div className={styles.sidebarUserInfo}>
                 <div className={styles.sidebarUserTopRow}>
+                  <div className={styles.userInitialLarge}>
+                    {user ? user.firstName.charAt(0).toUpperCase() : "U"}
+                  </div>
                   <div className={styles.userName}>
                     {user
                       ? `${user.firstName} ${user.lastName}`
