@@ -740,8 +740,19 @@ router.post(
       console.log("[Store Upload] External upload URL:", externalUploadUrl);
 
       let imageUrl;
+      let previousImageUrl: string | undefined;
 
       try {
+        // Fetch current store to check for previous image when storeId provided
+        if (storeId && typeof storeId === "string") {
+          try {
+            const currentStore = await storeService.getStoreById(storeId);
+            previousImageUrl = currentStore?.imageUrl;
+          } catch (fetchStoreError) {
+            console.warn("[Store Upload] Unable to fetch current store for previous image cleanup:", fetchStoreError);
+          }
+        }
+
         // Create FormData to forward the file
         const formData = new FormData();
         formData.append("file", uploadedFile.buffer, {
@@ -751,10 +762,6 @@ router.post(
         });
 
         // Do not forward additional metadata to the external service to keep compatibility
-
-        if (storeId) {
-          formData.append("storeId", storeId);
-        }
         console.log("[Store Upload] Forwarding file to storage service...");
 
         // Forward the file to external API
@@ -801,6 +808,28 @@ router.post(
             response: uploadResult,
           });
         }
+
+        // Delete previous image if applicable
+        if (previousImageUrl && previousImageUrl.startsWith("/images/")) {
+          try {
+            const storageBaseUrl =
+              process.env.FILE_STORAGE_BASE_URL ||
+              externalUploadUrl.replace("/api/files/upload", "");
+            const deleteUrl = `${storageBaseUrl}/api/files/delete?fileName=${encodeURIComponent(previousImageUrl)}`;
+            console.log("[Store Upload] Deleting previous image:", previousImageUrl);
+            const deleteResponse = await fetch(deleteUrl, { method: "DELETE" });
+            if (!deleteResponse.ok) {
+              const deleteText = await deleteResponse.text();
+              console.warn("[Store Upload] Failed to delete previous image:", {
+                status: deleteResponse.status,
+                body: deleteText,
+              });
+            }
+          } catch (deleteError) {
+            console.warn("[Store Upload] Error deleting previous image:", deleteError);
+          }
+        }
+
       } catch (fetchError: any) {
         console.error("[Store Upload] Error calling storage service:", {
           message: fetchError.message,
@@ -827,11 +856,27 @@ router.post(
         });
       }
 
+      // Save the image URL to the database when a storeId is provided
+      let updatedStore = undefined;
+      if (storeId && typeof storeId === "string") {
+        try {
+          updatedStore = await storeService.updateStore(storeId, {
+            imageUrl,
+          });
+        } catch (updateError) {
+          console.error("[Store Upload] Failed to update store imageUrl:", {
+            storeId,
+            error: updateError,
+          });
+        }
+      }
+
       return res.json({
         success: true,
         data: {
           imageUrl,
           metadata,
+          store: updatedStore,
         },
         message: "Image uploaded successfully",
       });

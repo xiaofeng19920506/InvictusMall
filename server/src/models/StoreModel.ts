@@ -209,6 +209,17 @@ export class StoreModel {
 
       const now = new Date();
 
+      const name = updateData.name ?? null;
+      const description = updateData.description ?? null;
+      const rating = updateData.rating ?? null;
+      const reviewCount = updateData.reviewCount ?? null;
+      const imageUrl = updateData.imageUrl ?? null;
+      const isVerified = updateData.isVerified ?? null;
+      const isActive = updateData.isActive ?? null;
+      const productsCount = updateData.productsCount ?? null;
+      const establishedYear = updateData.establishedYear ?? null;
+      const discount = updateData.discount ?? null;
+
       // Update store
       await connection.execute(`
         UPDATE stores SET
@@ -225,16 +236,16 @@ export class StoreModel {
           updated_at = ?
         WHERE id = ?
       `, [
-        updateData.name,
-        updateData.description,
-        updateData.rating,
-        updateData.reviewCount,
-        updateData.imageUrl,
-        updateData.isVerified,
-        updateData.isActive,
-        updateData.productsCount,
-        updateData.establishedYear,
-        updateData.discount,
+        name,
+        description,
+        rating,
+        reviewCount,
+        imageUrl,
+        isVerified,
+        isActive,
+        productsCount,
+        establishedYear,
+        discount,
         now,
         id
       ]);

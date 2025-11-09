@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { Store } from '@/services/api';
-import { useFavorites } from '@/contexts/FavoritesContext';
+import { Store } from "@/services/api";
+import { useFavorites } from "@/contexts/FavoritesContext";
+import { getImageUrl } from "@/utils/imageUtils";
 
 interface StoreCardProps {
   store: Store;
@@ -29,23 +30,35 @@ export default function StoreCard({ store, onClick }: StoreCardProps) {
     const hasHalfStar = rating % 1 !== 0;
 
     for (let i = 0; i < fullStars; i++) {
-      stars.push(<span key={i} className="text-yellow-400">★</span>);
+      stars.push(
+        <span key={i} className="text-yellow-400">
+          ★
+        </span>
+      );
     }
 
     if (hasHalfStar) {
-      stars.push(<span key="half" className="text-yellow-400">☆</span>);
+      stars.push(
+        <span key="half" className="text-yellow-400">
+          ☆
+        </span>
+      );
     }
 
     const remainingStars = 5 - Math.ceil(rating);
     for (let i = 0; i < remainingStars; i++) {
-      stars.push(<span key={`empty-${i}`} className="text-gray-300">☆</span>);
+      stars.push(
+        <span key={`empty-${i}`} className="text-gray-300">
+          ☆
+        </span>
+      );
     }
 
     return stars;
   };
 
   return (
-    <div 
+    <div
       className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-200 hover:border-orange-500 relative overflow-hidden group"
       onClick={handleClick}
     >
@@ -58,34 +71,38 @@ export default function StoreCard({ store, onClick }: StoreCardProps) {
         onClick={handleFavoriteClick}
         className={`absolute top-2 right-2 p-2 rounded-full z-10 transition-colors cursor-pointer ${
           favorite
-            ? 'bg-red-500 text-white'
-            : 'bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100'
+            ? "bg-red-500 text-white"
+            : "bg-white bg-opacity-80 text-gray-600 hover:bg-opacity-100"
         }`}
-        title={favorite ? 'Remove from favorites' : 'Add to favorites'}
+        title={favorite ? "Remove from favorites" : "Add to favorites"}
       >
-        {favorite ? '❤️' : '🤍'}
+        {favorite ? "❤️" : "🤍"}
       </button>
-      
+
       <div className="relative h-48 overflow-hidden">
-        <img 
-          src={store.imageUrl} 
+        <img
+          src={getImageUrl(store.imageUrl)}
           alt={store.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </div>
-      
+
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-semibold text-gray-900 truncate flex-1">{store.name}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 truncate flex-1">
+            {store.name}
+          </h3>
           {store.isVerified && (
             <span className="bg-green-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs ml-2">
               ✓
             </span>
           )}
         </div>
-        
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{store.description}</p>
-        
+
+        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+          {store.description}
+        </p>
+
         <div className="flex items-center mb-3">
           <div className="flex items-center mr-2">
             {renderStars(store.rating)}
@@ -94,7 +111,7 @@ export default function StoreCard({ store, onClick }: StoreCardProps) {
             {store.rating} ({store.reviewCount} reviews)
           </span>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <span className="text-gray-500 text-xs">Category:</span>
@@ -106,7 +123,9 @@ export default function StoreCard({ store, onClick }: StoreCardProps) {
           </div>
           <div>
             <span className="text-gray-500 text-xs">Products:</span>
-            <p className="font-medium text-gray-900">{store.productsCount.toLocaleString()}</p>
+            <p className="font-medium text-gray-900">
+              {store.productsCount.toLocaleString()}
+            </p>
           </div>
           <div>
             <span className="text-gray-500 text-xs">Established:</span>
