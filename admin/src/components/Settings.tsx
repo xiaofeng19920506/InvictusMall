@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme, type ThemeOption } from "../contexts/ThemeContext";
+import { SUPPORTED_LANGUAGES } from "../i18n/config";
 import styles from "./Settings.module.css";
-
-type ThemeOption = "light" | "dark" | "auto";
 
 type TimezoneOption =
   | "UTC"
@@ -30,6 +30,7 @@ const themeOptions: ThemeOption[] = ["light", "dark", "auto"];
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
   const initialLanguage = useMemo(() => {
     const lang = i18n.resolvedLanguage || i18n.language || "en";
@@ -43,7 +44,6 @@ const Settings: React.FC = () => {
       sms: false,
     },
     preferences: {
-      theme: "light" as ThemeOption,
       language: initialLanguage,
       timezone: "UTC" as TimezoneOption,
     },
@@ -56,13 +56,11 @@ const Settings: React.FC = () => {
 
   const languageOptions = useMemo(
     () =>
-      i18n.languages
-        .filter((lang) => lang.length === 2)
-        .map((lang) => ({
-          value: lang,
-          label: t(`languages.${lang}`),
-        })),
-    [i18n.languages, t]
+      SUPPORTED_LANGUAGES.map((lang) => ({
+        value: lang,
+        label: t(`languages.${lang}`),
+      })),
+    [t]
   );
 
   const handleSave = async () => {
@@ -254,16 +252,11 @@ const Settings: React.FC = () => {
             </label>
             <select
               id="theme"
-              value={settings.preferences.theme}
-              onChange={(e) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  preferences: {
-                    ...prev.preferences,
-                    theme: e.target.value as ThemeOption,
-                  },
-                }))
-              }
+              value={theme}
+              onChange={(e) => {
+                const newTheme = e.target.value as ThemeOption;
+                setTheme(newTheme);
+              }}
               className={styles.select}
             >
               {themeOptions.map((option) => (

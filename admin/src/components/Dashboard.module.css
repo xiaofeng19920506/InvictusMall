@@ -137,9 +137,45 @@
   border-color: #bbf7d0;
 }
 
+/* Change text color for activityCreated to work with green background */
+.activityCreated .activityMessage {
+  color: #065f46;
+}
+
+.activityCreated .activityMeta {
+  color: #047857;
+}
+
+/* Dark theme: activityCreated uses dark background, so use white text */
+:root.dark .activityCreated .activityMessage {
+  color: #ffffff;
+}
+
+:root.dark .activityCreated .activityMeta {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .activityUpdated {
   background-color: #dbeafe;
   border-color: #bfdbfe;
+}
+
+/* Change text color for activityUpdated to work with blue background */
+.activityUpdated .activityMessage {
+  color: #1e40af;
+}
+
+.activityUpdated .activityMeta {
+  color: #1e3a8a;
+}
+
+/* Dark theme: activityUpdated uses dark background, so use white text */
+:root.dark .activityUpdated .activityMessage {
+  color: #ffffff;
+}
+
+:root.dark .activityUpdated .activityMeta {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .activityDeleted {
@@ -147,20 +183,82 @@
   border-color: #fecaca;
 }
 
+/* Change text color for activityDeleted to work with red background */
+.activityDeleted .activityMessage {
+  color: #991b1b;
+}
+
+.activityDeleted .activityMeta {
+  color: #7f1d1d;
+}
+
+/* Dark theme: activityDeleted uses dark background, so use white text */
+:root.dark .activityDeleted .activityMessage {
+  color: #ffffff;
+}
+
+:root.dark .activityDeleted .activityMeta {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .activityVerified {
   background-color: #ede9fe;
   border-color: #ddd6fe;
 }
 
+/* Change text color for activityVerified to work with purple background */
+.activityVerified .activityMessage {
+  color: #5b21b6;
+}
+
+.activityVerified .activityMeta {
+  color: #4c1d95;
+}
+
+/* Dark theme: activityVerified uses dark background, so use white text */
+:root.dark .activityVerified .activityMessage {
+  color: #ffffff;
+}
+
+:root.dark .activityVerified .activityMeta {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .activityDefault {
-  background-color: #f8fafc;
-  border-color: #e2e8f0;
+  background-color: var(--bg-secondary) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Dark theme: All activity cards get dark background and white border */
+:root.dark .activityCard,
+:root.dark .activityCard.activityCreated,
+:root.dark .activityCard.activityUpdated,
+:root.dark .activityCard.activityDeleted,
+:root.dark .activityCard.activityVerified,
+:root.dark .activityCard.activityDefault {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+:root.dark .activityCard:hover,
+:root.dark .activityCard.activityCreated:hover,
+:root.dark .activityCard.activityUpdated:hover,
+:root.dark .activityCard.activityDeleted:hover,
+:root.dark .activityCard.activityVerified:hover,
+:root.dark .activityCard.activityDefault:hover {
+  background-color: var(--bg-tertiary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
 }
 
 .activityIcon {
   flex-shrink: 0;
   margin-top: 4px;
   color: var(--text-secondary);
+}
+
+:root.dark .activityIcon {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .activityText {
@@ -176,9 +274,17 @@
   color: var(--text-primary);
 }
 
+:root.dark .activityMessage {
+  color: #ffffff;
+}
+
 .activityMeta {
   font-size: 0.8rem;
   color: var(--text-secondary);
+}
+
+:root.dark .activityMeta {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .emptyState {

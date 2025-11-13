@@ -7,6 +7,16 @@
     <title>admin</title>
   </head>
   <body>
+    <script>
+      // Apply theme before React renders to prevent flash
+      (function() {
+        const stored = localStorage.getItem('admin-app-theme');
+        const theme = stored === 'light' || stored === 'dark' || stored === 'auto' ? stored : 'light';
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const effectiveTheme = theme === 'auto' ? systemTheme : theme;
+        document.documentElement.classList.add(effectiveTheme);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

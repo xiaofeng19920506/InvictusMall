@@ -18,13 +18,15 @@ const resources = {
   ja: { translation: ja },
 };
 
+export const SUPPORTED_LANGUAGES = ["en", "zh", "es", "fr", "ko", "ja"] as const;
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
     fallbackLng: "en",
-    supportedLngs: ["en", "zh", "es", "fr", "ko", "ja"],
+    supportedLngs: SUPPORTED_LANGUAGES,
     interpolation: {
       escapeValue: false,
     },

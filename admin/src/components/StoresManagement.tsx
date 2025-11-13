@@ -189,9 +189,16 @@ const StoresManagement: React.FC = () => {
                   <td>
                     <div className={styles.storeCell}>
                       <img
-                        src={getImageUrl(store.imageUrl)}
+                        src={getImageUrl(store.imageUrl) || '/images/default-store.png'}
                         alt={store.name}
                         className={styles.storeImage}
+                        onError={(e) => {
+                          // Fallback to default image if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          if (target.src !== `${window.location.origin}/images/default-store.png`) {
+                            target.src = '/images/default-store.png';
+                          }
+                        }}
                       />
                       <div className={styles.storeInfo}>
                         <div className={styles.storeName}>{store.name}</div>

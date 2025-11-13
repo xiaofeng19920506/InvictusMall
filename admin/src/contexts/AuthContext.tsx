@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { authService } from '../services/auth';
 import type { User, LoginRequest, AuthResponse } from '../services/auth';
@@ -17,9 +17,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const hasRestoredRef = React.useRef(false);
 
   useEffect(() => {
+    // Prevent duplicate calls in StrictMode (React 18+)
+    if (hasRestoredRef.current) return;
+    
     const restoreAuthState = async () => {
+      hasRestoredRef.current = true;
       try {
         // Try to get current user from server using HTTP-only cookie
         const response = await authService.getCurrentUser();
@@ -32,12 +37,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           setIsAuthenticated(false);
         }
-      } catch (error) {
-        console.error('Failed to restore auth state:', error);
+      } catch (error: any) {
+        // Ignore 429 errors (rate limiting) to prevent console spam
+        if (error?.response?.status === 429) {
+          console.warn('Rate limited during auth restore, will retry later');
+        } else {
+          console.error('Failed to restore auth state:', error);
+        }
         setUser(null);
         setIsAuthenticated(false);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     restoreAuthState();

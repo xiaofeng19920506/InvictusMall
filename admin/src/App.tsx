@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import AuthGuard from "./components/AuthGuard";
 import AdminApp from "./components/AdminApp";
 import SetupPassword from "./components/SetupPassword";
@@ -16,25 +17,27 @@ function App() {
   };
 
   return (
-    <Router>
-      <AuthProvider>
-        <Routes>
-          <Route path="/setup-password" element={<SetupPassword />} />
-          <Route
-            path="/*"
-            element={
-              <AuthGuard>
-                <AdminApp />
-              </AuthGuard>
-            }
+    <ThemeProvider>
+      <Router>
+        <AuthProvider>
+          <Routes>
+            <Route path="/setup-password" element={<SetupPassword />} />
+            <Route
+              path="/*"
+              element={
+                <AuthGuard>
+                  <AdminApp />
+                </AuthGuard>
+              }
+            />
+          </Routes>
+          <NotificationSystem
+            notifications={notifications}
+            onRemove={removeNotification}
           />
-        </Routes>
-        <NotificationSystem
-          notifications={notifications}
-          onRemove={removeNotification}
-        />
-      </AuthProvider>
-    </Router>
+        </AuthProvider>
+      </Router>
+    </ThemeProvider>
   );
 }
 
