@@ -77,8 +77,14 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
 
   if (!user) return null;
 
+  const isSelf = currentUser?.id === user.id;
+
   // Get available roles based on current user's role
   const getAvailableRoles = (): Staff["role"][] => {
+    if (isSelf) {
+      // Users cannot change their own role
+      return [user.role];
+    }
     if (currentUser?.role === "admin") {
       return ["admin", "owner", "manager", "employee"];
     } else if (currentUser?.role === "owner") {
@@ -90,9 +96,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
   };
 
   const availableRoles = getAvailableRoles();
-  const canChangeRole = currentUser?.role === "admin" || 
+  const canChangeRole = !isSelf && (
+    currentUser?.role === "admin" || 
     (currentUser?.role === "owner" && user.role !== "owner") ||
-    (currentUser?.role === "manager" && user.role !== "owner" && user.role !== "admin");
+    (currentUser?.role === "manager" && user.role !== "owner" && user.role !== "admin")
+  );
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -204,7 +212,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
               )}
             </div>
 
-            {currentUser?.role === "admin" && (
+            {currentUser?.role === "admin" && !isSelf && (
               <div className={styles.formGroup}>
                 <label className={styles.label} htmlFor="isActive">
                   {t("users.edit.status") || "Status"}

@@ -172,6 +172,25 @@
     "note": {
       "title": "Note:",
       "description": "User management features are being developed. Currently, you can view user information. Edit and management functions will be available soon."
+    },
+    "edit": {
+      "title": "Edit User",
+      "email": "Email",
+      "emailHelp": "Email cannot be changed",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "phoneNumber": "Phone Number",
+      "role": "Role",
+      "roleHelp": "You cannot change this user's role",
+      "status": "Status",
+      "department": "Department",
+      "employeeId": "Employee ID",
+      "optional": " (optional)",
+      "cancel": "Cancel",
+      "save": "Save Changes",
+      "saving": "Saving...",
+      "success": "User updated successfully",
+      "error": "Failed to update user"
     }
   },
   "adminLogin": {
