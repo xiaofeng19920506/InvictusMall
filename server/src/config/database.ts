@@ -169,6 +169,7 @@ const createTables = async (): Promise<void> => {
                 role ENUM('admin', 'owner', 'manager', 'employee') DEFAULT 'employee',
                 department VARCHAR(100) NULL,
                 employee_id VARCHAR(50) UNIQUE NULL,
+                store_id VARCHAR(36) NULL,
                 is_active BOOLEAN DEFAULT true,
                 email_verified BOOLEAN DEFAULT true,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -179,9 +180,51 @@ const createTables = async (): Promise<void> => {
                 INDEX idx_role (role),
                 INDEX idx_active (is_active),
                 INDEX idx_employee_id (employee_id),
-                INDEX idx_department (department)
+                INDEX idx_department (department),
+                INDEX idx_store_id (store_id),
+                FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
+
+    // Add store_id column to existing staff table if it doesn't exist
+    try {
+      await connection.execute(`
+        ALTER TABLE staff 
+        ADD COLUMN store_id VARCHAR(36) NULL
+      `);
+    } catch (error: any) {
+      // Ignore if the column already exists (ER_DUP_FIELDNAME)
+      if (error?.code !== 'ER_DUP_FIELDNAME') {
+        // Column might already exist, continue
+      }
+    }
+
+    // Add index for store_id if it doesn't exist
+    try {
+      await connection.execute(`
+        ALTER TABLE staff 
+        ADD INDEX idx_store_id (store_id)
+      `);
+    } catch (error: any) {
+      // Ignore if the index already exists
+      if (error?.code !== 'ER_DUP_KEYNAME') {
+        // Index might already exist, continue
+      }
+    }
+
+    // Add foreign key for store_id if it doesn't exist
+    try {
+      await connection.execute(`
+        ALTER TABLE staff 
+        ADD CONSTRAINT fk_staff_store 
+        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+      `);
+    } catch (error: any) {
+      // Ignore if the foreign key already exists
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME') {
+        // Foreign key might already exist, continue
+      }
+    }
 
     // Create staff_invitations table
     await connection.execute(`
@@ -193,6 +236,7 @@ const createTables = async (): Promise<void> => {
                 role ENUM('admin', 'owner', 'manager', 'employee') NOT NULL,
                 department VARCHAR(100) NULL,
                 employee_id VARCHAR(50) NULL,
+                store_id VARCHAR(36) NULL,
                 token VARCHAR(36) UNIQUE NOT NULL,
                 invited_by VARCHAR(36) NOT NULL,
                 expires_at TIMESTAMP NOT NULL,
@@ -202,7 +246,9 @@ const createTables = async (): Promise<void> => {
                 INDEX idx_email (email),
                 INDEX idx_token (token),
                 INDEX idx_expires_at (expires_at),
-                INDEX idx_is_used (is_used)
+                INDEX idx_is_used (is_used),
+                INDEX idx_store_id (store_id),
+                FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
@@ -230,6 +276,21 @@ const createTables = async (): Promise<void> => {
               `);
     } catch (error) {
       // Table might not exist or already have the correct enum values
+    }
+
+    // Add user_id and user_name columns to activity_logs table if they don't exist
+    try {
+      await connection.execute(`
+        ALTER TABLE activity_logs 
+        ADD COLUMN user_id VARCHAR(36) NULL,
+        ADD COLUMN user_name VARCHAR(255) NULL,
+        ADD INDEX idx_user_id (user_id)
+      `);
+    } catch (error: any) {
+      // Column might already exist
+      if (error.code !== 'ER_DUP_FIELDNAME' && error.code !== 'ER_DUP_KEYNAME') {
+        console.warn('Error adding user columns to activity_logs:', error.message);
+      }
     }
 
     // Update existing users table to allow null passwords and add avatar field
@@ -284,6 +345,21 @@ const createTables = async (): Promise<void> => {
       `);
     } catch (error: any) {
       // Column might already exist
+    }
+
+    // Add store_id column to existing staff_invitations table if it doesn't exist
+    try {
+      await connection.execute(`
+        ALTER TABLE staff_invitations 
+        ADD COLUMN store_id VARCHAR(36) NULL,
+        ADD INDEX idx_store_id (store_id),
+        ADD FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+      `);
+    } catch (error: any) {
+      // Column might already exist (ER_DUP_FIELDNAME) or foreign key might exist (ER_DUP_KEYNAME)
+      if (error.code !== 'ER_DUP_FIELDNAME' && error.code !== 'ER_DUP_KEYNAME') {
+        console.error('Error adding store_id to staff_invitations:', error);
+      }
     }
 
     // Initialize OrderModel tables

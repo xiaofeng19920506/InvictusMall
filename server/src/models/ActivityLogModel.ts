@@ -7,6 +7,8 @@ export interface ActivityLog {
   timestamp: Date;
   storeName?: string;
   storeId?: string;
+  userId?: string;
+  userName?: string;
   metadata?: Record<string, any>;
 }
 
@@ -16,8 +18,8 @@ export class ActivityLogModel {
    */
   static async createLog(logData: Omit<ActivityLog, 'id' | 'timestamp'>): Promise<ActivityLog> {
     const query = `
-      INSERT INTO activity_logs (type, message, store_name, store_id, metadata)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO activity_logs (type, message, store_name, store_id, user_id, user_name, metadata)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
     
     const metadataJson = logData.metadata ? JSON.stringify(logData.metadata) : null;
@@ -27,6 +29,8 @@ export class ActivityLogModel {
       logData.message,
       logData.storeName || null,
       logData.storeId || null,
+      logData.userId || null,
+      logData.userName || null,
       metadataJson
     ]);
     
@@ -41,7 +45,7 @@ export class ActivityLogModel {
    */
   static async getLogById(id: string): Promise<ActivityLog | null> {
     const query = `
-      SELECT id, type, message, store_name, store_id, metadata, created_at
+      SELECT id, type, message, store_name, store_id, user_id, user_name, metadata, created_at
       FROM activity_logs
       WHERE id = ?
     `;
@@ -58,6 +62,8 @@ export class ActivityLogModel {
       timestamp: row.created_at,
       storeName: row.store_name,
       storeId: row.store_id,
+      userId: row.user_id,
+      userName: row.user_name,
       metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined
     };
   }
@@ -70,7 +76,7 @@ export class ActivityLogModel {
     const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 100);
 
     const query = `
-      SELECT id, type, message, store_name, store_id, metadata, created_at
+      SELECT id, type, message, store_name, store_id, user_id, user_name, metadata, created_at
       FROM activity_logs
       ORDER BY created_at DESC
       LIMIT ${safeLimit}
@@ -86,6 +92,8 @@ export class ActivityLogModel {
         timestamp: row.created_at,
         storeName: row.store_name,
         storeId: row.store_id,
+        userId: row.user_id,
+        userName: row.user_name,
         metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined
       }));
     } catch (error) {
@@ -99,7 +107,7 @@ export class ActivityLogModel {
    */
   static async getLogsByStoreId(storeId: string, limit: number = 10): Promise<ActivityLog[]> {
     const query = `
-      SELECT id, type, message, store_name, store_id, metadata, created_at
+      SELECT id, type, message, store_name, store_id, user_id, user_name, metadata, created_at
       FROM activity_logs
       WHERE store_id = ?
       ORDER BY created_at DESC
@@ -116,6 +124,8 @@ export class ActivityLogModel {
         timestamp: row.created_at,
         storeName: row.store_name,
         storeId: row.store_id,
+        userId: row.user_id,
+        userName: row.user_name,
         metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined
       }));
     } catch (error) {
@@ -129,7 +139,7 @@ export class ActivityLogModel {
    */
   static async getLogsByType(type: ActivityLog['type'], limit: number = 10): Promise<ActivityLog[]> {
     const query = `
-      SELECT id, type, message, store_name, store_id, metadata, created_at
+      SELECT id, type, message, store_name, store_id, user_id, user_name, metadata, created_at
       FROM activity_logs
       WHERE type = ?
       ORDER BY created_at DESC
@@ -146,6 +156,8 @@ export class ActivityLogModel {
         timestamp: row.created_at,
         storeName: row.store_name,
         storeId: row.store_id,
+        userId: row.user_id,
+        userName: row.user_name,
         metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined
       }));
     } catch (error) {

@@ -13,8 +13,10 @@ import { storeApi } from "../services/api";
 import type { Store } from "../types/store";
 import { useRealTimeStores } from "../hooks/useRealTimeStores";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 import { getImageUrl } from "../utils/imageUtils";
 import StoreModal from "./StoreModal";
+import ConfirmModal from "./ConfirmModal";
 import styles from "./StoresManagement.module.css";
 
 const StoresManagement: React.FC = () => {
@@ -25,6 +27,20 @@ const StoresManagement: React.FC = () => {
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { user } = useAuth();
+  const { showError, showSuccess } = useNotification();
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    type: 'warning',
+  });
 
   useEffect(() => {
     setIsClient(typeof window !== "undefined");
@@ -37,36 +53,50 @@ const StoresManagement: React.FC = () => {
   const isAdmin = user?.role === "admin";
 
   const handleDeleteStore = async (id: string) => {
-    if (!window.confirm(t("stores.confirmDelete"))) {
-      return;
-    }
-
-    try {
-      await storeApi.deleteStore(id);
-      refetch();
-    } catch (error) {
-      console.error("Error deleting store:", error);
-      window.alert(t("stores.deleteError"));
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: t("stores.confirmDelete"),
+      message: t("stores.confirmDelete"),
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await storeApi.deleteStore(id);
+          refetch();
+          showSuccess(t("stores.deleteSuccess") || "Store deleted successfully");
+          setConfirmModal({ ...confirmModal, isOpen: false });
+        } catch (error) {
+          console.error("Error deleting store:", error);
+          showError(t("stores.deleteError"));
+          setConfirmModal({ ...confirmModal, isOpen: false });
+        }
+      },
+    });
   };
 
   const handleVerifyStore = async (id: string) => {
-    if (!window.confirm(t("stores.confirmVerify"))) {
-      return;
-    }
-
-    try {
-      await storeApi.verifyStore(id);
-      refetch();
-    } catch (error: any) {
-      console.error("Error verifying store:", error);
-      const errorMessage = error.response?.data?.message;
-      if (errorMessage?.includes("Only administrators")) {
-        window.alert(t("stores.verifyForbidden"));
-      } else {
-        window.alert(t("stores.verifyError"));
-      }
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: t("stores.confirmVerify"),
+      message: t("stores.confirmVerify"),
+      type: 'info',
+      onConfirm: async () => {
+        try {
+          await storeApi.verifyStore(id);
+          refetch();
+          showSuccess(t("stores.verifySuccess") || "Store verified successfully");
+          setConfirmModal({ ...confirmModal, isOpen: false });
+        } catch (error: any) {
+          console.error("Error verifying store:", error);
+          const errorMessage = error.response?.data?.message;
+          if (errorMessage?.includes("Only administrators")) {
+            showError(t("stores.verifyForbidden"));
+          } else {
+            showError(t("stores.verifyError"));
+          }
+          setConfirmModal({ ...confirmModal, isOpen: false });
+        }
+      },
+    });
   };
 
   const handleEditStore = (store: Store) => {
@@ -302,6 +332,16 @@ const StoresManagement: React.FC = () => {
           }}
         />
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+        confirmText={t("common.confirm") || "Confirm"}
+        cancelText={t("common.cancel") || "Cancel"}
+      />
     </div>
   );
 };

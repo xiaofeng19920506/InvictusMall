@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { FileText, Search, Filter, Download, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { activityLogApi } from "../services/api";
@@ -17,11 +17,7 @@ const SystemLogs: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadLogs();
-  }, []);
-
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -37,7 +33,11 @@ const SystemLogs: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
 
   const getLogLevel = (type: ActivityLog["type"]): LogLevel => {
     const normalized = type.toLowerCase();
@@ -116,7 +116,7 @@ const SystemLogs: React.FC = () => {
 
           <div className={styles.actions}>
             <button
-              onClick={loadLogs}
+              onClick={() => loadLogs()}
               className={`${styles.actionButton} ${styles.refreshButton}`}
               disabled={loading}
             >
@@ -186,9 +186,7 @@ const SystemLogs: React.FC = () => {
                       {log.storeName || t("systemLogs.table.systemSource")}
                     </td>
                     <td className={styles.tableCell}>
-                      {log.metadata?.userId ||
-                        log.metadata?.verifiedBy ||
-                        t("systemLogs.table.unknownUser")}
+                      {log.userName || t("systemLogs.table.unknownUser")}
                     </td>
                   </tr>
                 );
@@ -208,7 +206,7 @@ const SystemLogs: React.FC = () => {
           {error && !loading && (
             <div className={styles.errorState}>
               <p className={styles.emptyDescription}>{error}</p>
-              <button onClick={loadLogs} className={styles.retryButton}>
+              <button onClick={() => loadLogs()} className={styles.retryButton}>
                 {t("systemLogs.actions.retry")}
               </button>
             </div>

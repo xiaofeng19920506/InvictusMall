@@ -181,30 +181,60 @@
   },
   "users": {
     "title": "Gestión de Usuarios",
-    "lastUpdated": "Última actualización: {{time}}",
-    "refresh": "Actualizar",
-    "addUser": "Agregar usuario",
-    "searchPlaceholder": "Buscar usuarios...",
-    "allRoles": "Todos los roles",
-    "confirmDelete": "¿Está seguro de que desea eliminar este usuario?",
-    "deleteError": "No se pudo eliminar el usuario",
-    "empty": "No se encontraron usuarios",
+    "subtitle": "Gestionar usuarios del sistema y sus permisos",
+    "loadError": "Error al cargar usuarios.",
     "loading": "Cargando usuarios...",
+    "searchPlaceholder": "Buscar usuarios por nombre, correo o teléfono...",
+    "filters": {
+      "allRoles": "Todos los roles",
+      "admin": "Administrador",
+      "owner": "Propietario",
+      "manager": "Gerente",
+      "employee": "Empleado",
+      "storeOwner": "Propietario de tienda",
+      "customer": "Cliente"
+    },
     "table": {
       "title": "Usuarios ({{count}})",
       "user": "Usuario",
       "role": "Rol",
-      "email": "Correo electrónico",
+      "contact": "Contacto",
       "status": "Estado",
+      "joined": "Fecha de unión",
       "actions": "Acciones"
+    },
+    "roles": {
+      "admin": "ADMINISTRADOR",
+      "owner": "PROPIETARIO",
+      "manager": "GERENTE",
+      "employee": "EMPLEADO",
+      "store_owner": "PROPIETARIO DE TIENDA",
+      "customer": "CLIENTE"
     },
     "status": {
       "active": "Activo",
-      "inactive": "Inactivo"
+      "inactive": "Inactivo",
+      "emailVerified": "Correo verificado",
+      "emailUnverified": "Correo no verificado"
     },
     "actions": {
-      "edit": "Editar usuario",
-      "delete": "Eliminar usuario"
+      "editSoon": "La funcionalidad de edición de usuario estará disponible pronto",
+      "editTitle": "Editar Usuario",
+      "deactivate": "Desactivar",
+      "activate": "Activar",
+      "deactivateTitle": "Desactivar Usuario",
+      "activateTitle": "Activar Usuario",
+      "confirmToggle": "¿Está seguro de que desea {{action}} este usuario?",
+      "toggleSoon": "La funcionalidad de activar/desactivar estará disponible pronto"
+    },
+    "empty": {
+      "title": "No se encontraron usuarios",
+      "filtered": "Intente ajustar sus criterios de búsqueda o filtro.",
+      "default": "Aún no hay usuarios en el sistema."
+    },
+    "note": {
+      "title": "Nota:",
+      "description": "Las funciones de gestión de usuarios están en desarrollo. Actualmente, solo puede ver la información del usuario. Las funciones de edición y gestión estarán disponibles pronto."
     }
   },
   "adminLogin": {

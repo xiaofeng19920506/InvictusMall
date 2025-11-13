@@ -12,6 +12,7 @@ import {
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
+import { useNotification } from "../contexts/NotificationContext";
 import styles from "./UsersManagement.module.css";
 
 interface User {
@@ -20,11 +21,15 @@ interface User {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  role: 'customer' | 'admin' | 'store_owner';
+  role: 'admin' | 'owner' | 'manager' | 'employee';
+  department?: string;
+  employeeId?: string;
+  storeId?: string;
   isActive: boolean;
   emailVerified: boolean;
   createdAt: string;
   lastLoginAt?: string;
+  canEdit?: boolean; // Permission to edit this user
 }
 
 const API_BASE_URL = "http://localhost:3001";
@@ -36,6 +41,7 @@ const UsersManagement: React.FC = () => {
   const [filterRole, setFilterRole] = useState<string>("all");
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
+  const { showError, showInfo } = useNotification();
 
   useEffect(() => {
     loadUsers();
@@ -53,7 +59,7 @@ const UsersManagement: React.FC = () => {
     } catch (error: any) {
       console.error("Error loading users:", error);
       if (error.response?.status !== 404) {
-        window.alert(t("users.loadError"));
+        showError(t("users.loadError"));
       }
     } finally {
       setLoading(false);
@@ -75,10 +81,12 @@ const UsersManagement: React.FC = () => {
     switch (role) {
       case "admin":
         return styles.roleAdmin;
-      case "store_owner":
+      case "owner":
         return styles.roleOwner;
-      case "customer":
-        return styles.roleCustomer;
+      case "manager":
+        return styles.roleManager || styles.roleDefault;
+      case "employee":
+        return styles.roleEmployee || styles.roleDefault;
       default:
         return styles.roleDefault;
     }
@@ -122,8 +130,9 @@ const UsersManagement: React.FC = () => {
             >
               <option value="all">{t("users.filters.allRoles")}</option>
               <option value="admin">{t("users.filters.admin")}</option>
-              <option value="store_owner">{t("users.filters.storeOwner")}</option>
-              <option value="customer">{t("users.filters.customer")}</option>
+              <option value="owner">{t("users.filters.owner") || "Owner"}</option>
+              <option value="manager">{t("users.filters.manager") || "Manager"}</option>
+              <option value="employee">{t("users.filters.employee") || "Employee"}</option>
             </select>
           </div>
         </div>
@@ -226,29 +235,23 @@ const UsersManagement: React.FC = () => {
                     <div className={styles.userActions}>
                       <button
                         onClick={() =>
-                          window.alert(t("users.actions.editSoon"))
+                          showInfo(t("users.actions.editSoon"))
                         }
                         className="btn btn-secondary btn-sm"
                         title={t("users.actions.editTitle")}
+                        disabled={!user.canEdit}
+                        style={{ opacity: user.canEdit ? 1 : 0.5, cursor: user.canEdit ? 'pointer' : 'not-allowed' }}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      {currentUser?.role === "admin" &&
+                      {user.canEdit && currentUser?.role === "admin" &&
                         user.id !== currentUser.id && (
                         <button
                           onClick={() => {
                             const actionText = user.isActive
                               ? t("users.actions.deactivate")
                               : t("users.actions.activate");
-                            if (
-                              window.confirm(
-                                t("users.actions.confirmToggle", {
-                                  action: actionText.toLowerCase(),
-                                })
-                              )
-                            ) {
-                              window.alert(t("users.actions.toggleSoon"));
-                            }
+                            showInfo(t("users.actions.toggleSoon"));
                           }}
                           className={`btn btn-sm ${
                             user.isActive ? "btn-warning" : "btn-success"

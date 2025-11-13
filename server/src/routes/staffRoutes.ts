@@ -4,6 +4,7 @@ import { body, validationResult } from 'express-validator';
 import { StaffModel, CreateStaffRequest } from '../models/StaffModel';
 import { StaffInvitationModel, CreateInvitationRequest } from '../models/StaffInvitationModel';
 import { ActivityLogModel } from '../models/ActivityLogModel';
+import { getUserNameFromRequest, getUserIdFromRequest } from '../utils/activityLogHelper';
 import { emailService } from '../services/emailService';
 import {
   authenticateStaffToken,
@@ -140,9 +141,12 @@ router.post('/login', [
 
     // Log the activity
     try {
+      const userName = `${staff.firstName} ${staff.lastName}`;
       await ActivityLogModel.createLog({
         type: 'user_login',
-        message: `Staff member "${staff.firstName} ${staff.lastName}" logged in`,
+        message: `Staff member "${userName}" logged in`,
+        userId: staff.id,
+        userName,
         metadata: {
           staffId: staff.id,
           email: staff.email,
@@ -367,9 +371,13 @@ router.post("/register", authenticateStaffToken, [
     });
 
     // Log activity
+    const userId = getUserIdFromRequest(req);
+    const userName = await getUserNameFromRequest(req);
     await ActivityLogModel.createLog({
       type: 'staff_registered',
-      message: `New staff member ${staff.email} (${staff.role}) registered by ${req.user.email}.`,
+      message: `New staff member ${staff.email} (${staff.role}) registered`,
+      userId,
+      userName,
       metadata: { 
         staffId: staff.id, 
         email: staff.email, 
@@ -468,7 +476,46 @@ router.post("/invite", authenticateStaffToken, [
       });
     }
 
-    const { email, firstName, lastName, role, department, employeeId } = req.body;
+    const { email, firstName, lastName, role, department, employeeId, storeId } = req.body;
+    const requesterRole = req.user.role;
+    const requesterId = req.user.id;
+
+    // Role-based restrictions
+    if (requesterRole === 'admin') {
+      // Admin can only invite owner role
+      if (role !== 'owner') {
+        return res.status(403).json({
+          success: false,
+          message: 'Admin can only invite staff with owner role'
+        });
+      }
+      // Admin must specify a store for owner
+      if (!storeId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Store ID is required when inviting owner'
+        });
+      }
+    } else if (requesterRole === 'owner') {
+      // Owner can only invite manager and employee roles
+      if (role !== 'manager' && role !== 'employee') {
+        return res.status(403).json({
+          success: false,
+          message: 'Owner can only invite staff with manager or employee role'
+        });
+      }
+      // Get requester's store ID
+      const requesterStaff = await staffModel.getStaffById(requesterId);
+      const requesterStoreId = (requesterStaff as any)?.storeId;
+      if (!requesterStoreId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Owner must be associated with a store to invite staff'
+        });
+      }
+      // Use requester's store ID (ignore provided storeId for security)
+      const finalStoreId = requesterStoreId;
+    }
 
     // Check if email already exists in staff table
     const emailExists = await staffModel.emailExists(email);
@@ -490,6 +537,13 @@ router.post("/invite", authenticateStaffToken, [
       }
     }
 
+    // Get final store ID based on requester role
+    let finalStoreId = storeId;
+    if (requesterRole === 'owner') {
+      const requesterStaff = await staffModel.getStaffById(requesterId);
+      finalStoreId = (requesterStaff as any)?.storeId;
+    }
+
     // Create invitation
     const invitation = await invitationModel.createInvitation({
       email,
@@ -498,6 +552,7 @@ router.post("/invite", authenticateStaffToken, [
       role,
       department,
       employeeId,
+      storeId: finalStoreId,
       invitedBy: req.user.id
     });
 
@@ -511,9 +566,13 @@ router.post("/invite", authenticateStaffToken, [
     );
 
     // Log activity
+    const userId = getUserIdFromRequest(req);
+    const userName = await getUserNameFromRequest(req);
     await ActivityLogModel.createLog({
       type: 'staff_registered',
-      message: `Staff invitation sent to ${email} (${role}) by ${req.user.email}.`,
+      message: `Staff invitation sent to ${email} (${role})`,
+      userId,
+      userName,
       metadata: { 
         invitationId: invitation.id, 
         email, 
@@ -614,6 +673,7 @@ router.post('/setup-password', [
       role: invitation.role,
       department: invitation.department,
       employeeId: invitation.employeeId,
+      storeId: invitation.storeId,
       createdBy: invitation.invitedBy
     });
 
@@ -642,9 +702,12 @@ router.post('/setup-password', [
     });
 
     // Log activity
+    const userName = `${staff.firstName} ${staff.lastName}`;
     await ActivityLogModel.createLog({
       type: 'staff_registered',
       message: `Staff member ${staff.email} completed registration via invitation.`,
+      userId: staff.id,
+      userName,
       metadata: { 
         staffId: staff.id, 
         email: staff.email, 
@@ -717,6 +780,154 @@ router.post('/logout', (req: Request, res: Response) => {
     success: true,
     message: 'Logout successful'
   });
+});
+
+/**
+ * @swagger
+ * /api/staff/all:
+ *   get:
+ *     summary: Get all staff members (role-based access)
+ *     tags: [Staff Management]
+ *     security:
+ *       - cookieAuth: []
+ *     description: |
+ *       Returns staff members based on requester's role:
+ *       - Admin: Can see all staff members
+ *       - Owner: Can see all staff members
+ *       - Manager: Can see employees and managers (not admins/owners)
+ *       - Employee: Can only see themselves
+ *     responses:
+ *       200:
+ *         description: Staff members retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       firstName:
+ *                         type: string
+ *                       lastName:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                       department:
+ *                         type: string
+ *                       employeeId:
+ *                         type: string
+ *                       isActive:
+ *                         type: boolean
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
+ */
+router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    const requesterRole = req.user.role;
+    const requesterId = req.user.id;
+    let staffMembers: any[] = [];
+
+    // Get requester's staff info to check store_id
+    const requesterStaff = await staffModel.getStaffById(requesterId);
+    const requesterStoreId = (requesterStaff as any)?.storeId || null;
+
+    // Role-based data filtering
+    if (requesterRole === 'admin') {
+      // Admin can see all staff members
+      staffMembers = await staffModel.getAllStaff();
+    } else if (requesterRole === 'owner') {
+      // Store owner can see all staff in the same store
+      if (requesterStoreId) {
+        const allStaff = await staffModel.getAllStaff();
+        staffMembers = allStaff.filter(
+          (staff: any) => staff.storeId === requesterStoreId
+        );
+      } else {
+        // If owner has no store_id, return empty array
+        staffMembers = [];
+      }
+    } else if (requesterRole === 'manager') {
+      // Manager can see all staff including owner (in same store)
+      if (requesterStoreId) {
+        const allStaff = await staffModel.getAllStaff();
+        staffMembers = allStaff.filter(
+          (staff: any) => staff.storeId === requesterStoreId
+        );
+      } else {
+        // If manager has no store_id, return empty array
+        staffMembers = [];
+      }
+    } else if (requesterRole === 'employee') {
+      // Employee can only see themselves
+      const staff = await staffModel.getStaffById(requesterId);
+      staffMembers = staff ? [staff] : [];
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions'
+      });
+    }
+
+    // Remove password from response and add edit permission info
+    const staffWithPermissions = staffMembers.map(({ password, ...staff }) => {
+      let canEdit = false;
+      
+      // Edit permission logic
+      if (requesterRole === 'admin') {
+        // Admin can edit everyone except themselves
+        canEdit = staff.id !== requesterId;
+      } else if (requesterRole === 'owner') {
+        // Owner can edit staff in their store (but not themselves)
+        canEdit = staff.id !== requesterId && 
+                  (staff as any).storeId === requesterStoreId &&
+                  staff.role !== 'owner'; // Cannot edit other owners
+      } else if (requesterRole === 'manager') {
+        // Manager can edit employees and managers (but not owner or themselves)
+        canEdit = staff.id !== requesterId && 
+                  staff.role !== 'owner' && 
+                  staff.role !== 'admin' &&
+                  (staff.role === 'employee' || staff.role === 'manager');
+      }
+      // Employee cannot edit anyone
+
+      return {
+        ...staff,
+        canEdit
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: staffWithPermissions || []
+    });
+  } catch (error) {
+    console.error('Error fetching all staff:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch staff members',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      data: [] // Return empty array on error
+    });
+  }
 });
 
 export default router;

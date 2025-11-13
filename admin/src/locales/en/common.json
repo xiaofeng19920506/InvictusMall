@@ -125,6 +125,9 @@
     "filters": {
       "allRoles": "All Roles",
       "admin": "Admin",
+      "owner": "Owner",
+      "manager": "Manager",
+      "employee": "Employee",
       "storeOwner": "Store Owner",
       "customer": "Customer"
     },
@@ -139,6 +142,9 @@
     },
     "roles": {
       "admin": "ADMIN",
+      "owner": "OWNER",
+      "manager": "MANAGER",
+      "employee": "EMPLOYEE",
       "store_owner": "STORE OWNER",
       "customer": "CUSTOMER"
     },
@@ -211,6 +217,10 @@
       "departmentPlaceholder": "Department (optional)",
       "employeeId": "Employee ID",
       "employeeIdPlaceholder": "Employee ID (optional)",
+      "store": "Store",
+      "selectStore": "Select Store",
+      "loadingStores": "Loading stores...",
+      "required": " (required)",
       "optional": "(optional)",
       "submit": "Send Invitation",
       "sending": "Sending Invitation...",
@@ -415,6 +425,7 @@
   "analytics": {
     "title": "Analytics Overview",
     "subtitle": "Key performance indicators and metrics",
+    "loading": "Loading analytics data...",
     "stats": {
       "changeLabel": "from last month",
       "revenue": { "title": "Total Revenue" },

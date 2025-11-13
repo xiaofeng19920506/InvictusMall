@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { storeApi } from "../services/api";
+import { useNotification } from "../contexts/NotificationContext";
 import type {
   Store,
   CreateStoreRequest,
@@ -47,8 +48,9 @@ interface StoreFormState {
 }
 
 const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
-  const isEditing = Boolean(store);
   const { t } = useTranslation();
+  const { showError, showSuccess, showWarning } = useNotification();
+  const isEditing = Boolean(store);
   const titleId = isEditing
     ? "store-modal-title-edit"
     : "store-modal-title-create";
@@ -130,12 +132,12 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     }
 
     if (!file.type.startsWith("image/")) {
-      window.alert(t("storeModal.actions.invalidImageType"));
+      showError(t("storeModal.actions.invalidImageType"));
       return;
     }
 
     if (file.size > MAX_IMAGE_SIZE) {
-      window.alert(t("storeModal.actions.imageTooLarge"));
+      showError(t("storeModal.actions.imageTooLarge"));
       return;
     }
 
@@ -148,13 +150,13 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           imageUrl: response.data.imageUrl,
           imagePreview: response.data.imageUrl,
         }));
-        window.alert(t("storeModal.actions.uploadSuccess"));
+        showSuccess(t("storeModal.actions.uploadSuccess"));
       } else {
         throw new Error("Upload response did not include an image URL.");
       }
     } catch (error) {
       console.error("Error uploading store image:", error);
-      window.alert(t("storeModal.actions.uploadFail"));
+      showError(t("storeModal.actions.uploadFail"));
     } finally {
       setUploadingImage(false);
       event.target.value = "";
@@ -172,7 +174,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       !location.zipCode.trim() ||
       !location.country.trim()
     ) {
-      window.alert(t("storeModal.actions.locationMissing"));
+      showWarning(t("storeModal.actions.locationMissing"));
       return;
     }
 
@@ -225,7 +227,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       onSave();
     } catch (error) {
       console.error("Error saving store:", error);
-      window.alert(t("storeModal.actions.saveError"));
+      showError(t("storeModal.actions.saveError"));
     } finally {
       setSaving(false);
     }

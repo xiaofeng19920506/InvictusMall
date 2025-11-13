@@ -12,6 +12,7 @@ export interface Staff {
   role: 'admin' | 'owner' | 'manager' | 'employee';
   department?: string;
   employeeId?: string;
+  storeId?: string; // Store ID for store owners/managers/employees
   isActive: boolean;
   emailVerified: boolean;
   createdAt: string;
@@ -29,6 +30,7 @@ export interface CreateStaffRequest {
   role: 'admin' | 'owner' | 'manager' | 'employee';
   department?: string;
   employeeId?: string;
+  storeId?: string;
   createdBy?: string;
 }
 
@@ -51,9 +53,9 @@ export class StaffModel {
     const query = `
       INSERT INTO staff (
         id, email, password, first_name, last_name, phone_number, 
-        role, department, employee_id, is_active, email_verified, 
+        role, department, employee_id, store_id, is_active, email_verified, 
         created_at, updated_at, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await pool.execute(query, [
@@ -66,6 +68,7 @@ export class StaffModel {
       staffData.role,
       staffData.department || null,
       staffData.employeeId || null,
+      staffData.storeId || null,
       true, // Staff are active by default
       true, // Staff emails are verified by default
       now,
@@ -81,13 +84,14 @@ export class StaffModel {
   }
 
   async getStaffById(id: string): Promise<Staff | null> {
+    // Admin doesn't need isActive check, other roles must be active
     const query = `
       SELECT 
         id, email, first_name, last_name, phone_number, role, 
-        department, employee_id, is_active, email_verified, 
+        department, employee_id, store_id, is_active, email_verified, 
         created_at, updated_at, last_login_at, created_by
       FROM staff 
-      WHERE id = ? AND is_active = true
+      WHERE id = ? AND (role = 'admin' OR is_active = true)
     `;
 
     const [rows] = await pool.execute(query, [id]);
@@ -107,6 +111,7 @@ export class StaffModel {
       role: staff.role,
       department: staff.department,
       employeeId: staff.employee_id,
+      storeId: staff.store_id || undefined,
       isActive: staff.is_active,
       emailVerified: staff.email_verified,
       createdAt: staff.created_at,
@@ -117,13 +122,14 @@ export class StaffModel {
   }
 
   async getStaffByEmail(email: string): Promise<Staff | null> {
+    // Admin doesn't need isActive check, other roles must be active
     const query = `
       SELECT 
         id, email, password, first_name, last_name, phone_number, role, 
-        department, employee_id, is_active, email_verified, 
+        department, employee_id, store_id, is_active, email_verified, 
         created_at, updated_at, last_login_at, created_by
       FROM staff 
-      WHERE email = ? AND is_active = true
+      WHERE email = ? AND (role = 'admin' OR is_active = true)
     `;
 
     const [rows] = await pool.execute(query, [email]);
@@ -144,6 +150,7 @@ export class StaffModel {
       role: staff.role,
       department: staff.department,
       employeeId: staff.employee_id,
+      storeId: staff.store_id || undefined,
       isActive: staff.is_active,
       emailVerified: staff.email_verified,
       createdAt: staff.created_at,
@@ -154,13 +161,14 @@ export class StaffModel {
   }
 
   async getAllStaff(): Promise<Staff[]> {
+    // Admin doesn't need isActive check, other roles must be active
     const query = `
       SELECT 
         id, email, first_name, last_name, phone_number, role, 
-        department, employee_id, is_active, email_verified, 
+        department, employee_id, store_id, is_active, email_verified, 
         created_at, updated_at, last_login_at, created_by
       FROM staff 
-      WHERE is_active = true
+      WHERE role = 'admin' OR is_active = true
       ORDER BY created_at DESC
     `;
 
@@ -176,6 +184,7 @@ export class StaffModel {
       role: staff.role,
       department: staff.department,
       employeeId: staff.employee_id,
+      storeId: staff.store_id || undefined,
       isActive: staff.is_active,
       emailVerified: staff.email_verified,
       createdAt: staff.created_at,

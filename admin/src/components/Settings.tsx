@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme, type ThemeOption } from "../contexts/ThemeContext";
+import { useNotification } from "../contexts/NotificationContext";
 import { SUPPORTED_LANGUAGES } from "../i18n/config";
 import styles from "./Settings.module.css";
 
@@ -32,6 +33,7 @@ const Settings: React.FC = () => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
+  const { showSuccess, showError } = useNotification();
   const initialLanguage = useMemo(() => {
     const lang = i18n.resolvedLanguage || i18n.language || "en";
     return lang.split("-")[0];
@@ -67,9 +69,9 @@ const Settings: React.FC = () => {
     setSaving(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      window.alert(t("settings.feedback.success"));
+      showSuccess(t("settings.feedback.success"));
     } catch (error) {
-      window.alert(t("settings.feedback.error"));
+      showError(t("settings.feedback.error"));
     } finally {
       setSaving(false);
     }
@@ -141,102 +143,105 @@ const Settings: React.FC = () => {
         </div>
       </section>
 
-      <section className="card">
-        <div className="card-header">
-          <div className={styles.sectionHeader}>
-            <Bell className="w-5 h-5 text-gray-600" />
-            <h3 className={styles.sectionTitle}>{t("settings.notifications.title")}</h3>
-          </div>
-        </div>
-        <div className={styles.sectionBody}>
-          <div className={styles.toggleRow}>
-            <div>
-              <label className={styles.label} htmlFor="emailNotifications">
-                {t("settings.notifications.email.title")}
-              </label>
-              <p className={styles.description}>
-                {t("settings.notifications.email.description")}
-              </p>
+      {/* Notifications section - temporarily hidden */}
+      {false && (
+        <section className="card">
+          <div className="card-header">
+            <div className={styles.sectionHeader}>
+              <Bell className="w-5 h-5 text-gray-600" />
+              <h3 className={styles.sectionTitle}>{t("settings.notifications.title")}</h3>
             </div>
-            <label className={styles.toggleSwitch} htmlFor="emailNotifications">
-              <input
-                id="emailNotifications"
-                type="checkbox"
-                checked={settings.notifications.email}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    notifications: {
-                      ...prev.notifications,
-                      email: e.target.checked,
-                    },
-                  }))
-                }
-                className={styles.toggleInput}
-              />
-              <span className={styles.toggleSlider} aria-hidden />
-            </label>
           </div>
+          <div className={styles.sectionBody}>
+            <div className={styles.toggleRow}>
+              <div>
+                <label className={styles.label} htmlFor="emailNotifications">
+                  {t("settings.notifications.email.title")}
+                </label>
+                <p className={styles.description}>
+                  {t("settings.notifications.email.description")}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch} htmlFor="emailNotifications">
+                <input
+                  id="emailNotifications"
+                  type="checkbox"
+                  checked={settings.notifications.email}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      notifications: {
+                        ...prev.notifications,
+                        email: e.target.checked,
+                      },
+                    }))
+                  }
+                  className={styles.toggleInput}
+                />
+                <span className={styles.toggleSlider} aria-hidden />
+              </label>
+            </div>
 
-          <div className={styles.toggleRow}>
-            <div>
-              <label className={styles.label} htmlFor="pushNotifications">
-                {t("settings.notifications.push.title")}
+            <div className={styles.toggleRow}>
+              <div>
+                <label className={styles.label} htmlFor="pushNotifications">
+                  {t("settings.notifications.push.title")}
+                </label>
+                <p className={styles.description}>
+                  {t("settings.notifications.push.description")}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch} htmlFor="pushNotifications">
+                <input
+                  id="pushNotifications"
+                  type="checkbox"
+                  checked={settings.notifications.push}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      notifications: {
+                        ...prev.notifications,
+                        push: e.target.checked,
+                      },
+                    }))
+                  }
+                  className={styles.toggleInput}
+                />
+                <span className={styles.toggleSlider} aria-hidden />
               </label>
-              <p className={styles.description}>
-                {t("settings.notifications.push.description")}
-              </p>
             </div>
-            <label className={styles.toggleSwitch} htmlFor="pushNotifications">
-              <input
-                id="pushNotifications"
-                type="checkbox"
-                checked={settings.notifications.push}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    notifications: {
-                      ...prev.notifications,
-                      push: e.target.checked,
-                    },
-                  }))
-                }
-                className={styles.toggleInput}
-              />
-              <span className={styles.toggleSlider} aria-hidden />
-            </label>
-          </div>
 
-          <div className={styles.toggleRow}>
-            <div>
-              <label className={styles.label} htmlFor="smsNotifications">
-                {t("settings.notifications.sms.title")}
+            <div className={styles.toggleRow}>
+              <div>
+                <label className={styles.label} htmlFor="smsNotifications">
+                  {t("settings.notifications.sms.title")}
+                </label>
+                <p className={styles.description}>
+                  {t("settings.notifications.sms.description")}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch} htmlFor="smsNotifications">
+                <input
+                  id="smsNotifications"
+                  type="checkbox"
+                  checked={settings.notifications.sms}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      notifications: {
+                        ...prev.notifications,
+                        sms: e.target.checked,
+                      },
+                    }))
+                  }
+                  className={styles.toggleInput}
+                />
+                <span className={styles.toggleSlider} aria-hidden />
               </label>
-              <p className={styles.description}>
-                {t("settings.notifications.sms.description")}
-              </p>
             </div>
-            <label className={styles.toggleSwitch} htmlFor="smsNotifications">
-              <input
-                id="smsNotifications"
-                type="checkbox"
-                checked={settings.notifications.sms}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    notifications: {
-                      ...prev.notifications,
-                      sms: e.target.checked,
-                    },
-                  }))
-                }
-                className={styles.toggleInput}
-              />
-              <span className={styles.toggleSlider} aria-hidden />
-            </label>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="card">
         <div className="card-header">
@@ -323,69 +328,72 @@ const Settings: React.FC = () => {
         </div>
       </section>
 
-      <section className="card">
-        <div className="card-header">
-          <div className={styles.sectionHeader}>
-            <Shield className="w-5 h-5 text-gray-600" />
-            <h3 className={styles.sectionTitle}>{t("settings.security.title")}</h3>
-          </div>
-        </div>
-        <div className={styles.sectionBody}>
-          <div className={styles.toggleRow}>
-            <div>
-              <label className={styles.label} htmlFor="twoFactor">
-                {t("settings.security.twoFactor.title")}
-              </label>
-              <p className={styles.description}>
-                {t("settings.security.twoFactor.description")}
-              </p>
+      {/* Security section - temporarily hidden */}
+      {false && (
+        <section className="card">
+          <div className="card-header">
+            <div className={styles.sectionHeader}>
+              <Shield className="w-5 h-5 text-gray-600" />
+              <h3 className={styles.sectionTitle}>{t("settings.security.title")}</h3>
             </div>
-            <label className={styles.toggleSwitch} htmlFor="twoFactor">
+          </div>
+          <div className={styles.sectionBody}>
+            <div className={styles.toggleRow}>
+              <div>
+                <label className={styles.label} htmlFor="twoFactor">
+                  {t("settings.security.twoFactor.title")}
+                </label>
+                <p className={styles.description}>
+                  {t("settings.security.twoFactor.description")}
+                </p>
+              </div>
+              <label className={styles.toggleSwitch} htmlFor="twoFactor">
+                <input
+                  id="twoFactor"
+                  type="checkbox"
+                  checked={settings.security.twoFactor}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      security: {
+                        ...prev.security,
+                        twoFactor: e.target.checked,
+                      },
+                    }))
+                  }
+                  className={styles.toggleInput}
+                />
+                <span className={styles.toggleSlider} aria-hidden />
+              </label>
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="sessionTimeout">
+                {t("settings.security.sessionTimeout.title")}
+              </label>
               <input
-                id="twoFactor"
-                type="checkbox"
-                checked={settings.security.twoFactor}
+                id="sessionTimeout"
+                type="number"
+                min={5}
+                max={120}
+                value={settings.security.sessionTimeout}
                 onChange={(e) =>
                   setSettings((prev) => ({
                     ...prev,
                     security: {
                       ...prev.security,
-                      twoFactor: e.target.checked,
+                      sessionTimeout: parseInt(e.target.value, 10),
                     },
                   }))
                 }
-                className={styles.toggleInput}
+                className={styles.input}
               />
-              <span className={styles.toggleSlider} aria-hidden />
-            </label>
+              <p className={styles.description}>
+                {t("settings.security.sessionTimeout.description")}
+              </p>
+            </div>
           </div>
-          <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="sessionTimeout">
-              {t("settings.security.sessionTimeout.title")}
-            </label>
-            <input
-              id="sessionTimeout"
-              type="number"
-              min={5}
-              max={120}
-              value={settings.security.sessionTimeout}
-              onChange={(e) =>
-                setSettings((prev) => ({
-                  ...prev,
-                  security: {
-                    ...prev.security,
-                    sessionTimeout: parseInt(e.target.value, 10),
-                  },
-                }))
-              }
-              className={styles.input}
-            />
-            <p className={styles.description}>
-              {t("settings.security.sessionTimeout.description")}
-            </p>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <div className={styles.saveRow}>
         <button
