@@ -179,6 +179,64 @@
       "offline": "Hors ligne"
     }
   },
+  "users": {
+    "title": "Gestion des utilisateurs",
+    "subtitle": "Gérer les utilisateurs du système et leurs permissions",
+    "loadError": "Échec du chargement des utilisateurs.",
+    "loading": "Chargement des utilisateurs...",
+    "searchPlaceholder": "Rechercher des utilisateurs par nom, e-mail ou téléphone...",
+    "filters": {
+      "allRoles": "Tous les rôles",
+      "admin": "Administrateur",
+      "owner": "Propriétaire",
+      "manager": "Gestionnaire",
+      "employee": "Employé",
+      "storeOwner": "Propriétaire de boutique",
+      "customer": "Client"
+    },
+    "table": {
+      "title": "Utilisateurs ({{count}})",
+      "user": "Utilisateur",
+      "role": "Rôle",
+      "contact": "Contact",
+      "status": "Statut",
+      "joined": "Date d'inscription",
+      "actions": "Actions"
+    },
+    "roles": {
+      "admin": "ADMINISTRATEUR",
+      "owner": "PROPRIÉTAIRE",
+      "manager": "GESTIONNAIRE",
+      "employee": "EMPLOYÉ",
+      "store_owner": "PROPRIÉTAIRE DE BOUTIQUE",
+      "customer": "CLIENT"
+    },
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif",
+      "emailVerified": "E-mail vérifié",
+      "emailUnverified": "E-mail non vérifié"
+    },
+    "actions": {
+      "editSoon": "La fonctionnalité d'édition d'utilisateur sera bientôt disponible",
+      "editTitle": "Modifier l'utilisateur",
+      "deactivate": "Désactiver",
+      "activate": "Activer",
+      "deactivateTitle": "Désactiver l'utilisateur",
+      "activateTitle": "Activer l'utilisateur",
+      "confirmToggle": "Êtes-vous sûr de vouloir {{action}} cet utilisateur ?",
+      "toggleSoon": "La fonctionnalité d'activation/désactivation sera bientôt disponible"
+    },
+    "empty": {
+      "title": "Aucun utilisateur trouvé",
+      "filtered": "Essayez d'ajuster vos critères de recherche ou de filtre.",
+      "default": "Il n'y a pas encore d'utilisateurs dans le système."
+    },
+    "note": {
+      "title": "Note :",
+      "description": "Les fonctionnalités de gestion des utilisateurs sont en cours de développement. Actuellement, vous ne pouvez que consulter les informations des utilisateurs. Les fonctionnalités d'édition et de gestion seront bientôt disponibles."
+    }
+  },
   "registerStaff": {
     "title": "Inviter un nouveau membre",
     "subtitle": "Envoyez une invitation à un nouveau membre de l'équipe",

@@ -46,13 +46,26 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
   const getBackgroundColor = (type: string) => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200';
+        return 'var(--success-bg, #f0fdf4) var(--success-border, #86efac)';
       case 'error':
-        return 'bg-red-50 border-red-200';
+        return 'var(--error-bg, #fef2f2) var(--error-border, #fca5a5)';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200';
+        return 'var(--warning-bg, #fffbeb) var(--warning-border, #fde047)';
       default:
-        return 'bg-blue-50 border-blue-200';
+        return 'var(--info-bg, #eff6ff) var(--info-border, #93c5fd)';
+    }
+  };
+
+  const getBackgroundColorClass = (type: string) => {
+    switch (type) {
+      case 'success':
+        return 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800';
+      case 'error':
+        return 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800';
+      case 'warning':
+        return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800';
+      default:
+        return 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800';
     }
   };
 
@@ -63,23 +76,23 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
       {notifications.map((notification) => (
         <div
           key={notification.id}
-          className={`max-w-sm w-full border rounded-lg p-4 shadow-lg ${getBackgroundColor(notification.type)}`}
+          className={`max-w-sm w-full border rounded-lg p-4 shadow-lg ${getBackgroundColorClass(notification.type)}`}
         >
           <div className="flex items-start">
             <div className="flex-shrink-0">
               {getIcon(notification.type)}
             </div>
             <div className="ml-3 flex-1">
-              <h4 className="text-sm font-medium text-gray-900">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {notification.title}
               </h4>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
                 {notification.message}
               </p>
             </div>
             <button
               onClick={() => onRemove(notification.id)}
-              className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600"
+              className="ml-4 flex-shrink-0 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
             >
               <X className="w-4 h-4" />
             </button>

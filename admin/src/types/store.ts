@@ -49,6 +49,8 @@ export interface ActivityLog {
   timestamp: Date;
   storeName?: string;
   storeId?: string;
+  userId?: string;
+  userName?: string;
   metadata?: Record<string, any>;
 }
 

@@ -14,6 +14,7 @@ import {
 } from "../middleware/validation";
 import jwt from "jsonwebtoken";
 import { ActivityLogModel, ActivityLog } from "../models/ActivityLogModel";
+import { getUserNameFromRequest, getUserIdFromRequest } from "../utils/activityLogHelper";
 import {
   authenticateUserToken,
   AuthenticatedRequest,
@@ -199,9 +200,12 @@ router.post(
 
       // Log the activity
       try {
+        const userName = `${user.firstName} ${user.lastName}`;
         await ActivityLogModel.createLog({
           type: "user_registered",
-          message: `New user "${user.firstName} ${user.lastName}" registered with email ${user.email}. Verification email sent.`,
+          message: `New user "${userName}" registered with email ${user.email}. Verification email sent.`,
+          userId: user.id,
+          userName,
           metadata: {
             userId: user.id,
             email: user.email,
@@ -404,9 +408,12 @@ router.post(
 
       // Log the activity (don't fail login if this fails)
       try {
+        const userName = `${user.firstName} ${user.lastName}`;
         await ActivityLogModel.createLog({
           type: "user_login",
-          message: `User "${user.firstName} ${user.lastName}" logged in`,
+          message: `User "${userName}" logged in`,
+          userId: user.id,
+          userName,
           metadata: {
             userId: user.id,
             email: user.email,
@@ -630,9 +637,12 @@ router.post(
 
       // Log the activity
       try {
+        const userName = `${updatedUser.firstName} ${updatedUser.lastName}`;
         await ActivityLogModel.createLog({
           type: "user_login",
-          message: `User "${updatedUser.firstName} ${updatedUser.lastName}" completed email verification and setup password`,
+          message: `User "${userName}" completed email verification and setup password`,
+          userId: updatedUser.id,
+          userName,
           metadata: {
             userId: updatedUser.id,
             email: updatedUser.email,
@@ -888,9 +898,12 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
 
     // Log the activity
     try {
+      const userName = `${user.firstName} ${user.lastName}`;
       await ActivityLogModel.createLog({
         type: "password_reset_requested",
-        message: `Password reset requested for user "${user.firstName} ${user.lastName}"`,
+        message: `Password reset requested for user "${userName}"`,
+        userId: user.id,
+        userName,
         metadata: {
           userId: user.id,
           email: user.email,
@@ -1097,9 +1110,12 @@ router.post("/reset-password", async (req: Request, res: Response) => {
 
     // Log the activity
     try {
+      const userName = `${user.firstName} ${user.lastName}`;
       await ActivityLogModel.createLog({
         type: "password_reset_completed",
-        message: `Password reset completed for user "${user.firstName} ${user.lastName}"`,
+        message: `Password reset completed for user "${userName}"`,
+        userId: user.id,
+        userName,
         metadata: {
           userId: user.id,
           email: user.email,
@@ -1212,9 +1228,12 @@ router.put(
 
       // Log the activity
       try {
+        const userName = `${updatedUser.firstName} ${updatedUser.lastName}`;
         await ActivityLogModel.createLog({
           type: "profile_updated" as ActivityLog["type"],
-          message: `User "${updatedUser.firstName} ${updatedUser.lastName}" updated their profile`,
+          message: `User "${userName}" updated their profile`,
+          userId: updatedUser.id,
+          userName,
           metadata: {
             userId: updatedUser.id,
             email: updatedUser.email,
@@ -1467,9 +1486,12 @@ router.post(
 
       // Log the activity
       try {
+        const userName = `${updatedUser.firstName} ${updatedUser.lastName}`;
         await ActivityLogModel.createLog({
           type: "avatar_uploaded" as ActivityLog["type"],
-          message: `User "${updatedUser.firstName} ${updatedUser.lastName}" uploaded a new avatar`,
+          message: `User "${userName}" uploaded a new avatar`,
+          userId: updatedUser.id,
+          userName,
           metadata: {
             userId: updatedUser.id,
             email: updatedUser.email,
@@ -1615,9 +1637,12 @@ router.post(
 
       // Log the activity
       try {
+        const userName = `${user.firstName} ${user.lastName}`;
         await ActivityLogModel.createLog({
           type: "password_changed",
-          message: `User "${user.firstName} ${user.lastName}" changed their password`,
+          message: `User "${userName}" changed their password`,
+          userId: user.id,
+          userName,
           metadata: {
             userId: user.id,
             email: user.email,

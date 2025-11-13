@@ -9,6 +9,7 @@ export interface StaffInvitation {
   role: 'admin' | 'owner' | 'manager' | 'employee';
   department?: string;
   employeeId?: string;
+  storeId?: string;
   token: string;
   invitedBy: string;
   expiresAt: Date;
@@ -24,6 +25,7 @@ export interface CreateInvitationRequest {
   role: 'admin' | 'owner' | 'manager' | 'employee';
   department?: string;
   employeeId?: string;
+  storeId?: string;
   invitedBy: string;
 }
 
@@ -37,9 +39,9 @@ export class StaffInvitationModel {
 
     const query = `
       INSERT INTO staff_invitations (
-        id, email, first_name, last_name, role, department, employee_id,
+        id, email, first_name, last_name, role, department, employee_id, store_id,
         token, invited_by, expires_at, is_used, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     await pool.execute(query, [
@@ -50,6 +52,7 @@ export class StaffInvitationModel {
       invitationData.role,
       invitationData.department || null,
       invitationData.employeeId || null,
+      invitationData.storeId || null,
       token,
       invitationData.invitedBy,
       expiresAt,
@@ -68,7 +71,7 @@ export class StaffInvitationModel {
   async getInvitationById(id: string): Promise<StaffInvitation | null> {
     const query = `
       SELECT 
-        id, email, first_name, last_name, role, department, employee_id,
+        id, email, first_name, last_name, role, department, employee_id, store_id,
         token, invited_by, expires_at, is_used, created_at, updated_at
       FROM staff_invitations 
       WHERE id = ?
@@ -90,6 +93,7 @@ export class StaffInvitationModel {
       role: invitation.role,
       department: invitation.department,
       employeeId: invitation.employee_id,
+      storeId: invitation.store_id || undefined,
       token: invitation.token,
       invitedBy: invitation.invited_by,
       expiresAt: invitation.expires_at,
@@ -102,7 +106,7 @@ export class StaffInvitationModel {
   async getInvitationByToken(token: string): Promise<StaffInvitation | null> {
     const query = `
       SELECT 
-        id, email, first_name, last_name, role, department, employee_id,
+        id, email, first_name, last_name, role, department, employee_id, store_id,
         token, invited_by, expires_at, is_used, created_at, updated_at
       FROM staff_invitations 
       WHERE token = ? AND is_used = false AND expires_at > NOW()
@@ -124,6 +128,7 @@ export class StaffInvitationModel {
       role: invitation.role,
       department: invitation.department,
       employeeId: invitation.employee_id,
+      storeId: invitation.store_id || undefined,
       token: invitation.token,
       invitedBy: invitation.invited_by,
       expiresAt: invitation.expires_at,

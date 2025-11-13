@@ -1,6 +1,8 @@
-import React from "react";
-import { TrendingUp, Users, Store, DollarSign } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { TrendingUp, Users, Store as StoreIcon, DollarSign } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { storeApi, activityLogApi } from "../services/api";
+import type { Store, ActivityLog } from "../types/store";
 import styles from "./Analytics.module.css";
 
 interface StatDefinition {
@@ -18,44 +20,143 @@ interface ActivityDefinition {
 
 const Analytics: React.FC = () => {
   const { t } = useTranslation();
+  const [loading, setLoading] = useState(true);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+
+  useEffect(() => {
+    loadAnalyticsData();
+  }, []);
+
+  const loadAnalyticsData = async () => {
+    try {
+      setLoading(true);
+      const [storesResponse, logsResponse] = await Promise.all([
+        storeApi.getAllStores(),
+        activityLogApi.getRecentLogs(100),
+      ]);
+
+      if (storesResponse.success && storesResponse.data) {
+        setStores(storesResponse.data);
+      } else {
+        setStores([]);
+      }
+
+      if (logsResponse.success && logsResponse.data) {
+        setActivityLogs(logsResponse.data);
+      } else {
+        setActivityLogs([]);
+      }
+    } catch (error) {
+      console.error("Error loading analytics data:", error);
+      setStores([]);
+      setActivityLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate statistics
+  const totalStores = stores.length || 0;
+  const activeStores = stores.filter((s) => s.isActive).length || 0;
+  const verifiedStores = stores.filter((s) => s.isVerified).length || 0;
+  
+  // Calculate revenue (placeholder - would need actual order data)
+  const revenue = 0;
+  
+  // Calculate growth rate (placeholder - would need historical data)
+  const growthRate = 0;
+
+  // Format numbers with commas
+  const formatNumber = (num: number): string => {
+    return num.toLocaleString();
+  };
+
+  // Format currency
+  const formatCurrency = (amount: number): string => {
+    return `$${formatNumber(amount)}`;
+  };
+
+  // Format percentage
+  const formatPercentage = (value: number): string => {
+    return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
+  };
 
   const stats: StatDefinition[] = [
     {
       key: "revenue",
-      value: "$45,231",
-      change: "+20.1%",
+      value: formatCurrency(revenue),
+      change: "+0%",
       changeType: "positive",
       icon: DollarSign,
     },
     {
       key: "stores",
-      value: "12",
-      change: "+2",
+      value: formatNumber(totalStores),
+      change: `+${activeStores}`,
       changeType: "positive",
-      icon: Store,
+      icon: StoreIcon,
     },
     {
       key: "users",
-      value: "2,350",
-      change: "+180",
+      value: formatNumber(0), // Would need user count from API
+      change: "+0",
       changeType: "positive",
       icon: Users,
     },
     {
       key: "growth",
-      value: "12.5%",
-      change: "+2.4%",
-      changeType: "positive",
+      value: formatPercentage(growthRate),
+      change: "+0%",
+      changeType: growthRate >= 0 ? "positive" : "negative",
       icon: TrendingUp,
     },
   ];
 
-  const activities: ActivityDefinition[] = [
-    { key: "newStore", type: "store" },
-    { key: "purchase", type: "user" },
-    { key: "inventory", type: "store" },
-    { key: "registration", type: "user" },
-  ];
+  // Get recent activities from activity logs
+  const recentActivities = activityLogs.slice(0, 4).map((log) => {
+    const type = log.type.toLowerCase();
+    let activityKey: ActivityDefinition["key"] = "newStore";
+    let activityType: ActivityDefinition["type"] = "store";
+
+    if (type.includes("store") || type.includes("created")) {
+      activityKey = "newStore";
+      activityType = "store";
+    } else if (type.includes("purchase") || type.includes("order")) {
+      activityKey = "purchase";
+      activityType = "user";
+    } else if (type.includes("inventory") || type.includes("updated")) {
+      activityKey = "inventory";
+      activityType = "store";
+    } else if (type.includes("user") || type.includes("registration")) {
+      activityKey = "registration";
+      activityType = "user";
+    }
+
+    return { key: activityKey, type: activityType };
+  });
+
+  // Default activities if no logs
+  const activities: ActivityDefinition[] =
+    recentActivities.length > 0
+      ? recentActivities
+      : [
+          { key: "newStore", type: "store" },
+          { key: "purchase", type: "user" },
+          { key: "inventory", type: "store" },
+          { key: "registration", type: "user" },
+        ];
+
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>
+          <div className="loading" />
+          <span>{t("analytics.loading")}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

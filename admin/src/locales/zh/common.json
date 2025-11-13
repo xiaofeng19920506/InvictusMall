@@ -125,6 +125,9 @@
     "filters": {
       "allRoles": "全部角色",
       "admin": "管理员",
+      "owner": "店主",
+      "manager": "经理",
+      "employee": "员工",
       "storeOwner": "店主",
       "customer": "顾客"
     },
@@ -139,6 +142,9 @@
     },
     "roles": {
       "admin": "管理员",
+      "owner": "店主",
+      "manager": "经理",
+      "employee": "员工",
       "store_owner": "店主",
       "customer": "顾客"
     },
@@ -211,6 +217,10 @@
       "departmentPlaceholder": "部门（可选）",
       "employeeId": "员工编号",
       "employeeIdPlaceholder": "员工编号（可选）",
+      "store": "商店",
+      "selectStore": "选择商店",
+      "loadingStores": "正在加载商店...",
+      "required": "（必填）",
       "optional": "（可选）",
       "submit": "发送邀请",
       "sending": "正在发送邀请...",
@@ -415,6 +425,7 @@
   "analytics": {
     "title": "数据分析概览",
     "subtitle": "关键业绩指标和度量",
+    "loading": "正在加载分析数据...",
     "stats": {
       "changeLabel": "相比上个月",
       "revenue": { "title": "总收入" },

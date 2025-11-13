@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
+import { storeApi } from "../services/api";
 import type { User } from "../services/auth";
+import type { Store } from "../types/store";
 import styles from "./AdminRegister.module.css";
 
 interface RegisterFormData {
@@ -11,6 +13,7 @@ interface RegisterFormData {
   role: "admin" | "owner" | "manager" | "employee";
   department: string;
   employeeId: string;
+  storeId: string;
 }
 
 function buildRoleLabel(role: RegisterFormData["role"], t: (key: string) => string) {
@@ -20,17 +23,63 @@ function buildRoleLabel(role: RegisterFormData["role"], t: (key: string) => stri
 export default function AdminRegister() {
   const { user } = useAuth();
   const { t } = useTranslation();
+
+  const getInitialRole = (): RegisterFormData["role"] => {
+    if (user?.role === "admin") {
+      return "owner";
+    } else if (user?.role === "owner") {
+      return "employee";
+    }
+    return "employee";
+  };
+
   const [formData, setFormData] = useState<RegisterFormData>({
     email: "",
     firstName: "",
     lastName: "",
-    role: "employee",
+    role: "employee", // Will be updated in useEffect
     department: "",
     employeeId: "",
+    storeId: "",
   });
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loadingStores, setLoadingStores] = useState(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      // Update role based on user role
+      const initialRole = user.role === "admin" ? "owner" : user.role === "owner" ? "employee" : "employee";
+      setFormData((prev) => ({
+        ...prev,
+        role: initialRole,
+      }));
+
+      if (user.role === "admin") {
+        loadStores();
+      } else if (user.role === "owner") {
+        // Owner's store will be set automatically, but we can load it for display
+        loadStores();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const loadStores = async () => {
+    try {
+      setLoadingStores(true);
+      const response = await storeApi.getAllStores();
+      if (response.success && response.data) {
+        setStores(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading stores:", error);
+    } finally {
+      setLoadingStores(false);
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -42,6 +91,16 @@ export default function AdminRegister() {
     }));
     setError("");
     setSuccess("");
+  };
+
+  // Get available roles based on user role
+  const getAvailableRoles = (): RegisterFormData["role"][] => {
+    if (user?.role === "admin") {
+      return ["owner"]; // Admin can only invite owner
+    } else if (user?.role === "owner") {
+      return ["manager", "employee"]; // Owner can invite manager and employee
+    }
+    return [];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,6 +123,7 @@ export default function AdminRegister() {
           role: formData.role,
           department: formData.department || undefined,
           employeeId: formData.employeeId || undefined,
+          storeId: formData.storeId || undefined,
         }),
       });
 
@@ -77,9 +137,10 @@ export default function AdminRegister() {
           email: "",
           firstName: "",
           lastName: "",
-          role: "employee",
+          role: getInitialRole(),
           department: "",
           employeeId: "",
+          storeId: "",
         });
       } else {
         setError(data.message || t("registerStaff.feedback.error"));
@@ -199,15 +260,41 @@ export default function AdminRegister() {
                 onChange={handleChange}
                 disabled={isSubmitting}
               >
-                {(["employee", "manager", "owner", "admin"] as RegisterFormData["role"][]).map(
-                  (role) => (
-                    <option key={role} value={role}>
-                      {buildRoleLabel(role, t)}
-                    </option>
-                  )
-                )}
+                {getAvailableRoles().map((role) => (
+                  <option key={role} value={role}>
+                    {buildRoleLabel(role, t)}
+                  </option>
+                ))}
               </select>
             </div>
+            {user?.role === "admin" && (
+              <div className={styles.inputGroup}>
+                <label className={styles.label} htmlFor="storeId">
+                  {t("registerStaff.form.store")}
+                  <span className={styles.required}> *</span>
+                </label>
+                <select
+                  id="storeId"
+                  name="storeId"
+                  required
+                  className={styles.select}
+                  value={formData.storeId}
+                  onChange={handleChange}
+                  disabled={isSubmitting || loadingStores}
+                >
+                  <option value="">
+                    {loadingStores
+                      ? t("registerStaff.form.loadingStores")
+                      : t("registerStaff.form.selectStore")}
+                  </option>
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className={styles.inputGroup}>
               <label className={styles.label} htmlFor="department">
                 {t("registerStaff.form.department")}

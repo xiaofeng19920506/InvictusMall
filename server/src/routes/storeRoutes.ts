@@ -10,6 +10,7 @@ import {
   authenticateStaffToken,
   AuthenticatedRequest,
 } from "../middleware/auth";
+import { getUserNameFromRequest, getUserIdFromRequest } from "../utils/activityLogHelper";
 import { validateImageFile } from "../utils/imageValidation";
 import multer from "multer";
 import FormData from "form-data";
@@ -304,11 +305,15 @@ router.post(
       const store = await storeService.createStore(req.body);
 
       // Log the activity
+      const userId = getUserIdFromRequest(req as AuthenticatedRequest);
+      const userName = await getUserNameFromRequest(req as AuthenticatedRequest);
       await ActivityLogModel.createLog({
         type: "store_created",
         message: `New store "${store.name}" has been added`,
         storeName: store.name,
         storeId: store.id,
+        userId,
+        userName,
         metadata: {
           categories: store.category,
           rating: store.rating,
@@ -410,11 +415,15 @@ router.put(
       const store = await storeService.updateStore(id, req.body);
 
       // Log the activity
+      const userId = getUserIdFromRequest(req as AuthenticatedRequest);
+      const userName = await getUserNameFromRequest(req as AuthenticatedRequest);
       await ActivityLogModel.createLog({
         type: "store_updated",
         message: `Store "${store.name}" information has been updated`,
         storeName: store.name,
         storeId: store.id,
+        userId,
+        userName,
         metadata: {
           updatedFields: Object.keys(req.body),
           categories: store.category,
@@ -486,11 +495,15 @@ router.delete("/:id", async (req: Request, res: Response) => {
     await storeService.deleteStore(id);
 
     // Log the activity
+    const userId = getUserIdFromRequest(req as AuthenticatedRequest);
+    const userName = await getUserNameFromRequest(req as AuthenticatedRequest);
     await ActivityLogModel.createLog({
       type: "store_deleted",
       message: `Store "${storeToDelete.name}" has been deleted`,
       storeName: storeToDelete.name,
       storeId: storeToDelete.id,
+      userId,
+      userName,
       metadata: {
         deletedAt: new Date().toISOString(),
         categories: storeToDelete.category,
@@ -574,11 +587,14 @@ router.put(
       const store = await storeService.updateStore(id, { isVerified: true });
 
       // Log the activity
+      const userName = await getUserNameFromRequest(req);
       await ActivityLogModel.createLog({
         type: "store_verified",
-        message: `Store "${store.name}" has been verified by admin ${user.email}`,
+        message: `Store "${store.name}" has been verified`,
         storeName: store.name,
         storeId: store.id,
+        userId: user.id,
+        userName,
         metadata: {
           verifiedBy: user.id,
           verifiedAt: new Date().toISOString(),
