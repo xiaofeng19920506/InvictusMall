@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
-import { StaffModel, CreateStaffRequest } from '../models/StaffModel';
+import { StaffModel, CreateStaffRequest, UpdateStaffRequest } from '../models/StaffModel';
 import { StaffInvitationModel, CreateInvitationRequest } from '../models/StaffInvitationModel';
 import { ActivityLogModel } from '../models/ActivityLogModel';
 import { getUserNameFromRequest, getUserIdFromRequest } from '../utils/activityLogHelper';
@@ -926,6 +926,219 @@ router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res
       message: 'Failed to fetch staff members',
       error: error instanceof Error ? error.message : 'Unknown error',
       data: [] // Return empty array on error
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/staff/{id}:
+ *   put:
+ *     summary: Update staff member
+ *     tags: [Staff Management]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Staff ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               phoneNumber:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [admin, owner, manager, employee]
+ *               department:
+ *                 type: string
+ *               employeeId:
+ *                 type: string
+ *               isActive:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Staff member updated successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
+ *       404:
+ *         description: Staff member not found
+ */
+router.put('/:id', authenticateStaffToken, [
+  body('firstName').optional().trim().isLength({ min: 1 }).withMessage('First name cannot be empty'),
+  body('lastName').optional().trim().isLength({ min: 1 }).withMessage('Last name cannot be empty'),
+  body('phoneNumber').optional().trim().isLength({ min: 1 }).withMessage('Phone number cannot be empty'),
+  body('role').optional().isIn(['admin', 'owner', 'manager', 'employee']).withMessage('Invalid role'),
+  body('department').optional().trim(),
+  body('employeeId').optional().trim(),
+  body('isActive').optional().isBoolean().withMessage('isActive must be a boolean')
+], async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array()
+      });
+    }
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized'
+      });
+    }
+
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Staff ID is required'
+      });
+    }
+
+    const requesterRole = req.user.role;
+    const requesterId = req.user.id;
+
+    // Check if staff member exists
+    const existingStaff = await staffModel.getStaffById(id);
+    if (!existingStaff) {
+      return res.status(404).json({
+        success: false,
+        message: 'Staff member not found'
+      });
+    }
+
+    // Permission checks
+    if (requesterRole === 'admin') {
+      // Admin can edit everyone except themselves
+      if (id === requesterId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot edit your own account'
+        });
+      }
+    } else if (requesterRole === 'owner') {
+      // Owner can edit staff in their store (but not themselves or other owners)
+      if (id === requesterId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot edit your own account'
+        });
+      }
+      const requesterStaff = await staffModel.getStaffById(requesterId);
+      if (!requesterStaff) {
+        return res.status(404).json({
+          success: false,
+          message: 'Requester staff not found'
+        });
+      }
+      const requesterStoreId = (requesterStaff as any)?.storeId;
+      if ((existingStaff as any).storeId !== requesterStoreId || existingStaff.role === 'owner') {
+        return res.status(403).json({
+          success: false,
+          message: 'Insufficient permissions to edit this staff member'
+        });
+      }
+    } else if (requesterRole === 'manager') {
+      // Manager can edit employees and managers (but not owner, admin, or themselves)
+      if (id === requesterId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot edit your own account'
+        });
+      }
+      if (existingStaff.role === 'owner' || existingStaff.role === 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Insufficient permissions to edit this staff member'
+        });
+      }
+    } else {
+      return res.status(403).json({
+        success: false,
+        message: 'Insufficient permissions'
+      });
+    }
+
+    // Prepare update data
+    const updateData: UpdateStaffRequest = {};
+    if (req.body.firstName !== undefined) updateData.firstName = req.body.firstName;
+    if (req.body.lastName !== undefined) updateData.lastName = req.body.lastName;
+    if (req.body.phoneNumber !== undefined) updateData.phoneNumber = req.body.phoneNumber;
+    if (req.body.role !== undefined) {
+      // Role change restrictions
+      if (requesterRole === 'owner' && existingStaff.role === 'owner') {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot change role of owner'
+        });
+      }
+      if (requesterRole === 'manager' && (req.body.role === 'owner' || req.body.role === 'admin')) {
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot assign owner or admin role'
+        });
+      }
+      updateData.role = req.body.role;
+    }
+    if (req.body.department !== undefined) updateData.department = req.body.department;
+    if (req.body.employeeId !== undefined) updateData.employeeId = req.body.employeeId;
+    if (req.body.isActive !== undefined && requesterRole === 'admin') {
+      updateData.isActive = req.body.isActive;
+    }
+
+    // Update staff member
+    const updatedStaff = await staffModel.updateStaff(id, updateData);
+    if (!updatedStaff) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update staff member'
+      });
+    }
+
+    // Log activity
+    const userId = getUserIdFromRequest(req);
+    const userName = await getUserNameFromRequest(req);
+    await ActivityLogModel.createLog({
+      type: 'profile_updated',
+      message: `Staff member ${updatedStaff.email} profile updated`,
+      userId,
+      userName,
+      metadata: {
+        staffId: updatedStaff.id,
+        email: updatedStaff.email,
+        updatedFields: Object.keys(updateData)
+      }
+    });
+
+    // Remove password from response
+    const { password, ...staffWithoutPassword } = updatedStaff;
+
+    return res.json({
+      success: true,
+      data: staffWithoutPassword,
+      message: 'Staff member updated successfully'
+    });
+  } catch (error: any) {
+    console.error('Error updating staff member:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to update staff member'
     });
   }
 });

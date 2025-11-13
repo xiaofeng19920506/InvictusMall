@@ -9,30 +9,14 @@ import {
   Phone,
   Calendar,
 } from "lucide-react";
-import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotification } from "../contexts/NotificationContext";
+import EditUserModal from "./EditUserModal";
+import { staffApi, type Staff } from "../services/api";
 import styles from "./UsersManagement.module.css";
 
-interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber: string;
-  role: 'admin' | 'owner' | 'manager' | 'employee';
-  department?: string;
-  employeeId?: string;
-  storeId?: string;
-  isActive: boolean;
-  emailVerified: boolean;
-  createdAt: string;
-  lastLoginAt?: string;
-  canEdit?: boolean; // Permission to edit this user
-}
-
-const API_BASE_URL = "http://localhost:3001";
+type User = Staff;
 
 const UsersManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -42,6 +26,7 @@ const UsersManagement: React.FC = () => {
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
   const { showError, showInfo } = useNotification();
+  const [editingUser, setEditingUser] = useState<User | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -50,11 +35,9 @@ const UsersManagement: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/staff/all`, {
-        withCredentials: true,
-      });
-      if (response.data.success) {
-        setUsers(response.data.data || []);
+      const response = await staffApi.getAllStaff();
+      if (response.success) {
+        setUsers(response.data || []);
       }
     } catch (error: any) {
       console.error("Error loading users:", error);
@@ -234,9 +217,7 @@ const UsersManagement: React.FC = () => {
                   <td>
                     <div className={styles.userActions}>
                       <button
-                        onClick={() =>
-                          showInfo(t("users.actions.editSoon"))
-                        }
+                        onClick={() => setEditingUser(user)}
                         className="btn btn-secondary btn-sm"
                         title={t("users.actions.editTitle")}
                         disabled={!user.canEdit}
@@ -295,6 +276,17 @@ const UsersManagement: React.FC = () => {
           {t("users.note.description")}
         </p>
       </div>
+
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSave={() => {
+            loadUsers();
+            setEditingUser(null);
+          }}
+        />
+      )}
     </div>
   );
 };
