@@ -220,8 +220,11 @@ const UsersManagement: React.FC = () => {
                         onClick={() => setEditingUser(user)}
                         className="btn btn-secondary btn-sm"
                         title={t("users.actions.editTitle")}
-                        disabled={!user.canEdit}
-                        style={{ opacity: user.canEdit ? 1 : 0.5, cursor: user.canEdit ? 'pointer' : 'not-allowed' }}
+                        disabled={!user.canEdit && user.id !== currentUser?.id}
+                        style={{ 
+                          opacity: (user.canEdit || user.id === currentUser?.id) ? 1 : 0.5, 
+                          cursor: (user.canEdit || user.id === currentUser?.id) ? 'pointer' : 'not-allowed' 
+                        }}
                       >
                         <Edit className="w-4 h-4" />
                       </button>

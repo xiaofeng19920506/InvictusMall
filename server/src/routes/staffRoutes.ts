@@ -890,24 +890,26 @@ router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res
     // Remove password from response and add edit permission info
     const staffWithPermissions = staffMembers.map(({ password, ...staff }) => {
       let canEdit = false;
+      const isSelf = staff.id === requesterId;
       
       // Edit permission logic
-      if (requesterRole === 'admin') {
-        // Admin can edit everyone except themselves
-        canEdit = staff.id !== requesterId;
+      if (isSelf) {
+        // Everyone can edit their own information
+        canEdit = true;
+      } else if (requesterRole === 'admin') {
+        // Admin can edit everyone
+        canEdit = true;
       } else if (requesterRole === 'owner') {
-        // Owner can edit staff in their store (but not themselves)
-        canEdit = staff.id !== requesterId && 
-                  (staff as any).storeId === requesterStoreId &&
+        // Owner can edit staff in their store (but not other owners)
+        canEdit = (staff as any).storeId === requesterStoreId &&
                   staff.role !== 'owner'; // Cannot edit other owners
       } else if (requesterRole === 'manager') {
-        // Manager can edit employees and managers (but not owner or themselves)
-        canEdit = staff.id !== requesterId && 
-                  staff.role !== 'owner' && 
+        // Manager can edit employees and managers (but not owner or admin)
+        canEdit = staff.role !== 'owner' && 
                   staff.role !== 'admin' &&
                   (staff.role === 'employee' || staff.role === 'manager');
       }
-      // Employee cannot edit anyone
+      // Employee can only edit themselves
 
       return {
         ...staff,
@@ -1023,23 +1025,17 @@ router.put('/:id', authenticateStaffToken, [
       });
     }
 
+    const isSelf = id === requesterId;
+
     // Permission checks
-    if (requesterRole === 'admin') {
-      // Admin can edit everyone except themselves
-      if (id === requesterId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Cannot edit your own account'
-        });
-      }
+    if (isSelf) {
+      // Everyone can edit their own information
+      // No additional permission checks needed
+    } else if (requesterRole === 'admin') {
+      // Admin can edit everyone
+      // No additional permission checks needed
     } else if (requesterRole === 'owner') {
-      // Owner can edit staff in their store (but not themselves or other owners)
-      if (id === requesterId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Cannot edit your own account'
-        });
-      }
+      // Owner can edit staff in their store (but not other owners)
       const requesterStaff = await staffModel.getStaffById(requesterId);
       if (!requesterStaff) {
         return res.status(404).json({
@@ -1055,13 +1051,7 @@ router.put('/:id', authenticateStaffToken, [
         });
       }
     } else if (requesterRole === 'manager') {
-      // Manager can edit employees and managers (but not owner, admin, or themselves)
-      if (id === requesterId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Cannot edit your own account'
-        });
-      }
+      // Manager can edit employees and managers (but not owner or admin)
       if (existingStaff.role === 'owner' || existingStaff.role === 'admin') {
         return res.status(403).json({
           success: false,
@@ -1069,6 +1059,7 @@ router.put('/:id', authenticateStaffToken, [
         });
       }
     } else {
+      // Employee can only edit themselves
       return res.status(403).json({
         success: false,
         message: 'Insufficient permissions'
@@ -1082,6 +1073,13 @@ router.put('/:id', authenticateStaffToken, [
     if (req.body.phoneNumber !== undefined) updateData.phoneNumber = req.body.phoneNumber;
     if (req.body.role !== undefined) {
       // Role change restrictions
+      if (isSelf) {
+        // Users cannot change their own role
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot change your own role'
+        });
+      }
       if (requesterRole === 'owner' && existingStaff.role === 'owner') {
         return res.status(403).json({
           success: false,
@@ -1098,8 +1096,22 @@ router.put('/:id', authenticateStaffToken, [
     }
     if (req.body.department !== undefined) updateData.department = req.body.department;
     if (req.body.employeeId !== undefined) updateData.employeeId = req.body.employeeId;
-    if (req.body.isActive !== undefined && requesterRole === 'admin') {
-      updateData.isActive = req.body.isActive;
+    if (req.body.isActive !== undefined) {
+      if (isSelf) {
+        // Users cannot change their own active status
+        return res.status(403).json({
+          success: false,
+          message: 'Cannot change your own active status'
+        });
+      }
+      if (requesterRole === 'admin') {
+        updateData.isActive = req.body.isActive;
+      } else {
+        return res.status(403).json({
+          success: false,
+          message: 'Only admin can change active status'
+        });
+      }
     }
 
     // Update staff member
