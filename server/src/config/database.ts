@@ -349,12 +349,83 @@ const createTables = async (): Promise<void> => {
 
     // Add store_id column to existing staff_invitations table if it doesn't exist
     try {
-      await connection.execute(`
-        ALTER TABLE staff_invitations 
-        ADD COLUMN store_id VARCHAR(36) NULL,
-        ADD INDEX idx_store_id (store_id),
-        ADD FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+      // First, check if the column exists and get stores.id column definition
+      const [storeColumns]: any = await connection.execute(`
+        SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'stores'
+        AND COLUMN_NAME = 'id'
       `);
+      
+      let storeIdType = 'VARCHAR(36)';
+      let charsetClause = '';
+      
+      if (storeColumns && storeColumns.length > 0) {
+        const storeIdCol = storeColumns[0];
+        // Use the same type as stores.id
+        storeIdType = storeIdCol.COLUMN_TYPE;
+        if (storeIdCol.CHARACTER_SET_NAME) {
+          charsetClause = ` CHARACTER SET ${storeIdCol.CHARACTER_SET_NAME}`;
+          if (storeIdCol.COLLATION_NAME) {
+            charsetClause += ` COLLATE ${storeIdCol.COLLATION_NAME}`;
+          }
+        }
+      }
+      
+      // Add column if it doesn't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE staff_invitations 
+          ADD COLUMN store_id ${storeIdType}${charsetClause} NULL
+        `);
+      } catch (error: any) {
+        if (error.code !== 'ER_DUP_FIELDNAME') {
+          throw error;
+        }
+      }
+      
+      // Add index if it doesn't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE staff_invitations 
+          ADD INDEX idx_store_id (store_id)
+        `);
+      } catch (error: any) {
+        if (error.code !== 'ER_DUP_KEYNAME') {
+          throw error;
+        }
+      }
+      
+      // Add foreign key if it doesn't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE staff_invitations 
+          ADD FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+        `);
+      } catch (error: any) {
+        // If columns are incompatible, try to modify the column type to match
+        if (error.code === 'ER_FK_INCOMPATIBLE_COLUMNS') {
+          // Modify store_id to match stores.id exactly
+          await connection.execute(`
+            ALTER TABLE staff_invitations 
+            MODIFY COLUMN store_id ${storeIdType}${charsetClause} NULL
+          `);
+          // Try adding foreign key again
+          try {
+            await connection.execute(`
+              ALTER TABLE staff_invitations 
+              ADD FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+            `);
+          } catch (retryError: any) {
+            if (retryError.code !== 'ER_DUP_KEYNAME') {
+              throw retryError;
+            }
+          }
+        } else if (error.code !== 'ER_DUP_KEYNAME') {
+          throw error;
+        }
+      }
     } catch (error: any) {
       // Column might already exist (ER_DUP_FIELDNAME) or foreign key might exist (ER_DUP_KEYNAME)
       if (error.code !== 'ER_DUP_FIELDNAME' && error.code !== 'ER_DUP_KEYNAME') {
