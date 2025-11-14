@@ -2,10 +2,10 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { NotificationProvider, useNotification } from "./contexts/NotificationContext";
-import AuthGuard from "./components/AuthGuard";
-import AdminApp from "./components/AdminApp";
-import SetupPassword from "./components/SetupPassword";
-import NotificationSystem from "./components/NotificationSystem";
+import AuthGuard from "./shared/components/AuthGuard";
+import AdminApp from "./app/AdminApp";
+import SetupPassword from "./features/auth/SetupPassword";
+import NotificationSystem from "./shared/components/NotificationSystem";
 
 function AppContent() {
   const { notifications, removeNotification } = useNotification();
