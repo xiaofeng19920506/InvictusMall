@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { Notification } from '../components/NotificationSystem';
+import type { Notification } from '../shared/components/NotificationSystem';
 
 interface NotificationContextType {
   showNotification: (notification: Omit<Notification, 'id'>) => void;

@@ -39,7 +39,7 @@ import type {
   UpdateStoreRequest,
   ApiResponse,
   ActivityLog,
-} from "../types/store";
+} from "../shared/types/store";
 
 // Store API functions
 export const storeApi = {
@@ -280,6 +280,6 @@ export type {
   CreateStoreRequest,
   UpdateStoreRequest,
   ApiResponse,
-} from "../types/store";
+} from "../shared/types/store";
 
 export default api;
