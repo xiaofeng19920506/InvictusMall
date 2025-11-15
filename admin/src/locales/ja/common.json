@@ -603,6 +603,96 @@
       "invalidImageType": "画像ファイルを選択してください。",
       "imageTooLarge": "画像ファイルのサイズは15MB未満である必要があります。"
     }
+  },
+  "categories": {
+    "title": "カテゴリー管理",
+    "subtitle": "商品カテゴリーとサブカテゴリーを管理",
+    "loading": "カテゴリーを読み込み中...",
+    "search": {
+      "placeholder": "カテゴリーを検索..."
+    },
+    "filter": {
+      "allLevels": "すべてのレベル",
+      "level1": "レベル 1 (トップレベル)",
+      "level2": "レベル 2 (サブカテゴリー)",
+      "level3": "レベル 3 (サブサブカテゴリー)"
+    },
+    "table": {
+      "name": "名前",
+      "slug": "スラッグ",
+      "level": "レベル",
+      "parent": "親",
+      "status": "ステータス",
+      "actions": "操作"
+    },
+    "status": {
+      "active": "有効",
+      "inactive": "無効"
+    },
+    "empty": {
+      "noCategories": "カテゴリーが見つかりません"
+    },
+    "actions": {
+      "add": "カテゴリーを追加",
+      "addFirst": "最初のカテゴリーを追加",
+      "edit": "編集",
+      "delete": "削除"
+    },
+    "confirm": {
+      "delete": "「{{name}}」を削除してもよろしいですか？子を持つカテゴリーは削除できません。"
+    },
+    "success": {
+      "deleted": "カテゴリーが正常に削除されました"
+    },
+    "error": {
+      "loadFailed": "カテゴリーの読み込みに失敗しました",
+      "deleteFailed": "カテゴリーの削除に失敗しました"
+    },
+    "warning": {
+      "hasChildren": "子を持つカテゴリーは削除できません。まず子を削除または移動してください。"
+    }
+  },
+  "categoryModal": {
+    "createTitle": "カテゴリーを作成",
+    "editTitle": "カテゴリーを編集",
+    "fields": {
+      "name": "名前",
+      "namePlaceholder": "カテゴリー名を入力",
+      "slug": "スラッグ",
+      "slugPlaceholder": "category-slug",
+      "slugHelp": "URLフレンドリーな識別子（空の場合は名前から自動生成）",
+      "description": "説明",
+      "descriptionPlaceholder": "カテゴリーの説明を入力（オプション）",
+      "parent": "親カテゴリー",
+      "noParent": "— なし（トップレベル）",
+      "loadingParents": "読み込み中...",
+      "parentHelp": "親カテゴリーを選択してサブカテゴリーを作成",
+      "parentHelpWithParent": "これはレベル {{level}} のカテゴリーになります",
+      "displayOrder": "表示順序",
+      "displayOrderHelp": "小さい数字が先に表示されます（デフォルト：0）",
+      "active": "有効",
+      "activeHelp": "無効なカテゴリーは選択ドロップダウンに表示されません"
+    },
+    "warning": {
+      "maxLevel": "最大レベル（3）に達しました - 子を持つことはできません"
+    },
+    "actions": {
+      "create": "カテゴリーを作成",
+      "update": "カテゴリーを更新",
+      "cancel": "キャンセル",
+      "close": "閉じる",
+      "saving": "保存中..."
+    },
+    "success": {
+      "created": "カテゴリーが正常に作成されました",
+      "updated": "カテゴリーが正常に更新されました"
+    },
+    "error": {
+      "nameRequired": "カテゴリー名は必須です",
+      "createFailed": "カテゴリーの作成に失敗しました",
+      "updateFailed": "カテゴリーの更新に失敗しました",
+      "saveFailed": "カテゴリーの保存に失敗しました"
+    }
   }
 }
 

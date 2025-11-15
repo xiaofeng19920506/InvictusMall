@@ -92,8 +92,8 @@ export default function HomeContent({
         onSearchTypeChange={handleSearchTypeChange}
       />
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+        <div className="mb-8 flex items-center gap-4 flex-wrap">
+          <h2 className="text-3xl font-bold text-gray-900">
             {searchType === "All"
               ? selectedCategory === "All"
                 ? "All Stores"
@@ -107,12 +107,6 @@ export default function HomeContent({
             {searchQuery && ` for "${searchQuery}"`}
             {searchType !== "All" && ` in ${searchType.toLowerCase()}`}
           </p>
-          {lastUpdated && (
-            <p className="text-sm text-gray-500 mt-2">
-              🔄 Last updated: {lastUpdated.toLocaleTimeString()}
-              <span className="ml-2 inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            </p>
-          )}
         </div>
 
         {/* Error State */}

@@ -1,18 +1,19 @@
 {
   "brand": "英维克特斯商城后台",
-  "nav": {
-    "dashboard": "仪表盘",
-    "stores": "商店管理",
-    "products": "商品管理",
-    "users": "用户管理",
-    "analytics": "数据分析",
-    "registerStaff": "注册员工",
-    "settings": "设置",
-    "systemLogs": "系统日志",
-    "transactions": "交易记录",
-    "open": "打开导航",
-    "close": "关闭导航"
-  },
+    "nav": {
+      "dashboard": "仪表盘",
+      "stores": "商店管理",
+      "products": "商品管理",
+      "categories": "分类管理",
+      "users": "用户管理",
+      "analytics": "数据分析",
+      "registerStaff": "注册员工",
+      "settings": "设置",
+      "systemLogs": "系统日志",
+      "transactions": "交易记录",
+      "open": "打开导航",
+      "close": "关闭导航"
+    },
   "header": {
     "logout": "退出登录",
     "language": "语言",
@@ -36,6 +37,7 @@
     "dashboard": "仪表盘",
     "stores": "商店管理",
     "products": "商品管理",
+    "categories": "分类管理",
     "users": "用户管理",
     "analytics": "数据分析",
     "registerStaff": "注册员工",
@@ -644,6 +646,96 @@
       "uploadFail": "图片上传失败，请重试。",
       "invalidImageType": "请选择图片文件。",
       "imageTooLarge": "图片文件大小必须小于15MB。"
+    }
+  },
+  "categories": {
+    "title": "分类管理",
+    "subtitle": "管理商品分类和子分类",
+    "loading": "加载分类中...",
+    "search": {
+      "placeholder": "搜索分类..."
+    },
+    "filter": {
+      "allLevels": "所有级别",
+      "level1": "级别 1 (顶级)",
+      "level2": "级别 2 (子分类)",
+      "level3": "级别 3 (子子分类)"
+    },
+    "table": {
+      "name": "名称",
+      "slug": "标识",
+      "level": "级别",
+      "parent": "父级",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "status": {
+      "active": "启用",
+      "inactive": "禁用"
+    },
+    "empty": {
+      "noCategories": "未找到分类"
+    },
+    "actions": {
+      "add": "添加分类",
+      "addFirst": "添加首个分类",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "confirm": {
+      "delete": "您确定要删除 \"{{name}}\" 吗？有子分类的分类无法删除。"
+    },
+    "success": {
+      "deleted": "分类删除成功"
+    },
+    "error": {
+      "loadFailed": "加载分类失败",
+      "deleteFailed": "删除分类失败"
+    },
+    "warning": {
+      "hasChildren": "无法删除有子分类的分类。请先删除或移动子分类。"
+    }
+  },
+  "categoryModal": {
+    "createTitle": "创建分类",
+    "editTitle": "编辑分类",
+    "fields": {
+      "name": "名称",
+      "namePlaceholder": "输入分类名称",
+      "slug": "标识",
+      "slugPlaceholder": "分类标识",
+      "slugHelp": "URL友好的标识符（如果留空则从名称自动生成）",
+      "description": "描述",
+      "descriptionPlaceholder": "输入分类描述（可选）",
+      "parent": "父分类",
+      "noParent": "— 无（顶级）",
+      "loadingParents": "加载中...",
+      "parentHelp": "选择父分类以创建子分类",
+      "parentHelpWithParent": "这将是级别 {{level}} 分类",
+      "displayOrder": "显示顺序",
+      "displayOrderHelp": "数字越小越靠前（默认：0）",
+      "active": "启用",
+      "activeHelp": "禁用的分类不会出现在选择下拉菜单中"
+    },
+    "warning": {
+      "maxLevel": "已达到最大级别（3）- 不能有子分类"
+    },
+    "actions": {
+      "create": "创建分类",
+      "update": "更新分类",
+      "cancel": "取消",
+      "close": "关闭",
+      "saving": "保存中..."
+    },
+    "success": {
+      "created": "分类创建成功",
+      "updated": "分类更新成功"
+    },
+    "error": {
+      "nameRequired": "分类名称是必需的",
+      "createFailed": "创建分类失败",
+      "updateFailed": "更新分类失败",
+      "saveFailed": "保存分类失败"
     }
   }
 }

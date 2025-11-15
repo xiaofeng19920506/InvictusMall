@@ -10,6 +10,7 @@ import {
   LazySettings,
   LazyTransactionsManagement,
   LazyProductsManagement,
+  LazyCategoriesManagement,
 } from "./routes";
 import type { AdminPageKey } from "./types";
 
@@ -25,6 +26,8 @@ const AdminApp = () => {
         return <LazyStoresManagement />;
       case "products":
         return <LazyProductsManagement />;
+      case "categories":
+        return <LazyCategoriesManagement />;
       case "users":
         return <LazyUsersManagement />;
       case "analytics":

@@ -201,6 +201,51 @@ class ApiService {
   async healthCheck(): Promise<{ success: boolean; message: string; timestamp: string; uptime: number }> {
     return this.request<{ success: boolean; message: string; timestamp: string; uptime: number }>('/health');
   }
+
+  // Category-related API methods
+  async getTopLevelCategories(): Promise<ApiResponse<Category[]>> {
+    const endpoint = `/api/categories?level=1`;
+    return await this.request<ApiResponse<Category[]>>(endpoint);
+  }
+
+  async getAllCategories(params?: {
+    includeInactive?: boolean;
+    tree?: boolean;
+    level?: number;
+    parentId?: string;
+  }): Promise<ApiResponse<Category[]>> {
+    const queryParams = new URLSearchParams();
+    if (params?.includeInactive) {
+      queryParams.append('includeInactive', 'true');
+    }
+    if (params?.tree) {
+      queryParams.append('tree', 'true');
+    }
+    if (params?.level) {
+      queryParams.append('level', params.level.toString());
+    }
+    if (params?.parentId) {
+      queryParams.append('parentId', params.parentId);
+    }
+    
+    const endpoint = `/api/categories${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    return await this.request<ApiResponse<Category[]>>(endpoint);
+  }
+}
+
+// Category interface
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: string;
+  level: number;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  children?: Category[];
 }
 
 // Export a singleton instance

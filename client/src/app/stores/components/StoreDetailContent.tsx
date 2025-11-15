@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import Header from "@/components/common/Header";
 import Link from "next/link";
 import { getImageUrl } from "@/utils/imageUtils";
+import ReservationModal from "./ReservationModal";
 
 function AddToCartButton({
   product,
@@ -65,6 +66,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
   const [activeTab, setActiveTab] = useState<
     "overview" | "products" | "services" | "reviews"
   >("overview");
+  const [selectedService, setSelectedService] = useState<Product | null>(null);
+  const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
 
   // Separate products and services
   const products = allItems.filter(item => item.category === "product" || !item.category);
@@ -428,7 +431,15 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                                 ${service.price.toFixed(2)}
                               </span>
                             </div>
-                            <AddToCartButton product={service} store={store} />
+                            <button
+                              onClick={() => {
+                                setSelectedService(service);
+                                setIsReservationModalOpen(true);
+                              }}
+                              className="w-full py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors cursor-pointer"
+                            >
+                              Make Reservation
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -458,6 +469,19 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
           </div>
         </div>
       </div>
+
+      {/* Reservation Modal */}
+      {selectedService && store && (
+        <ReservationModal
+          service={selectedService}
+          store={store}
+          isOpen={isReservationModalOpen}
+          onClose={() => {
+            setIsReservationModalOpen(false);
+            setSelectedService(null);
+          }}
+        />
+      )}
     </>
   );
 }

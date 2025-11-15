@@ -6,6 +6,7 @@ import { useCart } from '@/contexts/CartContext';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { getAvatarUrl } from '@/utils/imageUtils';
+import { apiService, type Category } from '@/services/api';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -18,6 +19,8 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchType, setSearchType] = useState('All');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const { user, logout, isAuthenticated } = useAuth();
@@ -39,17 +42,41 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
     };
   }, []);
 
-  const categories = [
-    'All',
-    'Electronics',
-    'Fashion',
-    'Home & Garden',
-    'Sports',
-    'Beauty',
-    'Books',
-    'Food & Kitchen',
-    'Pet Supplies'
-  ];
+  // Fetch top-level categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await apiService.getTopLevelCategories();
+        console.log('Categories API response:', response);
+        
+        if (response.success && response.data && Array.isArray(response.data)) {
+          if (response.data.length > 0) {
+            // Map category names and prepend 'All'
+            const categoryNames = ['All', ...response.data.map((cat: Category) => cat.name)];
+            console.log('Setting categories:', categoryNames);
+            setCategories(categoryNames);
+          } else {
+            console.warn('Categories API returned empty array. Make sure to run: npm run seed-categories');
+            // Fallback to default categories if no categories exist
+            setCategories(['All', 'Electronics', 'Pet Supplies']);
+          }
+        } else {
+          console.warn('Invalid response structure:', response);
+          // Fallback to default categories if response structure is invalid
+          setCategories(['All', 'Electronics', 'Pet Supplies']);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        // Fallback to default categories on error
+        setCategories(['All', 'Electronics', 'Pet Supplies']);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const searchTypes = [
     'All',
@@ -276,19 +303,23 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
       <nav className="bg-gray-800 border-t border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-1 overflow-x-auto py-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors category-button cursor-pointer ${
-                  selectedCategory === category
-                    ? 'bg-orange-500 text-white'
-                    : 'text-gray-300'
-                }`}
-                onClick={() => handleCategoryChange(category)}
-              >
-                {category}
-              </button>
-            ))}
+            {loadingCategories ? (
+              <div className="px-4 py-2 text-sm text-gray-400">Loading categories...</div>
+            ) : (
+              categories.map((category) => (
+                <button
+                  key={category}
+                  className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors category-button cursor-pointer ${
+                    selectedCategory === category
+                      ? 'bg-orange-500 text-white'
+                      : 'text-gray-300'
+                  }`}
+                  onClick={() => handleCategoryChange(category)}
+                >
+                  {category}
+                </button>
+              ))
+            )}
           </div>
         </div>
       </nav>

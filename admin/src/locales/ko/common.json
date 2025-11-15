@@ -603,6 +603,96 @@
       "invalidImageType": "이미지 파일을 선택해주세요.",
       "imageTooLarge": "이미지 파일 크기는 15MB 미만이어야 합니다."
     }
+  },
+  "categories": {
+    "title": "카테고리 관리",
+    "subtitle": "제품 카테고리 및 하위 카테고리 관리",
+    "loading": "카테고리 로딩 중...",
+    "search": {
+      "placeholder": "카테고리 검색..."
+    },
+    "filter": {
+      "allLevels": "모든 레벨",
+      "level1": "레벨 1 (최상위)",
+      "level2": "레벨 2 (하위 카테고리)",
+      "level3": "레벨 3 (하위 하위 카테고리)"
+    },
+    "table": {
+      "name": "이름",
+      "slug": "슬러그",
+      "level": "레벨",
+      "parent": "부모",
+      "status": "상태",
+      "actions": "작업"
+    },
+    "status": {
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "empty": {
+      "noCategories": "카테고리를 찾을 수 없습니다"
+    },
+    "actions": {
+      "add": "카테고리 추가",
+      "addFirst": "첫 번째 카테고리 추가",
+      "edit": "편집",
+      "delete": "삭제"
+    },
+    "confirm": {
+      "delete": "\"{{name}}\"을(를) 삭제하시겠습니까? 자식이 있는 카테고리는 삭제할 수 없습니다."
+    },
+    "success": {
+      "deleted": "카테고리가 성공적으로 삭제되었습니다"
+    },
+    "error": {
+      "loadFailed": "카테고리 로드 실패",
+      "deleteFailed": "카테고리 삭제 실패"
+    },
+    "warning": {
+      "hasChildren": "자식이 있는 카테고리는 삭제할 수 없습니다. 먼저 자식을 삭제하거나 이동하세요."
+    }
+  },
+  "categoryModal": {
+    "createTitle": "카테고리 생성",
+    "editTitle": "카테고리 편집",
+    "fields": {
+      "name": "이름",
+      "namePlaceholder": "카테고리 이름 입력",
+      "slug": "슬러그",
+      "slugPlaceholder": "category-slug",
+      "slugHelp": "URL 친화적 식별자 (비어 있으면 이름에서 자동 생성)",
+      "description": "설명",
+      "descriptionPlaceholder": "카테고리 설명 입력 (선택 사항)",
+      "parent": "부모 카테고리",
+      "noParent": "— 없음 (최상위)",
+      "loadingParents": "로딩 중...",
+      "parentHelp": "하위 카테고리를 만들기 위해 부모 카테고리 선택",
+      "parentHelpWithParent": "이는 레벨 {{level}} 카테고리가 됩니다",
+      "displayOrder": "표시 순서",
+      "displayOrderHelp": "낮은 숫자가 먼저 표시됩니다 (기본값: 0)",
+      "active": "활성",
+      "activeHelp": "비활성 카테고리는 선택 드롭다운에 표시되지 않습니다"
+    },
+    "warning": {
+      "maxLevel": "최대 레벨(3)에 도달했습니다 - 자식을 가질 수 없습니다"
+    },
+    "actions": {
+      "create": "카테고리 생성",
+      "update": "카테고리 업데이트",
+      "cancel": "취소",
+      "close": "닫기",
+      "saving": "저장 중..."
+    },
+    "success": {
+      "created": "카테고리가 성공적으로 생성되었습니다",
+      "updated": "카테고리가 성공적으로 업데이트되었습니다"
+    },
+    "error": {
+      "nameRequired": "카테고리 이름은 필수입니다",
+      "createFailed": "카테고리 생성 실패",
+      "updateFailed": "카테고리 업데이트 실패",
+      "saveFailed": "카테고리 저장 실패"
+    }
   }
 }
 

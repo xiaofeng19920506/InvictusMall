@@ -273,6 +273,16 @@ router.post(
     });
   } catch (error) {
     console.error('Create order error:', error);
+    
+    // Handle duplicate reservation conflicts with 409 status
+    if (error instanceof Error && error.message.includes('Reservation time slot conflict')) {
+      return res.status(409).json({
+        success: false,
+        message: error.message,
+        error: 'RESERVATION_CONFLICT'
+      });
+    }
+    
     return res.status(500).json({
       success: false,
       message: 'Failed to create order',

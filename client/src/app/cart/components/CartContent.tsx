@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import Header from "@/components/common/Header";
 import Link from "next/link";
+import { getImageUrl } from "@/utils/imageUtils";
 import type { ShippingAddress } from "@/lib/server-api";
 import type {
   CheckoutPayload,
@@ -196,50 +197,96 @@ export default function CartContent({
               {items.map((item) => (
                 <div key={item.id} className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex gap-4">
-                    {item.productImage && (
+                    {item.productImage ? (
                       <img
-                        src={item.productImage}
+                        src={getImageUrl(item.productImage) || "/placeholder/product.png"}
                         alt={item.productName}
                         className="w-24 h-24 object-cover rounded"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/placeholder/product.png";
+                        }}
                       />
+                    ) : (
+                      <div className="w-24 h-24 bg-gray-200 rounded flex items-center justify-center">
+                        <span className="text-gray-400 text-xs">No Image</span>
+                      </div>
                     )}
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold text-gray-900">
-                            {item.productName}
-                          </h3>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900">
+                              {item.productName}
+                            </h3>
+                            {item.isReservation && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                                Reservation
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600">{item.storeName}</p>
+                          {item.isReservation && item.reservationDate && item.reservationTime && (
+                            <div className="mt-2 text-sm text-gray-600">
+                              <p className="font-medium">
+                                📅 {new Date(item.reservationDate).toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </p>
+                              <p className="text-gray-500">
+                                🕐 {new Date(`2000-01-01T${item.reservationTime}`).toLocaleTimeString('en-US', {
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                  hour12: true
+                                })}
+                              </p>
+                              {item.reservationNotes && (
+                                <p className="text-xs text-gray-500 mt-1 italic">
+                                  Note: {item.reservationNotes}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="text-red-500 hover:text-red-700 cursor-pointer"
+                          className="text-red-500 hover:text-red-700 cursor-pointer ml-2"
                         >
                           ✕
                         </button>
                       </div>
                       <div className="flex items-center justify-between mt-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity - 1)
-                            }
-                            className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100 cursor-pointer"
-                          >
-                            −
-                          </button>
-                          <span className="w-12 text-center font-medium">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
-                            }
-                            className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100 cursor-pointer"
-                          >
-                            +
-                          </button>
-                        </div>
+                        {!item.isReservation && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                updateQuantity(item.id, item.quantity - 1)
+                              }
+                              className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100 cursor-pointer"
+                            >
+                              −
+                            </button>
+                            <span className="w-12 text-center font-medium">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() =>
+                                updateQuantity(item.id, item.quantity + 1)
+                              }
+                              className="w-8 h-8 border border-gray-300 rounded flex items-center justify-center hover:bg-gray-100 cursor-pointer"
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                        {item.isReservation && (
+                          <div className="text-sm text-gray-600">
+                            Quantity: {item.quantity}
+                          </div>
+                        )}
                         <span className="text-lg font-bold text-orange-500">
                           ${(item.price * item.quantity).toFixed(2)}
                         </span>

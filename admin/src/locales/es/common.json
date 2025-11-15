@@ -3,8 +3,9 @@
   "nav": {
     "dashboard": "Panel",
     "stores": "Tiendas",
-    "products": "Productos",
-    "users": "Usuarios",
+      "products": "Productos",
+      "categories": "Categorías",
+      "users": "Usuarios",
     "analytics": "Analítica",
     "registerStaff": "Registrar Personal",
     "settings": "Configuración",
@@ -35,8 +36,9 @@
   "pages": {
     "dashboard": "Panel",
     "stores": "Tiendas",
-    "products": "Productos",
-    "users": "Usuarios",
+      "products": "Productos",
+      "categories": "Categorías",
+      "users": "Usuarios",
     "analytics": "Analítica",
     "registerStaff": "Registrar Personal",
     "settings": "Configuración",
@@ -620,6 +622,96 @@
       "uploadFail": "Error al subir imagen. Por favor intente nuevamente.",
       "invalidImageType": "Por favor seleccione un archivo de imagen.",
       "imageTooLarge": "El tamaño del archivo de imagen debe ser menor a 15MB."
+    }
+  },
+  "categories": {
+    "title": "Gestión de Categorías",
+    "subtitle": "Gestionar categorías y subcategorías de productos",
+    "loading": "Cargando categorías...",
+    "search": {
+      "placeholder": "Buscar categorías..."
+    },
+    "filter": {
+      "allLevels": "Todos los Niveles",
+      "level1": "Nivel 1 (Nivel Superior)",
+      "level2": "Nivel 2 (Subcategoría)",
+      "level3": "Nivel 3 (Sub-subcategoría)"
+    },
+    "table": {
+      "name": "Nombre",
+      "slug": "Identificador",
+      "level": "Nivel",
+      "parent": "Padre",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "empty": {
+      "noCategories": "No se encontraron categorías"
+    },
+    "actions": {
+      "add": "Agregar Categoría",
+      "addFirst": "Agregar Primera Categoría",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "confirm": {
+      "delete": "¿Está seguro de que desea eliminar \"{{name}}\"? Las categorías con hijos no se pueden eliminar."
+    },
+    "success": {
+      "deleted": "Categoría eliminada exitosamente"
+    },
+    "error": {
+      "loadFailed": "Error al cargar categorías",
+      "deleteFailed": "Error al eliminar categoría"
+    },
+    "warning": {
+      "hasChildren": "No se puede eliminar una categoría con hijos. Por favor elimine o mueva los hijos primero."
+    }
+  },
+  "categoryModal": {
+    "createTitle": "Crear Categoría",
+    "editTitle": "Editar Categoría",
+    "fields": {
+      "name": "Nombre",
+      "namePlaceholder": "Ingrese el nombre de la categoría",
+      "slug": "Identificador",
+      "slugPlaceholder": "identificador-de-categoria",
+      "slugHelp": "Identificador compatible con URL (se genera automáticamente desde el nombre si se deja vacío)",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Ingrese la descripción de la categoría (opcional)",
+      "parent": "Categoría Padre",
+      "noParent": "— Ninguna (Nivel Superior)",
+      "loadingParents": "Cargando...",
+      "parentHelp": "Seleccione una categoría padre para crear una subcategoría",
+      "parentHelpWithParent": "Esta será una categoría de Nivel {{level}}",
+      "displayOrder": "Orden de Visualización",
+      "displayOrderHelp": "Los números más bajos aparecen primero (predeterminado: 0)",
+      "active": "Activo",
+      "activeHelp": "Las categorías inactivas no aparecerán en los menús desplegables de selección"
+    },
+    "warning": {
+      "maxLevel": "Se alcanzó el nivel máximo (3) - no puede tener hijos"
+    },
+    "actions": {
+      "create": "Crear Categoría",
+      "update": "Actualizar Categoría",
+      "cancel": "Cancelar",
+      "close": "Cerrar",
+      "saving": "Guardando..."
+    },
+    "success": {
+      "created": "Categoría creada exitosamente",
+      "updated": "Categoría actualizada exitosamente"
+    },
+    "error": {
+      "nameRequired": "El nombre de la categoría es requerido",
+      "createFailed": "Error al crear categoría",
+      "updateFailed": "Error al actualizar categoría",
+      "saveFailed": "Error al guardar categoría"
     }
   }
 }

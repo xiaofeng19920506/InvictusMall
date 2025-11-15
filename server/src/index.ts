@@ -16,6 +16,7 @@ import shippingAddressRoutes from "./routes/shippingAddressRoutes";
 import paymentRoutes, { stripeWebhookHandler } from "./routes/paymentRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import productRoutes from "./routes/productRoutes";
+import categoryRoutes from "./routes/categoryRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
@@ -165,6 +166,7 @@ app.use("/api/shipping-addresses", shippingAddressRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/categories", categoryRoutes);
 
 /**
  * @swagger
