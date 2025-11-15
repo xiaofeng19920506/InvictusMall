@@ -1035,7 +1035,7 @@ router.put('/:id', authenticateStaffToken, [
       // Admin can edit everyone
       // No additional permission checks needed
     } else if (requesterRole === 'owner') {
-      // Owner can edit staff in their store (but not other owners)
+      // Owner can edit staff in their store with lower access levels (managers and employees, but not other owners or admins)
       const requesterStaff = await staffModel.getStaffById(requesterId);
       if (!requesterStaff) {
         return res.status(404).json({
@@ -1044,15 +1044,33 @@ router.put('/:id', authenticateStaffToken, [
         });
       }
       const requesterStoreId = (requesterStaff as any)?.storeId;
-      if ((existingStaff as any).storeId !== requesterStoreId || existingStaff.role === 'owner') {
+      const targetStoreId = (existingStaff as any)?.storeId;
+      
+      // Check if target is in same store and has lower access
+      if (targetStoreId !== requesterStoreId || 
+          existingStaff.role === 'owner' || 
+          existingStaff.role === 'admin') {
         return res.status(403).json({
           success: false,
           message: 'Insufficient permissions to edit this staff member'
         });
       }
     } else if (requesterRole === 'manager') {
-      // Manager can edit employees and managers (but not owner or admin)
-      if (existingStaff.role === 'owner' || existingStaff.role === 'admin') {
+      // Manager can edit employees and managers in same store (but not owner or admin)
+      const requesterStaff = await staffModel.getStaffById(requesterId);
+      if (!requesterStaff) {
+        return res.status(404).json({
+          success: false,
+          message: 'Requester staff not found'
+        });
+      }
+      const requesterStoreId = (requesterStaff as any)?.storeId;
+      const targetStoreId = (existingStaff as any)?.storeId;
+      
+      // Check if target is in same store and has lower or equal access
+      if (targetStoreId !== requesterStoreId ||
+          existingStaff.role === 'owner' || 
+          existingStaff.role === 'admin') {
         return res.status(403).json({
           success: false,
           message: 'Insufficient permissions to edit this staff member'
@@ -1074,28 +1092,63 @@ router.put('/:id', authenticateStaffToken, [
     if (req.body.role !== undefined) {
       // Role change restrictions
       if (isSelf) {
-        // Users cannot change their own role
-        return res.status(403).json({
-          success: false,
-          message: 'Cannot change your own role'
-        });
+        // Users cannot change their own role - skip this field silently
+        // Do not include role in updateData
+      } else {
+        // Role change restrictions for editing others
+        if (requesterRole === 'admin') {
+          // Admin can change any role
+          updateData.role = req.body.role;
+        } else if (requesterRole === 'owner') {
+          // Owner can only change roles to manager or employee (cannot assign owner/admin)
+          if (req.body.role === 'owner' || req.body.role === 'admin') {
+            return res.status(403).json({
+              success: false,
+              message: 'Owner can only assign manager or employee roles'
+            });
+          }
+          // Owner cannot change role of another owner
+          if (existingStaff.role === 'owner') {
+            return res.status(403).json({
+              success: false,
+              message: 'Cannot change role of owner'
+            });
+          }
+          updateData.role = req.body.role;
+        } else if (requesterRole === 'manager') {
+          // Manager can only change roles between manager and employee (cannot assign owner/admin)
+          if (req.body.role === 'owner' || req.body.role === 'admin') {
+            return res.status(403).json({
+              success: false,
+              message: 'Cannot assign owner or admin role'
+            });
+          }
+          // Manager can change employee/manager roles
+          if (existingStaff.role === 'employee' || existingStaff.role === 'manager') {
+            updateData.role = req.body.role;
+          } else {
+            return res.status(403).json({
+              success: false,
+              message: 'Cannot change role of this staff member'
+            });
+          }
+        } else {
+          // Employees cannot change roles
+          return res.status(403).json({
+            success: false,
+            message: 'Insufficient permissions to change role'
+          });
+        }
       }
-      if (requesterRole === 'owner' && existingStaff.role === 'owner') {
-        return res.status(403).json({
-          success: false,
-          message: 'Cannot change role of owner'
-        });
-      }
-      if (requesterRole === 'manager' && (req.body.role === 'owner' || req.body.role === 'admin')) {
-        return res.status(403).json({
-          success: false,
-          message: 'Cannot assign owner or admin role'
-        });
-      }
-      updateData.role = req.body.role;
     }
     if (req.body.department !== undefined) updateData.department = req.body.department;
-    if (req.body.employeeId !== undefined) updateData.employeeId = req.body.employeeId;
+    if (req.body.employeeId !== undefined) {
+      // Employee ID cannot be changed once assigned
+      return res.status(403).json({
+        success: false,
+        message: 'Employee ID cannot be changed'
+      });
+    }
     if (req.body.isActive !== undefined) {
       if (isSelf) {
         // Users cannot change their own active status

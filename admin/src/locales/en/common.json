@@ -8,6 +8,7 @@
     "registerStaff": "Register Staff",
     "settings": "Settings",
     "systemLogs": "System Logs",
+    "transactions": "Transactions",
     "open": "Open navigation",
     "close": "Close navigation"
   },
@@ -37,7 +38,8 @@
     "analytics": "Analytics",
     "registerStaff": "Register Staff",
     "settings": "Settings",
-    "systemLogs": "System Logs"
+    "systemLogs": "System Logs",
+    "transactions": "Transactions"
   },
   "stores": {
     "title": "Stores Management",
@@ -504,5 +506,62 @@
       "online": "Online",
       "offline": "Offline"
     }
+  },
+  "transactions": {
+    "title": "Store Transactions",
+    "subtitle": "Track and manage all store transactions",
+    "refresh": "Refresh",
+    "loading": "Loading transactions...",
+    "noTransactions": "No transactions found",
+    "totalAmount": "Total Amount",
+    "totalSales": "Total Sales",
+    "totalRefunds": "Total Refunds",
+    "totalTransactions": "Total Transactions",
+    "filter": {
+      "store": "Store",
+      "type": "Type",
+      "status": "Status",
+      "startDate": "Start Date",
+      "endDate": "End Date"
+    },
+    "allStores": "All Stores",
+    "allTypes": "All Types",
+    "allStatuses": "All Statuses",
+    "applyFilters": "Apply Filters",
+    "resetFilters": "Reset",
+    "type": {
+      "sale": "Sale",
+      "refund": "Refund",
+      "payment": "Payment",
+      "fee": "Fee",
+      "commission": "Commission"
+    },
+    "status": {
+      "pending": "Pending",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    },
+    "date": "Date",
+    "store": "Store",
+    "customer": "Customer",
+    "amount": "Amount",
+    "paymentMethod": "Payment Method",
+    "description": "Description",
+    "viewMode": "View",
+    "stripeTransactions": "Stripe Transactions",
+    "localTransactions": "Local Transactions",
+    "allTransactions": "All Transactions",
+    "source": "Source",
+    "stripeType": "Stripe Type",
+    "stripeTypes": {
+      "charge": "Charges",
+      "balanceTransaction": "Balance Transactions",
+      "paymentIntent": "Payment Intents"
+    },
+    "itemsPerPage": "Items per page",
+    "showing": "Showing",
+    "of": "of"
   }
 }

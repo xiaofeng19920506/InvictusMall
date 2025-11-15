@@ -433,6 +433,103 @@ const createTables = async (): Promise<void> => {
       }
     }
 
+    // Create store_transactions table
+    // First check the stores.id column definition to match it exactly
+    try {
+      const [storeColumns]: any = await connection.execute(`
+        SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'stores'
+        AND COLUMN_NAME = 'id'
+      `);
+      
+      let storeIdType = 'VARCHAR(36)';
+      let charsetClause = '';
+      
+      if (storeColumns && storeColumns.length > 0) {
+        const storeIdCol = storeColumns[0];
+        storeIdType = storeIdCol.COLUMN_TYPE;
+        if (storeIdCol.CHARACTER_SET_NAME) {
+          charsetClause = ` CHARACTER SET ${storeIdCol.CHARACTER_SET_NAME}`;
+          if (storeIdCol.COLLATION_NAME) {
+            charsetClause += ` COLLATE ${storeIdCol.COLLATION_NAME}`;
+          }
+        }
+      }
+      
+      // Create table without foreign key first
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS store_transactions (
+          id VARCHAR(36) PRIMARY KEY,
+          store_id ${storeIdType}${charsetClause} NOT NULL,
+          transaction_type ENUM('sale', 'refund', 'payment', 'fee', 'commission') NOT NULL,
+          amount DECIMAL(10,2) NOT NULL,
+          currency VARCHAR(3) DEFAULT 'USD',
+          description TEXT,
+          customer_id VARCHAR(36) NULL,
+          customer_name VARCHAR(255) NULL,
+          order_id VARCHAR(36) NULL,
+          payment_method VARCHAR(50) NULL,
+          status ENUM('pending', 'completed', 'failed', 'cancelled', 'refunded') DEFAULT 'pending',
+          transaction_date TIMESTAMP NOT NULL,
+          created_by VARCHAR(36) NULL,
+          metadata JSON NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_store_id (store_id),
+          INDEX idx_transaction_type (transaction_type),
+          INDEX idx_status (status),
+          INDEX idx_transaction_date (transaction_date),
+          INDEX idx_customer_id (customer_id),
+          INDEX idx_order_id (order_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      
+      // Add foreign key separately
+      try {
+        await connection.execute(`
+          ALTER TABLE store_transactions
+          ADD CONSTRAINT fk_store_transactions_store
+          FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+        `);
+      } catch (error: any) {
+        // Foreign key might already exist, ignore if it does
+        if (error.code !== 'ER_DUP_KEY' && error.code !== 'ER_FK_DUP_NAME') {
+          console.warn('Could not add foreign key to store_transactions:', error.message);
+        }
+      }
+    } catch (error: any) {
+      // If we can't check the stores table, create with default type
+      console.warn('Could not check stores.id column type, using default:', error.message);
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS store_transactions (
+          id VARCHAR(36) PRIMARY KEY,
+          store_id VARCHAR(36) NOT NULL,
+          transaction_type ENUM('sale', 'refund', 'payment', 'fee', 'commission') NOT NULL,
+          amount DECIMAL(10,2) NOT NULL,
+          currency VARCHAR(3) DEFAULT 'USD',
+          description TEXT,
+          customer_id VARCHAR(36) NULL,
+          customer_name VARCHAR(255) NULL,
+          order_id VARCHAR(36) NULL,
+          payment_method VARCHAR(50) NULL,
+          status ENUM('pending', 'completed', 'failed', 'cancelled', 'refunded') DEFAULT 'pending',
+          transaction_date TIMESTAMP NOT NULL,
+          created_by VARCHAR(36) NULL,
+          metadata JSON NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_store_id (store_id),
+          INDEX idx_transaction_type (transaction_type),
+          INDEX idx_status (status),
+          INDEX idx_transaction_date (transaction_date),
+          INDEX idx_customer_id (customer_id),
+          INDEX idx_order_id (order_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+    }
+
     // Initialize OrderModel tables
     const { OrderModel } = await import('../models/OrderModel');
     const orderModel = new OrderModel();

@@ -8,6 +8,7 @@
     "registerStaff": "注册员工",
     "settings": "设置",
     "systemLogs": "系统日志",
+    "transactions": "交易记录",
     "open": "打开导航",
     "close": "关闭导航"
   },
@@ -37,7 +38,8 @@
     "analytics": "数据分析",
     "registerStaff": "注册员工",
     "settings": "设置",
-    "systemLogs": "系统日志"
+    "systemLogs": "系统日志",
+    "transactions": "交易记录"
   },
   "stores": {
     "title": "门店管理",
@@ -504,6 +506,49 @@
       "online": "在线",
       "offline": "离线"
     }
+  },
+  "transactions": {
+    "title": "门店交易记录",
+    "subtitle": "跟踪和管理所有门店交易",
+    "refresh": "刷新",
+    "loading": "加载交易记录中...",
+    "noTransactions": "未找到交易记录",
+    "totalAmount": "总金额",
+    "totalSales": "总销售额",
+    "totalRefunds": "总退款额",
+    "totalTransactions": "总交易数",
+    "filter": {
+      "store": "门店",
+      "type": "类型",
+      "status": "状态",
+      "startDate": "开始日期",
+      "endDate": "结束日期"
+    },
+    "allStores": "所有门店",
+    "allTypes": "所有类型",
+    "allStatuses": "所有状态",
+    "applyFilters": "应用筛选",
+    "resetFilters": "重置",
+    "type": {
+      "sale": "销售",
+      "refund": "退款",
+      "payment": "付款",
+      "fee": "费用",
+      "commission": "佣金"
+    },
+    "status": {
+      "pending": "待处理",
+      "completed": "已完成",
+      "failed": "失败",
+      "cancelled": "已取消",
+      "refunded": "已退款"
+    },
+    "date": "日期",
+    "store": "门店",
+    "customer": "客户",
+    "amount": "金额",
+    "paymentMethod": "支付方式",
+    "description": "描述"
   }
 }
 

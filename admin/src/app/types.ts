@@ -5,5 +5,6 @@ export type AdminPageKey =
   | "analytics"
   | "register-staff"
   | "settings"
-  | "system_logs";
+  | "system_logs"
+  | "transactions";
 

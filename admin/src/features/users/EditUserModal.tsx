@@ -55,7 +55,43 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
 
     setSaving(true);
     try {
-      const response = await staffApi.updateStaff(user.id, formData);
+      // Build update data with only changed fields
+      const updateData: UpdateStaffRequest = {};
+      
+      // Helper to normalize empty strings and undefined to empty string for comparison
+      const normalize = (value: string | undefined | null): string => value || "";
+      
+      // Compare each field and only include if changed
+      if (formData.firstName !== normalize(user.firstName)) {
+        updateData.firstName = formData.firstName;
+      }
+      if (formData.lastName !== normalize(user.lastName)) {
+        updateData.lastName = formData.lastName;
+      }
+      if (formData.phoneNumber !== normalize(user.phoneNumber)) {
+        updateData.phoneNumber = formData.phoneNumber;
+      }
+      if (formData.role !== user.role && !isSelf) {
+        // Only include role if changed and user has permission (not self)
+        updateData.role = formData.role;
+      }
+      // For department, compare normalized values
+      if (normalize(formData.department) !== normalize(user.department)) {
+        updateData.department = formData.department || undefined;
+      }
+      if (formData.isActive !== undefined && formData.isActive !== user.isActive) {
+        // Only include isActive if changed
+        updateData.isActive = formData.isActive;
+      }
+
+      // Don't send update if nothing changed
+      if (Object.keys(updateData).length === 0) {
+        showSuccess(t("users.edit.noChanges") || "No changes to save");
+        onClose();
+        return;
+      }
+
+      const response = await staffApi.updateStaff(user.id, updateData);
       if (response.success) {
         showSuccess(t("users.edit.success") || "User updated successfully");
         onSave();
@@ -274,8 +310,11 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
                 className={styles.input}
                 value={formData.employeeId}
                 onChange={handleChange}
-                disabled={saving}
+                disabled={true}
               />
+              <p className={styles.helpText}>
+                {t("users.edit.employeeIdHelp") || "Employee ID cannot be changed"}
+              </p>
             </div>
           </div>
 

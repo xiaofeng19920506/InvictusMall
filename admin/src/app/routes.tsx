@@ -9,6 +9,7 @@ const Analytics = lazy(() => import("../features/analytics/Analytics"));
 const AdminRegister = lazy(() => import("../features/auth/AdminRegister"));
 const SystemLogs = lazy(() => import("../features/system-logs/SystemLogs"));
 const Settings = lazy(() => import("../features/settings/Settings"));
+const TransactionsManagement = lazy(() => import("../features/transactions/TransactionsManagement"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -35,4 +36,5 @@ export const LazyAnalytics = withSuspense(Analytics);
 export const LazyAdminRegister = withSuspense(AdminRegister);
 export const LazySystemLogs = withSuspense(SystemLogs);
 export const LazySettings = withSuspense(Settings);
+export const LazyTransactionsManagement = withSuspense(TransactionsManagement);
 

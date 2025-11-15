@@ -8,6 +8,7 @@
     "registerStaff": "직원 등록",
     "settings": "설정",
     "systemLogs": "시스템 로그",
+    "transactions": "거래 기록",
     "open": "내비게이션 열기",
     "close": "내비게이션 닫기"
   },
@@ -37,7 +38,8 @@
     "analytics": "분석",
     "registerStaff": "직원 등록",
     "settings": "설정",
-    "systemLogs": "시스템 로그"
+    "systemLogs": "시스템 로그",
+    "transactions": "거래 기록"
   },
   "stores": {
     "title": "스토어 관리",
@@ -462,6 +464,49 @@
         }
       }
     }
+  },
+  "transactions": {
+    "title": "스토어 거래 기록",
+    "subtitle": "모든 스토어 거래를 추적하고 관리",
+    "refresh": "새로고침",
+    "loading": "거래 기록 로딩 중...",
+    "noTransactions": "거래 기록을 찾을 수 없습니다",
+    "totalAmount": "총 금액",
+    "totalSales": "총 매출",
+    "totalRefunds": "총 환불액",
+    "totalTransactions": "총 거래 수",
+    "filter": {
+      "store": "스토어",
+      "type": "유형",
+      "status": "상태",
+      "startDate": "시작 날짜",
+      "endDate": "종료 날짜"
+    },
+    "allStores": "모든 스토어",
+    "allTypes": "모든 유형",
+    "allStatuses": "모든 상태",
+    "applyFilters": "필터 적용",
+    "resetFilters": "재설정",
+    "type": {
+      "sale": "판매",
+      "refund": "환불",
+      "payment": "결제",
+      "fee": "수수료",
+      "commission": "수수료"
+    },
+    "status": {
+      "pending": "대기 중",
+      "completed": "완료",
+      "failed": "실패",
+      "cancelled": "취소됨",
+      "refunded": "환불됨"
+    },
+    "date": "날짜",
+    "store": "스토어",
+    "customer": "고객",
+    "amount": "금액",
+    "paymentMethod": "결제 방법",
+    "description": "설명"
   }
 }
 
