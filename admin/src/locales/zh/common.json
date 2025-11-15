@@ -3,6 +3,7 @@
   "nav": {
     "dashboard": "仪表盘",
     "stores": "商店管理",
+    "products": "商品管理",
     "users": "用户管理",
     "analytics": "数据分析",
     "registerStaff": "注册员工",
@@ -34,6 +35,7 @@
   "pages": {
     "dashboard": "仪表盘",
     "stores": "商店管理",
+    "products": "商品管理",
     "users": "用户管理",
     "analytics": "数据分析",
     "registerStaff": "注册员工",
@@ -566,6 +568,82 @@
       "confirmMessage": "您确定要退还交易 {{id}} 的 {{amount}} 吗？",
       "confirm": "确认退款",
       "cancel": "取消"
+    }
+  },
+  "products": {
+    "title": "商品管理",
+    "subtitle": "正在管理商店的商品：{{storeName}}",
+    "refresh": "刷新",
+    "addProduct": "添加商品",
+    "selectStore": "选择商店",
+    "selectStorePlaceholder": "-- 选择一个商店 --",
+    "searchPlaceholder": "搜索商品...",
+    "loading": "加载商品中...",
+    "empty": {
+      "noStore": "请选择一个商店来管理商品",
+      "noProducts": "该商店暂无商品",
+      "addFirst": "添加第一个商品"
+    },
+    "table": {
+      "title": "商品 ({{count}})",
+      "image": "图片",
+      "name": "名称",
+      "price": "价格",
+      "stock": "库存",
+      "category": "分类",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "status": {
+      "active": "启用",
+      "inactive": "停用"
+    },
+    "actions": {
+      "edit": "编辑",
+      "delete": "删除",
+      "confirmDelete": "您确定要删除此商品吗？",
+      "confirmDeleteTitle": "删除商品",
+      "confirmDeleteMessage": "您确定要删除此商品吗？此操作无法撤销。",
+      "deleteError": "删除商品失败",
+      "deleteSuccess": "商品删除成功",
+      "loadError": "加载商品失败",
+      "loadStoresError": "加载商店失败"
+    }
+  },
+  "productModal": {
+    "createTitle": "添加商品",
+    "editTitle": "编辑商品",
+    "fields": {
+      "name": "名称",
+      "nameRequired": "名称 *",
+      "description": "描述",
+      "price": "价格",
+      "priceRequired": "价格 *",
+      "stockQuantity": "库存数量",
+      "category": "分类",
+      "categoryPlaceholder": "-- 选择分类 --",
+      "categoryOptions": {
+        "service": "服务",
+        "product": "产品"
+      },
+      "image": "图片",
+      "active": "启用"
+    },
+    "actions": {
+      "saveError": "保存商品失败，请重试。",
+      "createSuccess": "商品创建成功",
+      "updateSuccess": "商品更新成功",
+      "saving": "保存中...",
+      "update": "更新",
+      "create": "创建",
+      "cancel": "取消",
+      "close": "关闭窗口",
+      "uploadImage": "上传图片",
+      "uploading": "上传中...",
+      "uploadSuccess": "图片上传成功",
+      "uploadFail": "图片上传失败，请重试。",
+      "invalidImageType": "请选择图片文件。",
+      "imageTooLarge": "图片文件大小必须小于15MB。"
     }
   }
 }

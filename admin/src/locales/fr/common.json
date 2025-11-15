@@ -3,6 +3,7 @@
   "nav": {
     "dashboard": "Tableau de bord",
     "stores": "Magasins",
+    "products": "Produits",
     "users": "Utilisateurs",
     "analytics": "Analyses",
     "registerStaff": "Enregistrer le personnel",
@@ -34,6 +35,7 @@
   "pages": {
     "dashboard": "Tableau de bord",
     "stores": "Magasins",
+    "products": "Produits",
     "users": "Utilisateurs",
     "analytics": "Analyses",
     "registerStaff": "Enregistrer le personnel",
@@ -524,6 +526,82 @@
       "confirmMessage": "Êtes-vous sûr de vouloir rembourser {{amount}} pour la transaction {{id}} ?",
       "confirm": "Confirmer le Remboursement",
       "cancel": "Annuler"
+    }
+  },
+  "products": {
+    "title": "Gestion des Produits",
+    "subtitle": "Gestion des produits pour : {{storeName}}",
+    "refresh": "Actualiser",
+    "addProduct": "Ajouter un Produit",
+    "selectStore": "Sélectionner une Boutique",
+    "selectStorePlaceholder": "-- Sélectionner une boutique --",
+    "searchPlaceholder": "Rechercher des produits...",
+    "loading": "Chargement des produits...",
+    "empty": {
+      "noStore": "Veuillez sélectionner une boutique pour gérer les produits",
+      "noProducts": "Aucun produit trouvé pour cette boutique",
+      "addFirst": "Ajouter le Premier Produit"
+    },
+    "table": {
+      "title": "Produits ({{count}})",
+      "image": "Image",
+      "name": "Nom",
+      "price": "Prix",
+      "stock": "Stock",
+      "category": "Catégorie",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "actions": {
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce produit ?",
+      "confirmDeleteTitle": "Supprimer le Produit",
+      "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer ce produit ? Cette action ne peut pas être annulée.",
+      "deleteError": "Échec de la suppression du produit",
+      "deleteSuccess": "Produit supprimé avec succès",
+      "loadError": "Échec du chargement des produits",
+      "loadStoresError": "Échec du chargement des boutiques"
+    }
+  },
+  "productModal": {
+    "createTitle": "Ajouter un Produit",
+    "editTitle": "Modifier le Produit",
+    "fields": {
+      "name": "Nom",
+      "nameRequired": "Nom *",
+      "description": "Description",
+      "price": "Prix",
+      "priceRequired": "Prix *",
+      "stockQuantity": "Quantité en Stock",
+      "category": "Catégorie",
+      "categoryPlaceholder": "-- Sélectionner une catégorie --",
+      "categoryOptions": {
+        "service": "Service",
+        "product": "Produit"
+      },
+      "image": "Image",
+      "active": "Actif"
+    },
+    "actions": {
+      "saveError": "Échec de l'enregistrement du produit. Veuillez réessayer.",
+      "createSuccess": "Produit créé avec succès",
+      "updateSuccess": "Produit mis à jour avec succès",
+      "saving": "Enregistrement...",
+      "update": "Mettre à jour",
+      "create": "Créer",
+      "cancel": "Annuler",
+      "close": "Fermer la fenêtre",
+      "uploadImage": "Télécharger l'Image",
+      "uploading": "Téléchargement...",
+      "uploadSuccess": "Image téléchargée avec succès",
+      "uploadFail": "Échec du téléchargement de l'image. Veuillez réessayer.",
+      "invalidImageType": "Veuillez sélectionner un fichier image.",
+      "imageTooLarge": "La taille du fichier image doit être inférieure à 15 Mo."
     }
   }
 }

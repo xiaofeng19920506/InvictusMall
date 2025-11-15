@@ -3,22 +3,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiService, Store } from "@/services/api";
+import { productService, Product } from "@/services/product";
 import { useCart } from "@/contexts/CartContext";
 import Header from "@/components/common/Header";
 import Link from "next/link";
-
-// Mock product interface (until backend product API is ready)
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-  category: string;
-  stock: number;
-  rating: number;
-  reviewCount: number;
-}
+import { getImageUrl } from "@/utils/imageUtils";
 
 function AddToCartButton({
   product,
@@ -69,18 +58,27 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
   const storeId = params.id as string;
 
   const [store, setStore] = useState<Store | null>(initialStore);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [allItems, setAllItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(!initialStore);
+  const [productsLoading, setProductsLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "overview" | "products" | "reviews"
+    "overview" | "products" | "services" | "reviews"
   >("overview");
+
+  // Separate products and services
+  const products = allItems.filter(item => item.category === "product" || !item.category);
+  const services = allItems.filter(item => item.category === "service");
 
   useEffect(() => {
     if (storeId && !initialStore) {
       fetchStoreDetails();
+    } else {
+      setLoading(false);
     }
-    fetchProducts();
+    if (storeId) {
+      fetchProducts();
+    }
   }, [storeId]);
 
   const fetchStoreDetails = async () => {
@@ -98,45 +96,22 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     }
   };
 
-  // Mock product fetching (replace with real API when available)
-  const fetchProducts = () => {
-    // Simulate API call
-    const mockProducts: Product[] = [
-      {
-        id: "1",
-        name: "Premium Product 1",
-        description: "High-quality product description",
-        price: 49.99,
-        imageUrl: "/placeholder/product-1.png",
-        category: "Electronics",
-        stock: 50,
-        rating: 4.5,
-        reviewCount: 120,
-      },
-      {
-        id: "2",
-        name: "Premium Product 2",
-        description: "Another great product",
-        price: 79.99,
-        imageUrl: "/placeholder/product-2.png",
-        category: "Electronics",
-        stock: 30,
-        rating: 4.8,
-        reviewCount: 85,
-      },
-      {
-        id: "3",
-        name: "Premium Product 3",
-        description: "Top-rated product",
-        price: 99.99,
-        imageUrl: "/placeholder/product-3.png",
-        category: "Electronics",
-        stock: 20,
-        rating: 4.9,
-        reviewCount: 200,
-      },
-    ];
-    setProducts(mockProducts);
+  const fetchProducts = async () => {
+    try {
+      setProductsLoading(true);
+      const response = await productService.getProductsByStoreId(storeId, { isActive: true });
+      if (response.success) {
+        setAllItems(response.data || []);
+      } else {
+        console.error("Failed to fetch products:", response.message);
+        setAllItems([]);
+      }
+    } catch (err: any) {
+      console.error("Error fetching products:", err);
+      setAllItems([]);
+    } finally {
+      setProductsLoading(false);
+    }
   };
 
   if (loading) {
@@ -183,11 +158,21 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-shrink-0">
-              <img
-                src={store.imageUrl}
-                alt={store.name}
-                className="w-full md:w-64 h-64 object-cover rounded-lg"
-              />
+              {store.imageUrl ? (
+                <img
+                  src={getImageUrl(store.imageUrl) || "/placeholder/store.png"}
+                  alt={store.name}
+                  className="w-full md:w-64 h-64 object-cover rounded-lg"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = "/placeholder/store.png";
+                  }}
+                />
+              ) : (
+                <div className="w-full md:w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <span className="text-gray-400">No Image</span>
+                </div>
+              )}
             </div>
 
             <div className="flex-1">
@@ -245,6 +230,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
               {[
                 { id: "overview", label: "Overview" },
                 { id: "products", label: `Products (${products.length})` },
+                { id: "services", label: `Services (${services.length})` },
                 { id: "reviews", label: `Reviews (${store.reviewCount})` },
               ].map((tab) => (
                 <button
@@ -336,46 +322,124 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             {/* Products Tab */}
             {activeTab === "products" && (
               <div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((product) => (
-                    <div
-                      key={product.id}
-                      className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                    >
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="p-4">
-                        <h4 className="font-semibold text-gray-900 mb-1">
-                          {product.name}
-                        </h4>
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                          {product.description}
-                        </p>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-xl font-bold text-orange-500">
-                            ${product.price.toFixed(2)}
-                          </span>
-                          <div className="flex items-center gap-1 text-sm">
-                            <span>⭐</span>
-                            <span>{product.rating.toFixed(1)}</span>
-                            <span className="text-gray-500">
-                              ({product.reviewCount})
-                            </span>
+                {productsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {products.map((product) => (
+                        <div
+                          key={product.id}
+                          className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                        >
+                          {product.imageUrl && (
+                            <img
+                              src={getImageUrl(product.imageUrl) || "/placeholder/product.png"}
+                              alt={product.name}
+                              className="w-full h-48 object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = "/placeholder/product.png";
+                              }}
+                            />
+                          )}
+                          {!product.imageUrl && (
+                            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                              <span className="text-gray-400">No Image</span>
+                            </div>
+                          )}
+                          <div className="p-4">
+                            <h4 className="font-semibold text-gray-900 mb-1">
+                              {product.name}
+                            </h4>
+                            {product.description && (
+                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                {product.description}
+                              </p>
+                            )}
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xl font-bold text-orange-500">
+                                ${product.price.toFixed(2)}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                Stock: {product.stockQuantity}
+                              </span>
+                            </div>
+                            <AddToCartButton product={product} store={store} />
                           </div>
                         </div>
-                        <AddToCartButton product={product} store={store} />
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                {products.length === 0 && (
-                  <div className="text-center py-12">
-                    <p className="text-gray-600">No products available yet.</p>
+                    {products.length === 0 && !productsLoading && (
+                      <div className="text-center py-12">
+                        <p className="text-gray-600">No products available yet.</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Services Tab */}
+            {activeTab === "services" && (
+              <div>
+                {productsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
                   </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {services.map((service) => (
+                        <div
+                          key={service.id}
+                          className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                        >
+                          {service.imageUrl && (
+                            <img
+                              src={getImageUrl(service.imageUrl) || "/placeholder/service.png"}
+                              alt={service.name}
+                              className="w-full h-48 object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = "/placeholder/service.png";
+                              }}
+                            />
+                          )}
+                          {!service.imageUrl && (
+                            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                              <span className="text-gray-400">No Image</span>
+                            </div>
+                          )}
+                          <div className="p-4">
+                            <h4 className="font-semibold text-gray-900 mb-1">
+                              {service.name}
+                            </h4>
+                            {service.description && (
+                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                                {service.description}
+                              </p>
+                            )}
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xl font-bold text-orange-500">
+                                ${service.price.toFixed(2)}
+                              </span>
+                            </div>
+                            <AddToCartButton product={service} store={store} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {services.length === 0 && !productsLoading && (
+                      <div className="text-center py-12">
+                        <p className="text-gray-600">No services available yet.</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

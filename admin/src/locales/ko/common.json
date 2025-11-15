@@ -3,6 +3,7 @@
   "nav": {
     "dashboard": "대시보드",
     "stores": "스토어 관리",
+    "products": "상품 관리",
     "users": "사용자 관리",
     "analytics": "분석",
     "registerStaff": "직원 등록",
@@ -34,6 +35,7 @@
   "pages": {
     "dashboard": "대시보드",
     "stores": "스토어 관리",
+    "products": "상품 관리",
     "users": "사용자 관리",
     "analytics": "분석",
     "registerStaff": "직원 등록",
@@ -524,6 +526,82 @@
       "confirmMessage": "거래 {{id}}에 대해 {{amount}}를 환불하시겠습니까?",
       "confirm": "환불 확인",
       "cancel": "취소"
+    }
+  },
+  "products": {
+    "title": "상품 관리",
+    "subtitle": "상점의 상품 관리 중: {{storeName}}",
+    "refresh": "새로고침",
+    "addProduct": "상품 추가",
+    "selectStore": "상점 선택",
+    "selectStorePlaceholder": "-- 상점을 선택하세요 --",
+    "searchPlaceholder": "상품 검색...",
+    "loading": "상품 로딩 중...",
+    "empty": {
+      "noStore": "상품을 관리할 상점을 선택해주세요",
+      "noProducts": "이 상점에 상품이 없습니다",
+      "addFirst": "첫 번째 상품 추가"
+    },
+    "table": {
+      "title": "상품 ({{count}})",
+      "image": "이미지",
+      "name": "이름",
+      "price": "가격",
+      "stock": "재고",
+      "category": "카테고리",
+      "status": "상태",
+      "actions": "작업"
+    },
+    "status": {
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "actions": {
+      "edit": "편집",
+      "delete": "삭제",
+      "confirmDelete": "이 상품을 삭제하시겠습니까?",
+      "confirmDeleteTitle": "상품 삭제",
+      "confirmDeleteMessage": "이 상품을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+      "deleteError": "상품 삭제 실패",
+      "deleteSuccess": "상품이 성공적으로 삭제되었습니다",
+      "loadError": "상품 로드 실패",
+      "loadStoresError": "상점 로드 실패"
+    }
+  },
+  "productModal": {
+    "createTitle": "상품 추가",
+    "editTitle": "상품 편집",
+    "fields": {
+      "name": "이름",
+      "nameRequired": "이름 *",
+      "description": "설명",
+      "price": "가격",
+      "priceRequired": "가격 *",
+      "stockQuantity": "재고 수량",
+      "category": "카테고리",
+      "categoryPlaceholder": "-- 카테고리 선택 --",
+      "categoryOptions": {
+        "service": "서비스",
+        "product": "제품"
+      },
+      "image": "이미지",
+      "active": "활성"
+    },
+    "actions": {
+      "saveError": "상품 저장 실패. 다시 시도해주세요.",
+      "createSuccess": "상품이 성공적으로 생성되었습니다",
+      "updateSuccess": "상품이 성공적으로 업데이트되었습니다",
+      "saving": "저장 중...",
+      "update": "업데이트",
+      "create": "생성",
+      "cancel": "취소",
+      "close": "창 닫기",
+      "uploadImage": "이미지 업로드",
+      "uploading": "업로드 중...",
+      "uploadSuccess": "이미지가 성공적으로 업로드되었습니다",
+      "uploadFail": "이미지 업로드 실패. 다시 시도해주세요.",
+      "invalidImageType": "이미지 파일을 선택해주세요.",
+      "imageTooLarge": "이미지 파일 크기는 15MB 미만이어야 합니다."
     }
   }
 }
