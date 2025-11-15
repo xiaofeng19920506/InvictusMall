@@ -8,7 +8,7 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "test": "jest",
-    "create-admin": "ts-node scripts/create-admin.ts",
+    "create-admin": "ts-node scripts/createAdmin.ts",
     "seed-sample-data": "ts-node scripts/seed-sample-data.ts"
   },
   "dependencies": {
