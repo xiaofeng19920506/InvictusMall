@@ -78,11 +78,6 @@ const Settings: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <h2 className={styles.title}>{t("settings.title")}</h2>
-        <p className={styles.subtitle}>{t("settings.subtitle")}</p>
-      </header>
-
       <section className="card">
         <div className="card-header">
           <div className={styles.sectionHeader}>

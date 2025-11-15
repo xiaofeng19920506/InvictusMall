@@ -166,7 +166,9 @@
       "deactivateTitle": "禁用用户",
       "activateTitle": "启用用户",
       "confirmToggle": "确定要{{action}}该用户吗？",
-      "toggleSoon": "启用/禁用功能即将上线"
+      "toggleSoon": "启用/禁用功能即将上线",
+      "registerStaff": "注册员工",
+      "cancelRegister": "取消"
     },
     "empty": {
       "title": "未找到用户",

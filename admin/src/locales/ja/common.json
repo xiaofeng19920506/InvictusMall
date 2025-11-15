@@ -233,7 +233,9 @@
       "deactivateTitle": "ユーザーを無効化",
       "activateTitle": "ユーザーを有効化",
       "confirmToggle": "このユーザーを{{action}}してもよろしいですか？",
-      "toggleSoon": "有効化/無効化機能はまもなく利用可能になります"
+      "toggleSoon": "有効化/無効化機能はまもなく利用可能になります",
+      "registerStaff": "スタッフを登録",
+      "cancelRegister": "キャンセル"
     },
     "empty": {
       "title": "ユーザーが見つかりません",

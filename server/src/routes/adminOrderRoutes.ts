@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { OrderModel, OrderStatus } from '../models/OrderModel';
 import {
-  authenticateUserToken,
+  authenticateStaffToken,
   AuthenticatedRequest,
   requireAdmin,
 } from "../middleware/auth";
@@ -59,7 +59,7 @@ const orderModel = new OrderModel();
  */
 router.get(
   "/",
-  authenticateUserToken,
+  authenticateStaffToken,
   requireAdmin,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -136,7 +136,7 @@ router.get(
  */
 router.put(
   "/:id/status",
-  authenticateUserToken,
+  authenticateStaffToken,
   requireAdmin,
   async (req: AuthenticatedRequest, res: Response) => {
     try {

@@ -166,7 +166,9 @@
       "deactivateTitle": "Deactivate User",
       "activateTitle": "Activate User",
       "confirmToggle": "Are you sure you want to {{action}} this user?",
-      "toggleSoon": "Toggle user status functionality coming soon"
+      "toggleSoon": "Toggle user status functionality coming soon",
+      "registerStaff": "Register Staff",
+      "cancelRegister": "Cancel"
     },
     "empty": {
       "title": "No users found",

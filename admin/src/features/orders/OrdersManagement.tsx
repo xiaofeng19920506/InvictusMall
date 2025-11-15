@@ -142,15 +142,6 @@ const OrdersManagement: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>{t("orders.title") || "Order Management"}</h1>
-          <p className={styles.subtitle}>
-            {t("orders.subtitle") || "Manage and update order statuses"}
-          </p>
-        </div>
-      </div>
-
       <div className={styles.filters}>
         <div className={styles.searchBox}>
           <Search className={styles.searchIcon} />
