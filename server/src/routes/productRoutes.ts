@@ -43,7 +43,7 @@ const uploadProductImage = multer({
 router.get("/store/:storeId", async (req: Request, res: Response) => {
   try {
     const { storeId } = req.params;
-    const { isActive } = req.query;
+    const { isActive, limit, offset } = req.query;
 
     if (!storeId) {
       return res.status(400).json({
@@ -61,6 +61,30 @@ router.get("/store/:storeId", async (req: Request, res: Response) => {
       });
     }
 
+    // Use pagination if limit is provided
+    if (limit !== undefined) {
+      const options: { isActive?: boolean; limit?: number; offset?: number } = {};
+      if (isActive !== undefined) {
+        options.isActive = isActive === "true";
+      }
+      if (limit !== undefined) {
+        options.limit = parseInt(limit as string) || undefined;
+      }
+      if (offset !== undefined) {
+        options.offset = parseInt(offset as string) || undefined;
+      }
+
+      const { products, total } = await ProductModel.findByStoreIdWithPagination(storeId, options);
+
+      return res.json({
+        success: true,
+        data: products,
+        count: products.length,
+        total,
+      });
+    }
+
+    // Regular fetch without pagination
     const options: { isActive?: boolean } = {};
     if (isActive !== undefined) {
       options.isActive = isActive === "true";

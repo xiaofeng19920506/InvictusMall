@@ -48,6 +48,8 @@ export const storeApi = {
   getAllStores: async (params?: {
     category?: string;
     search?: string;
+    limit?: number;
+    offset?: number;
   }): Promise<ApiResponse<Store[]>> => {
     const response = await api.get("/api/stores", { params });
     return response.data;
@@ -242,8 +244,12 @@ export interface Staff {
 
 export const staffApi = {
   // Get all staff
-  getAllStaff: async (): Promise<ApiResponse<Staff[]>> => {
+  getAllStaff: async (params?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<ApiResponse<Staff[]>> => {
     const response = await api.get("/api/staff/all", {
+      params,
       withCredentials: true,
     });
     return response.data;
@@ -451,11 +457,19 @@ export const productApi = {
   // Get all products for a store
   getProductsByStore: async (
     storeId: string,
-    isActive?: boolean
+    isActive?: boolean,
+    limit?: number,
+    offset?: number
   ): Promise<ApiResponse<Product[]>> => {
     const params: any = {};
     if (isActive !== undefined) {
       params.isActive = isActive;
+    }
+    if (limit !== undefined) {
+      params.limit = limit;
+    }
+    if (offset !== undefined) {
+      params.offset = offset;
     }
     const response = await api.get(`/api/products/store/${storeId}`, {
       params,
@@ -581,6 +595,8 @@ export const categoryApi = {
     tree?: boolean;
     level?: number;
     parentId?: string;
+    limit?: number;
+    offset?: number;
   }): Promise<ApiResponse<Category[] | CategoryTree[]>> => {
     const response = await api.get("/api/categories", { params });
     return response.data;

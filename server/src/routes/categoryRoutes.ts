@@ -75,13 +75,30 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
       });
     }
 
-    // Return all categories (flat list)
+    // Return all categories (flat list) - with optional pagination
+    const { limit, offset } = req.query;
+    
+    if (limit !== undefined) {
+      const { categories, total } = await categoryModel.findAllWithPagination({
+        includeInactive: includeInactive === 'true',
+        limit: parseInt(limit as string) || undefined,
+        offset: offset !== undefined ? parseInt(offset as string) : undefined,
+      });
+      return res.json({
+        success: true,
+        data: categories,
+        count: categories.length,
+        total,
+      });
+    }
+
     const categories = await categoryModel.findAll({
       includeInactive: includeInactive === 'true',
     });
     return res.json({
       success: true,
       data: categories,
+      count: categories.length,
     });
   } catch (error) {
     console.error('Get categories error:', error);

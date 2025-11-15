@@ -13,6 +13,8 @@ import type { Product, Store } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { getImageUrl } from "../../shared/utils/imageUtils";
+import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
+import Pagination from "../../shared/components/Pagination";
 import ProductModal from "./ProductModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import styles from "./ProductsManagement.module.css";
@@ -26,8 +28,12 @@ const ProductsManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
   const { user } = useAuth();
   const { showError, showSuccess } = useNotification();
+  const { setHeaderActions } = useAdminHeader();
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -51,8 +57,9 @@ const ProductsManagement: React.FC = () => {
       fetchProducts();
     } else {
       setProducts([]);
+      setTotalItems(0);
     }
-  }, [selectedStoreId]);
+  }, [selectedStoreId, currentPage, itemsPerPage]);
 
   const fetchStores = async () => {
     try {
@@ -73,9 +80,16 @@ const ProductsManagement: React.FC = () => {
     if (!selectedStoreId) return;
     setLoading(true);
     try {
-      const response = await productApi.getProductsByStore(selectedStoreId);
+      const offset = (currentPage - 1) * itemsPerPage;
+      const response = await productApi.getProductsByStore(
+        selectedStoreId,
+        undefined,
+        itemsPerPage,
+        offset
+      );
       if (response.success) {
         setProducts(response.data);
+        setTotalItems((response as any).total || response.data.length);
       } else {
         showError(t("products.actions.loadError"));
       }
@@ -118,6 +132,33 @@ const ProductsManagement: React.FC = () => {
     setShowModal(true);
   };
 
+  // Set header actions (after handleAddProduct is defined)
+  useEffect(() => {
+    setHeaderActions(
+      <>
+        <button
+          onClick={fetchProducts}
+          className="btn btn-secondary"
+          disabled={loading || !selectedStoreId}
+        >
+          <RefreshCw
+            className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+          />
+          {t("products.refresh")}
+        </button>
+        <button 
+          onClick={handleAddProduct} 
+          className="btn btn-primary"
+          disabled={!selectedStoreId}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          {t("products.addProduct")}
+        </button>
+      </>
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, selectedStoreId, setHeaderActions, t]);
+
   const handleModalClose = () => {
     setShowModal(false);
     setEditingProduct(null);
@@ -127,6 +168,17 @@ const ProductsManagement: React.FC = () => {
     await fetchProducts();
     handleModalClose();
   };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (itemsPerPage: number) => {
+    setItemsPerPage(itemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
@@ -149,39 +201,8 @@ const ProductsManagement: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div className={styles.headerInfo}>
-          <h2 className={styles.title}>{t("products.title")}</h2>
-          {selectedStore && (
-            <p className={styles.subtitle}>
-              {t("products.subtitle", { storeName: selectedStore.name })}
-            </p>
-          )}
-        </div>
-        <div className={styles.headerActions}>
-          <button
-            onClick={fetchProducts}
-            className="btn btn-secondary"
-            disabled={loading || !selectedStoreId}
-          >
-            <RefreshCw
-              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-            />
-            {t("products.refresh")}
-          </button>
-          <button 
-            onClick={handleAddProduct} 
-            className="btn btn-primary"
-            disabled={!selectedStoreId}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t("products.addProduct")}
-          </button>
-        </div>
-      </div>
-
       {/* Store Selector */}
-      <div className="card">
+      <div className={`card ${styles.storeSelector}`}>
         <div className={styles.filters}>
           <div>
             <label className="form-label">{t("products.selectStore")}</label>
@@ -213,35 +234,34 @@ const ProductsManagement: React.FC = () => {
         </div>
       </div>
 
-      {!selectedStoreId ? (
-        <div className="card">
-          <div className={styles.emptyState}>
-            <Package className={styles.emptyIcon} />
-            <p>{t("products.empty.noStore")}</p>
+      <div className={styles.productsContainer}>
+        {!selectedStoreId ? (
+          <div className={`card ${styles.fullHeightCard}`}>
+            <div className={styles.emptyState}>
+              <Package className={styles.emptyIcon} />
+              <p>{t("products.empty.noStore")}</p>
+            </div>
           </div>
-        </div>
-      ) : filteredProducts.length === 0 ? (
-        <div className="card">
-          <div className={styles.emptyState}>
-            <Package className={styles.emptyIcon} />
-            <p>{t("products.empty.noProducts")}</p>
-            <button onClick={handleAddProduct} className="btn btn-primary mt-4">
-              <Plus className="w-4 h-4 mr-2" />
-              {t("products.empty.addFirst")}
-            </button>
+        ) : filteredProducts.length === 0 ? (
+          <div className={`card ${styles.fullHeightCard}`}>
+            <div className={styles.emptyState}>
+              <Package className={styles.emptyIcon} />
+              <p>{t("products.empty.noProducts")}</p>
+              <button onClick={handleAddProduct} className="btn btn-primary mt-4">
+                <Plus className="w-4 h-4 mr-2" />
+                {t("products.empty.addFirst")}
+              </button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <>
-          {/* Products Table */}
-          <div className="card">
+        ) : (
+          <div className={`card ${styles.fullHeightCard}`}>
             <div className="card-header">
               <h3 className="card-title">
                 {t("products.table.title", { count: filteredProducts.length })}
               </h3>
             </div>
 
-            <div className={styles.tableWrapper}>
+            <div className={`${styles.tableWrapper} ${styles.fullHeightTableWrapper}`}>
               <table className="table">
                 <thead>
                   <tr>
@@ -314,10 +334,18 @@ const ProductsManagement: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+                onItemsPerPageChange={handleItemsPerPageChange}
+              />
             </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
 
       {/* Product Modal */}
       {showModal && (

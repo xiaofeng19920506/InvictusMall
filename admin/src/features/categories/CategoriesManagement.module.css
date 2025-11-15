@@ -1,7 +1,11 @@
 .container {
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 1rem;
+  flex: 1;
 }
 
 .header {
@@ -49,132 +53,74 @@
 .filters {
   display: flex;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 1rem;
 }
 
-.searchBox {
+.searchWrapper {
   position: relative;
-  flex: 1;
-  max-width: 400px;
+  flex: 1 1 240px;
+  min-width: 220px;
 }
 
 .searchIcon {
   position: absolute;
-  left: 0.75rem;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 1.25rem;
-  height: 1.25rem;
-  color: #9ca3af;
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  pointer-events: none;
 }
 
 .searchInput {
-  width: 100%;
-  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-}
-
-.searchInput:focus {
-  outline: none;
-  border-color: #f97316;
-  ring: 2px;
-  ring-color: #f97316;
-}
-
-.filterBox {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.filterIcon {
-  width: 1.25rem;
-  height: 1.25rem;
-  color: #6b7280;
+  padding-left: 36px;
 }
 
 .filterSelect {
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  background-color: white;
-  cursor: pointer;
+  min-width: 200px;
 }
 
-.filterSelect:focus {
-  outline: none;
-  border-color: #f97316;
+.fullHeightCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
 }
 
-.loading,
-.empty {
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+  color: var(--text-secondary);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
   text-align: center;
-  padding: 4rem 2rem;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
-.spinner {
-  border: 4px solid #f3f4f6;
-  border-top: 4px solid #f97316;
-  border-radius: 50%;
-  width: 3rem;
-  height: 3rem;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 1rem;
+.tableWrapper {
+  overflow-x: auto;
+  overflow-y: auto;
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.tableContainer {
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.table thead {
-  background-color: #f9fafb;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-.table th {
-  padding: 1rem;
-  text-align: left;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: #374151;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.table td {
-  padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 0.875rem;
-}
-
-.table tbody tr:hover {
-  background-color: #f9fafb;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
+.fullHeightTableWrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .nameCell {
@@ -257,46 +203,6 @@
   gap: 0.5rem;
 }
 
-.editButton,
-.deleteButton {
-  padding: 0.5rem;
-  border: none;
-  border-radius: 0.25rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.editButton {
-  background-color: #eff6ff;
-  color: #2563eb;
-}
-
-.editButton:hover {
-  background-color: #dbeafe;
-}
-
-.deleteButton {
-  background-color: #fef2f2;
-  color: #dc2626;
-}
-
-.deleteButton:hover:not(:disabled) {
-  background-color: #fee2e2;
-}
-
-.deleteButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.actionIcon {
-  width: 1rem;
-  height: 1rem;
-}
-
 .spinnerSmall {
   border: 2px solid #fee2e2;
   border-top: 2px solid #dc2626;
@@ -304,5 +210,14 @@
   width: 1rem;
   height: 1rem;
   animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 

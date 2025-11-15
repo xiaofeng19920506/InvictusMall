@@ -3,12 +3,15 @@ import { useTranslation } from "react-i18next";
 import { Plus, Edit2, Trash2, Search, Filter } from "lucide-react";
 import { categoryApi, type Category } from "../../services/api";
 import { useNotification } from "../../contexts/NotificationContext";
+import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
+import Pagination from "../../shared/components/Pagination";
 import CategoryModal from "./CategoryModal";
 import styles from "./CategoriesManagement.module.css";
 
 const CategoriesManagement: React.FC = () => {
   const { t } = useTranslation();
   const { showSuccess, showError, showWarning } = useNotification();
+  const { setHeaderActions } = useAdminHeader();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,10 +20,23 @@ const CategoriesManagement: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
     loadCategories();
   }, []);
+
+  // Set header actions
+  useEffect(() => {
+    setHeaderActions(
+      <button onClick={handleAdd} className="btn btn-primary">
+        <Plus className="w-4 h-4 mr-2" />
+        {t("categories.actions.add") || "Add Category"}
+      </button>
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setHeaderActions, t]);
 
   const loadCategories = async () => {
     try {
@@ -119,6 +135,25 @@ const CategoriesManagement: React.FC = () => {
     return filtered;
   }, [categories, searchQuery, levelFilter]);
 
+  // Paginate filtered categories (client-side pagination since we need tree structure)
+  const paginatedCategories = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredCategories.slice(start, end);
+  }, [filteredCategories, currentPage, itemsPerPage]);
+
+  const totalItems = filteredCategories.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (itemsPerPage: number) => {
+    setItemsPerPage(itemsPerPage);
+    setCurrentPage(1);
+  };
+
   const getIndentClass = (level: number) => {
     switch (level) {
       case 1:
@@ -134,63 +169,60 @@ const CategoriesManagement: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>{t("categories.title") || "Category Management"}</h1>
-          <p className={styles.subtitle}>
-            {t("categories.subtitle") || "Manage product categories and subcategories"}
-          </p>
-        </div>
-        <button onClick={handleAdd} className={styles.addButton}>
-          <Plus className={styles.icon} />
-          {t("categories.actions.add") || "Add Category"}
-        </button>
-      </div>
-
-      <div className={styles.filters}>
-        <div className={styles.searchBox}>
-          <Search className={styles.searchIcon} />
-          <input
-            type="text"
-            placeholder={t("categories.search.placeholder") || "Search categories..."}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.searchInput}
-          />
-        </div>
-        <div className={styles.filterBox}>
-          <Filter className={styles.filterIcon} />
-          <select
-            value={levelFilter === null ? "" : levelFilter}
-            onChange={(e) => setLevelFilter(e.target.value === "" ? null : parseInt(e.target.value))}
-            className={styles.filterSelect}
-          >
-            <option value="">{t("categories.filter.allLevels") || "All Levels"}</option>
-            <option value="1">{t("categories.filter.level1") || "Level 1 (Top Level)"}</option>
-            <option value="2">{t("categories.filter.level2") || "Level 2 (Subcategory)"}</option>
-            <option value="3">{t("categories.filter.level3") || "Level 3 (Sub-subcategory)"}</option>
-          </select>
+      {/* Filters */}
+      <div className="card">
+        <div className={styles.filters}>
+          <div className={styles.searchWrapper}>
+            <Search className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder={t("categories.search.placeholder") || "Search categories..."}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`form-input ${styles.searchInput}`}
+            />
+          </div>
+          <div>
+            <select
+              value={levelFilter === null ? "" : levelFilter}
+              onChange={(e) => setLevelFilter(e.target.value === "" ? null : parseInt(e.target.value))}
+              className={`form-input form-select ${styles.filterSelect}`}
+            >
+              <option value="">{t("categories.filter.allLevels") || "All Levels"}</option>
+              <option value="1">{t("categories.filter.level1") || "Level 1 (Top Level)"}</option>
+              <option value="2">{t("categories.filter.level2") || "Level 2 (Subcategory)"}</option>
+              <option value="3">{t("categories.filter.level3") || "Level 3 (Sub-subcategory)"}</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {loading ? (
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>{t("categories.loading") || "Loading categories..."}</p>
-        </div>
-      ) : filteredCategories.length === 0 ? (
-        <div className={styles.empty}>
-          <p>{t("categories.empty.noCategories") || "No categories found"}</p>
-          {categories.length === 0 && (
-            <button onClick={handleAdd} className={styles.addButton}>
-              <Plus className={styles.icon} />
-              {t("categories.actions.addFirst") || "Add First Category"}
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className={styles.tableContainer}>
-          <table className={styles.table}>
+      {/* Categories Table */}
+      <div className={`card ${styles.fullHeightCard}`}>
+        {loading ? (
+          <div className={styles.loading}>
+            <div className="loading" />
+            <span>{t("categories.loading") || "Loading categories..."}</span>
+          </div>
+        ) : filteredCategories.length === 0 ? (
+          <div className={styles.emptyState}>
+            <p>{t("categories.empty.noCategories") || "No categories found"}</p>
+            {categories.length === 0 && (
+              <button onClick={handleAdd} className="btn btn-primary mt-4">
+                <Plus className="w-4 h-4 mr-2" />
+                {t("categories.actions.addFirst") || "Add First Category"}
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="card-header">
+              <h3 className="card-title">
+                {t("categories.table.title", { count: totalItems }) || `Categories (${totalItems})`}
+              </h3>
+            </div>
+            <div className={`${styles.tableWrapper} ${styles.fullHeightTableWrapper}`}>
+              <table className="table">
             <thead>
               <tr>
                 <th>{t("categories.table.name") || "Name"}</th>
@@ -202,7 +234,7 @@ const CategoriesManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredCategories.map((category) => (
+              {paginatedCategories.map((category) => (
                 <tr key={category.id} className={getIndentClass(category.level)}>
                   <td>
                     <div className={styles.nameCell}>
@@ -243,31 +275,41 @@ const CategoriesManagement: React.FC = () => {
                     <div className={styles.actions}>
                       <button
                         onClick={() => handleEdit(category)}
-                        className={styles.editButton}
+                        className="btn btn-sm btn-icon"
                         title={t("categories.actions.edit") || "Edit"}
                       >
-                        <Edit2 className={styles.actionIcon} />
+                        <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(category)}
-                        className={styles.deleteButton}
+                        className="btn btn-sm btn-icon btn-danger"
                         disabled={deletingId === category.id}
                         title={t("categories.actions.delete") || "Delete"}
                       >
                         {deletingId === category.id ? (
                           <div className={styles.spinnerSmall}></div>
                         ) : (
-                          <Trash2 className={styles.actionIcon} />
+                          <Trash2 className="w-4 h-4" />
                         )}
                       </button>
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                 ))}
+               </tbody>
+             </table>
+             <Pagination
+               currentPage={currentPage}
+               totalPages={totalPages}
+               totalItems={totalItems}
+               itemsPerPage={itemsPerPage}
+               onPageChange={handlePageChange}
+               onItemsPerPageChange={handleItemsPerPageChange}
+             />
+           </div>
+           </>
+         )}
+       </div>
 
       {isModalOpen && (
         <CategoryModal

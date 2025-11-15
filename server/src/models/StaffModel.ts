@@ -194,6 +194,60 @@ export class StaffModel {
     }));
   }
 
+  async getAllStaffWithPagination(options?: { limit?: number; offset?: number }): Promise<{ staff: Staff[]; total: number }> {
+    // Get total count
+    const [countResult] = await pool.execute(`
+      SELECT COUNT(*) as total FROM staff 
+      WHERE role = 'admin' OR is_active = true
+    `);
+    const total = (countResult as any[])[0]?.total || 0;
+
+    // Get staff with pagination
+    let query = `
+      SELECT 
+        id, email, first_name, last_name, phone_number, role, 
+        department, employee_id, store_id, is_active, email_verified, 
+        created_at, updated_at, last_login_at, created_by
+      FROM staff 
+      WHERE role = 'admin' OR is_active = true
+      ORDER BY created_at DESC
+    `;
+
+    const limitValue = options?.limit !== undefined ? Math.max(0, Math.floor(options.limit)) : undefined;
+    const offsetValue = options?.offset !== undefined ? Math.max(0, Math.floor(options.offset)) : undefined;
+
+    if (limitValue !== undefined) {
+      query += ` LIMIT ${limitValue}`;
+      if (offsetValue !== undefined) {
+        query += ` OFFSET ${offsetValue}`;
+      }
+    }
+
+    const [rows] = await pool.execute(query);
+    const staffArray = rows as any[];
+
+    return {
+      staff: staffArray.map(staff => ({
+        id: staff.id,
+        email: staff.email,
+        firstName: staff.first_name,
+        lastName: staff.last_name,
+        phoneNumber: staff.phone_number,
+        role: staff.role,
+        department: staff.department,
+        employeeId: staff.employee_id,
+        storeId: staff.store_id || undefined,
+        isActive: staff.is_active,
+        emailVerified: staff.email_verified,
+        createdAt: staff.created_at,
+        updatedAt: staff.updated_at,
+        lastLoginAt: staff.last_login_at,
+        createdBy: staff.created_by
+      })),
+      total
+    };
+  }
+
   async updateStaff(id: string, updateData: UpdateStaffRequest): Promise<Staff | null> {
     const fields = [];
     const values = [];

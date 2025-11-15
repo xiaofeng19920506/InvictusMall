@@ -298,6 +298,52 @@ export class CategoryModel {
   }
 
   /**
+   * Find all categories with pagination
+   */
+  async findAllWithPagination(
+    options?: { includeInactive?: boolean; limit?: number; offset?: number }
+  ): Promise<{ categories: Category[]; total: number }> {
+    let whereClause = '';
+    const params: any[] = [];
+
+    if (!options?.includeInactive) {
+      whereClause = ' WHERE is_active = TRUE';
+    }
+
+    // Get total count
+    const [countResult] = await this.pool.execute(
+      `SELECT COUNT(*) as total FROM categories${whereClause}`,
+      params
+    );
+    const total = (countResult as any[])[0]?.total || 0;
+
+    // Get categories with pagination
+    let query = `
+      SELECT 
+        id, name, slug, description, parent_id, level,
+        display_order, is_active, created_at, updated_at
+      FROM categories
+      ${whereClause}
+      ORDER BY level ASC, display_order ASC, name ASC
+    `;
+
+    const limitValue = options?.limit !== undefined ? Math.max(0, Math.floor(options.limit)) : undefined;
+    const offsetValue = options?.offset !== undefined ? Math.max(0, Math.floor(options.offset)) : undefined;
+
+    if (limitValue !== undefined) {
+      query += ` LIMIT ${limitValue}`;
+      if (offsetValue !== undefined) {
+        query += ` OFFSET ${offsetValue}`;
+      }
+    }
+
+    const [rows] = await this.pool.execute(query, params);
+    const categories = rows as any[];
+
+    return { categories: categories.map((row) => this.mapRowToCategory(row)), total };
+  }
+
+  /**
    * Find categories by parent ID
    */
   async findByParentId(parentId?: string | null): Promise<Category[]> {

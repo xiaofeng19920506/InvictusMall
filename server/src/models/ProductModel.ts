@@ -56,6 +56,62 @@ export class ProductModel {
     }
   }
 
+  // Get all products for a store with pagination
+  static async findByStoreIdWithPagination(
+    storeId: string,
+    options?: { isActive?: boolean; limit?: number; offset?: number }
+  ): Promise<{ products: Product[]; total: number }> {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      
+      // Build WHERE clause for count
+      let whereClause = `WHERE store_id = ?`;
+      const params: any[] = [storeId];
+
+      if (options?.isActive !== undefined) {
+        whereClause += ` AND is_active = ?`;
+        params.push(options.isActive);
+      }
+
+      // Get total count
+      const [countResult] = await connection.execute(
+        `SELECT COUNT(*) as total FROM products ${whereClause}`,
+        params
+      );
+      const total = (countResult as any[])[0]?.total || 0;
+
+      // Get products with pagination
+      let query = `SELECT * FROM products ${whereClause} ORDER BY created_at DESC`;
+      
+      const limitValue = options?.limit !== undefined ? Math.max(0, Math.floor(options.limit)) : undefined;
+      const offsetValue = options?.offset !== undefined ? Math.max(0, Math.floor(options.offset)) : undefined;
+
+      if (limitValue !== undefined) {
+        query += ` LIMIT ${limitValue}`;
+        if (offsetValue !== undefined) {
+          query += ` OFFSET ${offsetValue}`;
+        }
+      }
+
+      const [rows] = await connection.execute(query, params);
+      const products = rows as any[];
+      
+      if (!products || products.length === 0) {
+        return { products: [], total };
+      }
+      
+      return { products: products.map(this.mapRowToProduct), total };
+    } catch (error: any) {
+      console.error('Database error in findByStoreIdWithPagination:', error);
+      throw error;
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
+
   // Get product by ID
   static async findById(id: string): Promise<Product | null> {
     let connection;
