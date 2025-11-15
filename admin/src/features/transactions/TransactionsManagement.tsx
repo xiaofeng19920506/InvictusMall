@@ -16,6 +16,7 @@ import { transactionApi, storeApi, type StoreTransaction, type TransactionFilter
 import { useNotification } from "../../contexts/NotificationContext";
 import { useAuth } from "../../contexts/AuthContext";
 import type { Store } from "../../shared/types/store";
+import ConfirmModal from "../../shared/components/ConfirmModal";
 import styles from "./TransactionsManagement.module.css";
 
 type TransactionViewMode = 'local' | 'stripe' | 'both';
@@ -47,6 +48,8 @@ const TransactionsManagement: React.FC = () => {
   const [endDate, setEndDate] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(20);
+  const [selectedTransaction, setSelectedTransaction] = useState<StoreTransaction | StripeTransaction | null>(null);
+  const [showRefundModal, setShowRefundModal] = useState(false);
   const { showError, showSuccess } = useNotification();
   const { user } = useAuth();
 
@@ -293,13 +296,28 @@ const TransactionsManagement: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const handleRefund = async (transaction: StoreTransaction | StripeTransaction) => {
+  const handleRefund = (transaction: StoreTransaction | StripeTransaction) => {
+    const isLocal = (transaction as any).source === 'local';
+    
+    if (!isLocal) {
+      // For Stripe transactions, show a message that Stripe refunds need to be processed in Stripe dashboard
+      showError(t("transactions.refund.stripeMessage") || "Stripe refunds must be processed through the Stripe dashboard");
+      return;
+    }
+
+    setSelectedTransaction(transaction);
+    setShowRefundModal(true);
+  };
+
+  const confirmRefund = async () => {
+    if (!selectedTransaction) return;
+
     try {
-      const isLocal = (transaction as any).source === 'local';
+      const isLocal = (selectedTransaction as any).source === 'local';
       
       if (isLocal) {
         // For local transactions, create a refund transaction
-        const localTransaction = transaction as StoreTransaction;
+        const localTransaction = selectedTransaction as StoreTransaction;
         const refundData: CreateTransactionRequest = {
           storeId: localTransaction.storeId,
           transactionType: 'refund',
@@ -322,12 +340,11 @@ const TransactionsManagement: React.FC = () => {
         if (response.success) {
           showSuccess(t("transactions.refund.success") || "Refund transaction created successfully");
           loadAllTransactions();
+          setShowRefundModal(false);
+          setSelectedTransaction(null);
         } else {
           showError(response.message || t("transactions.refund.error") || "Failed to create refund");
         }
-      } else {
-        // For Stripe transactions, show a message that Stripe refunds need to be processed in Stripe dashboard
-        showError(t("transactions.refund.stripeMessage") || "Stripe refunds must be processed through the Stripe dashboard");
       }
     } catch (error: any) {
       console.error("Error processing refund:", error);
@@ -335,6 +352,11 @@ const TransactionsManagement: React.FC = () => {
         error.response?.data?.message || t("transactions.refund.error") || "Failed to process refund"
       );
     }
+  };
+
+  const cancelRefund = () => {
+    setShowRefundModal(false);
+    setSelectedTransaction(null);
   };
 
   const handleViewDetails = (transaction: StoreTransaction | StripeTransaction) => {
@@ -831,6 +853,25 @@ const TransactionsManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Refund Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showRefundModal}
+        title={t("transactions.refund.confirmTitle") || "Confirm Refund"}
+        message={
+          selectedTransaction
+            ? t("transactions.refund.confirmMessage", {
+                amount: formatCurrency(Math.abs(selectedTransaction.amount), selectedTransaction.currency || 'USD'),
+                id: selectedTransaction.id,
+              }) || `Are you sure you want to refund ${formatCurrency(Math.abs(selectedTransaction.amount), selectedTransaction.currency || 'USD')} for transaction ${selectedTransaction.id}?`
+            : ""
+        }
+        confirmText={t("transactions.refund.confirm") || "Confirm Refund"}
+        cancelText={t("transactions.refund.cancel") || "Cancel"}
+        onConfirm={confirmRefund}
+        onCancel={cancelRefund}
+        type="danger"
+      />
     </div>
   );
 };

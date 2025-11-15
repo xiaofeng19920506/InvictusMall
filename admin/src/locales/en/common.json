@@ -572,7 +572,11 @@
     "refund": {
       "success": "Refund transaction created successfully",
       "error": "Failed to create refund",
-      "stripeMessage": "Stripe refunds must be processed through the Stripe dashboard"
+      "stripeMessage": "Stripe refunds must be processed through the Stripe dashboard",
+      "confirmTitle": "Confirm Refund",
+      "confirmMessage": "Are you sure you want to refund {{amount}} for transaction {{id}}?",
+      "confirm": "Confirm Refund",
+      "cancel": "Cancel"
     }
   }
 }

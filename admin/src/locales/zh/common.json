@@ -561,7 +561,11 @@
     "refund": {
       "success": "退款交易创建成功",
       "error": "创建退款失败",
-      "stripeMessage": "Stripe 退款必须通过 Stripe 仪表板处理"
+      "stripeMessage": "Stripe 退款必须通过 Stripe 仪表板处理",
+      "confirmTitle": "确认退款",
+      "confirmMessage": "您确定要退还交易 {{id}} 的 {{amount}} 吗？",
+      "confirm": "确认退款",
+      "cancel": "取消"
     }
   }
 }

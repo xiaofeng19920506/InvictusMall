@@ -519,7 +519,11 @@
     "refund": {
       "success": "환불 거래가 성공적으로 생성되었습니다",
       "error": "환불 생성 실패",
-      "stripeMessage": "Stripe 환불은 Stripe 대시보드를 통해 처리해야 합니다"
+      "stripeMessage": "Stripe 환불은 Stripe 대시보드를 통해 처리해야 합니다",
+      "confirmTitle": "환불 확인",
+      "confirmMessage": "거래 {{id}}에 대해 {{amount}}를 환불하시겠습니까?",
+      "confirm": "환불 확인",
+      "cancel": "취소"
     }
   }
 }
