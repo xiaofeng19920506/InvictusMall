@@ -118,6 +118,7 @@ export class VerificationTokenModel {
   }
 
   async createVerificationTokensTable(): Promise<void> {
+    // Create table without foreign key first
     const query = `
       CREATE TABLE IF NOT EXISTS verification_tokens (
         id VARCHAR(36) PRIMARY KEY,
@@ -130,11 +131,28 @@ export class VerificationTokenModel {
         INDEX idx_user_id (user_id),
         INDEX idx_token (token),
         INDEX idx_type (type),
-        INDEX idx_expires_at (expires_at),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        INDEX idx_expires_at (expires_at)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `;
 
     await this.pool.execute(query);
+
+    // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+    try {
+      await this.pool.execute(`
+        ALTER TABLE verification_tokens
+        ADD CONSTRAINT fk_verification_tokens_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+        console.warn('Could not add foreign key to verification_tokens:', error.message);
+      }
+      // Log when REFERENCES permission is missing (but don't fail)
+      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+        console.info('Skipping foreign key constraint for verification_tokens (missing REFERENCES permission)');
+      }
+    }
   }
 }

@@ -604,7 +604,7 @@ export class OrderModel {
         // Ignore if index already exists
       }
 
-      // Create order_items table
+      // Create order_items table (without foreign key first)
       const orderItemsTableQuery = `
         CREATE TABLE IF NOT EXISTS order_items (
           id VARCHAR(36) PRIMARY KEY,
@@ -616,13 +616,30 @@ export class OrderModel {
           price DECIMAL(10, 2) NOT NULL,
           subtotal DECIMAL(10, 2) NOT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
           INDEX idx_order_id (order_id),
           INDEX idx_product_id (product_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `;
 
       await connection.execute(orderItemsTableQuery);
+
+      // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+      try {
+        await connection.execute(`
+          ALTER TABLE order_items
+          ADD CONSTRAINT fk_order_items_order
+          FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+        `);
+      } catch (error: any) {
+        // Silently ignore if foreign key already exists or user lacks REFERENCES permission
+        if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+          console.warn('Could not add foreign key to order_items:', error.message);
+        }
+        // Log when REFERENCES permission is missing (but don't fail)
+        if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+          console.info('Skipping foreign key constraint for order_items (missing REFERENCES permission)');
+        }
+      }
     } finally {
       connection.release();
     }

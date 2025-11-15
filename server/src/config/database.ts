@@ -111,8 +111,13 @@ const createTables = async (): Promise<void> => {
         FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
       `);
     } catch (error: any) {
-      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
         console.warn('Could not add foreign key to store_categories:', error.message);
+      }
+      // Log when REFERENCES permission is missing (but don't fail)
+      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+        console.info('Skipping foreign key constraint for store_categories (missing REFERENCES permission)');
       }
     }
 
@@ -139,8 +144,13 @@ const createTables = async (): Promise<void> => {
         FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
       `);
     } catch (error: any) {
-      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
         console.warn('Could not add foreign key to store_locations:', error.message);
+      }
+      // Log when REFERENCES permission is missing (but don't fail)
+      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+        console.info('Skipping foreign key constraint for store_locations (missing REFERENCES permission)');
       }
     }
 
@@ -190,39 +200,17 @@ const createTables = async (): Promise<void> => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `);
     } catch (error: any) {
-      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
         console.warn('Could not add foreign key to verification_tokens:', error.message);
+      }
+      // Log when REFERENCES permission is missing (but don't fail)
+      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+        console.info('Skipping foreign key constraint for verification_tokens (missing REFERENCES permission)');
       }
     }
 
     // Create staff table for admin app users (without foreign key first)
-    // First check the stores.id column definition to match it exactly for store_id
-    let staffStoreIdType = 'VARCHAR(36)';
-    let staffStoreIdCharset = '';
-    
-    try {
-      const [storeColumns]: any = await connection.execute(`
-        SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
-        FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE TABLE_SCHEMA = DATABASE()
-        AND TABLE_NAME = 'stores'
-        AND COLUMN_NAME = 'id'
-      `);
-      
-      if (storeColumns && storeColumns.length > 0) {
-        const storeIdCol = storeColumns[0];
-        staffStoreIdType = storeIdCol.COLUMN_TYPE;
-        if (storeIdCol.CHARACTER_SET_NAME) {
-          staffStoreIdCharset = ` CHARACTER SET ${storeIdCol.CHARACTER_SET_NAME}`;
-          if (storeIdCol.COLLATION_NAME) {
-            staffStoreIdCharset += ` COLLATE ${storeIdCol.COLLATION_NAME}`;
-          }
-        }
-      }
-    } catch (error: any) {
-      console.warn('Could not check stores.id column type for staff table, using default:', error.message);
-    }
-
     await connection.execute(`
               CREATE TABLE IF NOT EXISTS staff (
                 id VARCHAR(36) PRIMARY KEY,
@@ -234,7 +222,7 @@ const createTables = async (): Promise<void> => {
                 role ENUM('admin', 'owner', 'manager', 'employee') DEFAULT 'employee',
                 department VARCHAR(100) NULL,
                 employee_id VARCHAR(50) UNIQUE NULL,
-                store_id ${staffStoreIdType}${staffStoreIdCharset} NULL,
+                store_id VARCHAR(36) NULL,
                 is_active BOOLEAN DEFAULT true,
                 email_verified BOOLEAN DEFAULT true,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -251,26 +239,15 @@ const createTables = async (): Promise<void> => {
             `);
 
     // Add store_id column to existing staff table if it doesn't exist
-    // Use the same type as stores.id for compatibility
     try {
       await connection.execute(`
         ALTER TABLE staff 
-        ADD COLUMN store_id ${staffStoreIdType}${staffStoreIdCharset} NULL
+        ADD COLUMN store_id VARCHAR(36) NULL
       `);
     } catch (error: any) {
       // Ignore if the column already exists (ER_DUP_FIELDNAME)
       if (error?.code !== 'ER_DUP_FIELDNAME') {
         // Column might already exist, continue
-      } else {
-        // If column exists but type might be wrong, try to modify it
-        try {
-          await connection.execute(`
-            ALTER TABLE staff 
-            MODIFY COLUMN store_id ${staffStoreIdType}${staffStoreIdCharset} NULL
-          `);
-        } catch (modifyError: any) {
-          // Ignore modification errors
-        }
       }
     }
 
@@ -295,31 +272,13 @@ const createTables = async (): Promise<void> => {
         FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
       `);
     } catch (error: any) {
-      // If columns are incompatible, try to modify the column type to match
-      if (error.code === 'ER_FK_INCOMPATIBLE_COLUMNS') {
-        try {
-          // Modify store_id to match stores.id exactly
-          await connection.execute(`
-            ALTER TABLE staff 
-            MODIFY COLUMN store_id ${staffStoreIdType}${staffStoreIdCharset} NULL
-          `);
-          // Try adding foreign key again
-          try {
-            await connection.execute(`
-              ALTER TABLE staff 
-              ADD CONSTRAINT fk_staff_store 
-              FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
-            `);
-          } catch (retryError: any) {
-            if (retryError.code !== 'ER_DUP_KEY' && retryError.code !== 'ER_FK_DUP_NAME' && retryError.errno !== 1142) {
-              console.warn('Could not add foreign key to staff after modifying column:', retryError.message);
-            }
-          }
-        } catch (modifyError: any) {
-          console.warn('Could not modify staff.store_id column type:', modifyError.message);
-        }
-      } else if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+      // Ignore if the foreign key already exists or user lacks REFERENCES permission
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
         console.warn('Could not add foreign key to staff:', error.message);
+      }
+      // Log when REFERENCES permission is missing (but don't fail)
+      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+        console.info('Skipping foreign key constraint for staff (missing REFERENCES permission)');
       }
     }
 
@@ -356,8 +315,13 @@ const createTables = async (): Promise<void> => {
         FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
       `);
     } catch (error: any) {
-      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
         console.warn('Could not add foreign key to staff_invitations:', error.message);
+      }
+      // Log when REFERENCES permission is missing (but don't fail)
+      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+        console.info('Skipping foreign key constraint for staff_invitations (missing REFERENCES permission)');
       }
     }
 
@@ -453,8 +417,13 @@ const createTables = async (): Promise<void> => {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       `);
     } catch (error: any) {
-      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
         console.warn('Could not add foreign key to shipping_addresses:', error.message);
+      }
+      // Log when REFERENCES permission is missing (but don't fail)
+      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+        console.info('Skipping foreign key constraint for shipping_addresses (missing REFERENCES permission)');
       }
     }
 
@@ -541,13 +510,18 @@ const createTables = async (): Promise<void> => {
               FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
             `);
           } catch (retryError: any) {
-            if (retryError.code !== 'ER_DUP_KEY' && retryError.code !== 'ER_FK_DUP_NAME' && retryError.errno !== 1142) {
-              throw retryError;
-            }
-          }
-        } else if (error.code !== 'ER_DUP_KEY' && error.code !== 'ER_FK_DUP_NAME' && error.errno !== 1142) {
-          throw error;
-        }
+             if (retryError.code !== 'ER_DUP_KEY' && retryError.code !== 'ER_FK_DUP_NAME' && retryError.errno !== 1142 && retryError.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+               throw retryError;
+             }
+             if (retryError.errno === 1142 || retryError.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+               console.info('Skipping foreign key constraint for staff_invitations.store_id (missing REFERENCES permission)');
+             }
+           }
+         } else if (error.code !== 'ER_DUP_KEY' && error.code !== 'ER_FK_DUP_NAME' && error.errno !== 1142 && error.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+           throw error;
+         } else if (error.errno === 1142 || error.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+           console.info('Skipping foreign key constraint for staff_invitations.store_id (missing REFERENCES permission)');
+         }
       }
     } catch (error: any) {
       // Column might already exist (ER_DUP_FIELDNAME) or foreign key might exist (ER_DUP_KEYNAME)
@@ -618,8 +592,12 @@ const createTables = async (): Promise<void> => {
         `);
       } catch (error: any) {
         // Foreign key might already exist or user lacks REFERENCES permission, ignore if it does
-        if (error.code !== 'ER_DUP_KEY' && error.code !== 'ER_FK_DUP_NAME' && error.errno !== 1142) {
+        if (error.code !== 'ER_DUP_KEY' && error.code !== 'ER_FK_DUP_NAME' && error.errno !== 1142 && error.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
           console.warn('Could not add foreign key to store_transactions:', error.message);
+        }
+        // Log when REFERENCES permission is missing (but don't fail)
+        if (error.errno === 1142 || error.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+          console.info('Skipping foreign key constraint for store_transactions (missing REFERENCES permission)');
         }
       }
     } catch (error: any) {
