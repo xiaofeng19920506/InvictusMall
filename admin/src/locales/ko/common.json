@@ -494,7 +494,8 @@
       "fee": "수수료",
       "commission": "수수료"
     },
-    "status": {
+    "status": "상태",
+    "statuses": {
       "pending": "대기 중",
       "completed": "완료",
       "failed": "실패",
@@ -506,7 +507,20 @@
     "customer": "고객",
     "amount": "금액",
     "paymentMethod": "결제 방법",
-    "description": "설명"
+    "description": "설명",
+    "itemsPerPage": "페이지당 항목 수",
+    "showing": "표시 중",
+    "of": "중",
+    "actions": "작업",
+    "actionButtons": {
+      "refund": "환불",
+      "viewDetails": "세부 정보 보기"
+    },
+    "refund": {
+      "success": "환불 거래가 성공적으로 생성되었습니다",
+      "error": "환불 생성 실패",
+      "stripeMessage": "Stripe 환불은 Stripe 대시보드를 통해 처리해야 합니다"
+    }
   }
 }
 

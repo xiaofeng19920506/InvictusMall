@@ -536,7 +536,8 @@
       "fee": "Fee",
       "commission": "Commission"
     },
-    "status": {
+    "status": "Status",
+    "statuses": {
       "pending": "Pending",
       "completed": "Completed",
       "failed": "Failed",
@@ -562,6 +563,16 @@
     },
     "itemsPerPage": "Items per page",
     "showing": "Showing",
-    "of": "of"
+    "of": "of",
+    "actions": "Actions",
+    "actionButtons": {
+      "refund": "Refund",
+      "viewDetails": "View Details"
+    },
+    "refund": {
+      "success": "Refund transaction created successfully",
+      "error": "Failed to create refund",
+      "stripeMessage": "Stripe refunds must be processed through the Stripe dashboard"
+    }
   }
 }
