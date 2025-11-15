@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
-import { storeApi } from "../../services/api";
+import { storeApi, staffApi } from "../../services/api";
 import type { Store } from "../../shared/types/store";
 import styles from "./AdminRegister.module.css";
 
@@ -58,9 +58,8 @@ export default function AdminRegister() {
 
       if (user.role === "admin") {
         loadStores();
-      } else if (user.role === "owner") {
-        // Owner's store will be set automatically, but we can load it for display
-        loadStores();
+      } else if (user.role === "owner" || user.role === "manager") {
+        loadStoresForOwnerOrManager();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,6 +74,55 @@ export default function AdminRegister() {
       }
     } catch (error) {
       console.error("Error loading stores:", error);
+    } finally {
+      setLoadingStores(false);
+    }
+  };
+
+  const loadStoresForOwnerOrManager = async () => {
+    try {
+      setLoadingStores(true);
+      // Get current user's staff record to find their storeId
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const staffResponse = await fetch(`${apiUrl}/api/staff/me`, {
+        credentials: "include",
+      });
+      
+      if (!staffResponse.ok) {
+        console.error("Failed to fetch staff info");
+        return;
+      }
+
+      const staffData = await staffResponse.json();
+      if (!staffData.success || !staffData.user) {
+        console.error("Failed to get staff info");
+        return;
+      }
+
+      const userStoreId = (staffData.user as any).storeId;
+      
+      if (!userStoreId) {
+        // User doesn't have a storeId, no stores to show
+        setStores([]);
+        return;
+      }
+
+      // Load all stores and filter by the user's storeId
+      const response = await storeApi.getAllStores();
+      if (response.success && response.data) {
+        const filteredStores = response.data.filter(store => store.id === userStoreId);
+        setStores(filteredStores);
+        
+        // If only one store, pre-select it
+        if (filteredStores.length === 1) {
+          setFormData((prev) => ({
+            ...prev,
+            storeId: filteredStores[0].id,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error loading stores for owner/manager:", error);
     } finally {
       setLoadingStores(false);
     }
@@ -98,6 +146,8 @@ export default function AdminRegister() {
       return ["owner"]; // Admin can only invite owner
     } else if (user?.role === "owner") {
       return ["manager", "employee"]; // Owner can invite manager and employee
+    } else if (user?.role === "manager") {
+      return ["employee"]; // Manager can invite employee
     }
     return [];
   };
@@ -133,6 +183,9 @@ export default function AdminRegister() {
         setSuccess(
           t("registerStaff.feedback.success", { email: formData.email })
         );
+        const resetStoreId = user?.role !== "admin" && stores.length === 1 
+          ? stores[0].id 
+          : "";
         setFormData({
           email: "",
           firstName: "",
@@ -140,7 +193,7 @@ export default function AdminRegister() {
           role: getInitialRole(),
           department: "",
           employeeId: "",
-          storeId: "",
+          storeId: resetStoreId,
         });
       } else {
         setError(data.message || t("registerStaff.feedback.error"));
@@ -152,7 +205,7 @@ export default function AdminRegister() {
     }
   };
 
-  if (!user || (user.role !== "admin" && user.role !== "owner")) {
+  if (!user || (user.role !== "admin" && user.role !== "owner" && user.role !== "manager")) {
     return (
       <div className={styles.container}>
         <div className={`${styles.card} ${styles.accessDenied}`}>
@@ -267,20 +320,27 @@ export default function AdminRegister() {
                 ))}
               </select>
             </div>
-            {user?.role === "admin" && (
+            {(user?.role === "admin" || user?.role === "owner" || user?.role === "manager") && (
               <div className={styles.inputGroup}>
                 <label className={styles.label} htmlFor="storeId">
                   {t("registerStaff.form.store")}
-                  <span className={styles.required}> *</span>
+                  {user?.role === "admin" && (
+                    <span className={styles.optional}>
+                      {t("registerStaff.form.optional")}
+                    </span>
+                  )}
                 </label>
                 <select
                   id="storeId"
                   name="storeId"
-                  required
                   className={styles.select}
                   value={formData.storeId}
                   onChange={handleChange}
-                  disabled={isSubmitting || loadingStores}
+                  disabled={
+                    isSubmitting || 
+                    loadingStores || 
+                    (user?.role !== "admin" && stores.length === 1)
+                  }
                 >
                   <option value="">
                     {loadingStores

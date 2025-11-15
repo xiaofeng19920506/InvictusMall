@@ -3,6 +3,7 @@
   "nav": {
     "dashboard": "ダッシュボード",
     "stores": "店舗管理",
+    "products": "商品管理",
     "users": "ユーザー管理",
     "analytics": "分析",
     "registerStaff": "スタッフ登録",
@@ -34,6 +35,7 @@
   "pages": {
     "dashboard": "ダッシュボード",
     "stores": "店舗管理",
+    "products": "商品管理",
     "users": "ユーザー管理",
     "analytics": "分析",
     "registerStaff": "スタッフ登録",
@@ -524,6 +526,82 @@
       "confirmMessage": "トランザクション {{id}} の {{amount}} を返金してもよろしいですか？",
       "confirm": "返金を確認",
       "cancel": "キャンセル"
+    }
+  },
+  "products": {
+    "title": "商品管理",
+    "subtitle": "店舗の商品を管理中: {{storeName}}",
+    "refresh": "更新",
+    "addProduct": "商品を追加",
+    "selectStore": "店舗を選択",
+    "selectStorePlaceholder": "-- 店舗を選択してください --",
+    "searchPlaceholder": "商品を検索...",
+    "loading": "商品を読み込み中...",
+    "empty": {
+      "noStore": "商品を管理する店舗を選択してください",
+      "noProducts": "この店舗に商品が見つかりません",
+      "addFirst": "最初の商品を追加"
+    },
+    "table": {
+      "title": "商品 ({{count}})",
+      "image": "画像",
+      "name": "名前",
+      "price": "価格",
+      "stock": "在庫",
+      "category": "カテゴリ",
+      "status": "ステータス",
+      "actions": "操作"
+    },
+    "status": {
+      "active": "有効",
+      "inactive": "無効"
+    },
+    "actions": {
+      "edit": "編集",
+      "delete": "削除",
+      "confirmDelete": "この商品を削除してもよろしいですか？",
+      "confirmDeleteTitle": "商品を削除",
+      "confirmDeleteMessage": "この商品を削除してもよろしいですか？この操作は元に戻せません。",
+      "deleteError": "商品の削除に失敗しました",
+      "deleteSuccess": "商品が正常に削除されました",
+      "loadError": "商品の読み込みに失敗しました",
+      "loadStoresError": "店舗の読み込みに失敗しました"
+    }
+  },
+  "productModal": {
+    "createTitle": "商品を追加",
+    "editTitle": "商品を編集",
+    "fields": {
+      "name": "名前",
+      "nameRequired": "名前 *",
+      "description": "説明",
+      "price": "価格",
+      "priceRequired": "価格 *",
+      "stockQuantity": "在庫数量",
+      "category": "カテゴリ",
+      "categoryPlaceholder": "-- カテゴリを選択 --",
+      "categoryOptions": {
+        "service": "サービス",
+        "product": "製品"
+      },
+      "image": "画像",
+      "active": "有効"
+    },
+    "actions": {
+      "saveError": "商品の保存に失敗しました。もう一度お試しください。",
+      "createSuccess": "商品が正常に作成されました",
+      "updateSuccess": "商品が正常に更新されました",
+      "saving": "保存中...",
+      "update": "更新",
+      "create": "作成",
+      "cancel": "キャンセル",
+      "close": "ウィンドウを閉じる",
+      "uploadImage": "画像をアップロード",
+      "uploading": "アップロード中...",
+      "uploadSuccess": "画像が正常にアップロードされました",
+      "uploadFail": "画像のアップロードに失敗しました。もう一度お試しください。",
+      "invalidImageType": "画像ファイルを選択してください。",
+      "imageTooLarge": "画像ファイルのサイズは15MB未満である必要があります。"
     }
   }
 }

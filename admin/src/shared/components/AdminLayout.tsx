@@ -12,6 +12,7 @@ import {
   TrendingUp,
   FileText,
   CreditCard,
+  Package,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
@@ -47,6 +48,13 @@ const NAV_ITEMS: NavigationItem[] = [
     icon: Store,
     translationKey: "nav.stores",
     pageTitleKey: "pages.stores",
+  },
+  {
+    id: "products",
+    permission: "stores",
+    icon: Package,
+    translationKey: "nav.products",
+    pageTitleKey: "pages.products",
   },
   {
     id: "users",
@@ -104,9 +112,13 @@ const AdminLayout = ({
   // Memoized navigation items based on user permissions
   const navigationItems = useMemo(() => {
     return user
-      ? NAV_ITEMS.filter((item) =>
-          authService.hasPermission(user, item.permission)
-        )
+      ? NAV_ITEMS.filter((item) => {
+          // Hide register-staff for employee role
+          if (item.id === "register-staff" && user.role === "employee") {
+            return false;
+          }
+          return authService.hasPermission(user, item.permission);
+        })
       : [];
   }, [user]);
 

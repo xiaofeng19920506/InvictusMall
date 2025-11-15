@@ -3,6 +3,7 @@
   "nav": {
     "dashboard": "Panel",
     "stores": "Tiendas",
+    "products": "Productos",
     "users": "Usuarios",
     "analytics": "Analítica",
     "registerStaff": "Registrar Personal",
@@ -34,6 +35,7 @@
   "pages": {
     "dashboard": "Panel",
     "stores": "Tiendas",
+    "products": "Productos",
     "users": "Usuarios",
     "analytics": "Analítica",
     "registerStaff": "Registrar Personal",
@@ -542,6 +544,82 @@
       "confirmMessage": "¿Está seguro de que desea reembolsar {{amount}} por la transacción {{id}}?",
       "confirm": "Confirmar Reembolso",
       "cancel": "Cancelar"
+    }
+  },
+  "products": {
+    "title": "Gestión de Productos",
+    "subtitle": "Gestionando productos para: {{storeName}}",
+    "refresh": "Actualizar",
+    "addProduct": "Agregar Producto",
+    "selectStore": "Seleccionar Tienda",
+    "selectStorePlaceholder": "-- Seleccionar una tienda --",
+    "searchPlaceholder": "Buscar productos...",
+    "loading": "Cargando productos...",
+    "empty": {
+      "noStore": "Por favor seleccione una tienda para gestionar productos",
+      "noProducts": "No se encontraron productos para esta tienda",
+      "addFirst": "Agregar Primer Producto"
+    },
+    "table": {
+      "title": "Productos ({{count}})",
+      "image": "Imagen",
+      "name": "Nombre",
+      "price": "Precio",
+      "stock": "Stock",
+      "category": "Categoría",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Está seguro de que desea eliminar este producto?",
+      "confirmDeleteTitle": "Eliminar Producto",
+      "confirmDeleteMessage": "¿Está seguro de que desea eliminar este producto? Esta acción no se puede deshacer.",
+      "deleteError": "Error al eliminar producto",
+      "deleteSuccess": "Producto eliminado exitosamente",
+      "loadError": "Error al cargar productos",
+      "loadStoresError": "Error al cargar tiendas"
+    }
+  },
+  "productModal": {
+    "createTitle": "Agregar Producto",
+    "editTitle": "Editar Producto",
+    "fields": {
+      "name": "Nombre",
+      "nameRequired": "Nombre *",
+      "description": "Descripción",
+      "price": "Precio",
+      "priceRequired": "Precio *",
+      "stockQuantity": "Cantidad en Stock",
+      "category": "Categoría",
+      "categoryPlaceholder": "-- Seleccionar categoría --",
+      "categoryOptions": {
+        "service": "Servicio",
+        "product": "Producto"
+      },
+      "image": "Imagen",
+      "active": "Activo"
+    },
+    "actions": {
+      "saveError": "Error al guardar producto. Por favor intente nuevamente.",
+      "createSuccess": "Producto creado exitosamente",
+      "updateSuccess": "Producto actualizado exitosamente",
+      "saving": "Guardando...",
+      "update": "Actualizar",
+      "create": "Crear",
+      "cancel": "Cancelar",
+      "close": "Cerrar ventana",
+      "uploadImage": "Subir Imagen",
+      "uploading": "Subiendo...",
+      "uploadSuccess": "Imagen subida exitosamente",
+      "uploadFail": "Error al subir imagen. Por favor intente nuevamente.",
+      "invalidImageType": "Por favor seleccione un archivo de imagen.",
+      "imageTooLarge": "El tamaño del archivo de imagen debe ser menor a 15MB."
     }
   }
 }

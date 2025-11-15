@@ -13,10 +13,9 @@ import authRoutes from "./routes/authRoutes";
 import staffRoutes from "./routes/staffRoutes";
 import orderRoutes from "./routes/orderRoutes";
 import shippingAddressRoutes from "./routes/shippingAddressRoutes";
-import paymentRoutes, {
-  stripeWebhookHandler,
-} from "./routes/paymentRoutes";
+import paymentRoutes, { stripeWebhookHandler } from "./routes/paymentRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
+import productRoutes from "./routes/productRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
@@ -39,7 +38,7 @@ app.use(
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 1 * 60 * 1000, // 1 minutes
   max: 100, // limit each IP to 100 requests per windowMs
   message: {
     success: false,
@@ -73,15 +72,17 @@ app.get("/images/*", async (req, res) => {
   try {
     // Get the external storage base URL from environment or derive from upload URL
     const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
-    const storageBaseUrl = process.env.FILE_STORAGE_BASE_URL || externalUploadUrl.replace("/api/files/upload", "");
+    const storageBaseUrl =
+      process.env.FILE_STORAGE_BASE_URL ||
+      externalUploadUrl.replace("/api/files/upload", "");
     const imagePath = req.path; // This will be "/images/..."
-    
+
     // Construct the full URL to the external storage service
     const imageUrl = `${storageBaseUrl}${imagePath}`;
-    
+
     // Fetch the image from the external storage service
     const imageResponse = await fetch(imageUrl);
-    
+
     if (!imageResponse.ok) {
       return res.status(imageResponse.status).json({
         success: false,
@@ -89,12 +90,13 @@ app.get("/images/*", async (req, res) => {
         error: `Failed to fetch image: ${imageResponse.statusText}`,
       });
     }
-    
+
     // Set appropriate headers
-    const contentType = imageResponse.headers.get("content-type") || "image/jpeg";
+    const contentType =
+      imageResponse.headers.get("content-type") || "image/jpeg";
     res.setHeader("Content-Type", contentType);
     res.setHeader("Cache-Control", "public, max-age=31536000"); // Cache for 1 year
-    
+
     // Stream the image data to the response
     const imageBuffer = await imageResponse.arrayBuffer();
     return res.send(Buffer.from(imageBuffer));
@@ -162,6 +164,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/shipping-addresses", shippingAddressRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/transactions", transactionRoutes);
+app.use("/api/products", productRoutes);
 
 /**
  * @swagger
@@ -230,7 +233,9 @@ const startServer = async () => {
     // Start server - listen on all network interfaces (0.0.0.0) to accept connections from other machines
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀 Server is running on port ${PORT}`);
-      console.log(`📡 Accessible at http://localhost:${PORT} or http://[your-ip]:${PORT}`);
+      console.log(
+        `📡 Accessible at http://localhost:${PORT} or http://[your-ip]:${PORT}`
+      );
 
       // Start account cleanup service (runs daily)
       // Only start if database is connected
