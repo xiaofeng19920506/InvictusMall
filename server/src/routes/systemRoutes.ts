@@ -57,7 +57,7 @@ router.get("/status", (req: Request, res: Response) => {
       apps: [
         {
           name: "Backend API",
-          url: "http://localhost:3001",
+          url: process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`,
           status: "online",
           description: "Express.js API Server",
         },
@@ -103,11 +103,11 @@ router.get("/apps", (req: Request, res: Response) => {
   res.json({
     success: true,
     data: [
-      {
-        name: "Invictus Mall API",
-        type: "backend",
-        url: "http://localhost:3001",
-        endpoints: {
+        {
+          name: "Invictus Mall API",
+          type: "backend",
+          url: process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`,
+          endpoints: {
           health: "/health",
           stores: "/api/stores",
           docs: "/api-docs",
