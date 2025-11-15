@@ -3,7 +3,6 @@ import {
   Users,
   Search,
   Edit,
-  Trash2,
   Shield,
   Mail,
   Phone,
@@ -232,9 +231,6 @@ const UsersManagement: React.FC = () => {
                         user.id !== currentUser.id && (
                         <button
                           onClick={() => {
-                            const actionText = user.isActive
-                              ? t("users.actions.deactivate")
-                              : t("users.actions.activate");
                             showInfo(t("users.actions.toggleSoon"));
                           }}
                           className={`btn btn-sm ${

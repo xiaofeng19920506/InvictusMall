@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
 
 export interface Notification {
@@ -40,19 +40,6 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
         return <AlertCircle className="w-5 h-5 text-yellow-500" />;
       default:
         return <Info className="w-5 h-5 text-blue-500" />;
-    }
-  };
-
-  const getBackgroundColor = (type: string) => {
-    switch (type) {
-      case 'success':
-        return 'var(--success-bg, #f0fdf4) var(--success-border, #86efac)';
-      case 'error':
-        return 'var(--error-bg, #fef2f2) var(--error-border, #fca5a5)';
-      case 'warning':
-        return 'var(--warning-bg, #fffbeb) var(--warning-border, #fde047)';
-      default:
-        return 'var(--info-bg, #eff6ff) var(--info-border, #93c5fd)';
     }
   };
 
