@@ -519,7 +519,11 @@
     "refund": {
       "success": "Transaction de remboursement créée avec succès",
       "error": "Échec de la création du remboursement",
-      "stripeMessage": "Les remboursements Stripe doivent être traités via le tableau de bord Stripe"
+      "stripeMessage": "Les remboursements Stripe doivent être traités via le tableau de bord Stripe",
+      "confirmTitle": "Confirmer le Remboursement",
+      "confirmMessage": "Êtes-vous sûr de vouloir rembourser {{amount}} pour la transaction {{id}} ?",
+      "confirm": "Confirmer le Remboursement",
+      "cancel": "Annuler"
     }
   }
 }

@@ -537,7 +537,11 @@
     "refund": {
       "success": "Transacción de reembolso creada exitosamente",
       "error": "Error al crear el reembolso",
-      "stripeMessage": "Los reembolsos de Stripe deben procesarse a través del panel de Stripe"
+      "stripeMessage": "Los reembolsos de Stripe deben procesarse a través del panel de Stripe",
+      "confirmTitle": "Confirmar Reembolso",
+      "confirmMessage": "¿Está seguro de que desea reembolsar {{amount}} por la transacción {{id}}?",
+      "confirm": "Confirmar Reembolso",
+      "cancel": "Cancelar"
     }
   }
 }

@@ -519,7 +519,11 @@
     "refund": {
       "success": "返金トランザクションが正常に作成されました",
       "error": "返金の作成に失敗しました",
-      "stripeMessage": "Stripe の返金は Stripe ダッシュボードを通じて処理する必要があります"
+      "stripeMessage": "Stripe の返金は Stripe ダッシュボードを通じて処理する必要があります",
+      "confirmTitle": "返金を確認",
+      "confirmMessage": "トランザクション {{id}} の {{amount}} を返金してもよろしいですか？",
+      "confirm": "返金を確認",
+      "cancel": "キャンセル"
     }
   }
 }
