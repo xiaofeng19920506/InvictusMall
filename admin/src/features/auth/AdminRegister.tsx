@@ -109,7 +109,8 @@ export default function AdminRegister() {
     setSuccess("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/staff/invite", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const response = await fetch(`${apiUrl}/api/staff/invite`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
