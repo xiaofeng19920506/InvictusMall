@@ -94,64 +94,183 @@ const createTables = async (): Promise<void> => {
     }
 
     // Create store_categories table (without foreign key first)
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS store_categories (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        store_id VARCHAR(36) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        INDEX idx_store_id (store_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+    // First check the stores.id column definition to match it exactly
     try {
-      await connection.execute(`
-        ALTER TABLE store_categories
-        ADD CONSTRAINT fk_store_categories_store
-        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+      const [storeColumns]: any = await connection.execute(`
+        SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'stores'
+        AND COLUMN_NAME = 'id'
       `);
+      
+      let storeIdType = 'VARCHAR(36)';
+      let charsetClause = '';
+      
+      if (storeColumns && storeColumns.length > 0) {
+        const storeIdCol = storeColumns[0];
+        storeIdType = storeIdCol.COLUMN_TYPE;
+        if (storeIdCol.CHARACTER_SET_NAME) {
+          charsetClause = ` CHARACTER SET ${storeIdCol.CHARACTER_SET_NAME}`;
+          if (storeIdCol.COLLATION_NAME) {
+            charsetClause += ` COLLATE ${storeIdCol.COLLATION_NAME}`;
+          }
+        }
+      }
+      
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS store_categories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          store_id ${storeIdType}${charsetClause} NOT NULL,
+          category VARCHAR(100) NOT NULL,
+          INDEX idx_store_id (store_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
+      // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+      try {
+        await connection.execute(`
+          ALTER TABLE store_categories
+          ADD CONSTRAINT fk_store_categories_store
+          FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+        `);
+      } catch (error: any) {
+        // If columns are incompatible, try to modify the column type to match
+        if (error.code === 'ER_FK_INCOMPATIBLE_COLUMNS') {
+          // Modify store_id to match stores.id exactly
+          await connection.execute(`
+            ALTER TABLE store_categories 
+            MODIFY COLUMN store_id ${storeIdType}${charsetClause} NOT NULL
+          `);
+          // Try adding foreign key again
+          try {
+            await connection.execute(`
+              ALTER TABLE store_categories
+              ADD CONSTRAINT fk_store_categories_store
+              FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+            `);
+          } catch (retryError: any) {
+            if (retryError.code !== 'ER_DUP_KEY' && retryError.code !== 'ER_FK_DUP_NAME' && retryError.errno !== 1142 && retryError.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+              console.warn('Could not add foreign key to store_categories after modification:', retryError.message);
+            }
+            if (retryError.errno === 1142 || retryError.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+              console.info('Skipping foreign key constraint for store_categories (missing REFERENCES permission)');
+            }
+          }
+        } else if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+          console.warn('Could not add foreign key to store_categories:', error.message);
+        }
+        // Log when REFERENCES permission is missing (but don't fail)
+        if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+          console.info('Skipping foreign key constraint for store_categories (missing REFERENCES permission)');
+        }
+      }
     } catch (error: any) {
-      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
-      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
-        console.warn('Could not add foreign key to store_categories:', error.message);
-      }
-      // Log when REFERENCES permission is missing (but don't fail)
-      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
-        console.info('Skipping foreign key constraint for store_categories (missing REFERENCES permission)');
-      }
+      // If we can't check the stores table, create with default type
+      console.warn('Could not check stores.id column type for store_categories, using default:', error.message);
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS store_categories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          store_id VARCHAR(36) NOT NULL,
+          category VARCHAR(100) NOT NULL,
+          INDEX idx_store_id (store_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
     }
 
     // Create store_locations table (without foreign key first)
-    await connection.execute(`
-      CREATE TABLE IF NOT EXISTS store_locations (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        store_id VARCHAR(36) NOT NULL,
-        street_address VARCHAR(255) NOT NULL,
-        apt_number VARCHAR(50),
-        city VARCHAR(100) NOT NULL,
-        state_province VARCHAR(100) NOT NULL,
-        zip_code VARCHAR(20) NOT NULL,
-        country VARCHAR(100) NOT NULL,
-        INDEX idx_store_id (store_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+    // First check the stores.id column definition to match it exactly
     try {
-      await connection.execute(`
-        ALTER TABLE store_locations
-        ADD CONSTRAINT fk_store_locations_store
-        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+      const [storeColumns]: any = await connection.execute(`
+        SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'stores'
+        AND COLUMN_NAME = 'id'
       `);
+      
+      let storeIdType = 'VARCHAR(36)';
+      let charsetClause = '';
+      
+      if (storeColumns && storeColumns.length > 0) {
+        const storeIdCol = storeColumns[0];
+        storeIdType = storeIdCol.COLUMN_TYPE;
+        if (storeIdCol.CHARACTER_SET_NAME) {
+          charsetClause = ` CHARACTER SET ${storeIdCol.CHARACTER_SET_NAME}`;
+          if (storeIdCol.COLLATION_NAME) {
+            charsetClause += ` COLLATE ${storeIdCol.COLLATION_NAME}`;
+          }
+        }
+      }
+      
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS store_locations (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          store_id ${storeIdType}${charsetClause} NOT NULL,
+          street_address VARCHAR(255) NOT NULL,
+          apt_number VARCHAR(50),
+          city VARCHAR(100) NOT NULL,
+          state_province VARCHAR(100) NOT NULL,
+          zip_code VARCHAR(20) NOT NULL,
+          country VARCHAR(100) NOT NULL,
+          INDEX idx_store_id (store_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
+      // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+      try {
+        await connection.execute(`
+          ALTER TABLE store_locations
+          ADD CONSTRAINT fk_store_locations_store
+          FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+        `);
+      } catch (error: any) {
+        // If columns are incompatible, try to modify the column type to match
+        if (error.code === 'ER_FK_INCOMPATIBLE_COLUMNS') {
+          // Modify store_id to match stores.id exactly
+          await connection.execute(`
+            ALTER TABLE store_locations 
+            MODIFY COLUMN store_id ${storeIdType}${charsetClause} NOT NULL
+          `);
+          // Try adding foreign key again
+          try {
+            await connection.execute(`
+              ALTER TABLE store_locations
+              ADD CONSTRAINT fk_store_locations_store
+              FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+            `);
+          } catch (retryError: any) {
+            if (retryError.code !== 'ER_DUP_KEY' && retryError.code !== 'ER_FK_DUP_NAME' && retryError.errno !== 1142 && retryError.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+              console.warn('Could not add foreign key to store_locations after modification:', retryError.message);
+            }
+            if (retryError.errno === 1142 || retryError.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+              console.info('Skipping foreign key constraint for store_locations (missing REFERENCES permission)');
+            }
+          }
+        } else if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+          console.warn('Could not add foreign key to store_locations:', error.message);
+        }
+        // Log when REFERENCES permission is missing (but don't fail)
+        if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+          console.info('Skipping foreign key constraint for store_locations (missing REFERENCES permission)');
+        }
+      }
     } catch (error: any) {
-      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
-      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
-        console.warn('Could not add foreign key to store_locations:', error.message);
-      }
-      // Log when REFERENCES permission is missing (but don't fail)
-      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
-        console.info('Skipping foreign key constraint for store_locations (missing REFERENCES permission)');
-      }
+      // If we can't check the stores table, create with default type
+      console.warn('Could not check stores.id column type for store_locations, using default:', error.message);
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS store_locations (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          store_id VARCHAR(36) NOT NULL,
+          street_address VARCHAR(255) NOT NULL,
+          apt_number VARCHAR(50),
+          city VARCHAR(100) NOT NULL,
+          state_province VARCHAR(100) NOT NULL,
+          zip_code VARCHAR(20) NOT NULL,
+          country VARCHAR(100) NOT NULL,
+          INDEX idx_store_id (store_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
     }
 
     // Create users table
@@ -283,46 +402,118 @@ const createTables = async (): Promise<void> => {
     }
 
     // Create staff_invitations table (without foreign key first)
-    await connection.execute(`
-              CREATE TABLE IF NOT EXISTS staff_invitations (
-                id VARCHAR(36) PRIMARY KEY,
-                email VARCHAR(255) NOT NULL,
-                first_name VARCHAR(100) NOT NULL,
-                last_name VARCHAR(100) NOT NULL,
-                role ENUM('admin', 'owner', 'manager', 'employee') NOT NULL,
-                department VARCHAR(100) NULL,
-                employee_id VARCHAR(50) NULL,
-                store_id VARCHAR(36) NULL,
-                token VARCHAR(36) UNIQUE NOT NULL,
-                invited_by VARCHAR(36) NOT NULL,
-                expires_at TIMESTAMP NOT NULL,
-                is_used BOOLEAN DEFAULT false,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_email (email),
-                INDEX idx_token (token),
-                INDEX idx_expires_at (expires_at),
-                INDEX idx_is_used (is_used),
-                INDEX idx_store_id (store_id)
-              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-            `);
-
-    // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+    // First check the stores.id column definition to match it exactly
     try {
-      await connection.execute(`
-        ALTER TABLE staff_invitations
-        ADD CONSTRAINT fk_staff_invitations_store
-        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+      const [storeColumns]: any = await connection.execute(`
+        SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'stores'
+        AND COLUMN_NAME = 'id'
       `);
+      
+      let storeIdType = 'VARCHAR(36)';
+      let charsetClause = '';
+      
+      if (storeColumns && storeColumns.length > 0) {
+        const storeIdCol = storeColumns[0];
+        storeIdType = storeIdCol.COLUMN_TYPE;
+        if (storeIdCol.CHARACTER_SET_NAME) {
+          charsetClause = ` CHARACTER SET ${storeIdCol.CHARACTER_SET_NAME}`;
+          if (storeIdCol.COLLATION_NAME) {
+            charsetClause += ` COLLATE ${storeIdCol.COLLATION_NAME}`;
+          }
+        }
+      }
+      
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS staff_invitations (
+          id VARCHAR(36) PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          first_name VARCHAR(100) NOT NULL,
+          last_name VARCHAR(100) NOT NULL,
+          role ENUM('admin', 'owner', 'manager', 'employee') NOT NULL,
+          department VARCHAR(100) NULL,
+          employee_id VARCHAR(50) NULL,
+          store_id ${storeIdType}${charsetClause} NULL,
+          token VARCHAR(36) UNIQUE NOT NULL,
+          invited_by VARCHAR(36) NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          is_used BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_email (email),
+          INDEX idx_token (token),
+          INDEX idx_expires_at (expires_at),
+          INDEX idx_is_used (is_used),
+          INDEX idx_store_id (store_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
+      // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+      try {
+        await connection.execute(`
+          ALTER TABLE staff_invitations
+          ADD CONSTRAINT fk_staff_invitations_store
+          FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+        `);
+      } catch (error: any) {
+        // If columns are incompatible, try to modify the column type to match
+        if (error.code === 'ER_FK_INCOMPATIBLE_COLUMNS') {
+          // Modify store_id to match stores.id exactly
+          await connection.execute(`
+            ALTER TABLE staff_invitations 
+            MODIFY COLUMN store_id ${storeIdType}${charsetClause} NULL
+          `);
+          // Try adding foreign key again
+          try {
+            await connection.execute(`
+              ALTER TABLE staff_invitations
+              ADD CONSTRAINT fk_staff_invitations_store
+              FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+            `);
+          } catch (retryError: any) {
+            if (retryError.code !== 'ER_DUP_KEY' && retryError.code !== 'ER_FK_DUP_NAME' && retryError.errno !== 1142 && retryError.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+              console.warn('Could not add foreign key to staff_invitations after modification:', retryError.message);
+            }
+            if (retryError.errno === 1142 || retryError.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+              console.info('Skipping foreign key constraint for staff_invitations (missing REFERENCES permission)');
+            }
+          }
+        } else if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
+          console.warn('Could not add foreign key to staff_invitations:', error.message);
+        }
+        // Log when REFERENCES permission is missing (but don't fail)
+        if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
+          console.info('Skipping foreign key constraint for staff_invitations (missing REFERENCES permission)');
+        }
+      }
     } catch (error: any) {
-      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
-      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142 && error?.code !== 'ER_TABLEACCESS_DENIED_ERROR') {
-        console.warn('Could not add foreign key to staff_invitations:', error.message);
-      }
-      // Log when REFERENCES permission is missing (but don't fail)
-      if (error?.errno === 1142 || error?.code === 'ER_TABLEACCESS_DENIED_ERROR') {
-        console.info('Skipping foreign key constraint for staff_invitations (missing REFERENCES permission)');
-      }
+      // If we can't check the stores table, create with default type
+      console.warn('Could not check stores.id column type for staff_invitations, using default:', error.message);
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS staff_invitations (
+          id VARCHAR(36) PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          first_name VARCHAR(100) NOT NULL,
+          last_name VARCHAR(100) NOT NULL,
+          role ENUM('admin', 'owner', 'manager', 'employee') NOT NULL,
+          department VARCHAR(100) NULL,
+          employee_id VARCHAR(50) NULL,
+          store_id VARCHAR(36) NULL,
+          token VARCHAR(36) UNIQUE NOT NULL,
+          invited_by VARCHAR(36) NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          is_used BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_email (email),
+          INDEX idx_token (token),
+          INDEX idx_expires_at (expires_at),
+          INDEX idx_is_used (is_used),
+          INDEX idx_store_id (store_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
     }
 
     // Create activity_logs table
