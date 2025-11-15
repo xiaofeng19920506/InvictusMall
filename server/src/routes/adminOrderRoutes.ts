@@ -65,7 +65,7 @@ router.get(
     try {
       const { status, storeId, userId, limit, offset } = req.query;
 
-      const orders = await orderModel.getAllOrders({
+      const { orders, total } = await orderModel.getAllOrders({
         status: status as string | undefined,
         storeId: storeId as string | undefined,
         userId: userId as string | undefined,
@@ -76,7 +76,8 @@ router.get(
       return res.json({
         success: true,
         data: orders,
-        count: orders.length
+        count: orders.length,
+        total
       });
     } catch (error) {
       console.error('Get all orders error:', error);

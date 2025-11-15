@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, type ReactNode } from "react";
 import {
   Store,
   BarChart3,
@@ -23,7 +23,7 @@ import type { AdminPageKey } from "../../app/types";
 import styles from "./AdminLayout.module.css";
 
 interface AdminLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   currentPage: AdminPageKey;
   onPageChange: (page: AdminPageKey) => void;
 }
@@ -108,8 +108,20 @@ const AdminLayout = ({
   onPageChange,
 }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [headerActions, setHeaderActionsState] = useState<ReactNode>(null);
   const { user, logout } = useAuth();
   const { t } = useTranslation();
+
+  // Provide setHeaderActions function via context-like pattern
+  // We'll use a ref to share state between this component and pages
+  useEffect(() => {
+    // Store setter in window temporarily for pages to access
+    // This is a simple approach, but we could also use React Context
+    (window as any).__setAdminHeaderActions = setHeaderActionsState;
+    return () => {
+      delete (window as any).__setAdminHeaderActions;
+    };
+  }, []);
 
   // Memoized navigation items based on user permissions
   const navigationItems = useMemo(() => {
@@ -281,7 +293,7 @@ const AdminLayout = ({
             <h1 className={styles.title}>{t(currentPageTitle)}</h1>
           </div>
 
-          <div className={styles.headerRight}></div>
+          <div className={styles.headerRight}>{headerActions}</div>
         </header>
 
         <main>{children}</main>

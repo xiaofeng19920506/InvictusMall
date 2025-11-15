@@ -844,7 +844,9 @@ router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res
 
     const requesterRole = req.user.role;
     const requesterId = req.user.id;
+    const { limit, offset } = req.query;
     let staffMembers: any[] = [];
+    let total = 0;
 
     // Get requester's staff info to check store_id
     const requesterStaff = await staffModel.getStaffById(requesterId);
@@ -852,8 +854,18 @@ router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res
 
     // Role-based data filtering
     if (requesterRole === 'admin') {
-      // Admin can see all staff members
-      staffMembers = await staffModel.getAllStaff();
+      // Admin can see all staff members - use pagination if limit is provided
+      if (limit !== undefined) {
+        const { staff, total: totalCount } = await staffModel.getAllStaffWithPagination({
+          limit: parseInt(limit as string) || undefined,
+          offset: offset !== undefined ? parseInt(offset as string) : undefined,
+        });
+        staffMembers = staff;
+        total = totalCount;
+      } else {
+        staffMembers = await staffModel.getAllStaff();
+        total = staffMembers.length;
+      }
     } else if (requesterRole === 'owner') {
       // Store owner can see all staff in the same store
       if (requesterStoreId) {
@@ -861,9 +873,17 @@ router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res
         staffMembers = allStaff.filter(
           (staff: any) => staff.storeId === requesterStoreId
         );
+        total = staffMembers.length;
+        // Apply pagination manually if limit is provided
+        if (limit !== undefined) {
+          const limitValue = parseInt(limit as string) || 0;
+          const offsetValue = offset !== undefined ? parseInt(offset as string) : 0;
+          staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
+        }
       } else {
         // If owner has no store_id, return empty array
         staffMembers = [];
+        total = 0;
       }
     } else if (requesterRole === 'manager') {
       // Manager can see all staff including owner (in same store)
@@ -872,14 +892,23 @@ router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res
         staffMembers = allStaff.filter(
           (staff: any) => staff.storeId === requesterStoreId
         );
+        total = staffMembers.length;
+        // Apply pagination manually if limit is provided
+        if (limit !== undefined) {
+          const limitValue = parseInt(limit as string) || 0;
+          const offsetValue = offset !== undefined ? parseInt(offset as string) : 0;
+          staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
+        }
       } else {
         // If manager has no store_id, return empty array
         staffMembers = [];
+        total = 0;
       }
     } else if (requesterRole === 'employee') {
       // Employee can only see themselves
       const staff = await staffModel.getStaffById(requesterId);
       staffMembers = staff ? [staff] : [];
+      total = staffMembers.length;
     } else {
       return res.status(403).json({
         success: false,
@@ -917,10 +946,18 @@ router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res
       };
     });
 
-    return res.json({
+    const response: any = {
       success: true,
-      data: staffWithPermissions || []
-    });
+      data: staffWithPermissions || [],
+      count: staffWithPermissions.length,
+    };
+    
+    // Include total only if limit was provided (indicating pagination)
+    if (limit !== undefined) {
+      response.total = total;
+    }
+    
+    return res.json(response);
   } catch (error) {
     console.error('Error fetching all staff:', error);
     return res.status(500).json({

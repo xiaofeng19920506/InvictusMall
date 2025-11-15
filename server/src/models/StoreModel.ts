@@ -59,6 +59,73 @@ export class StoreModel {
     }
   }
 
+  // Get all stores with pagination
+  static async findAllWithPagination(options?: { limit?: number; offset?: number }): Promise<{ stores: Store[]; total: number }> {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      
+      // Get total count
+      const [countResult] = await connection.execute(`SELECT COUNT(*) as total FROM stores`);
+      const total = (countResult as any[])[0]?.total || 0;
+
+      let query = `
+        SELECT 
+          s.*,
+          COALESCE(GROUP_CONCAT(DISTINCT sc.category), '') as categories,
+          COALESCE(
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'streetAddress', sl.street_address,
+              'aptNumber', sl.apt_number,
+              'city', sl.city,
+              'stateProvince', sl.state_province,
+              'zipCode', sl.zip_code,
+              'country', sl.country
+            )
+            ),
+            JSON_ARRAY()
+          ) as locations
+        FROM stores s
+        LEFT JOIN store_categories sc ON s.id COLLATE utf8mb4_unicode_ci = sc.store_id COLLATE utf8mb4_unicode_ci
+        LEFT JOIN store_locations sl ON s.id COLLATE utf8mb4_unicode_ci = sl.store_id COLLATE utf8mb4_unicode_ci
+        GROUP BY s.id
+        ORDER BY s.created_at DESC
+      `;
+
+      const limitValue = options?.limit !== undefined ? Math.max(0, Math.floor(options.limit)) : undefined;
+      const offsetValue = options?.offset !== undefined ? Math.max(0, Math.floor(options.offset)) : undefined;
+
+      if (limitValue !== undefined) {
+        query += ` LIMIT ${limitValue}`;
+        if (offsetValue !== undefined) {
+          query += ` OFFSET ${offsetValue}`;
+        }
+      }
+
+      const [stores] = await connection.execute(query);
+
+      const storesArray = stores as any[];
+      if (!storesArray || storesArray.length === 0) {
+        return { stores: [], total };
+      }
+      return { stores: storesArray.map(this.mapRowToStore), total };
+    } catch (error: any) {
+      console.error('Database error in findAllWithPagination:', error);
+      if (error.code === 'ER_NO_SUCH_TABLE' || error.code === '42S02') {
+        return { stores: [], total: 0 };
+      }
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+        return { stores: [], total: 0 };
+      }
+      throw error;
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
+
   // Get store by ID
   static async findById(id: string): Promise<Store | null> {
     let connection;

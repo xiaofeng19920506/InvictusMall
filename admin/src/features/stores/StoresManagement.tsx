@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Plus,
   Edit,
@@ -15,6 +15,8 @@ import { useRealTimeStores } from "../../shared/hooks/useRealTimeStores";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { getImageUrl } from "../../shared/utils/imageUtils";
+import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
+import Pagination from "../../shared/components/Pagination";
 import StoreModal from "./StoreModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import styles from "./StoresManagement.module.css";
@@ -26,8 +28,11 @@ const StoresManagement: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const { user } = useAuth();
   const { showError, showSuccess } = useNotification();
+  const { setHeaderActions } = useAdminHeader();
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -46,8 +51,17 @@ const StoresManagement: React.FC = () => {
     setIsClient(typeof window !== "undefined");
   }, []);
 
-  // Use real-time stores hook with 10-second refresh interval
-  const { stores, loading, refetch, lastUpdated } = useRealTimeStores(10000);
+  // Use real-time stores hook with 10-second refresh interval and pagination
+  // Memoize pagination object to prevent infinite re-renders
+  const pagination = useMemo(() => {
+    const offset = (currentPage - 1) * itemsPerPage;
+    return { limit: itemsPerPage, offset };
+  }, [currentPage, itemsPerPage]);
+
+  const { stores, loading, refetch, lastUpdated, total: totalItems = 0 } = useRealTimeStores(
+    10000,
+    pagination
+  );
 
   // Check if user is admin
   const isAdmin = user?.role === "admin";
@@ -109,6 +123,39 @@ const StoresManagement: React.FC = () => {
     setShowModal(true);
   };
 
+  // Set header actions (after handleAddStore is defined)
+  useEffect(() => {
+    setHeaderActions(
+      <>
+        <button
+          onClick={refetch}
+          className="btn btn-secondary"
+          disabled={loading}
+        >
+          <RefreshCw
+            className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
+          />
+          {t("stores.refresh")}
+        </button>
+        <button onClick={handleAddStore} className="btn btn-primary">
+          <Plus className="w-4 h-4 mr-2" />
+          {t("stores.addStore")}
+        </button>
+      </>
+    );
+  }, [loading, refetch, handleAddStore, setHeaderActions, t]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (itemsPerPage: number) => {
+    setItemsPerPage(itemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
   const filteredStores = stores.filter((store) => {
     const matchesSearch =
       store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -133,37 +180,6 @@ const StoresManagement: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div className={styles.headerInfo}>
-          <h2 className={styles.title}>{t("stores.title")}</h2>
-          {lastUpdated && (
-            <p className={styles.lastUpdated}>
-              🔄{" "}
-              {t("stores.lastUpdated", {
-                time: lastUpdated.toLocaleTimeString(),
-              })}
-              <span className={styles.pulseDot} aria-hidden="true" />
-            </p>
-          )}
-        </div>
-        <div className={styles.headerActions}>
-          <button
-            onClick={refetch}
-            className="btn btn-secondary"
-            disabled={loading}
-          >
-            <RefreshCw
-              className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`}
-            />
-            {t("stores.refresh")}
-          </button>
-          <button onClick={handleAddStore} className="btn btn-primary">
-            <Plus className="w-4 h-4 mr-2" />
-            {t("stores.addStore")}
-          </button>
-        </div>
-      </div>
-
       <div className="card">
         <div className={styles.filters}>
           <div className={styles.searchWrapper}>
@@ -310,6 +326,14 @@ const StoresManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+          />
         </div>
 
         {filteredStores.length === 0 && (

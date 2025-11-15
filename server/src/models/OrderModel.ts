@@ -476,8 +476,42 @@ export class OrderModel {
       limit?: number; 
       offset?: number 
     }
-  ): Promise<Order[]> {
+  ): Promise<{ orders: Order[]; total: number }> {
     try {
+      // Build WHERE clause for filters
+      let whereClause = 'WHERE 1=1';
+      const params: any[] = [];
+
+      if (options?.status) {
+        whereClause += ' AND o.status = ?';
+        params.push(options.status);
+      }
+
+      if (options?.storeId) {
+        whereClause += ' AND o.store_id = ?';
+        params.push(options.storeId);
+      }
+
+      if (options?.userId) {
+        whereClause += ' AND o.user_id = ?';
+        params.push(options.userId);
+      }
+
+      // Get total count first
+      let countQuery = `SELECT COUNT(*) as total FROM orders o ${whereClause}`;
+      let total = 0;
+      try {
+        const [countRows] = await this.pool.execute(countQuery, params);
+        const countResult = countRows as any[];
+        total = countResult[0]?.total || 0;
+      } catch (error: any) {
+        if (this.isConnectionError(error) || error?.code === 'ER_NO_SUCH_TABLE') {
+          console.warn('Orders count query failed. Returning empty result.');
+          return { orders: [], total: 0 };
+        }
+        throw error;
+      }
+
       // Get orders with filters
       let query = `
         SELECT 
@@ -487,27 +521,9 @@ export class OrderModel {
           o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
           o.tracking_number, o.created_at, o.updated_at
         FROM orders o
-        WHERE 1=1
+        ${whereClause}
+        ORDER BY o.order_date DESC
       `;
-
-      const params: any[] = [];
-
-      if (options?.status) {
-        query += ' AND o.status = ?';
-        params.push(options.status);
-      }
-
-      if (options?.storeId) {
-        query += ' AND o.store_id = ?';
-        params.push(options.storeId);
-      }
-
-      if (options?.userId) {
-        query += ' AND o.user_id = ?';
-        params.push(options.userId);
-      }
-
-      query += ' ORDER BY o.order_date DESC';
 
       const limitValue =
         typeof options?.limit === 'number' && Number.isFinite(options.limit)
@@ -531,14 +547,14 @@ export class OrderModel {
       } catch (error: any) {
         if (this.isConnectionError(error) || error?.code === 'ER_NO_SUCH_TABLE') {
           console.warn('Orders query failed. Returning empty array.');
-          return [];
+          return { orders: [], total: 0 };
         }
         throw error;
       }
       const orders = rows as any[];
 
       if (orders.length === 0) {
-        return [];
+        return { orders: [], total };
       }
 
       // Get order items for each order separately
@@ -590,7 +606,7 @@ export class OrderModel {
       }, {} as Record<string, any[]>);
 
       // Map orders with their items
-      return orders.map(order => ({
+      const mappedOrders = orders.map(order => ({
         id: order.id,
         userId: order.user_id,
         storeId: order.store_id,
@@ -615,11 +631,13 @@ export class OrderModel {
         createdAt: order.created_at,
         updatedAt: order.updated_at
       }));
+
+      return { orders: mappedOrders, total };
     } catch (error) {
       console.error('Error in getAllOrders:', error);
       if (this.isConnectionError(error) || (error as any)?.code === 'ER_NO_SUCH_TABLE') {
-        console.warn('Database unavailable when fetching orders. Returning empty array.');
-        return [];
+        console.warn('Database unavailable when fetching orders. Returning empty result.');
+        return { orders: [], total: 0 };
       }
       throw error;
     }

@@ -1,5 +1,11 @@
 .container {
-  padding: 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 1rem;
+  flex: 1;
 }
 
 .header {
@@ -59,8 +65,41 @@
   padding-left: 2.5rem;
 }
 
+.storeSelector {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.productsContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+.fullHeightCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
 .tableWrapper {
   overflow-x: auto;
+  overflow-y: auto;
+}
+
+.fullHeightTableWrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullHeightTableWrapper > .table {
+  flex: 1;
 }
 
 .productImage {

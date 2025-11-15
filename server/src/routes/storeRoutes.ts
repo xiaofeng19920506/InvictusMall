@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { StoreService } from "../services/storeService";
+import { StoreModel } from "../models/StoreModel";
 import {
   validateStore,
   validateUpdateStore,
@@ -68,8 +69,24 @@ const storeService = new StoreService();
 // Public endpoint - no authentication required for browsing stores
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const { category, search } = req.query;
+    const { category, search, limit, offset } = req.query;
 
+    // Use pagination if limit is provided (typically for admin app)
+    if (limit !== undefined && !search && !category) {
+      const { stores, total } = await StoreModel.findAllWithPagination({
+        limit: parseInt(limit as string) || undefined,
+        offset: offset !== undefined ? parseInt(offset as string) : undefined,
+      });
+
+      return res.json({
+        success: true,
+        data: stores,
+        count: stores.length,
+        total,
+      });
+    }
+
+    // Regular fetch without pagination (for client app or when category/search is provided)
     let stores;
     if (search && typeof search === "string") {
       stores = await storeService.searchStores(search);

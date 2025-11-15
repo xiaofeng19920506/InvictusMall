@@ -13,6 +13,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
+import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
+import Pagination from "../../shared/components/Pagination";
 import EditUserModal from "./EditUserModal";
 import { staffApi, storeApi, type Staff } from "../../services/api";
 import type { Store } from "../../shared/types/store";
@@ -35,9 +37,13 @@ const UsersManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
   const { showError, showInfo, showSuccess } = useNotification();
+  const { setHeaderActions } = useAdminHeader();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [stores, setStores] = useState<Store[]>([]);
@@ -64,14 +70,19 @@ const UsersManagement: React.FC = () => {
         loadStoresForOwnerOrManager();
       }
     }
-  }, [currentUser]);
+  }, [currentUser, currentPage, itemsPerPage]);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
-      const response = await staffApi.getAllStaff();
+      const offset = (currentPage - 1) * itemsPerPage;
+      const response = await staffApi.getAllStaff({
+        limit: itemsPerPage,
+        offset,
+      });
       if (response.success) {
         setUsers(response.data || []);
+        setTotalItems((response as any).total || response.data?.length || 0);
       }
     } catch (error: any) {
       console.error("Error loading users:", error);
@@ -82,6 +93,17 @@ const UsersManagement: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (itemsPerPage: number) => {
+    setItemsPerPage(itemsPerPage);
+    setCurrentPage(1);
+  };
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const loadStores = async () => {
     try {
@@ -278,40 +300,45 @@ const UsersManagement: React.FC = () => {
       currentUser.role === "owner" ||
       currentUser.role === "manager");
 
+  // Set header actions
+  useEffect(() => {
+    if (canRegisterStaff) {
+      const handleToggleRegister = () => {
+        setShowRegisterForm(!showRegisterForm);
+        if (!showRegisterForm) {
+          setRegisterFormData((prev) => ({
+            ...prev,
+            role: getInitialRole(),
+          }));
+        }
+      };
+
+      setHeaderActions(
+        <button
+          onClick={handleToggleRegister}
+          className={`btn ${showRegisterForm ? "btn-secondary" : "btn-primary"}`}
+        >
+          {showRegisterForm ? (
+            <>
+              <X className="w-4 h-4 mr-2" />
+              {t("users.actions.cancelRegister") || "Cancel"}
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4 mr-2" />
+              {t("users.actions.registerStaff") || "Register Staff"}
+            </>
+          )}
+        </button>
+      );
+    } else {
+      setHeaderActions(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canRegisterStaff, showRegisterForm, setHeaderActions, t]);
+
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div className={styles.headerText}>
-          <h2 className={styles.title}>{t("users.title")}</h2>
-          <p className={styles.subtitle}>{t("users.subtitle")}</p>
-        </div>
-        {canRegisterStaff && (
-          <button
-            onClick={() => {
-              setShowRegisterForm(!showRegisterForm);
-              if (!showRegisterForm) {
-                setRegisterFormData((prev) => ({
-                  ...prev,
-                  role: getInitialRole(),
-                }));
-              }
-            }}
-            className={`btn ${showRegisterForm ? "btn-secondary" : "btn-primary"}`}
-          >
-            {showRegisterForm ? (
-              <>
-                <X className="w-4 h-4" />
-                {t("users.actions.cancelRegister") || "Cancel"}
-              </>
-            ) : (
-              <>
-                <Plus className="w-4 h-4" />
-                {t("users.actions.registerStaff") || "Register Staff"}
-              </>
-            )}
-          </button>
-        )}
-      </div>
 
       {showRegisterForm && canRegisterStaff && (
         <div className="card">
@@ -666,6 +693,14 @@ const UsersManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+          />
         </div>
 
       </div>

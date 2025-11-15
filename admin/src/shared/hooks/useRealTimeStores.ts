@@ -8,25 +8,39 @@ interface UseRealTimeStoresResult {
   error: string | null;
   refetch: () => Promise<void>;
   lastUpdated: Date | null;
+  total?: number;
 }
 
 export const useRealTimeStores = (
-  refreshInterval: number = 10000 // 10 seconds default for admin
+  refreshInterval: number = 10000, // 10 seconds default for admin
+  pagination?: { limit?: number; offset?: number }
 ): UseRealTimeStoresResult => {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [total, setTotal] = useState<number | undefined>(undefined);
+
+  // Extract pagination values for dependency comparison
+  const limit = pagination?.limit;
+  const offset = pagination?.offset;
 
   const fetchStores = useCallback(async () => {
     try {
       setError(null);
       
-      const response = await storeApi.getAllStores();
+      // Use the current pagination values (extracted from dependencies)
+      const paginationParams = (limit !== undefined || offset !== undefined) 
+        ? { limit, offset } 
+        : undefined;
+      const response = await storeApi.getAllStores(paginationParams);
       
       if (response.success) {
         setStores(response.data || []);
         setLastUpdated(new Date());
+        if ((response as any).total !== undefined) {
+          setTotal((response as any).total);
+        }
       } else {
         setError('Failed to fetch stores');
       }
@@ -36,7 +50,7 @@ export const useRealTimeStores = (
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [limit, offset]); // Only depend on limit and offset values, not the object
 
   // Initial fetch
   useEffect(() => {
@@ -69,6 +83,7 @@ export const useRealTimeStores = (
     loading,
     error,
     refetch,
-    lastUpdated
+    lastUpdated,
+    total
   };
 };

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Search, Filter, Edit2, Eye, Package } from "lucide-react";
 import { orderApi, type Order, type OrderStatus } from "../../services/api";
 import { useNotification } from "../../contexts/NotificationContext";
+import Pagination from "../../shared/components/Pagination";
 import OrderStatusModal from "./OrderStatusModal";
 import OrderDetailModal from "./OrderDetailModal";
 import styles from "./OrdersManagement.module.css";
@@ -18,20 +19,26 @@ const OrdersManagement: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
 
   useEffect(() => {
     loadOrders();
-  }, [statusFilter]);
+  }, [statusFilter, currentPage, itemsPerPage]);
 
   const loadOrders = async () => {
     try {
       setLoading(true);
+      const offset = (currentPage - 1) * itemsPerPage;
       const response = await orderApi.getAllOrders({
         status: statusFilter || undefined,
-        limit: 100,
+        limit: itemsPerPage,
+        offset,
       });
       if (response.success && response.data) {
         setOrders(response.data);
+        setTotalItems((response as any).total || response.data.length);
       }
     } catch (error) {
       console.error("Error loading orders:", error);
@@ -57,6 +64,17 @@ const OrdersManagement: React.FC = () => {
     setSelectedOrder(null);
     showSuccess(t("orders.success.statusUpdated") || "Order status updated successfully");
   };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (itemsPerPage: number) => {
+    setItemsPerPage(itemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
   const handleModalClose = () => {
     setIsStatusModalOpen(false);
@@ -245,6 +263,14 @@ const OrdersManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
+            onItemsPerPageChange={handleItemsPerPageChange}
+          />
         </div>
       )}
 
