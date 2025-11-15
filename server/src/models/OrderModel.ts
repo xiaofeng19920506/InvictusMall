@@ -19,6 +19,11 @@ export interface OrderItem {
   quantity: number;
   price: number;
   subtotal: number;
+  // Reservation fields (only for services)
+  reservationDate?: string;
+  reservationTime?: string;
+  reservationNotes?: string;
+  isReservation?: boolean;
 }
 
 export interface Order {
@@ -57,6 +62,11 @@ export interface CreateOrderRequest {
     productImage?: string;
     quantity: number;
     price: number;
+    // Reservation fields (only for services)
+    reservationDate?: string;
+    reservationTime?: string;
+    reservationNotes?: string;
+    isReservation?: boolean;
   }>;
   shippingAddress: {
     streetAddress: string;
@@ -94,7 +104,11 @@ export class OrderModel {
             'productImage', oi.product_image,
             'quantity', oi.quantity,
             'price', oi.price,
-            'subtotal', oi.subtotal
+            'subtotal', oi.subtotal,
+            'reservationDate', oi.reservation_date,
+            'reservationTime', oi.reservation_time,
+            'reservationNotes', oi.reservation_notes,
+            'isReservation', oi.is_reservation
           )
         ) as items
       FROM orders o
@@ -109,10 +123,77 @@ export class OrderModel {
     return orders.map((row) => this.mapRowToOrder(row));
   }
 
+  /**
+   * Check for duplicate reservations (same service, date, and time)
+   * Uses the provided connection to stay within the same transaction
+   */
+  async checkDuplicateReservations(
+    reservations: Array<{ productId: string; reservationDate: string; reservationTime: string }>,
+    connection: any
+  ): Promise<Array<{ productId: string; reservationDate: string; reservationTime: string }>> {
+    if (reservations.length === 0) {
+      return [];
+    }
+
+    const duplicateReservations: Array<{ productId: string; reservationDate: string; reservationTime: string }> = [];
+
+    for (const reservation of reservations) {
+      const query = `
+        SELECT COUNT(*) as count
+        FROM order_items oi
+        INNER JOIN orders o ON oi.order_id = o.id
+        WHERE oi.product_id = ?
+          AND oi.is_reservation = TRUE
+          AND oi.reservation_date = ?
+          AND oi.reservation_time = ?
+          AND o.status NOT IN ('cancelled')
+      `;
+
+      const [rows] = await connection.execute(query, [
+        reservation.productId,
+        reservation.reservationDate,
+        reservation.reservationTime
+      ]);
+
+      const result = rows as any[];
+      if (result.length > 0 && result[0].count > 0) {
+        duplicateReservations.push(reservation);
+      }
+    }
+
+    return duplicateReservations;
+  }
+
   async createOrder(orderData: CreateOrderRequest): Promise<Order> {
     const connection = await this.pool.getConnection();
     try {
       await connection.beginTransaction();
+
+      // Check for duplicate reservations before creating the order
+      const reservationItems = orderData.items.filter(
+        item => item.isReservation && item.reservationDate && item.reservationTime
+      );
+
+      if (reservationItems.length > 0) {
+        const duplicateReservations = await this.checkDuplicateReservations(
+          reservationItems.map(item => ({
+            productId: item.productId,
+            reservationDate: item.reservationDate!,
+            reservationTime: item.reservationTime!
+          })),
+          connection
+        );
+
+        if (duplicateReservations.length > 0) {
+          await connection.rollback();
+          const conflicts = duplicateReservations.map(r => 
+            `${r.reservationDate} at ${r.reservationTime}`
+          ).join(', ');
+          throw new Error(
+            `Reservation time slot conflict: The following time slots are already booked: ${conflicts}. Please select a different time slot.`
+          );
+        }
+      }
 
       const orderId = uuidv4();
       const now = new Date();
@@ -154,8 +235,9 @@ export class OrderModel {
       const itemQuery = `
         INSERT INTO order_items (
           id, order_id, product_id, product_name, product_image,
-          quantity, price, subtotal, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          quantity, price, subtotal, is_reservation, reservation_date,
+          reservation_time, reservation_notes, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       for (const item of orderData.items) {
@@ -170,6 +252,10 @@ export class OrderModel {
           item.quantity,
           item.price,
           subtotal,
+          item.isReservation || false,
+          item.reservationDate || null,
+          item.reservationTime || null,
+          item.reservationNotes || null,
           now
         ]);
       }
@@ -308,7 +394,11 @@ export class OrderModel {
             'productImage', oi.product_image,
             'quantity', oi.quantity,
             'price', oi.price,
-            'subtotal', oi.subtotal
+            'subtotal', oi.subtotal,
+            'reservationDate', oi.reservation_date,
+            'reservationTime', oi.reservation_time,
+            'reservationNotes', oi.reservation_notes,
+            'isReservation', oi.is_reservation
           )
         ) as items
       FROM orders o
@@ -449,7 +539,11 @@ export class OrderModel {
           productImage: item.product_image || undefined,
           quantity: item.quantity,
           price: parseFloat(item.price),
-          subtotal: parseFloat(item.subtotal)
+          subtotal: parseFloat(item.subtotal),
+          reservationDate: item.reservation_date || undefined,
+          reservationTime: item.reservation_time || undefined,
+          reservationNotes: item.reservation_notes || undefined,
+          isReservation: Boolean(item.is_reservation)
         });
         return acc;
       }, {} as Record<string, any[]>);
@@ -513,7 +607,11 @@ export class OrderModel {
         productImage: item.productImage || undefined,
         quantity: item.quantity,
         price: parseFloat(item.price),
-        subtotal: parseFloat(item.subtotal)
+        subtotal: parseFloat(item.subtotal),
+        reservationDate: item.reservationDate || undefined,
+        reservationTime: item.reservationTime || undefined,
+        reservationNotes: item.reservationNotes || undefined,
+        isReservation: item.isReservation || false
       })),
       totalAmount: parseFloat(row.total_amount),
       status: row.status,
@@ -615,13 +713,49 @@ export class OrderModel {
           quantity INT NOT NULL,
           price DECIMAL(10, 2) NOT NULL,
           subtotal DECIMAL(10, 2) NOT NULL,
+          is_reservation BOOLEAN DEFAULT FALSE,
+          reservation_date DATE NULL,
+          reservation_time TIME NULL,
+          reservation_notes TEXT NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           INDEX idx_order_id (order_id),
-          INDEX idx_product_id (product_id)
+          INDEX idx_product_id (product_id),
+          INDEX idx_is_reservation (is_reservation),
+          INDEX idx_reservation_date_time (reservation_date, reservation_time, product_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `;
 
       await connection.execute(orderItemsTableQuery);
+
+      // Add reservation columns to existing order_items table if they don't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE order_items 
+          ADD COLUMN is_reservation BOOLEAN DEFAULT FALSE,
+          ADD COLUMN reservation_date DATE NULL,
+          ADD COLUMN reservation_time TIME NULL,
+          ADD COLUMN reservation_notes TEXT NULL
+        `);
+      } catch (error: any) {
+        // Ignore if columns already exist
+        if (error?.code !== 'ER_DUP_FIELDNAME') {
+          console.warn('Error adding reservation columns to order_items:', error.message);
+        }
+      }
+
+      // Add indexes for reservations if they don't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE order_items 
+          ADD INDEX idx_is_reservation (is_reservation),
+          ADD INDEX idx_reservation_date_time (reservation_date, reservation_time, product_id)
+        `);
+      } catch (error: any) {
+        // Ignore if indexes already exist
+        if (error?.code !== 'ER_DUP_KEYNAME') {
+          console.warn('Error adding reservation indexes to order_items:', error.message);
+        }
+      }
 
       // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
       try {

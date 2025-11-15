@@ -11,6 +11,7 @@ const SystemLogs = lazy(() => import("../features/system-logs/SystemLogs"));
 const Settings = lazy(() => import("../features/settings/Settings"));
 const TransactionsManagement = lazy(() => import("../features/transactions/TransactionsManagement"));
 const ProductsManagement = lazy(() => import("../features/products/ProductsManagement"));
+const CategoriesManagement = lazy(() => import("../features/categories/CategoriesManagement"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -39,4 +40,5 @@ export const LazySystemLogs = withSuspense(SystemLogs);
 export const LazySettings = withSuspense(Settings);
 export const LazyTransactionsManagement = withSuspense(TransactionsManagement);
 export const LazyProductsManagement = withSuspense(ProductsManagement);
+export const LazyCategoriesManagement = withSuspense(CategoriesManagement);
 

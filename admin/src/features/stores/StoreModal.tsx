@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { storeApi } from "../../services/api";
+import { storeApi, categoryApi, type Category } from "../../services/api";
 import { useNotification } from "../../contexts/NotificationContext";
 import type {
   Store,
@@ -36,7 +36,7 @@ interface StoreFormState {
   establishedYear: number;
   location: Location;
   category: string[];
-  categoryInput: string;
+  selectedCategory: string;
   rating: number;
   reviewCount: number;
   productsCount: number;
@@ -63,7 +63,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       ? { ...store.location[0] }
       : createEmptyLocation(),
     category: store?.category ?? [],
-    categoryInput: "",
+    selectedCategory: "",
     rating: store?.rating ?? 0,
     reviewCount: store?.reviewCount ?? 0,
     productsCount: store?.productsCount ?? 0,
@@ -76,6 +76,8 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
 
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -84,6 +86,64 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       document.body.style.overflow = originalOverflow;
     };
   }, []);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoadingCategories(true);
+      try {
+        const response = await categoryApi.getAllCategories({
+          includeInactive: false,
+        });
+        console.log("Categories API response:", response);
+        
+        if (response.success && response.data) {
+          const categories = response.data as Category[];
+          
+          // Check if categories array has items
+          if (categories.length === 0) {
+            console.warn("No categories found. Make sure to run: npm run seed-categories in the server directory");
+            setAvailableCategories([]);
+            return;
+          }
+          
+          // Flatten all categories (including children) into a single list
+          const flattenCategories = (categoriesList: Category[]): Category[] => {
+            const result: Category[] = [];
+            for (const cat of categoriesList) {
+              result.push(cat);
+              // Only flatten if children exist and is an array
+              if (cat.children && Array.isArray(cat.children) && cat.children.length > 0) {
+                result.push(...flattenCategories(cat.children));
+              }
+            }
+            return result;
+          };
+          
+          // Check if categories are already flat (no children property) or in tree structure
+          const hasNestedStructure = categories.some(cat => cat.children && Array.isArray(cat.children));
+          
+          const flatList = hasNestedStructure 
+            ? flattenCategories(categories)
+            : categories; // Already flat
+          
+          console.log("Available categories:", flatList);
+          setAvailableCategories(flatList);
+        } else {
+          console.warn("Invalid categories response:", response);
+          setAvailableCategories([]);
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        showError("Failed to load categories. Please check the console for details.");
+        setAvailableCategories([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, [showError]);
 
   const updateLocationField = (field: keyof Location, value: string) => {
     setFormData((prev) => ({
@@ -96,25 +156,29 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
   };
 
   const handleAddCategory = () => {
-    const value = formData.categoryInput.trim();
+    const value = formData.selectedCategory.trim();
     if (!value) {
       return;
     }
     if (formData.category.includes(value)) {
-      setFormData((prev) => ({ ...prev, categoryInput: "" }));
+      setFormData((prev) => ({ ...prev, selectedCategory: "" }));
       return;
     }
     setFormData((prev) => ({
       ...prev,
       category: [...prev.category, value],
-      categoryInput: "",
+      selectedCategory: "",
     }));
   };
 
-  const handleCategoryKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleAddCategory();
+  const handleCategorySelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const value = event.target.value;
+    if (value && !formData.category.includes(value)) {
+      setFormData((prev) => ({
+        ...prev,
+        category: [...prev.category, value],
+        selectedCategory: "",
+      }));
     }
   };
 
@@ -213,7 +277,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
         const createData: CreateStoreRequest = {
           ...baseData,
           imageUrl: "/images/default-store.png",
-          category: [],
+          category: formData.category,
           rating: 0,
           reviewCount: 0,
           productsCount: 0,
@@ -319,54 +383,54 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
               />
             </div>
 
-            {isEditing && (
-              <div className="form-group">
-                <label className="form-label">
-                  {t("storeModal.fields.categories")}
-                </label>
-                <div className={styles.categoryControls}>
-                  <input
-                    type="text"
-                    value={formData.categoryInput}
-                    onChange={(event) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        categoryInput: event.target.value,
-                      }))
-                    }
-                    onKeyDown={handleCategoryKeyDown}
-                    className="form-input"
-                    placeholder={t("storeModal.fields.categoryPlaceholder")}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={handleAddCategory}
-                  >
-                    {t("storeModal.fields.addCategory")}
-                  </button>
+            <div className="form-group">
+              <label className="form-label">
+                {t("storeModal.fields.categories")}
+              </label>
+              <select
+                value={formData.selectedCategory}
+                onChange={handleCategorySelectChange}
+                className="form-input"
+                disabled={loadingCategories}
+              >
+                <option value="">
+                  {loadingCategories
+                    ? "Loading categories..."
+                    : availableCategories.length === 0
+                    ? "No categories available (run: npm run seed-categories)"
+                    : t("storeModal.fields.categoryPlaceholder") || "-- Select category --"}
+                </option>
+                {availableCategories.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              {availableCategories.length === 0 && !loadingCategories && (
+                <p className="text-sm text-gray-500 mt-1">
+                  No categories found. Please run <code className="bg-gray-100 px-1 rounded">npm run seed-categories</code> in the server directory.
+                </p>
+              )}
+              {formData.category.length > 0 && (
+                <div className={styles.categoryList}>
+                  {formData.category.map((category) => (
+                    <span key={category} className={styles.categoryChip}>
+                      {category}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCategory(category)}
+                        className={styles.categoryRemove}
+                        aria-label={t("storeModal.actions.removeCategory", {
+                          category,
+                        })}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
                 </div>
-                {formData.category.length > 0 && (
-                  <div className={styles.categoryList}>
-                    {formData.category.map((category) => (
-                      <span key={category} className={styles.categoryChip}>
-                        {category}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveCategory(category)}
-                          className={styles.categoryRemove}
-                          aria-label={t("storeModal.actions.removeCategory", {
-                            category,
-                          })}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
 
             {isEditing ? (
               <div className="form-group">

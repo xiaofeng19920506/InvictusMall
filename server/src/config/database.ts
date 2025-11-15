@@ -1096,6 +1096,55 @@ const createTables = async (): Promise<void> => {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
     }
+
+    // Create categories table for hierarchical categories (3 levels)
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id VARCHAR(36) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        slug VARCHAR(255) NOT NULL UNIQUE,
+        description TEXT NULL,
+        parent_id VARCHAR(36) NULL,
+        level INT NOT NULL DEFAULT 1,
+        display_order INT NOT NULL DEFAULT 0,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_parent_id (parent_id),
+        INDEX idx_level (level),
+        INDEX idx_slug (slug),
+        INDEX idx_is_active (is_active),
+        INDEX idx_display_order (display_order),
+        CONSTRAINT chk_max_level CHECK (level <= 3)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Try to add foreign key constraint for parent_id (self-referencing)
+    try {
+      await connection.execute(`
+        ALTER TABLE categories
+        ADD CONSTRAINT fk_categories_parent
+        FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      // Silently ignore if foreign key already exists or user lacks REFERENCES permission
+      if (
+        error?.code !== "ER_DUP_KEY" &&
+        error?.code !== "ER_FK_DUP_NAME" &&
+        error?.errno !== 1142 &&
+        error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.warn("Could not add foreign key to categories:", error.message);
+      }
+      if (
+        error?.errno === 1142 ||
+        error?.code === "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.info(
+          "Skipping foreign key constraint for categories (missing REFERENCES permission)"
+        );
+      }
+    }
   } finally {
     connection.release();
   }

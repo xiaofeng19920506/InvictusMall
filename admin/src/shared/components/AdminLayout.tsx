@@ -13,6 +13,7 @@ import {
   FileText,
   CreditCard,
   Package,
+  FolderTree,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
@@ -55,6 +56,13 @@ const NAV_ITEMS: NavigationItem[] = [
     icon: Package,
     translationKey: "nav.products",
     pageTitleKey: "pages.products",
+  },
+  {
+    id: "categories",
+    permission: "stores",
+    icon: FolderTree,
+    translationKey: "nav.categories",
+    pageTitleKey: "pages.categories",
   },
   {
     id: "users",

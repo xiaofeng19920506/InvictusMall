@@ -3,8 +3,9 @@
   "nav": {
     "dashboard": "Tableau de bord",
     "stores": "Magasins",
-    "products": "Produits",
-    "users": "Utilisateurs",
+      "products": "Produits",
+      "categories": "Catégories",
+      "users": "Utilisateurs",
     "analytics": "Analyses",
     "registerStaff": "Enregistrer le personnel",
     "settings": "Paramètres",
@@ -35,8 +36,9 @@
   "pages": {
     "dashboard": "Tableau de bord",
     "stores": "Magasins",
-    "products": "Produits",
-    "users": "Utilisateurs",
+      "products": "Produits",
+      "categories": "Catégories",
+      "users": "Utilisateurs",
     "analytics": "Analyses",
     "registerStaff": "Enregistrer le personnel",
     "settings": "Paramètres",
@@ -602,6 +604,96 @@
       "uploadFail": "Échec du téléchargement de l'image. Veuillez réessayer.",
       "invalidImageType": "Veuillez sélectionner un fichier image.",
       "imageTooLarge": "La taille du fichier image doit être inférieure à 15 Mo."
+    }
+  },
+  "categories": {
+    "title": "Gestion des Catégories",
+    "subtitle": "Gérer les catégories et sous-catégories de produits",
+    "loading": "Chargement des catégories...",
+    "search": {
+      "placeholder": "Rechercher des catégories..."
+    },
+    "filter": {
+      "allLevels": "Tous les Niveaux",
+      "level1": "Niveau 1 (Niveau Supérieur)",
+      "level2": "Niveau 2 (Sous-catégorie)",
+      "level3": "Niveau 3 (Sous-sous-catégorie)"
+    },
+    "table": {
+      "name": "Nom",
+      "slug": "Identifiant",
+      "level": "Niveau",
+      "parent": "Parent",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "empty": {
+      "noCategories": "Aucune catégorie trouvée"
+    },
+    "actions": {
+      "add": "Ajouter une Catégorie",
+      "addFirst": "Ajouter la Première Catégorie",
+      "edit": "Modifier",
+      "delete": "Supprimer"
+    },
+    "confirm": {
+      "delete": "Êtes-vous sûr de vouloir supprimer \"{{name}}\" ? Les catégories avec enfants ne peuvent pas être supprimées."
+    },
+    "success": {
+      "deleted": "Catégorie supprimée avec succès"
+    },
+    "error": {
+      "loadFailed": "Échec du chargement des catégories",
+      "deleteFailed": "Échec de la suppression de la catégorie"
+    },
+    "warning": {
+      "hasChildren": "Impossible de supprimer une catégorie avec des enfants. Veuillez d'abord supprimer ou déplacer les enfants."
+    }
+  },
+  "categoryModal": {
+    "createTitle": "Créer une Catégorie",
+    "editTitle": "Modifier la Catégorie",
+    "fields": {
+      "name": "Nom",
+      "namePlaceholder": "Entrez le nom de la catégorie",
+      "slug": "Identifiant",
+      "slugPlaceholder": "identifiant-de-categorie",
+      "slugHelp": "Identifiant compatible URL (généré automatiquement à partir du nom si laissé vide)",
+      "description": "Description",
+      "descriptionPlaceholder": "Entrez la description de la catégorie (optionnel)",
+      "parent": "Catégorie Parent",
+      "noParent": "— Aucune (Niveau Supérieur)",
+      "loadingParents": "Chargement...",
+      "parentHelp": "Sélectionnez une catégorie parent pour créer une sous-catégorie",
+      "parentHelpWithParent": "Ce sera une catégorie de Niveau {{level}}",
+      "displayOrder": "Ordre d'Affichage",
+      "displayOrderHelp": "Les nombres les plus bas apparaissent en premier (par défaut : 0)",
+      "active": "Actif",
+      "activeHelp": "Les catégories inactives n'apparaîtront pas dans les menus déroulants de sélection"
+    },
+    "warning": {
+      "maxLevel": "Niveau maximum (3) atteint - ne peut pas avoir d'enfants"
+    },
+    "actions": {
+      "create": "Créer la Catégorie",
+      "update": "Mettre à jour la Catégorie",
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "saving": "Enregistrement..."
+    },
+    "success": {
+      "created": "Catégorie créée avec succès",
+      "updated": "Catégorie mise à jour avec succès"
+    },
+    "error": {
+      "nameRequired": "Le nom de la catégorie est requis",
+      "createFailed": "Échec de la création de la catégorie",
+      "updateFailed": "Échec de la mise à jour de la catégorie",
+      "saveFailed": "Échec de l'enregistrement de la catégorie"
     }
   }
 }

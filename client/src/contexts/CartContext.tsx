@@ -11,6 +11,11 @@ export interface CartItem {
   quantity: number;
   storeId: string;
   storeName: string;
+  // Reservation fields (only for services)
+  reservationDate?: string;
+  reservationTime?: string;
+  reservationNotes?: string;
+  isReservation?: boolean;
 }
 
 interface CartContextType {
@@ -47,20 +52,41 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addItem = (item: Omit<CartItem, 'id'>) => {
     setItems(prev => {
-      // Check if item already exists in cart
-      const existingIndex = prev.findIndex(
-        i => i.productId === item.productId && i.storeId === item.storeId
-      );
+      // For reservations, check if same reservation already exists (same service, date, and time)
+      if (item.isReservation && item.reservationDate && item.reservationTime) {
+        const existingReservationIndex = prev.findIndex(
+          i => 
+            i.productId === item.productId && 
+            i.storeId === item.storeId &&
+            i.isReservation &&
+            i.reservationDate === item.reservationDate &&
+            i.reservationTime === item.reservationTime
+        );
 
-      if (existingIndex >= 0) {
-        // Update quantity if item exists
-        const updated = [...prev];
-        updated[existingIndex].quantity += item.quantity;
-        return updated;
+        if (existingReservationIndex >= 0) {
+          // Reservation with same date/time already exists, don't add duplicate
+          return prev;
+        }
       } else {
-        // Add new item
-        return [...prev, { ...item, id: `${item.storeId}-${item.productId}` }];
+        // For regular products, check if item already exists in cart
+        const existingIndex = prev.findIndex(
+          i => i.productId === item.productId && i.storeId === item.storeId && !i.isReservation
+        );
+
+        if (existingIndex >= 0) {
+          // Update quantity if item exists
+          const updated = [...prev];
+          updated[existingIndex].quantity += item.quantity;
+          return updated;
+        }
       }
+
+      // Add new item (generate unique ID for reservations)
+      const itemId = item.isReservation && item.reservationDate && item.reservationTime
+        ? `${item.storeId}-${item.productId}-${item.reservationDate}-${item.reservationTime}`
+        : `${item.storeId}-${item.productId}`;
+      
+      return [...prev, { ...item, id: itemId }];
     });
   };
 

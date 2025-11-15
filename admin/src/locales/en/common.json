@@ -4,6 +4,7 @@
       "dashboard": "Dashboard",
       "stores": "Stores",
       "products": "Products",
+      "categories": "Categories",
       "users": "Users",
       "analytics": "Analytics",
       "registerStaff": "Register Staff",
@@ -36,6 +37,7 @@
       "dashboard": "Dashboard",
       "stores": "Stores",
       "products": "Products",
+      "categories": "Categories",
       "users": "Users",
       "analytics": "Analytics",
       "registerStaff": "Register Staff",
@@ -655,6 +657,96 @@
       "uploadFail": "Failed to upload image. Please try again.",
       "invalidImageType": "Please select an image file.",
       "imageTooLarge": "Image file size must be less than 15MB."
+    }
+  },
+  "categories": {
+    "title": "Category Management",
+    "subtitle": "Manage product categories and subcategories",
+    "loading": "Loading categories...",
+    "search": {
+      "placeholder": "Search categories..."
+    },
+    "filter": {
+      "allLevels": "All Levels",
+      "level1": "Level 1 (Top Level)",
+      "level2": "Level 2 (Subcategory)",
+      "level3": "Level 3 (Sub-subcategory)"
+    },
+    "table": {
+      "name": "Name",
+      "slug": "Slug",
+      "level": "Level",
+      "parent": "Parent",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": {
+      "noCategories": "No categories found"
+    },
+    "actions": {
+      "add": "Add Category",
+      "addFirst": "Add First Category",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "confirm": {
+      "delete": "Are you sure you want to delete \"{{name}}\"? Categories with children cannot be deleted."
+    },
+    "success": {
+      "deleted": "Category deleted successfully"
+    },
+    "error": {
+      "loadFailed": "Failed to load categories",
+      "deleteFailed": "Failed to delete category"
+    },
+    "warning": {
+      "hasChildren": "Cannot delete category with children. Please delete or move children first."
+    }
+  },
+  "categoryModal": {
+    "createTitle": "Create Category",
+    "editTitle": "Edit Category",
+    "fields": {
+      "name": "Name",
+      "namePlaceholder": "Enter category name",
+      "slug": "Slug",
+      "slugPlaceholder": "category-slug",
+      "slugHelp": "URL-friendly identifier (auto-generated from name if left empty)",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter category description (optional)",
+      "parent": "Parent Category",
+      "noParent": "— None (Top Level)",
+      "loadingParents": "Loading...",
+      "parentHelp": "Select a parent category to create a subcategory",
+      "parentHelpWithParent": "This will be a Level {{level}} category",
+      "displayOrder": "Display Order",
+      "displayOrderHelp": "Lower numbers appear first (default: 0)",
+      "active": "Active",
+      "activeHelp": "Inactive categories won't appear in selection dropdowns"
+    },
+    "warning": {
+      "maxLevel": "Maximum level (3) reached - cannot have children"
+    },
+    "actions": {
+      "create": "Create Category",
+      "update": "Update Category",
+      "cancel": "Cancel",
+      "close": "Close",
+      "saving": "Saving..."
+    },
+    "success": {
+      "created": "Category created successfully",
+      "updated": "Category updated successfully"
+    },
+    "error": {
+      "nameRequired": "Category name is required",
+      "createFailed": "Failed to create category",
+      "updateFailed": "Failed to update category",
+      "saveFailed": "Failed to save category"
     }
   }
 }
