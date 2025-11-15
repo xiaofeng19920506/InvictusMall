@@ -3,9 +3,8 @@ export type AdminPageKey =
   | "stores"
   | "products"
   | "categories"
+  | "orders"
   | "users"
-  | "analytics"
-  | "register-staff"
   | "settings"
   | "system_logs"
   | "transactions";

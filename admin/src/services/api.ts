@@ -658,6 +658,85 @@ export const healthApi = {
   },
 };
 
+// Order interfaces
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  productName: string;
+  productImage?: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
+  reservationDate?: string;
+  reservationTime?: string;
+  reservationNotes?: string;
+  isReservation?: boolean;
+}
+
+export type OrderStatus =
+  | "pending_payment"
+  | "pending"
+  | "processing"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
+
+export interface Order {
+  id: string;
+  userId: string;
+  storeId: string;
+  storeName: string;
+  items: OrderItem[];
+  totalAmount: number;
+  status: OrderStatus;
+  shippingAddress: {
+    streetAddress: string;
+    aptNumber?: string;
+    city: string;
+    stateProvince: string;
+    zipCode: string;
+    country: string;
+  };
+  paymentMethod: string;
+  orderDate: string;
+  shippedDate?: string;
+  deliveredDate?: string;
+  trackingNumber?: string;
+  createdAt: string;
+  updatedAt: string;
+  stripeSessionId?: string | null;
+}
+
+export interface UpdateOrderStatusRequest {
+  status: OrderStatus;
+  trackingNumber?: string;
+}
+
+// Order API functions
+export const orderApi = {
+  // Get all orders (admin only)
+  getAllOrders: async (params?: {
+    status?: string;
+    storeId?: string;
+    userId?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<ApiResponse<Order[]>> => {
+    const response = await api.get("/api/admin/orders", { params });
+    return response.data;
+  },
+
+  // Update order status (admin only)
+  updateOrderStatus: async (
+    orderId: string,
+    data: UpdateOrderStatusRequest
+  ): Promise<ApiResponse<Order>> => {
+    const response = await api.put(`/api/admin/orders/${orderId}/status`, data);
+    return response.data;
+  },
+};
+
 // Re-export types for convenience
 export type {
   Store,

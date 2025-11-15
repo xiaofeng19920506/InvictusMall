@@ -5,9 +5,8 @@
       "stores": "Stores",
       "products": "Products",
       "categories": "Categories",
+      "orders": "Orders",
       "users": "Users",
-      "analytics": "Analytics",
-      "registerStaff": "Register Staff",
       "settings": "Settings",
       "systemLogs": "System Logs",
       "transactions": "Transactions",
@@ -38,9 +37,8 @@
       "stores": "Stores",
       "products": "Products",
       "categories": "Categories",
+      "orders": "Orders",
       "users": "Users",
-      "analytics": "Analytics",
-      "registerStaff": "Register Staff",
       "settings": "Settings",
       "systemLogs": "System Logs",
       "transactions": "Transactions"
@@ -747,6 +745,81 @@
       "createFailed": "Failed to create category",
       "updateFailed": "Failed to update category",
       "saveFailed": "Failed to save category"
+    }
+  },
+  "orders": {
+    "title": "Order Management",
+    "subtitle": "Manage and update order statuses",
+    "loading": "Loading orders...",
+    "search": {
+      "placeholder": "Search orders..."
+    },
+    "filter": {
+      "allStatuses": "All Statuses"
+    },
+    "table": {
+      "orderId": "Order ID",
+      "store": "Store",
+      "items": "Items",
+      "total": "Total",
+      "status": "Status",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending_payment": "Pending Payment",
+      "pending": "Pending",
+      "processing": "Processing",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    },
+    "empty": {
+      "noOrders": "No orders found"
+    },
+    "actions": {
+      "view": "View Details",
+      "updateStatus": "Update Status",
+      "registerStaff": "Register Staff",
+      "cancelRegister": "Cancel"
+    },
+    "item": "item",
+    "items": "items",
+    "quantity": "Quantity",
+    "reservation": "Reservation",
+    "success": {
+      "statusUpdated": "Order status updated successfully"
+    },
+    "error": {
+      "loadFailed": "Failed to load orders",
+      "updateFailed": "Failed to update order status",
+      "noChanges": "No changes to save"
+    },
+    "modal": {
+      "updateStatusTitle": "Update Order Status",
+      "detailTitle": "Order Details",
+      "close": "Close",
+      "orderId": "Order ID",
+      "store": "Store",
+      "total": "Total",
+      "status": "Status",
+      "currentStatus": "Current Status",
+      "newStatus": "New Status",
+      "trackingNumber": "Tracking Number",
+      "trackingNumberPlaceholder": "Enter tracking number (optional)",
+      "trackingNumberHelp": "Optional tracking number for shipped orders",
+      "saving": "Saving...",
+      "update": "Update Status",
+      "cancel": "Cancel",
+      "orderInfo": "Order Information",
+      "items": "Order Items",
+      "orderDate": "Order Date",
+      "shippedDate": "Shipped Date",
+      "deliveredDate": "Delivered Date",
+      "notes": "Notes",
+      "shippingAddress": "Shipping Address",
+      "paymentInfo": "Payment Information",
+      "paymentMethod": "Payment Method"
     }
   }
 }

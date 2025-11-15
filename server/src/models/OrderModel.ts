@@ -378,6 +378,57 @@ export class OrderModel {
     await this.pool.execute(query, params);
   }
 
+  async updateOrderStatus(
+    orderId: string,
+    status: OrderStatus,
+    trackingNumber?: string
+  ): Promise<void> {
+    if (!orderId) {
+      throw new Error('Order ID is required');
+    }
+
+    const validStatuses: OrderStatus[] = [
+      'pending_payment',
+      'pending',
+      'processing',
+      'shipped',
+      'delivered',
+      'cancelled'
+    ];
+
+    if (!validStatuses.includes(status)) {
+      throw new Error(`Invalid order status: ${status}`);
+    }
+
+    const fields: string[] = ['status = ?', 'updated_at = CURRENT_TIMESTAMP'];
+    const params: any[] = [status];
+
+    // Set shipped_date when status changes to 'shipped'
+    if (status === 'shipped') {
+      fields.push('shipped_date = CURRENT_TIMESTAMP');
+    }
+
+    // Set delivered_date when status changes to 'delivered'
+    if (status === 'delivered') {
+      fields.push('delivered_date = CURRENT_TIMESTAMP');
+    }
+
+    // Update tracking number if provided
+    if (trackingNumber !== undefined) {
+      fields.push('tracking_number = ?');
+      params.push(trackingNumber || null);
+    }
+
+    const query = `UPDATE orders SET ${fields.join(', ')} WHERE id = ?`;
+    params.push(orderId);
+
+    const [result] = await this.pool.execute(query, params) as any;
+    
+    if (result.affectedRows === 0) {
+      throw new Error('Order not found');
+    }
+  }
+
   async getOrderById(orderId: string): Promise<Order> {
     const query = `
       SELECT 
@@ -415,6 +466,163 @@ export class OrderModel {
     }
 
     return this.mapRowToOrder(orders[0]);
+  }
+
+  async getAllOrders(
+    options?: { 
+      status?: string; 
+      storeId?: string;
+      userId?: string;
+      limit?: number; 
+      offset?: number 
+    }
+  ): Promise<Order[]> {
+    try {
+      // Get orders with filters
+      let query = `
+        SELECT 
+          o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
+          o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
+          o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
+          o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
+          o.tracking_number, o.created_at, o.updated_at
+        FROM orders o
+        WHERE 1=1
+      `;
+
+      const params: any[] = [];
+
+      if (options?.status) {
+        query += ' AND o.status = ?';
+        params.push(options.status);
+      }
+
+      if (options?.storeId) {
+        query += ' AND o.store_id = ?';
+        params.push(options.storeId);
+      }
+
+      if (options?.userId) {
+        query += ' AND o.user_id = ?';
+        params.push(options.userId);
+      }
+
+      query += ' ORDER BY o.order_date DESC';
+
+      const limitValue =
+        typeof options?.limit === 'number' && Number.isFinite(options.limit)
+          ? Math.max(0, Math.floor(options.limit))
+          : undefined;
+      const offsetValue =
+        typeof options?.offset === 'number' && Number.isFinite(options.offset)
+          ? Math.max(0, Math.floor(options.offset))
+          : undefined;
+
+      if (limitValue !== undefined) {
+        query += ` LIMIT ${limitValue}`;
+        if (offsetValue !== undefined) {
+          query += ` OFFSET ${offsetValue}`;
+        }
+      }
+
+      let rows: any;
+      try {
+        [rows] = await this.pool.execute(query, params);
+      } catch (error: any) {
+        if (this.isConnectionError(error) || error?.code === 'ER_NO_SUCH_TABLE') {
+          console.warn('Orders query failed. Returning empty array.');
+          return [];
+        }
+        throw error;
+      }
+      const orders = rows as any[];
+
+      if (orders.length === 0) {
+        return [];
+      }
+
+      // Get order items for each order separately
+      const orderIds = orders.map(order => order.id);
+      const itemsQuery = `
+        SELECT 
+          id, order_id, product_id, product_name, product_image,
+          quantity, price, subtotal,
+          reservation_date, reservation_time, reservation_notes, is_reservation
+        FROM order_items
+        WHERE order_id IN (${orderIds.map(() => '?').join(',')})
+      `;
+
+      let items: any[] = [];
+      try {
+        const [itemsRows] = await this.pool.execute(itemsQuery, orderIds);
+        items = itemsRows as any[];
+      } catch (error: any) {
+        if (error?.code === 'ER_NO_SUCH_TABLE') {
+          console.warn('Order items table missing. Returning orders without items.');
+          items = [];
+        } else if (this.isConnectionError(error)) {
+          console.warn('Order items query failed. Returning orders without items.');
+          items = [];
+        } else {
+          throw error;
+        }
+      }
+
+      // Group items by order_id
+      const itemsByOrderId = items.reduce((acc, item) => {
+        if (!acc[item.order_id]) {
+          acc[item.order_id] = [];
+        }
+        acc[item.order_id].push({
+          id: item.id,
+          productId: item.product_id,
+          productName: item.product_name,
+          productImage: item.product_image || undefined,
+          quantity: item.quantity,
+          price: parseFloat(item.price),
+          subtotal: parseFloat(item.subtotal),
+          reservationDate: item.reservation_date || undefined,
+          reservationTime: item.reservation_time || undefined,
+          reservationNotes: item.reservation_notes || undefined,
+          isReservation: Boolean(item.is_reservation)
+        });
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      // Map orders with their items
+      return orders.map(order => ({
+        id: order.id,
+        userId: order.user_id,
+        storeId: order.store_id,
+        storeName: order.store_name,
+        items: itemsByOrderId[order.id] || [],
+        totalAmount: parseFloat(order.total_amount),
+        status: order.status,
+        shippingAddress: {
+          streetAddress: order.shipping_street_address,
+          aptNumber: order.shipping_apt_number || undefined,
+          city: order.shipping_city,
+          stateProvince: order.shipping_state_province,
+          zipCode: order.shipping_zip_code,
+          country: order.shipping_country
+        },
+        paymentMethod: order.payment_method,
+        stripeSessionId: order.stripe_session_id || null,
+        orderDate: order.order_date,
+        shippedDate: order.shipped_date || undefined,
+        deliveredDate: order.delivered_date || undefined,
+        trackingNumber: order.tracking_number || undefined,
+        createdAt: order.created_at,
+        updatedAt: order.updated_at
+      }));
+    } catch (error) {
+      console.error('Error in getAllOrders:', error);
+      if (this.isConnectionError(error) || (error as any)?.code === 'ER_NO_SUCH_TABLE') {
+        console.warn('Database unavailable when fetching orders. Returning empty array.');
+        return [];
+      }
+      throw error;
+    }
   }
 
   async getOrdersByUserId(
@@ -501,7 +709,8 @@ export class OrderModel {
       const itemsQuery = `
         SELECT 
           id, order_id, product_id, product_name, product_image,
-          quantity, price, subtotal
+          quantity, price, subtotal,
+          reservation_date, reservation_time, reservation_notes, is_reservation
         FROM order_items
         WHERE order_id IN (${orderIds.map(() => '?').join(',')})
       `;

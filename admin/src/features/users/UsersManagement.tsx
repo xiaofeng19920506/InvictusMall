@@ -7,15 +7,28 @@ import {
   Mail,
   Phone,
   Calendar,
+  Plus,
+  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import EditUserModal from "./EditUserModal";
-import { staffApi, type Staff } from "../../services/api";
+import { staffApi, storeApi, type Staff } from "../../services/api";
+import type { Store } from "../../shared/types/store";
 import styles from "./UsersManagement.module.css";
 
 type User = Staff;
+
+interface RegisterFormData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: "admin" | "owner" | "manager" | "employee";
+  department: string;
+  employeeId: string;
+  storeId: string;
+}
 
 const UsersManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -24,12 +37,34 @@ const UsersManagement: React.FC = () => {
   const [filterRole, setFilterRole] = useState<string>("all");
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
-  const { showError, showInfo } = useNotification();
+  const { showError, showInfo, showSuccess } = useNotification();
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loadingStores, setLoadingStores] = useState(false);
+  const [registerFormData, setRegisterFormData] = useState<RegisterFormData>({
+    email: "",
+    firstName: "",
+    lastName: "",
+    role: "employee",
+    department: "",
+    employeeId: "",
+    storeId: "",
+  });
+  const [registerError, setRegisterError] = useState<string>("");
+  const [registerSuccess, setRegisterSuccess] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadUsers();
-  }, []);
+    if (currentUser && (currentUser.role === "admin" || currentUser.role === "owner" || currentUser.role === "manager")) {
+      if (currentUser.role === "admin") {
+        loadStores();
+      } else {
+        loadStoresForOwnerOrManager();
+      }
+    }
+  }, [currentUser]);
 
   const loadUsers = async () => {
     try {
@@ -45,6 +80,160 @@ const UsersManagement: React.FC = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStores = async () => {
+    try {
+      setLoadingStores(true);
+      const response = await storeApi.getAllStores();
+      if (response.success && response.data) {
+        setStores(response.data);
+      }
+    } catch (error) {
+      console.error("Error loading stores:", error);
+    } finally {
+      setLoadingStores(false);
+    }
+  };
+
+  const loadStoresForOwnerOrManager = async () => {
+    try {
+      setLoadingStores(true);
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const staffResponse = await fetch(`${apiUrl}/api/staff/me`, {
+        credentials: "include",
+      });
+
+      if (!staffResponse.ok) {
+        console.error("Failed to fetch staff info");
+        return;
+      }
+
+      const staffData = await staffResponse.json();
+      if (!staffData.success || !staffData.user) {
+        console.error("Failed to get staff info");
+        return;
+      }
+
+      const userStoreId = (staffData.user as any).storeId;
+
+      if (!userStoreId) {
+        setStores([]);
+        return;
+      }
+
+      const response = await storeApi.getAllStores();
+      if (response.success && response.data) {
+        const filteredStores = response.data.filter((store) => store.id === userStoreId);
+        setStores(filteredStores);
+
+        if (filteredStores.length === 1) {
+          setRegisterFormData((prev) => ({
+            ...prev,
+            storeId: filteredStores[0].id,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error loading stores for owner/manager:", error);
+    } finally {
+      setLoadingStores(false);
+    }
+  };
+
+  const getInitialRole = (): RegisterFormData["role"] => {
+    if (currentUser?.role === "admin") {
+      return "owner";
+    } else if (currentUser?.role === "owner") {
+      return "employee";
+    }
+    return "employee";
+  };
+
+  const getAvailableRoles = (): RegisterFormData["role"][] => {
+    if (currentUser?.role === "admin") {
+      return ["owner"];
+    } else if (currentUser?.role === "owner") {
+      return ["manager", "employee"];
+    } else if (currentUser?.role === "manager") {
+      return ["employee"];
+    }
+    return [];
+  };
+
+  const handleRegisterChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setRegisterFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    setRegisterError("");
+    setRegisterSuccess("");
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setRegisterError("");
+    setRegisterSuccess("");
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const response = await fetch(`${apiUrl}/api/staff/invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          email: registerFormData.email,
+          firstName: registerFormData.firstName,
+          lastName: registerFormData.lastName,
+          role: registerFormData.role,
+          department: registerFormData.department || undefined,
+          employeeId: registerFormData.employeeId || undefined,
+          storeId: registerFormData.storeId || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setRegisterSuccess(
+          t("registerStaff.feedback.success", { email: registerFormData.email })
+        );
+        showSuccess(t("registerStaff.feedback.success", { email: registerFormData.email }));
+        const resetStoreId =
+          currentUser?.role !== "admin" && stores.length === 1
+            ? stores[0].id
+            : "";
+        setRegisterFormData({
+          email: "",
+          firstName: "",
+          lastName: "",
+          role: getInitialRole(),
+          department: "",
+          employeeId: "",
+          storeId: resetStoreId,
+        });
+        loadUsers();
+        setTimeout(() => {
+          setShowRegisterForm(false);
+          setRegisterSuccess("");
+        }, 2000);
+      } else {
+        setRegisterError(data.message || t("registerStaff.feedback.error"));
+        showError(data.message || t("registerStaff.feedback.error"));
+      }
+    } catch (err: any) {
+      const errorMsg = err.message || t("registerStaff.feedback.unexpected");
+      setRegisterError(errorMsg);
+      showError(errorMsg);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -83,6 +272,12 @@ const UsersManagement: React.FC = () => {
     );
   }
 
+  const canRegisterStaff =
+    currentUser &&
+    (currentUser.role === "admin" ||
+      currentUser.role === "owner" ||
+      currentUser.role === "manager");
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -90,7 +285,225 @@ const UsersManagement: React.FC = () => {
           <h2 className={styles.title}>{t("users.title")}</h2>
           <p className={styles.subtitle}>{t("users.subtitle")}</p>
         </div>
+        {canRegisterStaff && (
+          <button
+            onClick={() => {
+              setShowRegisterForm(!showRegisterForm);
+              if (!showRegisterForm) {
+                setRegisterFormData((prev) => ({
+                  ...prev,
+                  role: getInitialRole(),
+                }));
+              }
+            }}
+            className={`btn ${showRegisterForm ? "btn-secondary" : "btn-primary"}`}
+          >
+            {showRegisterForm ? (
+              <>
+                <X className="w-4 h-4" />
+                {t("users.actions.cancelRegister") || "Cancel"}
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                {t("users.actions.registerStaff") || "Register Staff"}
+              </>
+            )}
+          </button>
+        )}
       </div>
+
+      {showRegisterForm && canRegisterStaff && (
+        <div className="card">
+          <div className={styles.registerHeader}>
+            <h3 className={styles.registerTitle}>
+              {t("registerStaff.title") || "Invite New Staff"}
+            </h3>
+            <p className={styles.registerSubtitle}>
+              {t("registerStaff.subtitle") || "Send an invitation to a new staff member"}
+            </p>
+          </div>
+
+          <form onSubmit={handleRegisterSubmit} className={styles.registerForm}>
+            <div className={styles.formGrid}>
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="firstName">
+                  {t("registerStaff.form.firstName")}
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  required
+                  className="form-input"
+                  placeholder={t("registerStaff.form.firstNamePlaceholder")}
+                  value={registerFormData.firstName}
+                  onChange={handleRegisterChange}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="lastName">
+                  {t("registerStaff.form.lastName")}
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  required
+                  className="form-input"
+                  placeholder={t("registerStaff.form.lastNamePlaceholder")}
+                  value={registerFormData.lastName}
+                  onChange={handleRegisterChange}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="email">
+                {t("registerStaff.form.email")}
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="form-input"
+                placeholder={t("registerStaff.form.emailPlaceholder")}
+                value={registerFormData.email}
+                onChange={handleRegisterChange}
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className={styles.formGrid}>
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="role">
+                  {t("registerStaff.form.role")}
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  required
+                  className="form-input form-select"
+                  value={registerFormData.role}
+                  onChange={handleRegisterChange}
+                  disabled={isSubmitting}
+                >
+                  {getAvailableRoles().map((role) => (
+                    <option key={role} value={role}>
+                      {t(`registerStaff.form.roles.${role}`)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {(currentUser?.role === "admin" ||
+                currentUser?.role === "owner" ||
+                currentUser?.role === "manager") && (
+                <div className={styles.formGroup}>
+                  <label className={styles.label} htmlFor="storeId">
+                    {t("registerStaff.form.store")}
+                    {currentUser?.role === "admin" && (
+                      <span className={styles.optional}>
+                        {t("registerStaff.form.optional")}
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    id="storeId"
+                    name="storeId"
+                    className="form-input form-select"
+                    value={registerFormData.storeId}
+                    onChange={handleRegisterChange}
+                    disabled={
+                      isSubmitting ||
+                      loadingStores ||
+                      (currentUser?.role !== "admin" && stores.length === 1)
+                    }
+                  >
+                    <option value="">
+                      {loadingStores
+                        ? t("registerStaff.form.loadingStores")
+                        : t("registerStaff.form.selectStore")}
+                    </option>
+                    {stores.map((store) => (
+                      <option key={store.id} value={store.id}>
+                        {store.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className={styles.formGroup}>
+                <label className={styles.label} htmlFor="department">
+                  {t("registerStaff.form.department")}
+                  <span className={styles.optional}>
+                    {t("registerStaff.form.optional")}
+                  </span>
+                </label>
+                <input
+                  id="department"
+                  name="department"
+                  type="text"
+                  className="form-input"
+                  placeholder={t("registerStaff.form.departmentPlaceholder")}
+                  value={registerFormData.department}
+                  onChange={handleRegisterChange}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.label} htmlFor="employeeId">
+                {t("registerStaff.form.employeeId")}
+                <span className={styles.optional}>
+                  {t("registerStaff.form.optional")}
+                </span>
+              </label>
+              <input
+                id="employeeId"
+                name="employeeId"
+                type="text"
+                className="form-input"
+                placeholder={t("registerStaff.form.employeeIdPlaceholder")}
+                value={registerFormData.employeeId}
+                onChange={handleRegisterChange}
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {registerError && (
+              <div className={styles.errorMessage} role="alert">
+                {registerError}
+              </div>
+            )}
+
+            {registerSuccess && (
+              <div className={styles.successMessage} role="status">
+                {registerSuccess}
+              </div>
+            )}
+
+            <div className={styles.registerActions}>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn btn-primary"
+              >
+                {isSubmitting
+                  ? t("registerStaff.form.sending")
+                  : t("registerStaff.form.submit")}
+              </button>
+            </div>
+
+            <p className={styles.registerFooter}>
+              {t("registerStaff.form.info")}
+            </p>
+          </form>
+        </div>
+      )}
 
       <div className="card">
         <div className={styles.filters}>

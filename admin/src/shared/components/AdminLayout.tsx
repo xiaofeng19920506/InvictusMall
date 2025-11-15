@@ -14,6 +14,7 @@ import {
   CreditCard,
   Package,
   FolderTree,
+  ShoppingBag,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
@@ -65,25 +66,18 @@ const NAV_ITEMS: NavigationItem[] = [
     pageTitleKey: "pages.categories",
   },
   {
+    id: "orders",
+    permission: "stores",
+    icon: ShoppingBag,
+    translationKey: "nav.orders",
+    pageTitleKey: "pages.orders",
+  },
+  {
     id: "users",
     permission: "users",
     icon: Users,
     translationKey: "nav.users",
     pageTitleKey: "pages.users",
-  },
-  {
-    id: "analytics",
-    permission: "analytics",
-    icon: TrendingUp,
-    translationKey: "nav.analytics",
-    pageTitleKey: "pages.analytics",
-  },
-  {
-    id: "register-staff",
-    permission: "user_management",
-    icon: UserCheck,
-    translationKey: "nav.registerStaff",
-    pageTitleKey: "pages.registerStaff",
   },
   {
     id: "settings",
