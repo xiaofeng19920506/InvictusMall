@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from "react";
 import {
-  Settings as SettingsIcon,
   Save,
   User,
   Bell,

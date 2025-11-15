@@ -59,7 +59,6 @@ const Analytics: React.FC = () => {
   // Calculate statistics
   const totalStores = stores.length || 0;
   const activeStores = stores.filter((s) => s.isActive).length || 0;
-  const verifiedStores = stores.filter((s) => s.isVerified).length || 0;
   
   // Calculate revenue (placeholder - would need actual order data)
   const revenue = 0;
