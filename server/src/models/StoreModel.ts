@@ -26,8 +26,8 @@ export class StoreModel {
             JSON_ARRAY()
           ) as locations
         FROM stores s
-        LEFT JOIN store_categories sc ON s.id = sc.store_id
-        LEFT JOIN store_locations sl ON s.id = sl.store_id
+        LEFT JOIN store_categories sc ON s.id COLLATE utf8mb4_unicode_ci = sc.store_id COLLATE utf8mb4_unicode_ci
+        LEFT JOIN store_locations sl ON s.id COLLATE utf8mb4_unicode_ci = sl.store_id COLLATE utf8mb4_unicode_ci
         GROUP BY s.id
         ORDER BY s.created_at DESC
       `);
@@ -82,8 +82,8 @@ export class StoreModel {
             JSON_ARRAY()
           ) as locations
         FROM stores s
-        LEFT JOIN store_categories sc ON s.id = sc.store_id
-        LEFT JOIN store_locations sl ON s.id = sl.store_id
+        LEFT JOIN store_categories sc ON s.id COLLATE utf8mb4_unicode_ci = sc.store_id COLLATE utf8mb4_unicode_ci
+        LEFT JOIN store_locations sl ON s.id COLLATE utf8mb4_unicode_ci = sl.store_id COLLATE utf8mb4_unicode_ci
         WHERE s.id = ?
         GROUP BY s.id
       `, [id]);
@@ -322,8 +322,8 @@ export class StoreModel {
             )
           ) as locations
         FROM stores s
-        LEFT JOIN store_categories sc ON s.id = sc.store_id
-        LEFT JOIN store_locations sl ON s.id = sl.store_id
+        LEFT JOIN store_categories sc ON s.id COLLATE utf8mb4_unicode_ci = sc.store_id COLLATE utf8mb4_unicode_ci
+        LEFT JOIN store_locations sl ON s.id COLLATE utf8mb4_unicode_ci = sl.store_id COLLATE utf8mb4_unicode_ci
         WHERE s.name LIKE ? 
            OR s.description LIKE ?
            OR sc.category LIKE ?
@@ -359,8 +359,8 @@ export class StoreModel {
             )
           ) as locations
         FROM stores s
-        LEFT JOIN store_categories sc ON s.id = sc.store_id
-        LEFT JOIN store_locations sl ON s.id = sl.store_id
+        LEFT JOIN store_categories sc ON s.id COLLATE utf8mb4_unicode_ci = sc.store_id COLLATE utf8mb4_unicode_ci
+        LEFT JOIN store_locations sl ON s.id COLLATE utf8mb4_unicode_ci = sl.store_id COLLATE utf8mb4_unicode_ci
         WHERE sc.category = ?
         GROUP BY s.id
         ORDER BY s.created_at DESC
