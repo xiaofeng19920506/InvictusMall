@@ -233,7 +233,9 @@
       "deactivateTitle": "Desactivar Usuario",
       "activateTitle": "Activar Usuario",
       "confirmToggle": "¿Está seguro de que desea {{action}} este usuario?",
-      "toggleSoon": "La funcionalidad de activar/desactivar estará disponible pronto"
+      "toggleSoon": "La funcionalidad de activar/desactivar estará disponible pronto",
+      "registerStaff": "Registrar Personal",
+      "cancelRegister": "Cancelar"
     },
     "empty": {
       "title": "No se encontraron usuarios",

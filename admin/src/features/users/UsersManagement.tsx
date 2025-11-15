@@ -285,22 +285,13 @@ const UsersManagement: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className={styles.loading}>
-        <div className="loading" />
-        <span>{t("users.loading")}</span>
-      </div>
-    );
-  }
-
   const canRegisterStaff =
     currentUser &&
     (currentUser.role === "admin" ||
       currentUser.role === "owner" ||
       currentUser.role === "manager");
 
-  // Set header actions
+  // Set header actions - must be before early return to maintain hook order
   useEffect(() => {
     if (canRegisterStaff) {
       const handleToggleRegister = () => {
@@ -336,6 +327,15 @@ const UsersManagement: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canRegisterStaff, showRegisterForm, setHeaderActions, t]);
+
+  if (loading) {
+    return (
+      <div className={styles.loading}>
+        <div className="loading" />
+        <span>{t("users.loading")}</span>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

@@ -82,11 +82,6 @@ const SystemLogs: React.FC = () => {
   return (
     <div className={styles.container}>
       <section className={styles.card}>
-        <div className={styles.header}>
-          <h3 className={styles.headerTitle}>{t("systemLogs.title")}</h3>
-          <p className={styles.headerSubtitle}>{t("systemLogs.subtitle")}</p>
-        </div>
-
         <div className={styles.controls}>
           <div className={styles.controlsRow}>
             <div className={styles.searchWrapper}>

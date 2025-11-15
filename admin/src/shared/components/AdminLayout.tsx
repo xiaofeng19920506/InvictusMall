@@ -80,11 +80,11 @@ const NAV_ITEMS: NavigationItem[] = [
     pageTitleKey: "pages.users",
   },
   {
-    id: "settings",
-    permission: "settings",
-    icon: Settings,
-    translationKey: "nav.settings",
-    pageTitleKey: "pages.settings",
+    id: "transactions",
+    permission: "stores",
+    icon: CreditCard,
+    translationKey: "nav.transactions",
+    pageTitleKey: "pages.transactions",
   },
   {
     id: "system_logs",
@@ -94,11 +94,11 @@ const NAV_ITEMS: NavigationItem[] = [
     pageTitleKey: "pages.systemLogs",
   },
   {
-    id: "transactions",
-    permission: "stores",
-    icon: CreditCard,
-    translationKey: "nav.transactions",
-    pageTitleKey: "pages.transactions",
+    id: "settings",
+    permission: "settings",
+    icon: Settings,
+    translationKey: "nav.settings",
+    pageTitleKey: "pages.settings",
   },
 ];
 

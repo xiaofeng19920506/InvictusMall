@@ -369,17 +369,8 @@ const TransactionsManagement: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>
-            {t("transactions.title") || "Store Transactions"}
-          </h1>
-          <p className={styles.subtitle}>
-            {t("transactions.subtitle") ||
-              "Track and manage all store transactions"}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+      <div className="card" style={{ marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>
               {t("transactions.viewMode") || "View:"}
