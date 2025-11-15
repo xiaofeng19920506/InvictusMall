@@ -123,6 +123,47 @@
   flex-direction: column;
 }
 
+.tableWrapper table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.tableWrapper th:nth-child(1),
+.tableWrapper td:nth-child(1) {
+  width: 25%;
+  min-width: 200px;
+}
+
+.tableWrapper th:nth-child(2),
+.tableWrapper td:nth-child(2) {
+  width: 20%;
+  min-width: 150px;
+}
+
+.tableWrapper th:nth-child(3),
+.tableWrapper td:nth-child(3) {
+  width: 10%;
+  min-width: 80px;
+}
+
+.tableWrapper th:nth-child(4),
+.tableWrapper td:nth-child(4) {
+  width: 20%;
+  min-width: 150px;
+}
+
+.tableWrapper th:nth-child(5),
+.tableWrapper td:nth-child(5) {
+  width: 10%;
+  min-width: 100px;
+}
+
+.tableWrapper th:nth-child(6),
+.tableWrapper td:nth-child(6) {
+  width: 15%;
+  min-width: 120px;
+}
+
 .nameCell {
   display: flex;
   align-items: center;

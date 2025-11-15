@@ -698,6 +698,28 @@
       "saveFailed": "Échec de l'enregistrement de la catégorie"
     }
   },
+  "common": {
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "pagination": {
+      "showing": "Affichage",
+      "to": "à",
+      "of": "sur",
+      "items": "éléments",
+      "itemsPerPage": "Éléments par page",
+      "previousPage": "Page précédente",
+      "nextPage": "Page suivante",
+      "goToPage": "Aller à la page {{page}}"
+    }
+  },
   "orders": {
     "title": "Gestion des Commandes",
     "subtitle": "Gérer et mettre à jour les statuts des commandes",

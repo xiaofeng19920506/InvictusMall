@@ -698,6 +698,28 @@
       "saveFailed": "카테고리 저장 실패"
     }
   },
+  "common": {
+    "confirm": "확인",
+    "cancel": "취소",
+    "close": "닫기",
+    "save": "저장",
+    "delete": "삭제",
+    "edit": "편집",
+    "add": "추가",
+    "loading": "로딩 중...",
+    "error": "오류",
+    "success": "성공",
+    "pagination": {
+      "showing": "표시",
+      "to": "부터",
+      "of": "/",
+      "items": "개",
+      "itemsPerPage": "페이지당 항목 수",
+      "previousPage": "이전 페이지",
+      "nextPage": "다음 페이지",
+      "goToPage": "{{page}} 페이지로 이동"
+    }
+  },
   "orders": {
     "title": "주문 관리",
     "subtitle": "주문 상태 관리 및 업데이트",

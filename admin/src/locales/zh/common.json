@@ -735,6 +735,102 @@
       "updateFailed": "更新分类失败",
       "saveFailed": "保存分类失败"
     }
+  },
+  "common": {
+    "confirm": "确认",
+    "cancel": "取消",
+    "close": "关闭",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "pagination": {
+      "showing": "显示",
+      "to": "到",
+      "of": "共",
+      "items": "项",
+      "itemsPerPage": "每页显示",
+      "previousPage": "上一页",
+      "nextPage": "下一页",
+      "goToPage": "跳转到第 {{page}} 页"
+    }
+  },
+  "orders": {
+    "title": "订单管理",
+    "subtitle": "管理和更新订单状态",
+    "loading": "加载订单中...",
+    "search": {
+      "placeholder": "搜索订单..."
+    },
+    "filter": {
+      "allStatuses": "所有状态"
+    },
+    "table": {
+      "orderId": "订单ID",
+      "store": "商店",
+      "items": "商品",
+      "total": "总计",
+      "status": "状态",
+      "date": "日期",
+      "actions": "操作"
+    },
+    "status": {
+      "pending_payment": "待支付",
+      "pending": "待处理",
+      "processing": "处理中",
+      "shipped": "已发货",
+      "delivered": "已送达",
+      "cancelled": "已取消"
+    },
+    "empty": {
+      "noOrders": "未找到订单"
+    },
+    "actions": {
+      "view": "查看详情",
+      "updateStatus": "更新状态",
+      "registerStaff": "注册员工",
+      "cancelRegister": "取消"
+    },
+    "item": "件",
+    "items": "件",
+    "quantity": "数量",
+    "reservation": "预约",
+    "success": {
+      "statusUpdated": "订单状态更新成功"
+    },
+    "error": {
+      "loadFailed": "加载订单失败",
+      "updateFailed": "更新订单状态失败",
+      "noChanges": "没有需要保存的更改"
+    },
+    "modal": {
+      "updateStatusTitle": "更新订单状态",
+      "detailTitle": "订单详情",
+      "close": "关闭",
+      "orderId": "订单ID",
+      "store": "商店",
+      "total": "总计",
+      "status": "状态",
+      "currentStatus": "当前状态",
+      "newStatus": "新状态",
+      "trackingNumber": "追踪号码",
+      "trackingNumberPlaceholder": "输入追踪号码（可选）",
+      "trackingNumberHelp": "已发货订单的可选追踪号码",
+      "saving": "保存中...",
+      "update": "更新状态",
+      "cancel": "取消",
+      "orderInfo": "订单信息",
+      "items": "订单商品",
+      "orderDate": "订单日期",
+      "shippedDate": "发货日期",
+      "deliveredDate": "送达日期",
+      "notes": "备注",
+      "shippingAddress": "配送地址",
+      "paymentInfo": "支付信息",
+      "paymentMethod": "支付方式"
+    }
   }
 }
-

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, X } from 'lucide-react';
 import styles from './ConfirmModal.module.css';
 
@@ -17,12 +18,16 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
   title,
   message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  confirmText,
+  cancelText,
   onConfirm,
   onCancel,
   type = 'warning',
 }) => {
+  const { t } = useTranslation();
+  const defaultConfirmText = confirmText || t("common.confirm");
+  const defaultCancelText = cancelText || t("common.cancel");
+  
   if (!isOpen) return null;
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -52,7 +57,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <button
             className={styles.closeButton}
             onClick={onCancel}
-            aria-label="Close"
+            aria-label={t("common.close")}
           >
             <X className={styles.closeIcon} />
           </button>
@@ -66,13 +71,13 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             className={`${styles.button} ${styles.cancelButton}`}
             onClick={onCancel}
           >
-            {cancelText}
+            {defaultCancelText}
           </button>
           <button
             className={`${styles.button} ${styles.confirmButton} ${getTypeStyles()}`}
             onClick={onConfirm}
           >
-            {confirmText}
+            {defaultConfirmText}
           </button>
         </div>
       </div>
