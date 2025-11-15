@@ -14,8 +14,26 @@ export const dbConfig = {
   queueLimit: 0,
 };
 
-// Create connection pool
-export const pool = mysql.createPool(dbConfig);
+// Create connection pool (lazy initialization to avoid crashes if env vars are missing)
+let poolInstance: mysql.Pool | null = null;
+
+export const pool: mysql.Pool = new Proxy({} as mysql.Pool, {
+  get(_target, prop) {
+    if (!poolInstance) {
+      try {
+        poolInstance = mysql.createPool(dbConfig);
+      } catch (error) {
+        console.error("Failed to create database pool:", error);
+        throw error;
+      }
+    }
+    const value = (poolInstance as any)[prop];
+    if (typeof value === "function") {
+      return value.bind(poolInstance);
+    }
+    return value;
+  },
+});
 
 // Test database connection
 export const testConnection = async (): Promise<boolean> => {
@@ -105,10 +123,10 @@ const createTables = async (): Promise<void> => {
         AND TABLE_NAME = 'stores'
         AND COLUMN_NAME = 'id'
       `);
-      
+
       let storeIdType = "VARCHAR(36)";
       let charsetClause = "";
-      
+
       if (storeColumns && storeColumns.length > 0) {
         const storeIdCol = storeColumns[0];
         storeIdType = storeIdCol.COLUMN_TYPE;
@@ -119,7 +137,7 @@ const createTables = async (): Promise<void> => {
           }
         }
       }
-      
+
       await connection.execute(`
         CREATE TABLE IF NOT EXISTS store_categories (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -219,10 +237,10 @@ const createTables = async (): Promise<void> => {
         AND TABLE_NAME = 'stores'
         AND COLUMN_NAME = 'id'
       `);
-      
+
       let storeIdType = "VARCHAR(36)";
       let charsetClause = "";
-      
+
       if (storeColumns && storeColumns.length > 0) {
         const storeIdCol = storeColumns[0];
         storeIdType = storeIdCol.COLUMN_TYPE;
@@ -233,7 +251,7 @@ const createTables = async (): Promise<void> => {
           }
         }
       }
-      
+
       await connection.execute(`
         CREATE TABLE IF NOT EXISTS store_locations (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -494,10 +512,10 @@ const createTables = async (): Promise<void> => {
         AND TABLE_NAME = 'stores'
         AND COLUMN_NAME = 'id'
       `);
-      
+
       let storeIdType = "VARCHAR(36)";
       let charsetClause = "";
-      
+
       if (storeColumns && storeColumns.length > 0) {
         const storeIdCol = storeColumns[0];
         storeIdType = storeIdCol.COLUMN_TYPE;
@@ -508,7 +526,7 @@ const createTables = async (): Promise<void> => {
           }
         }
       }
-      
+
       await connection.execute(`
         CREATE TABLE IF NOT EXISTS staff_invitations (
           id VARCHAR(36) PRIMARY KEY,
@@ -769,10 +787,10 @@ const createTables = async (): Promise<void> => {
         AND TABLE_NAME = 'stores'
         AND COLUMN_NAME = 'id'
       `);
-      
+
       let storeIdType = "VARCHAR(36)";
       let charsetClause = "";
-      
+
       if (storeColumns && storeColumns.length > 0) {
         const storeIdCol = storeColumns[0];
         // Use the same type as stores.id
@@ -784,7 +802,7 @@ const createTables = async (): Promise<void> => {
           }
         }
       }
-      
+
       // Add column if it doesn't exist
       try {
         await connection.execute(`
@@ -796,7 +814,7 @@ const createTables = async (): Promise<void> => {
           throw error;
         }
       }
-      
+
       // Add index if it doesn't exist
       try {
         await connection.execute(`
@@ -808,7 +826,7 @@ const createTables = async (): Promise<void> => {
           throw error;
         }
       }
-      
+
       // Try to add foreign key if it doesn't exist (may fail if user lacks REFERENCES permission)
       try {
         await connection.execute(`
@@ -838,8 +856,8 @@ const createTables = async (): Promise<void> => {
               retryError.errno !== 1142 &&
               retryError.code !== "ER_TABLEACCESS_DENIED_ERROR"
             ) {
-               throw retryError;
-             }
+              throw retryError;
+            }
             if (
               retryError.errno === 1142 ||
               retryError.code === "ER_TABLEACCESS_DENIED_ERROR"
@@ -847,15 +865,15 @@ const createTables = async (): Promise<void> => {
               console.info(
                 "Skipping foreign key constraint for staff_invitations.store_id (missing REFERENCES permission)"
               );
-             }
-           }
+            }
+          }
         } else if (
           error.code !== "ER_DUP_KEY" &&
           error.code !== "ER_FK_DUP_NAME" &&
           error.errno !== 1142 &&
           error.code !== "ER_TABLEACCESS_DENIED_ERROR"
         ) {
-           throw error;
+          throw error;
         } else if (
           error.errno === 1142 ||
           error.code === "ER_TABLEACCESS_DENIED_ERROR"
@@ -863,7 +881,7 @@ const createTables = async (): Promise<void> => {
           console.info(
             "Skipping foreign key constraint for staff_invitations.store_id (missing REFERENCES permission)"
           );
-         }
+        }
       }
     } catch (error: any) {
       // Column might already exist (ER_DUP_FIELDNAME) or foreign key might exist (ER_DUP_KEYNAME)
@@ -885,10 +903,10 @@ const createTables = async (): Promise<void> => {
         AND TABLE_NAME = 'stores'
         AND COLUMN_NAME = 'id'
       `);
-      
+
       let storeIdType = "VARCHAR(36)";
       let charsetClause = "";
-      
+
       if (storeColumns && storeColumns.length > 0) {
         const storeIdCol = storeColumns[0];
         storeIdType = storeIdCol.COLUMN_TYPE;
@@ -899,7 +917,7 @@ const createTables = async (): Promise<void> => {
           }
         }
       }
-      
+
       // Create table without foreign key first
       await connection.execute(`
         CREATE TABLE IF NOT EXISTS store_transactions (
@@ -927,7 +945,7 @@ const createTables = async (): Promise<void> => {
           INDEX idx_order_id (order_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
-      
+
       // Try to add foreign key separately (may fail if user lacks REFERENCES permission)
       try {
         await connection.execute(`
@@ -1059,7 +1077,7 @@ const createTables = async (): Promise<void> => {
           error.code !== "ER_TABLEACCESS_DENIED_ERROR"
         ) {
           console.warn("Could not add foreign key to products:", error.message);
-  }
+        }
         // Log when REFERENCES permission is missing (but don't fail)
         if (
           error.errno === 1142 ||

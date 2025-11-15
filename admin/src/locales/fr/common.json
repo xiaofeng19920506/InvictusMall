@@ -5,6 +5,7 @@
     "stores": "Magasins",
       "products": "Produits",
       "categories": "Catégories",
+      "orders": "Commandes",
       "users": "Utilisateurs",
     "analytics": "Analyses",
     "registerStaff": "Enregistrer le personnel",
@@ -38,6 +39,7 @@
     "stores": "Magasins",
       "products": "Produits",
       "categories": "Catégories",
+      "orders": "Commandes",
       "users": "Utilisateurs",
     "analytics": "Analyses",
     "registerStaff": "Enregistrer le personnel",
@@ -694,6 +696,81 @@
       "createFailed": "Échec de la création de la catégorie",
       "updateFailed": "Échec de la mise à jour de la catégorie",
       "saveFailed": "Échec de l'enregistrement de la catégorie"
+    }
+  },
+  "orders": {
+    "title": "Gestion des Commandes",
+    "subtitle": "Gérer et mettre à jour les statuts des commandes",
+    "loading": "Chargement des commandes...",
+    "search": {
+      "placeholder": "Rechercher des commandes..."
+    },
+    "filter": {
+      "allStatuses": "Tous les Statuts"
+    },
+    "table": {
+      "orderId": "ID de Commande",
+      "store": "Magasin",
+      "items": "Articles",
+      "total": "Total",
+      "status": "Statut",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending_payment": "Paiement en Attente",
+      "pending": "En Attente",
+      "processing": "En Traitement",
+      "shipped": "Expédié",
+      "delivered": "Livré",
+      "cancelled": "Annulé"
+    },
+    "empty": {
+      "noOrders": "Aucune commande trouvée"
+    },
+    "actions": {
+      "view": "Voir les Détails",
+      "updateStatus": "Mettre à jour le Statut",
+      "registerStaff": "Enregistrer le Personnel",
+      "cancelRegister": "Annuler"
+    },
+    "item": "article",
+    "items": "articles",
+    "quantity": "Quantité",
+    "reservation": "Réservation",
+    "success": {
+      "statusUpdated": "Statut de la commande mis à jour avec succès"
+    },
+    "error": {
+      "loadFailed": "Échec du chargement des commandes",
+      "updateFailed": "Échec de la mise à jour du statut de la commande",
+      "noChanges": "Aucun changement à enregistrer"
+    },
+    "modal": {
+      "updateStatusTitle": "Mettre à jour le Statut de la Commande",
+      "detailTitle": "Détails de la Commande",
+      "close": "Fermer",
+      "orderId": "ID de Commande",
+      "store": "Magasin",
+      "total": "Total",
+      "status": "Statut",
+      "currentStatus": "Statut Actuel",
+      "newStatus": "Nouveau Statut",
+      "trackingNumber": "Numéro de Suivi",
+      "trackingNumberPlaceholder": "Entrez le numéro de suivi (optionnel)",
+      "trackingNumberHelp": "Numéro de suivi optionnel pour les commandes expédiées",
+      "saving": "Enregistrement...",
+      "update": "Mettre à jour le Statut",
+      "cancel": "Annuler",
+      "orderInfo": "Informations sur la Commande",
+      "items": "Articles de la Commande",
+      "orderDate": "Date de Commande",
+      "shippedDate": "Date d'Expédition",
+      "deliveredDate": "Date de Livraison",
+      "notes": "Notes",
+      "shippingAddress": "Adresse de Livraison",
+      "paymentInfo": "Informations de Paiement",
+      "paymentMethod": "Méthode de Paiement"
     }
   }
 }

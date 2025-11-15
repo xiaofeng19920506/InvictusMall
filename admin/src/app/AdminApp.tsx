@@ -5,13 +5,12 @@ import {
   LazyDashboard,
   LazyStoresManagement,
   LazyUsersManagement,
-  LazyAnalytics,
-  LazyAdminRegister,
   LazySystemLogs,
   LazySettings,
   LazyTransactionsManagement,
   LazyProductsManagement,
   LazyCategoriesManagement,
+  LazyOrdersManagement,
 } from "./routes";
 import type { AdminPageKey } from "./types";
 
@@ -41,12 +40,10 @@ const AdminApp = () => {
           return <LazyCategoriesManagement />;
         }
         return <LazyDashboard onNavigate={setCurrentPage} />;
+      case "orders":
+        return <LazyOrdersManagement />;
       case "users":
         return <LazyUsersManagement />;
-      case "analytics":
-        return <LazyAnalytics />;
-      case "register-staff":
-        return <LazyAdminRegister />;
       case "system_logs":
         return <LazySystemLogs />;
       case "settings":

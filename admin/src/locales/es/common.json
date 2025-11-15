@@ -5,6 +5,7 @@
     "stores": "Tiendas",
       "products": "Productos",
       "categories": "Categorías",
+      "orders": "Pedidos",
       "users": "Usuarios",
     "analytics": "Analítica",
     "registerStaff": "Registrar Personal",
@@ -38,6 +39,7 @@
     "stores": "Tiendas",
       "products": "Productos",
       "categories": "Categorías",
+      "orders": "Pedidos",
       "users": "Usuarios",
     "analytics": "Analítica",
     "registerStaff": "Registrar Personal",
@@ -712,6 +714,81 @@
       "createFailed": "Error al crear categoría",
       "updateFailed": "Error al actualizar categoría",
       "saveFailed": "Error al guardar categoría"
+    }
+  },
+  "orders": {
+    "title": "Gestión de Pedidos",
+    "subtitle": "Gestionar y actualizar estados de pedidos",
+    "loading": "Cargando pedidos...",
+    "search": {
+      "placeholder": "Buscar pedidos..."
+    },
+    "filter": {
+      "allStatuses": "Todos los Estados"
+    },
+    "table": {
+      "orderId": "ID de Pedido",
+      "store": "Tienda",
+      "items": "Artículos",
+      "total": "Total",
+      "status": "Estado",
+      "date": "Fecha",
+      "actions": "Acciones"
+    },
+    "status": {
+      "pending_payment": "Pago Pendiente",
+      "pending": "Pendiente",
+      "processing": "Procesando",
+      "shipped": "Enviado",
+      "delivered": "Entregado",
+      "cancelled": "Cancelado"
+    },
+    "empty": {
+      "noOrders": "No se encontraron pedidos"
+    },
+    "actions": {
+      "view": "Ver Detalles",
+      "updateStatus": "Actualizar Estado",
+      "registerStaff": "Registrar Personal",
+      "cancelRegister": "Cancelar"
+    },
+    "item": "artículo",
+    "items": "artículos",
+    "quantity": "Cantidad",
+    "reservation": "Reserva",
+    "success": {
+      "statusUpdated": "Estado del pedido actualizado exitosamente"
+    },
+    "error": {
+      "loadFailed": "Error al cargar pedidos",
+      "updateFailed": "Error al actualizar el estado del pedido",
+      "noChanges": "No hay cambios para guardar"
+    },
+    "modal": {
+      "updateStatusTitle": "Actualizar Estado del Pedido",
+      "detailTitle": "Detalles del Pedido",
+      "close": "Cerrar",
+      "orderId": "ID de Pedido",
+      "store": "Tienda",
+      "total": "Total",
+      "status": "Estado",
+      "currentStatus": "Estado Actual",
+      "newStatus": "Nuevo Estado",
+      "trackingNumber": "Número de Seguimiento",
+      "trackingNumberPlaceholder": "Ingrese el número de seguimiento (opcional)",
+      "trackingNumberHelp": "Número de seguimiento opcional para pedidos enviados",
+      "saving": "Guardando...",
+      "update": "Actualizar Estado",
+      "cancel": "Cancelar",
+      "orderInfo": "Información del Pedido",
+      "items": "Artículos del Pedido",
+      "orderDate": "Fecha del Pedido",
+      "shippedDate": "Fecha de Envío",
+      "deliveredDate": "Fecha de Entrega",
+      "notes": "Notas",
+      "shippingAddress": "Dirección de Envío",
+      "paymentInfo": "Información de Pago",
+      "paymentMethod": "Método de Pago"
     }
   }
 }

@@ -3,9 +3,10 @@
   "nav": {
     "dashboard": "ダッシュボード",
     "stores": "店舗管理",
-    "products": "商品管理",
-    "categories": "カテゴリー管理",
-    "users": "ユーザー管理",
+      "products": "商品管理",
+      "categories": "カテゴリー管理",
+      "orders": "注文管理",
+      "users": "ユーザー管理",
     "analytics": "分析",
     "registerStaff": "スタッフ登録",
     "settings": "設定",
@@ -36,9 +37,10 @@
   "pages": {
     "dashboard": "ダッシュボード",
     "stores": "店舗管理",
-    "products": "商品管理",
-    "categories": "カテゴリー管理",
-    "users": "ユーザー管理",
+      "products": "商品管理",
+      "categories": "カテゴリー管理",
+      "orders": "注文管理",
+      "users": "ユーザー管理",
     "analytics": "分析",
     "registerStaff": "スタッフ登録",
     "settings": "設定",
@@ -694,6 +696,81 @@
       "createFailed": "カテゴリーの作成に失敗しました",
       "updateFailed": "カテゴリーの更新に失敗しました",
       "saveFailed": "カテゴリーの保存に失敗しました"
+    }
+  },
+  "orders": {
+    "title": "注文管理",
+    "subtitle": "注文ステータスの管理と更新",
+    "loading": "注文を読み込み中...",
+    "search": {
+      "placeholder": "注文を検索..."
+    },
+    "filter": {
+      "allStatuses": "すべてのステータス"
+    },
+    "table": {
+      "orderId": "注文ID",
+      "store": "店舗",
+      "items": "商品",
+      "total": "合計",
+      "status": "ステータス",
+      "date": "日付",
+      "actions": "操作"
+    },
+    "status": {
+      "pending_payment": "支払い待ち",
+      "pending": "保留中",
+      "processing": "処理中",
+      "shipped": "発送済み",
+      "delivered": "配達済み",
+      "cancelled": "キャンセル済み"
+    },
+    "empty": {
+      "noOrders": "注文が見つかりません"
+    },
+    "actions": {
+      "view": "詳細を見る",
+      "updateStatus": "ステータスを更新",
+      "registerStaff": "スタッフを登録",
+      "cancelRegister": "キャンセル"
+    },
+    "item": "アイテム",
+    "items": "アイテム",
+    "quantity": "数量",
+    "reservation": "予約",
+    "success": {
+      "statusUpdated": "注文ステータスが正常に更新されました"
+    },
+    "error": {
+      "loadFailed": "注文の読み込みに失敗しました",
+      "updateFailed": "注文ステータスの更新に失敗しました",
+      "noChanges": "保存する変更がありません"
+    },
+    "modal": {
+      "updateStatusTitle": "注文ステータスを更新",
+      "detailTitle": "注文詳細",
+      "close": "閉じる",
+      "orderId": "注文ID",
+      "store": "店舗",
+      "total": "合計",
+      "status": "ステータス",
+      "currentStatus": "現在のステータス",
+      "newStatus": "新しいステータス",
+      "trackingNumber": "追跡番号",
+      "trackingNumberPlaceholder": "追跡番号を入力（オプション）",
+      "trackingNumberHelp": "発送済み注文のオプション追跡番号",
+      "saving": "保存中...",
+      "update": "ステータスを更新",
+      "cancel": "キャンセル",
+      "orderInfo": "注文情報",
+      "items": "注文商品",
+      "orderDate": "注文日",
+      "shippedDate": "発送日",
+      "deliveredDate": "配達日",
+      "notes": "メモ",
+      "shippingAddress": "配送先住所",
+      "paymentInfo": "支払い情報",
+      "paymentMethod": "支払い方法"
     }
   }
 }
