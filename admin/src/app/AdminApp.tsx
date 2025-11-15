@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import AdminLayout from "../shared/components/AdminLayout";
+import { useAuth } from "../contexts/AuthContext";
 import {
   LazyDashboard,
   LazyStoresManagement,
@@ -16,6 +17,14 @@ import type { AdminPageKey } from "./types";
 
 const AdminApp = () => {
   const [currentPage, setCurrentPage] = useState<AdminPageKey>("dashboard");
+  const { user } = useAuth();
+
+  // Redirect non-admin users away from categories page
+  useEffect(() => {
+    if (currentPage === "categories" && user && user.role !== "admin") {
+      setCurrentPage("dashboard");
+    }
+  }, [currentPage, user]);
 
   // Memoized page renderer to avoid unnecessary re-renders
   const renderPage = useMemo(() => {
@@ -27,7 +36,11 @@ const AdminApp = () => {
       case "products":
         return <LazyProductsManagement />;
       case "categories":
-        return <LazyCategoriesManagement />;
+        // Only allow admin access
+        if (user && user.role === "admin") {
+          return <LazyCategoriesManagement />;
+        }
+        return <LazyDashboard onNavigate={setCurrentPage} />;
       case "users":
         return <LazyUsersManagement />;
       case "analytics":
