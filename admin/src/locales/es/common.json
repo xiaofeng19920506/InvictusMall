@@ -512,7 +512,8 @@
       "fee": "Tarifa",
       "commission": "Comisión"
     },
-    "status": {
+    "status": "Estado",
+    "statuses": {
       "pending": "Pendiente",
       "completed": "Completado",
       "failed": "Fallido",
@@ -524,6 +525,19 @@
     "customer": "Cliente",
     "amount": "Monto",
     "paymentMethod": "Método de Pago",
-    "description": "Descripción"
+    "description": "Descripción",
+    "itemsPerPage": "Elementos por página",
+    "showing": "Mostrando",
+    "of": "de",
+    "actions": "Acciones",
+    "actionButtons": {
+      "refund": "Reembolsar",
+      "viewDetails": "Ver Detalles"
+    },
+    "refund": {
+      "success": "Transacción de reembolso creada exitosamente",
+      "error": "Error al crear el reembolso",
+      "stripeMessage": "Los reembolsos de Stripe deben procesarse a través del panel de Stripe"
+    }
   }
 }

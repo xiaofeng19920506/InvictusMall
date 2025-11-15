@@ -536,7 +536,8 @@
       "fee": "费用",
       "commission": "佣金"
     },
-    "status": {
+    "status": "状态",
+    "statuses": {
       "pending": "待处理",
       "completed": "已完成",
       "failed": "失败",
@@ -548,7 +549,20 @@
     "customer": "客户",
     "amount": "金额",
     "paymentMethod": "支付方式",
-    "description": "描述"
+    "description": "描述",
+    "itemsPerPage": "每页条目数",
+    "showing": "显示",
+    "of": "共",
+    "actions": "操作",
+    "actionButtons": {
+      "refund": "退款",
+      "viewDetails": "查看详情"
+    },
+    "refund": {
+      "success": "退款交易创建成功",
+      "error": "创建退款失败",
+      "stripeMessage": "Stripe 退款必须通过 Stripe 仪表板处理"
+    }
   }
 }
 

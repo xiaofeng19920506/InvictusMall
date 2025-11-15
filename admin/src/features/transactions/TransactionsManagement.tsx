@@ -8,9 +8,11 @@ import {
   Store as StoreIcon,
   ChevronLeft,
   ChevronRight,
+  RotateCcw,
+  Eye,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { transactionApi, storeApi, type StoreTransaction, type TransactionFilters, type StripeTransaction } from "../../services/api";
+import { transactionApi, storeApi, type StoreTransaction, type TransactionFilters, type StripeTransaction, type CreateTransactionRequest } from "../../services/api";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useAuth } from "../../contexts/AuthContext";
 import type { Store } from "../../shared/types/store";
@@ -45,7 +47,7 @@ const TransactionsManagement: React.FC = () => {
   const [endDate, setEndDate] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(20);
-  const { showError } = useNotification();
+  const { showError, showSuccess } = useNotification();
   const { user } = useAuth();
 
   const fetchStores = useCallback(async () => {
@@ -193,16 +195,6 @@ const TransactionsManagement: React.FC = () => {
     }
   };
 
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case "sale":
-        return <TrendingUp className={styles.typeIcon} />;
-      case "refund":
-        return <TrendingDown className={styles.typeIcon} />;
-      default:
-        return <DollarSign className={styles.typeIcon} />;
-    }
-  };
 
   // Role-based filtering: Non-admin users can only see their store's transactions
   const availableStores = stores.filter(() => {
@@ -299,6 +291,58 @@ const TransactionsManagement: React.FC = () => {
   const handleItemsPerPageChange = (value: number) => {
     setItemsPerPage(value);
     setCurrentPage(1);
+  };
+
+  const handleRefund = async (transaction: StoreTransaction | StripeTransaction) => {
+    try {
+      const isLocal = (transaction as any).source === 'local';
+      
+      if (isLocal) {
+        // For local transactions, create a refund transaction
+        const localTransaction = transaction as StoreTransaction;
+        const refundData: CreateTransactionRequest = {
+          storeId: localTransaction.storeId,
+          transactionType: 'refund',
+          amount: Math.abs(localTransaction.amount),
+          currency: localTransaction.currency || 'USD',
+          description: `Refund for transaction ${localTransaction.id}`,
+          customerId: localTransaction.customerId,
+          customerName: localTransaction.customerName,
+          orderId: localTransaction.orderId,
+          paymentMethod: localTransaction.paymentMethod,
+          status: 'pending',
+          transactionDate: new Date().toISOString(),
+          metadata: {
+            originalTransactionId: localTransaction.id,
+            refundReason: 'Admin refund',
+          },
+        };
+
+        const response = await transactionApi.createTransaction(refundData);
+        if (response.success) {
+          showSuccess(t("transactions.refund.success") || "Refund transaction created successfully");
+          loadAllTransactions();
+        } else {
+          showError(response.message || t("transactions.refund.error") || "Failed to create refund");
+        }
+      } else {
+        // For Stripe transactions, show a message that Stripe refunds need to be processed in Stripe dashboard
+        showError(t("transactions.refund.stripeMessage") || "Stripe refunds must be processed through the Stripe dashboard");
+      }
+    } catch (error: any) {
+      console.error("Error processing refund:", error);
+      showError(
+        error.response?.data?.message || t("transactions.refund.error") || "Failed to process refund"
+      );
+    }
+  };
+
+  const handleViewDetails = (transaction: StoreTransaction | StripeTransaction) => {
+    // TODO: Implement view details modal
+    console.log("View details for transaction:", transaction);
+    // For now, just show an alert with transaction details
+    const details = JSON.stringify(transaction, null, 2);
+    alert(t("transactions.actionButtons.viewDetails") || "Transaction Details:\n\n" + details);
   };
 
   return (
@@ -491,19 +535,19 @@ const TransactionsManagement: React.FC = () => {
                 {t("transactions.allStatuses") || "All Statuses"}
               </option>
               <option value="pending">
-                {t("transactions.status.pending") || "Pending"}
+                {t("transactions.statuses.pending") || "Pending"}
               </option>
               <option value="completed">
-                {t("transactions.status.completed") || "Completed"}
+                {t("transactions.statuses.completed") || "Completed"}
               </option>
               <option value="failed">
-                {t("transactions.status.failed") || "Failed"}
+                {t("transactions.statuses.failed") || "Failed"}
               </option>
               <option value="cancelled">
-                {t("transactions.status.cancelled") || "Cancelled"}
+                {t("transactions.statuses.cancelled") || "Cancelled"}
               </option>
               <option value="refunded">
-                {t("transactions.status.refunded") || "Refunded"}
+                {t("transactions.statuses.refunded") || "Refunded"}
               </option>
             </select>
           </div>
@@ -567,41 +611,23 @@ const TransactionsManagement: React.FC = () => {
             <thead>
               <tr>
                 <th>{t("transactions.date") || "Date"}</th>
-                <th>{t("transactions.type") || "Type"}</th>
-                <th>{t("transactions.store") || "Store"}</th>
                 <th>{t("transactions.customer") || "Customer"}</th>
                 <th>{t("transactions.amount") || "Amount"}</th>
                 <th>{t("transactions.status") || "Status"}</th>
                 <th>{t("transactions.paymentMethod") || "Payment Method"}</th>
                 <th>{t("transactions.description") || "Description"}</th>
-                {viewMode === 'both' && <th>{t("transactions.source") || "Source"}</th>}
+                <th>{t("transactions.actions") || "Actions"}</th>
               </tr>
             </thead>
             <tbody>
               {paginatedTransactions.map((transaction) => {
                 const isLocal = (transaction as any).source === 'local';
-                const store = isLocal ? stores.find((s) => s.id === transaction.storeId) : null;
                 const transactionType = transaction.transactionType || (isLocal ? 'sale' : 'payment');
                 const isRefund = transactionType === "refund" || (transaction.amount < 0 && !isLocal);
                 
                 return (
                   <tr key={`${(transaction as any).source}-${transaction.id}`}>
                     <td>{formatDate(transaction.transactionDate)}</td>
-                    <td>
-                      <div className={styles.typeCell}>
-                        {getTypeIcon(transactionType)}
-                        <span className={styles.typeLabel}>
-                          {transactionType.charAt(0).toUpperCase() +
-                            transactionType.slice(1)}
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      {isLocal ? (store?.name || transaction.storeId) : 
-                       (transaction as StripeTransaction).stripeType === 'charge' ? 'Stripe Charge' :
-                       (transaction as StripeTransaction).stripeType === 'balance_transaction' ? 'Stripe Balance' :
-                       'Stripe Payment Intent'}
-                    </td>
                     <td>
                       {transaction.customerName ||
                         transaction.customerId ||
@@ -631,20 +657,62 @@ const TransactionsManagement: React.FC = () => {
                     <td className={styles.descriptionCell}>
                       {transaction.description || "-"}
                     </td>
-                    {viewMode === 'both' && (
-                      <td>
-                        <span style={{
-                          padding: '0.25rem 0.5rem',
-                          borderRadius: '0.25rem',
-                          fontSize: '0.75rem',
-                          fontWeight: 500,
-                          backgroundColor: (transaction as any).source === 'stripe' ? '#6366f1' : '#10b981',
-                          color: 'white',
-                        }}>
-                          {(transaction as any).source === 'stripe' ? 'Stripe' : 'Local'}
-                        </span>
-                      </td>
-                    )}
+                    <td>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        {!isRefund && transaction.status === 'completed' && (
+                          <button
+                            onClick={() => handleRefund(transaction)}
+                            title={t("transactions.actionButtons.refund") || "Refund"}
+                            style={{
+                              padding: '0.375rem',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #e5e7eb',
+                              backgroundColor: 'white',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              color: '#dc2626',
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#fef2f2';
+                              e.currentTarget.style.borderColor = '#dc2626';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'white';
+                              e.currentTarget.style.borderColor = '#e5e7eb';
+                            }}
+                          >
+                            <RotateCcw size={16} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleViewDetails(transaction)}
+                          title={t("transactions.actionButtons.viewDetails") || "View Details"}
+                          style={{
+                            padding: '0.375rem',
+                            borderRadius: '0.375rem',
+                            border: '1px solid #e5e7eb',
+                            backgroundColor: 'white',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: '#6b7280',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f9fafb';
+                            e.currentTarget.style.borderColor = '#9ca3af';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'white';
+                            e.currentTarget.style.borderColor = '#e5e7eb';
+                          }}
+                        >
+                          <Eye size={16} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}

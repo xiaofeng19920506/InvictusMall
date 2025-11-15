@@ -494,7 +494,8 @@
       "fee": "手数料",
       "commission": "コミッション"
     },
-    "status": {
+    "status": "状態",
+    "statuses": {
       "pending": "保留中",
       "completed": "完了",
       "failed": "失敗",
@@ -506,7 +507,20 @@
     "customer": "顧客",
     "amount": "金額",
     "paymentMethod": "支払い方法",
-    "description": "説明"
+    "description": "説明",
+    "itemsPerPage": "ページあたりの項目数",
+    "showing": "表示中",
+    "of": "の",
+    "actions": "操作",
+    "actionButtons": {
+      "refund": "返金",
+      "viewDetails": "詳細を表示"
+    },
+    "refund": {
+      "success": "返金トランザクションが正常に作成されました",
+      "error": "返金の作成に失敗しました",
+      "stripeMessage": "Stripe の返金は Stripe ダッシュボードを通じて処理する必要があります"
+    }
   }
 }
 

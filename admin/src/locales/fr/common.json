@@ -494,7 +494,8 @@
       "fee": "Frais",
       "commission": "Commission"
     },
-    "status": {
+    "status": "Statut",
+    "statuses": {
       "pending": "En attente",
       "completed": "Terminé",
       "failed": "Échoué",
@@ -506,7 +507,20 @@
     "customer": "Client",
     "amount": "Montant",
     "paymentMethod": "Méthode de paiement",
-    "description": "Description"
+    "description": "Description",
+    "itemsPerPage": "Éléments par page",
+    "showing": "Affichage",
+    "of": "de",
+    "actions": "Actions",
+    "actionButtons": {
+      "refund": "Rembourser",
+      "viewDetails": "Voir les détails"
+    },
+    "refund": {
+      "success": "Transaction de remboursement créée avec succès",
+      "error": "Échec de la création du remboursement",
+      "stripeMessage": "Les remboursements Stripe doivent être traités via le tableau de bord Stripe"
+    }
   }
 }
 
