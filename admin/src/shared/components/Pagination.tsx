@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import styles from "./Pagination.module.css";
 
@@ -21,6 +22,7 @@ const Pagination: React.FC<PaginationProps> = ({
   onItemsPerPageChange,
   itemsPerPageOptions = [10, 20, 50, 100],
 }) => {
+  const { t } = useTranslation();
   const handlePrevious = () => {
     if (currentPage > 1) {
       onPageChange(currentPage - 1);
@@ -90,12 +92,12 @@ const Pagination: React.FC<PaginationProps> = ({
     <div className={styles.pagination}>
       <div className={styles.info}>
         <span className={styles.text}>
-          Showing {startItem} to {endItem} of {totalItems} items
+          {t("common.pagination.showing")} {startItem} {t("common.pagination.to")} {endItem} {t("common.pagination.of")} {totalItems} {t("common.pagination.items")}
         </span>
         {onItemsPerPageChange && (
           <div className={styles.itemsPerPage}>
             <label htmlFor="items-per-page" className={styles.label}>
-              Items per page:
+              {t("common.pagination.itemsPerPage")}:
             </label>
             <select
               id="items-per-page"
@@ -119,7 +121,7 @@ const Pagination: React.FC<PaginationProps> = ({
             onClick={handlePrevious}
             disabled={currentPage === 1}
             className={`${styles.button} ${styles.prevButton}`}
-            aria-label="Previous page"
+            aria-label={t("common.pagination.previousPage")}
           >
             <ChevronLeft className={styles.icon} />
           </button>
@@ -142,7 +144,7 @@ const Pagination: React.FC<PaginationProps> = ({
                   key={pageNum}
                   onClick={() => handlePageClick(pageNum)}
                   className={`${styles.pageButton} ${isActive ? styles.active : ""}`}
-                  aria-label={`Go to page ${pageNum}`}
+                  aria-label={t("common.pagination.goToPage", { page: pageNum })}
                   aria-current={isActive ? "page" : undefined}
                 >
                   {pageNum}
@@ -155,7 +157,7 @@ const Pagination: React.FC<PaginationProps> = ({
             onClick={handleNext}
             disabled={currentPage === totalPages}
             className={`${styles.button} ${styles.nextButton}`}
-            aria-label="Next page"
+            aria-label={t("common.pagination.nextPage")}
           >
             <ChevronRight className={styles.icon} />
           </button>

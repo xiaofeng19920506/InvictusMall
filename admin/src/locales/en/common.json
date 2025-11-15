@@ -747,6 +747,28 @@
       "saveFailed": "Failed to save category"
     }
   },
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "close": "Close",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "pagination": {
+      "showing": "Showing",
+      "to": "to",
+      "of": "of",
+      "items": "items",
+      "itemsPerPage": "Items per page",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "goToPage": "Go to page {{page}}"
+    }
+  },
   "orders": {
     "title": "Order Management",
     "subtitle": "Manage and update order statuses",
