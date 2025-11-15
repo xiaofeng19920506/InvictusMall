@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
     // Set NEXT_PUBLIC_API_URL=http://[server-ip]:3001 to connect to server on another machine
     NEXT_PUBLIC_API_URL: 
       process.env.NEXT_PUBLIC_API_URL ||
-      process.env.NEXT_PUBLIC_API_URL || 
       'http://localhost:3001',
   },
   images: {
