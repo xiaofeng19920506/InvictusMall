@@ -11,6 +11,7 @@ import {
   UserCheck,
   TrendingUp,
   FileText,
+  CreditCard,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
@@ -81,6 +82,13 @@ const NAV_ITEMS: NavigationItem[] = [
     icon: FileText,
     translationKey: "nav.systemLogs",
     pageTitleKey: "pages.systemLogs",
+  },
+  {
+    id: "transactions",
+    permission: "stores",
+    icon: CreditCard,
+    translationKey: "nav.transactions",
+    pageTitleKey: "pages.transactions",
   },
 ];
 

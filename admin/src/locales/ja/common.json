@@ -8,6 +8,7 @@
     "registerStaff": "スタッフ登録",
     "settings": "設定",
     "systemLogs": "システムログ",
+    "transactions": "取引記録",
     "open": "ナビゲーションを開く",
     "close": "ナビゲーションを閉じる"
   },
@@ -37,7 +38,8 @@
     "analytics": "分析",
     "registerStaff": "スタッフ登録",
     "settings": "設定",
-    "systemLogs": "システムログ"
+    "systemLogs": "システムログ",
+    "transactions": "取引記録"
   },
   "stores": {
     "title": "店舗管理",
@@ -462,6 +464,49 @@
         }
       }
     }
+  },
+  "transactions": {
+    "title": "店舗取引記録",
+    "subtitle": "すべての店舗取引を追跡および管理",
+    "refresh": "更新",
+    "loading": "取引記録を読み込み中...",
+    "noTransactions": "取引記録が見つかりません",
+    "totalAmount": "合計金額",
+    "totalSales": "総売上",
+    "totalRefunds": "総返金額",
+    "totalTransactions": "総取引数",
+    "filter": {
+      "store": "店舗",
+      "type": "タイプ",
+      "status": "ステータス",
+      "startDate": "開始日",
+      "endDate": "終了日"
+    },
+    "allStores": "すべての店舗",
+    "allTypes": "すべてのタイプ",
+    "allStatuses": "すべてのステータス",
+    "applyFilters": "フィルターを適用",
+    "resetFilters": "リセット",
+    "type": {
+      "sale": "販売",
+      "refund": "返金",
+      "payment": "支払い",
+      "fee": "手数料",
+      "commission": "コミッション"
+    },
+    "status": {
+      "pending": "保留中",
+      "completed": "完了",
+      "failed": "失敗",
+      "cancelled": "キャンセル済み",
+      "refunded": "返金済み"
+    },
+    "date": "日付",
+    "store": "店舗",
+    "customer": "顧客",
+    "amount": "金額",
+    "paymentMethod": "支払い方法",
+    "description": "説明"
   }
 }
 

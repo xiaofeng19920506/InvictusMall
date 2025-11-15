@@ -8,6 +8,7 @@
     "registerStaff": "Registrar Personal",
     "settings": "Configuración",
     "systemLogs": "Registros del Sistema",
+    "transactions": "Transacciones",
     "open": "Abrir navegación",
     "close": "Cerrar navegación"
   },
@@ -37,7 +38,8 @@
     "analytics": "Analítica",
     "registerStaff": "Registrar Personal",
     "settings": "Configuración",
-    "systemLogs": "Registros del Sistema"
+    "systemLogs": "Registros del Sistema",
+    "transactions": "Transacciones"
   },
   "stores": {
     "title": "Gestión de Tiendas",
@@ -480,5 +482,48 @@
         }
       }
     }
+  },
+  "transactions": {
+    "title": "Transacciones de Tienda",
+    "subtitle": "Rastrear y gestionar todas las transacciones de la tienda",
+    "refresh": "Actualizar",
+    "loading": "Cargando transacciones...",
+    "noTransactions": "No se encontraron transacciones",
+    "totalAmount": "Monto Total",
+    "totalSales": "Ventas Totales",
+    "totalRefunds": "Reembolsos Totales",
+    "totalTransactions": "Total de Transacciones",
+    "filter": {
+      "store": "Tienda",
+      "type": "Tipo",
+      "status": "Estado",
+      "startDate": "Fecha de Inicio",
+      "endDate": "Fecha de Fin"
+    },
+    "allStores": "Todas las Tiendas",
+    "allTypes": "Todos los Tipos",
+    "allStatuses": "Todos los Estados",
+    "applyFilters": "Aplicar Filtros",
+    "resetFilters": "Restablecer",
+    "type": {
+      "sale": "Venta",
+      "refund": "Reembolso",
+      "payment": "Pago",
+      "fee": "Tarifa",
+      "commission": "Comisión"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "completed": "Completado",
+      "failed": "Fallido",
+      "cancelled": "Cancelado",
+      "refunded": "Reembolsado"
+    },
+    "date": "Fecha",
+    "store": "Tienda",
+    "customer": "Cliente",
+    "amount": "Monto",
+    "paymentMethod": "Método de Pago",
+    "description": "Descripción"
   }
 }

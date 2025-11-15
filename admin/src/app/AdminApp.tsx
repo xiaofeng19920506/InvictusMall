@@ -8,6 +8,7 @@ import {
   LazyAdminRegister,
   LazySystemLogs,
   LazySettings,
+  LazyTransactionsManagement,
 } from "./routes";
 import type { AdminPageKey } from "./types";
 
@@ -31,6 +32,8 @@ const AdminApp = () => {
         return <LazySystemLogs />;
       case "settings":
         return <LazySettings />;
+      case "transactions":
+        return <LazyTransactionsManagement />;
       default:
         return <LazyDashboard onNavigate={setCurrentPage} />;
     }

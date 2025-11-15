@@ -8,6 +8,7 @@
     "registerStaff": "Enregistrer le personnel",
     "settings": "Paramètres",
     "systemLogs": "Journaux système",
+    "transactions": "Transactions",
     "open": "Ouvrir la navigation",
     "close": "Fermer la navigation"
   },
@@ -37,7 +38,8 @@
     "analytics": "Analyses",
     "registerStaff": "Enregistrer le personnel",
     "settings": "Paramètres",
-    "systemLogs": "Journaux système"
+    "systemLogs": "Journaux système",
+    "transactions": "Transactions"
   },
   "stores": {
     "title": "Gestion des boutiques",
@@ -462,6 +464,49 @@
         }
       }
     }
+  },
+  "transactions": {
+    "title": "Transactions des boutiques",
+    "subtitle": "Suivre et gérer toutes les transactions des boutiques",
+    "refresh": "Actualiser",
+    "loading": "Chargement des transactions...",
+    "noTransactions": "Aucune transaction trouvée",
+    "totalAmount": "Montant total",
+    "totalSales": "Ventes totales",
+    "totalRefunds": "Remboursements totaux",
+    "totalTransactions": "Total des transactions",
+    "filter": {
+      "store": "Boutique",
+      "type": "Type",
+      "status": "Statut",
+      "startDate": "Date de début",
+      "endDate": "Date de fin"
+    },
+    "allStores": "Toutes les boutiques",
+    "allTypes": "Tous les types",
+    "allStatuses": "Tous les statuts",
+    "applyFilters": "Appliquer les filtres",
+    "resetFilters": "Réinitialiser",
+    "type": {
+      "sale": "Vente",
+      "refund": "Remboursement",
+      "payment": "Paiement",
+      "fee": "Frais",
+      "commission": "Commission"
+    },
+    "status": {
+      "pending": "En attente",
+      "completed": "Terminé",
+      "failed": "Échoué",
+      "cancelled": "Annulé",
+      "refunded": "Remboursé"
+    },
+    "date": "Date",
+    "store": "Boutique",
+    "customer": "Client",
+    "amount": "Montant",
+    "paymentMethod": "Méthode de paiement",
+    "description": "Description"
   }
 }
 

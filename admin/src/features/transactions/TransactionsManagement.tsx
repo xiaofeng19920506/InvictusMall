@@ -1,0 +1,771 @@
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  RefreshCw,
+  Filter,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Store as StoreIcon,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { transactionApi, storeApi, type StoreTransaction, type TransactionFilters, type StripeTransaction } from "../../services/api";
+import { useNotification } from "../../contexts/NotificationContext";
+import { useAuth } from "../../contexts/AuthContext";
+import type { Store } from "../../shared/types/store";
+import styles from "./TransactionsManagement.module.css";
+
+type TransactionViewMode = 'local' | 'stripe' | 'both';
+
+const TransactionsManagement: React.FC = () => {
+  const { t } = useTranslation();
+  const [transactions, setTransactions] = useState<StoreTransaction[]>([]);
+  const [stripeTransactions, setStripeTransactions] = useState<StripeTransaction[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<TransactionViewMode>('stripe');
+  const [filters, setFilters] = useState<TransactionFilters>({
+    limit: 50,
+    offset: 0,
+  });
+  const [stripeFilters, setStripeFilters] = useState<{
+    limit?: number;
+    type?: 'charge' | 'balance_transaction' | 'payment_intent';
+    starting_after?: string;
+  }>({
+    limit: 50,
+    type: 'charge',
+  });
+  const [selectedStore, setSelectedStore] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
+  const [stripeType, setStripeType] = useState<'charge' | 'balance_transaction' | 'payment_intent'>('charge');
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(20);
+  const { showError } = useNotification();
+  const { user } = useAuth();
+
+  const fetchStores = useCallback(async () => {
+    try {
+      const response = await storeApi.getAllStores();
+      if (response.success && response.data) {
+        setStores(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching stores:", error);
+    }
+  }, []);
+
+  const fetchTransactions = useCallback(async () => {
+    try {
+      const response = await transactionApi.getTransactions(filters);
+      if (response.success && response.data) {
+        setTransactions(response.data);
+      } else {
+        showError(response.message || "Failed to fetch transactions");
+      }
+    } catch (error: any) {
+      console.error("Error fetching transactions:", error);
+      showError(
+        error.response?.data?.message || "Failed to fetch transactions"
+      );
+    }
+  }, [filters, showError]);
+
+  const fetchStripeTransactions = useCallback(async () => {
+    try {
+      const response = await transactionApi.getStripeTransactions(stripeFilters);
+      if (response.success && response.data) {
+        setStripeTransactions(response.data);
+      } else {
+        showError(response.message || "Failed to fetch Stripe transactions");
+      }
+    } catch (error: any) {
+      console.error("Error fetching Stripe transactions:", error);
+      showError(
+        error.response?.data?.message || "Failed to fetch Stripe transactions"
+      );
+    }
+  }, [stripeFilters, showError]);
+
+  const loadAllTransactions = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Fetch stores first (no await to not block)
+      fetchStores();
+      
+      // Fetch transactions based on view mode
+      const promises: Promise<void>[] = [];
+      
+      if (viewMode === 'local' || viewMode === 'both') {
+        promises.push(fetchTransactions());
+      }
+      if (viewMode === 'stripe' || viewMode === 'both') {
+        promises.push(fetchStripeTransactions());
+      }
+      
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      } else {
+        // If no promises, still wait a bit to show loading state
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    } catch (error) {
+      console.error("Error loading transactions:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [viewMode, fetchStores, fetchTransactions, fetchStripeTransactions]);
+
+  useEffect(() => {
+    loadAllTransactions();
+  }, [loadAllTransactions]);
+
+  const handleFilterChange = () => {
+    const newFilters: TransactionFilters = {
+      limit: 1000, // Get more to support client-side filtering and pagination
+      offset: 0,
+    };
+
+    if (selectedStore) newFilters.storeId = selectedStore;
+    if (selectedType) newFilters.transactionType = selectedType as any;
+    if (selectedStatus) newFilters.status = selectedStatus as any;
+    // Convert date strings to ISO format with time (start of day for startDate, end of day for endDate)
+    if (startDate) {
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(0, 0, 0, 0);
+      newFilters.startDate = startDateTime.toISOString();
+    }
+    if (endDate) {
+      const endDateTime = new Date(endDate);
+      endDateTime.setHours(23, 59, 59, 999);
+      newFilters.endDate = endDateTime.toISOString();
+    }
+
+    setFilters(newFilters);
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const handleResetFilters = () => {
+    setSelectedStore("");
+    setSelectedType("");
+    setSelectedStatus("");
+    setStartDate("");
+    setEndDate("");
+    setFilters({ limit: 1000, offset: 0 });
+    setCurrentPage(1);
+  };
+
+  const formatCurrency = (amount: number, currency: string = "USD") => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency,
+    }).format(amount);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return styles.statusCompleted;
+      case "pending":
+        return styles.statusPending;
+      case "failed":
+        return styles.statusFailed;
+      case "cancelled":
+        return styles.statusCancelled;
+      case "refunded":
+        return styles.statusRefunded;
+      default:
+        return "";
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case "sale":
+        return <TrendingUp className={styles.typeIcon} />;
+      case "refund":
+        return <TrendingDown className={styles.typeIcon} />;
+      default:
+        return <DollarSign className={styles.typeIcon} />;
+    }
+  };
+
+  // Role-based filtering: Non-admin users can only see their store's transactions
+  const availableStores = stores.filter(() => {
+    if (user?.role === "admin") return true;
+    // For non-admin users, they should only see their own store
+    // This is handled by the backend, but we can filter here too
+    return true;
+  });
+
+  // Calculate totals for local transactions
+  const localTotalAmount = transactions.reduce((sum, t) => {
+    if (t.status === "completed") {
+      return sum + (t.transactionType === "refund" ? -t.amount : t.amount);
+    }
+    return sum;
+  }, 0);
+
+  const localTotalSales = transactions
+    .filter((t) => t.transactionType === "sale" && t.status === "completed")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const localTotalRefunds = transactions
+    .filter((t) => t.transactionType === "refund" && t.status === "completed")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  // Calculate totals for Stripe transactions
+  const stripeTotalAmount = stripeTransactions.reduce((sum, t) => {
+    if (t.status === "completed") {
+      return sum + ((t.transactionType === "refund" || t.amount < 0) ? -Math.abs(t.amount) : t.amount);
+    }
+    return sum;
+  }, 0);
+
+  const stripeTotalSales = stripeTransactions
+    .filter((t) => (t.transactionType === "sale" || !t.transactionType || t.transactionType === "payment") && t.status === "completed" && t.amount > 0)
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  const stripeTotalRefunds = stripeTransactions
+    .filter((t) => (t.transactionType === "refund" || t.amount < 0) && t.status === "completed")
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+  // Combined totals
+  const totalAmount = viewMode === 'both' ? localTotalAmount + stripeTotalAmount : 
+                      viewMode === 'local' ? localTotalAmount : stripeTotalAmount;
+  const totalSales = viewMode === 'both' ? localTotalSales + stripeTotalSales :
+                     viewMode === 'local' ? localTotalSales : stripeTotalSales;
+  const totalRefunds = viewMode === 'both' ? localTotalRefunds + stripeTotalRefunds :
+                       viewMode === 'local' ? localTotalRefunds : stripeTotalRefunds;
+
+  // Combined transaction list with client-side date filtering for Stripe
+  let allTransactions = viewMode === 'both' 
+    ? [
+        ...transactions.map(t => ({ ...t, source: 'local' as const })),
+        ...stripeTransactions.map(t => ({ ...t, source: 'stripe' as const, storeId: 'stripe' }))
+      ]
+    : viewMode === 'local'
+    ? transactions.map(t => ({ ...t, source: 'local' as const }))
+    : stripeTransactions.map(t => ({ ...t, source: 'stripe' as const, storeId: 'stripe' }));
+
+  // Apply client-side date filtering for Stripe transactions
+  if ((viewMode === 'stripe' || viewMode === 'both') && (startDate || endDate)) {
+    allTransactions = allTransactions.filter(t => {
+      const transactionDate = new Date(t.transactionDate);
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        if (transactionDate < start) return false;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        if (transactionDate > end) return false;
+      }
+      return true;
+    });
+  }
+
+  // Sort by transaction date (newest first)
+  allTransactions.sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime());
+
+  // Pagination calculations
+  const totalTransactions = allTransactions.length;
+  const totalPages = Math.ceil(totalTransactions / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTransactions = allTransactions.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of table
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  };
+
+  return (
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>
+            {t("transactions.title") || "Store Transactions"}
+          </h1>
+          <p className={styles.subtitle}>
+            {t("transactions.subtitle") ||
+              "Track and manage all store transactions"}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>
+              {t("transactions.viewMode") || "View:"}
+            </label>
+            <select
+              value={viewMode}
+              onChange={(e) => {
+                setViewMode(e.target.value as TransactionViewMode);
+              }}
+              style={{
+                padding: '0.5rem',
+                borderRadius: '0.375rem',
+                border: '1px solid #d1d5db',
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="stripe">{t("transactions.stripeTransactions") || "Stripe Transactions"}</option>
+              <option value="local">{t("transactions.localTransactions") || "Local Transactions"}</option>
+              <option value="both">{t("transactions.allTransactions") || "All Transactions"}</option>
+            </select>
+          </div>
+          <button
+            className={styles.refreshButton}
+            onClick={loadAllTransactions}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`${styles.refreshIcon} ${loading ? styles.spinning : ""}`}
+            />
+            {t("transactions.refresh") || "Refresh"}
+          </button>
+        </div>
+      </div>
+
+      {/* Summary Cards */}
+      <div className={styles.statsGrid}>
+        <div className={styles.statCard}>
+          <div className={styles.statIcon}>
+            <DollarSign />
+          </div>
+          <div className={styles.statContent}>
+            <div className={styles.statLabel}>
+              {t("transactions.totalAmount") || "Total Amount"}
+            </div>
+            <div className={styles.statValue}>
+              {formatCurrency(totalAmount)}
+            </div>
+          </div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={`${styles.statIcon} ${styles.salesIcon}`}>
+            <TrendingUp />
+          </div>
+          <div className={styles.statContent}>
+            <div className={styles.statLabel}>
+              {t("transactions.totalSales") || "Total Sales"}
+            </div>
+            <div className={styles.statValue}>
+              {formatCurrency(totalSales)}
+            </div>
+          </div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={`${styles.statIcon} ${styles.refundIcon}`}>
+            <TrendingDown />
+          </div>
+          <div className={styles.statContent}>
+            <div className={styles.statLabel}>
+              {t("transactions.totalRefunds") || "Total Refunds"}
+            </div>
+            <div className={styles.statValue}>
+              {formatCurrency(totalRefunds)}
+            </div>
+          </div>
+        </div>
+        <div className={styles.statCard}>
+          <div className={styles.statIcon}>
+            <StoreIcon />
+          </div>
+          <div className={styles.statContent}>
+            <div className={styles.statLabel}>
+              {t("transactions.totalTransactions") || "Total Transactions"}
+            </div>
+            <div className={styles.statValue}>
+              {totalTransactions.toLocaleString()}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className={styles.filters}>
+        <div className={styles.filterRow}>
+          {viewMode === 'local' || viewMode === 'both' ? (
+            <>
+              <div className={styles.filterGroup}>
+                <label className={styles.filterLabel}>
+                  {t("transactions.filter.store") || "Store"}
+                </label>
+                <select
+                  className={styles.filterSelect}
+                  value={selectedStore}
+                  onChange={(e) => setSelectedStore(e.target.value)}
+                >
+                  <option value="">{t("transactions.allStores") || "All Stores"}</option>
+                  {availableStores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.filterGroup}>
+                <label className={styles.filterLabel}>
+                  {t("transactions.filter.type") || "Type"}
+                </label>
+                <select
+                  className={styles.filterSelect}
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                >
+                  <option value="">{t("transactions.allTypes") || "All Types"}</option>
+                  <option value="sale">{t("transactions.type.sale") || "Sale"}</option>
+                  <option value="refund">
+                    {t("transactions.type.refund") || "Refund"}
+                  </option>
+                  <option value="payment">
+                    {t("transactions.type.payment") || "Payment"}
+                  </option>
+                  <option value="fee">{t("transactions.type.fee") || "Fee"}</option>
+                  <option value="commission">
+                    {t("transactions.type.commission") || "Commission"}
+                  </option>
+                </select>
+              </div>
+            </>
+          ) : null}
+
+          {viewMode === 'stripe' || viewMode === 'both' ? (
+            <div className={styles.filterGroup}>
+              <label className={styles.filterLabel}>
+                {t("transactions.stripeType") || "Stripe Type"}
+              </label>
+              <select
+                className={styles.filterSelect}
+                value={stripeType}
+                onChange={(e) => {
+                  setStripeType(e.target.value as any);
+                  setStripeFilters({ ...stripeFilters, type: e.target.value as any });
+                }}
+              >
+                <option value="charge">{t("transactions.stripeTypes.charge") || "Charges"}</option>
+                <option value="balance_transaction">
+                  {t("transactions.stripeTypes.balanceTransaction") || "Balance Transactions"}
+                </option>
+                <option value="payment_intent">
+                  {t("transactions.stripeTypes.paymentIntent") || "Payment Intents"}
+                </option>
+              </select>
+            </div>
+          ) : null}
+
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>
+              {t("transactions.filter.status") || "Status"}
+            </label>
+            <select
+              className={styles.filterSelect}
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
+              <option value="">
+                {t("transactions.allStatuses") || "All Statuses"}
+              </option>
+              <option value="pending">
+                {t("transactions.status.pending") || "Pending"}
+              </option>
+              <option value="completed">
+                {t("transactions.status.completed") || "Completed"}
+              </option>
+              <option value="failed">
+                {t("transactions.status.failed") || "Failed"}
+              </option>
+              <option value="cancelled">
+                {t("transactions.status.cancelled") || "Cancelled"}
+              </option>
+              <option value="refunded">
+                {t("transactions.status.refunded") || "Refunded"}
+              </option>
+            </select>
+          </div>
+
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>
+              {t("transactions.filter.startDate") || "Start Date"}
+            </label>
+            <input
+              type="date"
+              className={styles.filterInput}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.filterGroup}>
+            <label className={styles.filterLabel}>
+              {t("transactions.filter.endDate") || "End Date"}
+            </label>
+            <input
+              type="date"
+              className={styles.filterInput}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.filterActions}>
+          <button
+            className={styles.applyButton}
+            onClick={handleFilterChange}
+          >
+            <Filter className={styles.buttonIcon} />
+            {t("transactions.applyFilters") || "Apply Filters"}
+          </button>
+          <button
+            className={styles.resetButton}
+            onClick={handleResetFilters}
+          >
+            {t("transactions.resetFilters") || "Reset"}
+          </button>
+        </div>
+      </div>
+
+      {/* Transactions Table */}
+      <div className={styles.tableContainer}>
+        {loading ? (
+          <div className={styles.loading}>
+            <RefreshCw className={styles.spinning} />
+            <p>{t("transactions.loading") || "Loading transactions..."}</p>
+          </div>
+        ) : allTransactions.length === 0 ? (
+          <div className={styles.empty}>
+            <DollarSign className={styles.emptyIcon} />
+            <p>{t("transactions.noTransactions") || "No transactions found"}</p>
+          </div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>{t("transactions.date") || "Date"}</th>
+                <th>{t("transactions.type") || "Type"}</th>
+                <th>{t("transactions.store") || "Store"}</th>
+                <th>{t("transactions.customer") || "Customer"}</th>
+                <th>{t("transactions.amount") || "Amount"}</th>
+                <th>{t("transactions.status") || "Status"}</th>
+                <th>{t("transactions.paymentMethod") || "Payment Method"}</th>
+                <th>{t("transactions.description") || "Description"}</th>
+                {viewMode === 'both' && <th>{t("transactions.source") || "Source"}</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedTransactions.map((transaction) => {
+                const isLocal = (transaction as any).source === 'local';
+                const store = isLocal ? stores.find((s) => s.id === transaction.storeId) : null;
+                const transactionType = transaction.transactionType || (isLocal ? 'sale' : 'payment');
+                const isRefund = transactionType === "refund" || (transaction.amount < 0 && !isLocal);
+                
+                return (
+                  <tr key={`${(transaction as any).source}-${transaction.id}`}>
+                    <td>{formatDate(transaction.transactionDate)}</td>
+                    <td>
+                      <div className={styles.typeCell}>
+                        {getTypeIcon(transactionType)}
+                        <span className={styles.typeLabel}>
+                          {transactionType.charAt(0).toUpperCase() +
+                            transactionType.slice(1)}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      {isLocal ? (store?.name || transaction.storeId) : 
+                       (transaction as StripeTransaction).stripeType === 'charge' ? 'Stripe Charge' :
+                       (transaction as StripeTransaction).stripeType === 'balance_transaction' ? 'Stripe Balance' :
+                       'Stripe Payment Intent'}
+                    </td>
+                    <td>
+                      {transaction.customerName ||
+                        transaction.customerId ||
+                        "-"}
+                    </td>
+                    <td
+                      className={
+                        isRefund
+                          ? styles.negativeAmount
+                          : styles.positiveAmount
+                      }
+                    >
+                      {isRefund ? "-" : "+"}
+                      {formatCurrency(Math.abs(transaction.amount), transaction.currency)}
+                    </td>
+                    <td>
+                      <span
+                        className={`${styles.statusBadge} ${getStatusColor(
+                          transaction.status
+                        )}`}
+                      >
+                        {transaction.status.charAt(0).toUpperCase() +
+                          transaction.status.slice(1)}
+                      </span>
+                    </td>
+                    <td>{transaction.paymentMethod || "-"}</td>
+                    <td className={styles.descriptionCell}>
+                      {transaction.description || "-"}
+                    </td>
+                    {viewMode === 'both' && (
+                      <td>
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '0.25rem',
+                          fontSize: '0.75rem',
+                          fontWeight: 500,
+                          backgroundColor: (transaction as any).source === 'stripe' ? '#6366f1' : '#10b981',
+                          color: 'white',
+                        }}>
+                          {(transaction as any).source === 'stripe' ? 'Stripe' : 'Local'}
+                        </span>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && totalTransactions > 0 && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: '1.5rem',
+            padding: '1rem',
+            borderTop: '1px solid #e5e7eb',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <label style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                {t("transactions.itemsPerPage") || "Items per page:"}
+              </label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                style={{
+                  padding: '0.5rem',
+                  borderRadius: '0.375rem',
+                  border: '1px solid #d1d5db',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                }}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                {t("transactions.showing") || "Showing"} {startIndex + 1} - {Math.min(endIndex, totalTransactions)} {t("transactions.of") || "of"} {totalTransactions.toLocaleString()}
+              </span>
+
+              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: currentPage === 1 ? '#f3f4f6' : 'white',
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    opacity: currentPage === 1 ? 0.5 : 1,
+                  }}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                {/* Page Numbers */}
+                {Array.from({ length: Math.min(7, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 7) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 4) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 3) {
+                    pageNum = totalPages - 6 + i;
+                  } else {
+                    pageNum = currentPage - 3 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => handlePageChange(pageNum)}
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #d1d5db',
+                        backgroundColor: currentPage === pageNum ? '#6366f1' : 'white',
+                        color: currentPage === pageNum ? 'white' : '#374151',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: currentPage === pageNum ? 600 : 400,
+                      }}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #d1d5db',
+                    backgroundColor: currentPage === totalPages ? '#f3f4f6' : 'white',
+                    cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    opacity: currentPage === totalPages ? 0.5 : 1,
+                  }}
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default TransactionsManagement;
+
