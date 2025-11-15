@@ -93,17 +93,30 @@ const createTables = async (): Promise<void> => {
       }
     }
 
-    // Create store_categories table
+    // Create store_categories table (without foreign key first)
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS store_categories (
         id INT AUTO_INCREMENT PRIMARY KEY,
         store_id VARCHAR(36) NOT NULL,
         category VARCHAR(100) NOT NULL,
-        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
-      )
+        INDEX idx_store_id (store_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
 
-    // Create store_locations table
+    // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+    try {
+      await connection.execute(`
+        ALTER TABLE store_categories
+        ADD CONSTRAINT fk_store_categories_store
+        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+        console.warn('Could not add foreign key to store_categories:', error.message);
+      }
+    }
+
+    // Create store_locations table (without foreign key first)
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS store_locations (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -114,9 +127,22 @@ const createTables = async (): Promise<void> => {
         state_province VARCHAR(100) NOT NULL,
         zip_code VARCHAR(20) NOT NULL,
         country VARCHAR(100) NOT NULL,
-        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
-      )
+        INDEX idx_store_id (store_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+    try {
+      await connection.execute(`
+        ALTER TABLE store_locations
+        ADD CONSTRAINT fk_store_locations_store
+        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+        console.warn('Could not add foreign key to store_locations:', error.message);
+      }
+    }
 
     // Create users table
     await connection.execute(`
@@ -139,7 +165,7 @@ const createTables = async (): Promise<void> => {
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
-    // Create verification_tokens table (must be after users table due to foreign key)
+    // Create verification_tokens table (without foreign key first)
     await connection.execute(`
               CREATE TABLE IF NOT EXISTS verification_tokens (
                 id VARCHAR(36) PRIMARY KEY,
@@ -152,12 +178,51 @@ const createTables = async (): Promise<void> => {
                 INDEX idx_user_id (user_id),
                 INDEX idx_token (token),
                 INDEX idx_type (type),
-                INDEX idx_expires_at (expires_at),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                INDEX idx_expires_at (expires_at)
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
-    // Create staff table for admin app users
+    // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+    try {
+      await connection.execute(`
+        ALTER TABLE verification_tokens
+        ADD CONSTRAINT fk_verification_tokens_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+        console.warn('Could not add foreign key to verification_tokens:', error.message);
+      }
+    }
+
+    // Create staff table for admin app users (without foreign key first)
+    // First check the stores.id column definition to match it exactly for store_id
+    let staffStoreIdType = 'VARCHAR(36)';
+    let staffStoreIdCharset = '';
+    
+    try {
+      const [storeColumns]: any = await connection.execute(`
+        SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'stores'
+        AND COLUMN_NAME = 'id'
+      `);
+      
+      if (storeColumns && storeColumns.length > 0) {
+        const storeIdCol = storeColumns[0];
+        staffStoreIdType = storeIdCol.COLUMN_TYPE;
+        if (storeIdCol.CHARACTER_SET_NAME) {
+          staffStoreIdCharset = ` CHARACTER SET ${storeIdCol.CHARACTER_SET_NAME}`;
+          if (storeIdCol.COLLATION_NAME) {
+            staffStoreIdCharset += ` COLLATE ${storeIdCol.COLLATION_NAME}`;
+          }
+        }
+      }
+    } catch (error: any) {
+      console.warn('Could not check stores.id column type for staff table, using default:', error.message);
+    }
+
     await connection.execute(`
               CREATE TABLE IF NOT EXISTS staff (
                 id VARCHAR(36) PRIMARY KEY,
@@ -169,7 +234,7 @@ const createTables = async (): Promise<void> => {
                 role ENUM('admin', 'owner', 'manager', 'employee') DEFAULT 'employee',
                 department VARCHAR(100) NULL,
                 employee_id VARCHAR(50) UNIQUE NULL,
-                store_id VARCHAR(36) NULL,
+                store_id ${staffStoreIdType}${staffStoreIdCharset} NULL,
                 is_active BOOLEAN DEFAULT true,
                 email_verified BOOLEAN DEFAULT true,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -181,21 +246,31 @@ const createTables = async (): Promise<void> => {
                 INDEX idx_active (is_active),
                 INDEX idx_employee_id (employee_id),
                 INDEX idx_department (department),
-                INDEX idx_store_id (store_id),
-                FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+                INDEX idx_store_id (store_id)
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
 
     // Add store_id column to existing staff table if it doesn't exist
+    // Use the same type as stores.id for compatibility
     try {
       await connection.execute(`
         ALTER TABLE staff 
-        ADD COLUMN store_id VARCHAR(36) NULL
+        ADD COLUMN store_id ${staffStoreIdType}${staffStoreIdCharset} NULL
       `);
     } catch (error: any) {
       // Ignore if the column already exists (ER_DUP_FIELDNAME)
       if (error?.code !== 'ER_DUP_FIELDNAME') {
         // Column might already exist, continue
+      } else {
+        // If column exists but type might be wrong, try to modify it
+        try {
+          await connection.execute(`
+            ALTER TABLE staff 
+            MODIFY COLUMN store_id ${staffStoreIdType}${staffStoreIdCharset} NULL
+          `);
+        } catch (modifyError: any) {
+          // Ignore modification errors
+        }
       }
     }
 
@@ -212,7 +287,7 @@ const createTables = async (): Promise<void> => {
       }
     }
 
-    // Add foreign key for store_id if it doesn't exist
+    // Try to add foreign key for store_id (may fail if user lacks REFERENCES permission)
     try {
       await connection.execute(`
         ALTER TABLE staff 
@@ -220,13 +295,35 @@ const createTables = async (): Promise<void> => {
         FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
       `);
     } catch (error: any) {
-      // Ignore if the foreign key already exists
-      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME') {
-        // Foreign key might already exist, continue
+      // If columns are incompatible, try to modify the column type to match
+      if (error.code === 'ER_FK_INCOMPATIBLE_COLUMNS') {
+        try {
+          // Modify store_id to match stores.id exactly
+          await connection.execute(`
+            ALTER TABLE staff 
+            MODIFY COLUMN store_id ${staffStoreIdType}${staffStoreIdCharset} NULL
+          `);
+          // Try adding foreign key again
+          try {
+            await connection.execute(`
+              ALTER TABLE staff 
+              ADD CONSTRAINT fk_staff_store 
+              FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+            `);
+          } catch (retryError: any) {
+            if (retryError.code !== 'ER_DUP_KEY' && retryError.code !== 'ER_FK_DUP_NAME' && retryError.errno !== 1142) {
+              console.warn('Could not add foreign key to staff after modifying column:', retryError.message);
+            }
+          }
+        } catch (modifyError: any) {
+          console.warn('Could not modify staff.store_id column type:', modifyError.message);
+        }
+      } else if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+        console.warn('Could not add foreign key to staff:', error.message);
       }
     }
 
-    // Create staff_invitations table
+    // Create staff_invitations table (without foreign key first)
     await connection.execute(`
               CREATE TABLE IF NOT EXISTS staff_invitations (
                 id VARCHAR(36) PRIMARY KEY,
@@ -247,10 +344,22 @@ const createTables = async (): Promise<void> => {
                 INDEX idx_token (token),
                 INDEX idx_expires_at (expires_at),
                 INDEX idx_is_used (is_used),
-                INDEX idx_store_id (store_id),
-                FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+                INDEX idx_store_id (store_id)
               ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             `);
+
+    // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+    try {
+      await connection.execute(`
+        ALTER TABLE staff_invitations
+        ADD CONSTRAINT fk_staff_invitations_store
+        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+      `);
+    } catch (error: any) {
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+        console.warn('Could not add foreign key to staff_invitations:', error.message);
+      }
+    }
 
     // Create activity_logs table
     await connection.execute(`
@@ -314,7 +423,7 @@ const createTables = async (): Promise<void> => {
       // Column might already exist
     }
 
-    // Create shipping_addresses table
+    // Create shipping_addresses table (without foreign key first)
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS shipping_addresses (
         id VARCHAR(36) PRIMARY KEY,
@@ -332,10 +441,22 @@ const createTables = async (): Promise<void> => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_user_id (user_id),
-        INDEX idx_is_default (is_default),
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        INDEX idx_is_default (is_default)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Try to add foreign key constraint (may fail if user lacks REFERENCES permission)
+    try {
+      await connection.execute(`
+        ALTER TABLE shipping_addresses
+        ADD CONSTRAINT fk_shipping_addresses_user
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (error?.code !== 'ER_DUP_KEY' && error?.code !== 'ER_FK_DUP_NAME' && error?.errno !== 1142) {
+        console.warn('Could not add foreign key to shipping_addresses:', error.message);
+      }
+    }
 
     // Add label column to existing shipping_addresses table if it doesn't exist
     try {
@@ -397,11 +518,12 @@ const createTables = async (): Promise<void> => {
         }
       }
       
-      // Add foreign key if it doesn't exist
+      // Try to add foreign key if it doesn't exist (may fail if user lacks REFERENCES permission)
       try {
         await connection.execute(`
           ALTER TABLE staff_invitations 
-          ADD FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+          ADD CONSTRAINT fk_staff_invitations_store_id
+          FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
         `);
       } catch (error: any) {
         // If columns are incompatible, try to modify the column type to match
@@ -415,14 +537,15 @@ const createTables = async (): Promise<void> => {
           try {
             await connection.execute(`
               ALTER TABLE staff_invitations 
-              ADD FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
+              ADD CONSTRAINT fk_staff_invitations_store_id
+              FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE SET NULL
             `);
           } catch (retryError: any) {
-            if (retryError.code !== 'ER_DUP_KEYNAME') {
+            if (retryError.code !== 'ER_DUP_KEY' && retryError.code !== 'ER_FK_DUP_NAME' && retryError.errno !== 1142) {
               throw retryError;
             }
           }
-        } else if (error.code !== 'ER_DUP_KEYNAME') {
+        } else if (error.code !== 'ER_DUP_KEY' && error.code !== 'ER_FK_DUP_NAME' && error.errno !== 1142) {
           throw error;
         }
       }
@@ -486,7 +609,7 @@ const createTables = async (): Promise<void> => {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
       
-      // Add foreign key separately
+      // Try to add foreign key separately (may fail if user lacks REFERENCES permission)
       try {
         await connection.execute(`
           ALTER TABLE store_transactions
@@ -494,8 +617,8 @@ const createTables = async (): Promise<void> => {
           FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
         `);
       } catch (error: any) {
-        // Foreign key might already exist, ignore if it does
-        if (error.code !== 'ER_DUP_KEY' && error.code !== 'ER_FK_DUP_NAME') {
+        // Foreign key might already exist or user lacks REFERENCES permission, ignore if it does
+        if (error.code !== 'ER_DUP_KEY' && error.code !== 'ER_FK_DUP_NAME' && error.errno !== 1142) {
           console.warn('Could not add foreign key to store_transactions:', error.message);
         }
       }
@@ -539,3 +662,6 @@ const createTables = async (): Promise<void> => {
     connection.release();
   }
 };
+
+
+
