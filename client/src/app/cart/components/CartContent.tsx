@@ -139,6 +139,8 @@ export default function CartContent({
       const result = await beginCheckout(payload);
 
       if (result.success && result.checkoutUrl) {
+        // Clear cart once checkout session is successfully created
+        clearCart();
         window.location.href = result.checkoutUrl;
         return;
       }
@@ -204,6 +206,8 @@ export default function CartContent({
                         className="w-24 h-24 object-cover rounded"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
+                          // Prevent infinite onError loop by removing the handler
+                          target.onerror = null;
                           target.src = "/placeholder/product.png";
                         }}
                       />

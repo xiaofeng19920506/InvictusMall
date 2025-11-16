@@ -174,13 +174,9 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose }) =
                 <div key={item.id} className={styles.itemCard}>
                   {item.productImage ? (
                     <img
-                      src={getImageUrl(item.productImage) || "/placeholder/product.png"}
+                      src={getImageUrl(item.productImage)}
                       alt={item.productName}
                       className={styles.itemImage}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "/placeholder/product.png";
-                      }}
                     />
                   ) : (
                     <div className={styles.itemImagePlaceholder}>
