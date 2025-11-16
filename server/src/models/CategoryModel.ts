@@ -465,5 +465,28 @@ export class CategoryModel {
       updatedAt: row.updated_at.toISOString(),
     };
   }
+
+  /**
+   * Get the last modified timestamp of categories (for ETag generation)
+   */
+  static async getLastModifiedTimestamp(): Promise<string> {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      const [result] = await connection.execute(`
+        SELECT MAX(updated_at) as last_modified
+        FROM categories
+      `);
+      const lastModified = (result as any[])[0]?.last_modified;
+      return lastModified ? new Date(lastModified).getTime().toString() : '0';
+    } catch (error: any) {
+      console.error('Error getting last modified timestamp for categories:', error);
+      return Date.now().toString();
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
 }
 

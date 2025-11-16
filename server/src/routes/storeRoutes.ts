@@ -161,6 +161,15 @@ router.get("/", async (req: Request, res: Response) => {
 // Public endpoint - no authentication required
 router.get("/categories", async (req: Request, res: Response) => {
   try {
+    // Generate ETag based on last modified timestamp
+    const lastModified = await StoreModel.getLastModifiedTimestamp();
+    const cacheKey = 'store-categories';
+    
+    // Check ETag validation (returns true if 304 was sent)
+    if (handleETagValidation(req, res, lastModified, cacheKey)) {
+      return; // 304 Not Modified already sent
+    }
+
     const categories = await storeService.getCategories();
     return res.json({
       success: true,
@@ -233,6 +242,15 @@ router.get("/:id", async (req: Request, res: Response) => {
         success: false,
         message: "Store ID is required",
       });
+    }
+
+    // Generate ETag based on last modified timestamp
+    const lastModified = await StoreModel.getLastModifiedTimestamp();
+    const cacheKey = `store-${id}`;
+    
+    // Check ETag validation (returns true if 304 was sent)
+    if (handleETagValidation(req, res, lastModified, cacheKey)) {
+      return; // 304 Not Modified already sent
     }
 
     const store = await storeService.getStoreById(id);
