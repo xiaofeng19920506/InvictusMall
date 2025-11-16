@@ -231,6 +231,7 @@ export const authenticateAnyToken = async (
         req.cookies.staff_auth_token = bearerToken;
       }
       await verifyStaffToken(req);
+      console.log(`[authenticateAnyToken] Authenticated as staff. Role: ${req.user?.role}, ID: ${req.user?.id}`);
     } else if (decoded?.userId) {
       // It's a user token - verify as user
       // Set the token in cookies if it came from Bearer header
@@ -239,6 +240,7 @@ export const authenticateAnyToken = async (
         req.cookies.auth_token = bearerToken;
       }
       await verifyUserToken(req);
+      console.log(`[authenticateAnyToken] Authenticated as user. Role: ${req.user?.role}, ID: ${req.user?.id}`);
     } else {
       throw new AuthError(401, "Invalid token payload");
     }
@@ -266,9 +268,12 @@ export const requireRole = (roles: string[]) => {
     }
 
     if (!roles.includes(req.user.role)) {
+      console.log(`[requireRole] Access denied. User role: ${req.user.role}, Required roles: ${roles.join(', ')}`);
       res.status(403).json({
         success: false,
-        message: "Insufficient permissions",
+        message: `Insufficient permissions. Required role: ${roles.join(' or ')}. Your role: ${req.user.role}`,
+        userRole: req.user.role,
+        requiredRoles: roles,
       });
       return;
     }
@@ -278,5 +283,5 @@ export const requireRole = (roles: string[]) => {
 };
 
 export const requireAdmin = requireRole(["admin"]);
-export const requireStoreOwner = requireRole(["owner", "admin", "manager"]);
+export const requireStoreOwner = requireRole(["owner", "admin"]);
 export const requireCustomer = requireRole(["customer"]);

@@ -173,7 +173,7 @@ router.post(
       }
 
       // TODO: Add authorization check to verify store owner owns this store
-      // For now, allow any owner/admin/manager to create products for any store
+      // For now, allow any owner/admin to create products for any store
 
       if (productData.price < 0) {
         return res.status(400).json({
@@ -236,7 +236,7 @@ router.put(
       }
 
       // TODO: Add authorization check to verify store owner owns this store
-      // For now, allow any owner/admin/manager to update products for any store
+      // For now, allow any owner/admin to update products for any store
 
       if (productData.price !== undefined && productData.price < 0) {
         return res.status(400).json({
@@ -298,7 +298,7 @@ router.delete(
       }
 
       // TODO: Add authorization check to verify store owner owns this store
-      // For now, allow any owner/admin/manager to delete products for any store
+      // For now, allow any owner/admin to delete products for any store
 
       await ProductModel.delete(id);
 
