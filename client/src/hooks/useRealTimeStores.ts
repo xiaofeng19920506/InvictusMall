@@ -12,8 +12,7 @@ interface UseRealTimeStoresResult {
 export const useRealTimeStores = (
   searchQuery?: string,
   selectedCategory?: string,
-  searchType?: string,
-  refreshInterval: number = 30000 // 30 seconds default
+  searchType?: string
 ): UseRealTimeStoresResult => {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,25 +43,11 @@ export const useRealTimeStores = (
     }
   }, [searchQuery, selectedCategory, searchType]);
 
-  // Initial fetch
+  // Initial fetch only - no polling
   useEffect(() => {
     setLoading(true);
     fetchStores();
   }, [fetchStores]);
-
-  // Set up polling for real-time updates
-  useEffect(() => {
-    if (refreshInterval <= 0) return;
-
-    const interval = setInterval(() => {
-      // Only fetch if not currently loading to avoid overlapping requests
-      if (!loading) {
-        fetchStores();
-      }
-    }, refreshInterval);
-
-    return () => clearInterval(interval);
-  }, [fetchStores, refreshInterval, loading]);
 
   // Manual refetch function
   const refetch = useCallback(async () => {

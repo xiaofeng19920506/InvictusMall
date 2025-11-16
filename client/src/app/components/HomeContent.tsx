@@ -27,12 +27,11 @@ export default function HomeContent({
   const [searchType, setSearchType] = useState(initialSearchType);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Use real-time stores hook with 15-second refresh interval
+  // Use stores hook - fetches on initial load and when search params change
   const { stores: realTimeStores, loading, error, refetch, lastUpdated } = useRealTimeStores(
     searchQuery,
     selectedCategory,
-    searchType,
-    15000 // Refresh every 15 seconds
+    searchType
   );
 
   // Use initial stores on first load, then switch to real-time stores
