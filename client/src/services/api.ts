@@ -95,9 +95,15 @@ class ApiService {
 
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    useCache: boolean = false
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+    
+    // If caching is enabled and it's a GET request, try cache first
+    if (useCache && (!options.method || options.method === 'GET')) {
+      return this.cachedRequest<T>(endpoint, options);
+    }
     
     const config: RequestInit = {
       headers: {
@@ -140,6 +146,87 @@ class ApiService {
     }
   }
 
+  private async cachedRequest<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const cacheKey = `api_cache_${endpoint}`;
+    
+    // Try to get cached data
+    try {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        const { data, etag, timestamp } = JSON.parse(cachedData);
+        const cacheAge = Date.now() - timestamp;
+        const maxCacheAge = 60 * 60 * 1000; // 1 hour
+        
+        if (cacheAge < maxCacheAge) {
+          // Make request with If-None-Match header to validate cache
+          try {
+            const response = await fetch(url, {
+              method: 'GET',
+              headers: {
+                'If-None-Match': etag,
+                'Content-Type': 'application/json',
+                ...options.headers,
+              },
+              credentials: 'include',
+            });
+
+            // If 304 Not Modified, use cached data
+            if (response.status === 304) {
+              return data as T;
+            }
+
+            // If cache is invalid, continue to fetch new data
+          } catch (error) {
+            // If validation fails, use cached data as fallback
+            console.warn('Cache validation failed, using cached data:', error);
+            return data as T;
+          }
+        }
+      }
+    } catch (error) {
+      // If cache read fails, continue to fetch fresh data
+      console.warn('Failed to read cache:', error);
+    }
+
+    // Fetch fresh data using fetch directly to get headers
+    const fetchResponse = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      credentials: 'include',
+      ...options,
+    });
+
+    if (!fetchResponse.ok) {
+      const errorData: ApiError = await fetchResponse.json();
+      throw new Error(errorData.message || `HTTP error! status: ${fetchResponse.status}`);
+    }
+
+    const response: T = await fetchResponse.json();
+    const etag = fetchResponse.headers.get('ETag');
+    
+    // Store in cache with ETag if available
+    if (etag) {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: response,
+          etag,
+          timestamp: Date.now(),
+        }));
+      } catch (error) {
+        console.warn('Failed to cache API data:', error);
+      }
+    }
+    
+    return response;
+  }
+
   // Store-related API methods
   async getAllStores(params?: {
     category?: string;
@@ -161,85 +248,7 @@ class ApiService {
     }
 
     const endpoint = `/api/stores${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    
-    // Create cache key based on endpoint
-    const cacheKey = `stores_cache_${endpoint}`;
-    
-    // Try to get cached data
-    try {
-      const cachedData = localStorage.getItem(cacheKey);
-      if (cachedData) {
-        const { data, etag, timestamp } = JSON.parse(cachedData);
-        // Check if cache is still valid (less than 1 hour old)
-        const cacheAge = Date.now() - timestamp;
-        const maxCacheAge = 60 * 60 * 1000; // 1 hour
-        
-        if (cacheAge < maxCacheAge) {
-          // Make request with If-None-Match header to validate cache
-          try {
-            const response = await fetch(`${this.baseUrl}${endpoint}`, {
-              method: 'GET',
-              headers: {
-                'If-None-Match': etag,
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-            });
-
-            // If 304 Not Modified, use cached data
-            if (response.status === 304) {
-              return {
-                success: true,
-                data: this.transformStores(data),
-              };
-            }
-
-            // If cache is invalid, continue to fetch new data
-          } catch (error) {
-            // If validation request fails, use cached data as fallback
-            console.warn('Cache validation failed, using cached data:', error);
-            return {
-              success: true,
-              data: this.transformStores(data),
-            };
-          }
-        }
-      }
-    } catch (error) {
-      // If cache read fails, continue to fetch fresh data
-      console.warn('Failed to read cache:', error);
-    }
-
-    // Fetch fresh data using fetch directly to get headers
-    const url = `${this.baseUrl}${endpoint}`;
-    const fetchResponse = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-    });
-
-    if (!fetchResponse.ok) {
-      const errorData: ApiError = await fetchResponse.json();
-      throw new Error(errorData.message || `HTTP error! status: ${fetchResponse.status}`);
-    }
-
-    const response: ApiResponse<ServerStore[]> = await fetchResponse.json();
-    const etag = fetchResponse.headers.get('ETag');
-    
-    // Store in cache with ETag if available
-    if (etag && response.success && response.data) {
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({
-          data: response.data,
-          etag,
-          timestamp: Date.now(),
-        }));
-      } catch (error) {
-        console.warn('Failed to cache stores data:', error);
-      }
-    }
+    const response = await this.cachedRequest<ApiResponse<ServerStore[]>>(endpoint);
     
     return {
       ...response,
@@ -248,7 +257,7 @@ class ApiService {
   }
 
   async getStoreById(id: string): Promise<ApiResponse<Store>> {
-    const response = await this.request<ApiResponse<ServerStore>>(`/api/stores/${id}`);
+    const response = await this.cachedRequest<ApiResponse<ServerStore>>(`/api/stores/${id}`);
     
     return {
       ...response,
@@ -258,7 +267,7 @@ class ApiService {
 
 
   async getStoresByCategory(category: string): Promise<ApiResponse<Store[]>> {
-    const response = await this.request<ApiResponse<ServerStore[]>>(`/api/stores?category=${encodeURIComponent(category)}`);
+    const response = await this.cachedRequest<ApiResponse<ServerStore[]>>(`/api/stores?category=${encodeURIComponent(category)}`);
     
     return {
       ...response,
@@ -267,7 +276,7 @@ class ApiService {
   }
 
   async searchStores(query: string): Promise<ApiResponse<Store[]>> {
-    const response = await this.request<ApiResponse<ServerStore[]>>(`/api/stores?search=${encodeURIComponent(query)}`);
+    const response = await this.cachedRequest<ApiResponse<ServerStore[]>>(`/api/stores?search=${encodeURIComponent(query)}`);
     
     return {
       ...response,
@@ -283,7 +292,7 @@ class ApiService {
   // Category-related API methods
   async getTopLevelCategories(): Promise<ApiResponse<Category[]>> {
     const endpoint = `/api/categories?level=1`;
-    return await this.request<ApiResponse<Category[]>>(endpoint);
+    return await this.cachedRequest<ApiResponse<Category[]>>(endpoint);
   }
 
   async getAllCategories(params?: {
@@ -307,7 +316,7 @@ class ApiService {
     }
     
     const endpoint = `/api/categories${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    return await this.request<ApiResponse<Category[]>>(endpoint);
+    return await this.cachedRequest<ApiResponse<Category[]>>(endpoint);
   }
 }
 
