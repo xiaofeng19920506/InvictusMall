@@ -234,5 +234,5 @@ export const requireRole = (roles: string[]) => {
 };
 
 export const requireAdmin = requireRole(["admin"]);
-export const requireStoreOwner = requireRole(["store_owner", "admin"]);
+export const requireStoreOwner = requireRole(["store_owner", "admin", "owner"]);
 export const requireCustomer = requireRole(["customer", "admin", "store_owner"]);
