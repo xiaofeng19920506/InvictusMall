@@ -1743,10 +1743,12 @@ router.post("/refresh", async (req: Request, res: Response) => {
         { expiresIn: "7d" }
       );
 
+      // For cross-origin requests in development, use 'none' with secure: false
+      const isProduction = process.env.NODE_ENV === "production";
       res.cookie("staff_auth_token", refreshedToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+        secure: isProduction,
+        sameSite: isProduction ? "strict" : "none", // 'none' allows cross-origin requests
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       });

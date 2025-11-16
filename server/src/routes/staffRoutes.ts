@@ -160,10 +160,14 @@ router.post('/login', [
     }
 
     // Set HTTP-only cookie with JWT token
+    // For cross-origin requests in development, use 'none' with secure: false
+    // Note: Modern browsers may reject sameSite: 'none' without secure: true
+    // In production with HTTPS, use 'strict' for better security
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('staff_auth_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'none', // 'none' allows cross-origin requests
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/'
     });
@@ -693,10 +697,12 @@ router.post('/setup-password', [
     );
 
     // Set HTTP-only cookie
+    // For cross-origin requests in development, use 'none' with secure: false
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('staff_auth_token', jwtToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'none', // 'none' allows cross-origin requests
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/'
     });
