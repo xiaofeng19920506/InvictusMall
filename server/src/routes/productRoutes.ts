@@ -9,6 +9,7 @@ import {
 } from "../middleware/auth";
 import { validateImageFile } from "../utils/imageValidation";
 import { StoreModel } from "../models/StoreModel";
+import { handleETagValidation } from "../utils/cacheUtils";
 import multer from "multer";
 import FormData from "form-data";
 import fetch from "node-fetch";
@@ -59,6 +60,15 @@ router.get("/store/:storeId", async (req: Request, res: Response) => {
         success: false,
         message: "Store not found",
       });
+    }
+
+    // Generate ETag based on last modified timestamp for this store's products
+    const lastModified = await ProductModel.getLastModifiedTimestamp(storeId);
+    const cacheKey = `${storeId}-${isActive || ''}-${limit || ''}-${offset || ''}`;
+    
+    // Check ETag validation (returns true if 304 was sent)
+    if (handleETagValidation(req, res, lastModified, cacheKey)) {
+      return; // 304 Not Modified already sent
     }
 
     // Use pagination if limit is provided

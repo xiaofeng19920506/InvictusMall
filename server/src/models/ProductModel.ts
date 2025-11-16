@@ -297,5 +297,31 @@ export class ProductModel {
       }
     }
   }
+
+  // Get the last modified timestamp of products (for ETag generation)
+  static async getLastModifiedTimestamp(storeId?: string): Promise<string> {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      let query = `SELECT MAX(updated_at) as last_modified FROM products`;
+      const params: any[] = [];
+      
+      if (storeId) {
+        query += ` WHERE store_id = ?`;
+        params.push(storeId);
+      }
+      
+      const [result] = await connection.execute(query, params);
+      const lastModified = (result as any[])[0]?.last_modified;
+      return lastModified ? new Date(lastModified).getTime().toString() : '0';
+    } catch (error: any) {
+      console.error('Error getting last modified timestamp for products:', error);
+      return Date.now().toString();
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
 }
 
