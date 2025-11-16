@@ -22,6 +22,7 @@ export const useRealTimeStores = (
   const fetchStores = useCallback(async () => {
     try {
       setError(null);
+      setLoading(true);
       
       const response = await apiService.getAllStores({
         category: selectedCategory !== 'All' ? selectedCategory : undefined,
@@ -43,9 +44,8 @@ export const useRealTimeStores = (
     }
   }, [searchQuery, selectedCategory, searchType]);
 
-  // Initial fetch only - no polling
+  // Fetch on initial load and whenever search parameters change
   useEffect(() => {
-    setLoading(true);
     fetchStores();
   }, [fetchStores]);
 
