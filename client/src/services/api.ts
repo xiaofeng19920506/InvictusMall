@@ -161,7 +161,85 @@ class ApiService {
     }
 
     const endpoint = `/api/stores${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    const response = await this.request<ApiResponse<ServerStore[]>>(endpoint);
+    
+    // Create cache key based on endpoint
+    const cacheKey = `stores_cache_${endpoint}`;
+    
+    // Try to get cached data
+    try {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        const { data, etag, timestamp } = JSON.parse(cachedData);
+        // Check if cache is still valid (less than 1 hour old)
+        const cacheAge = Date.now() - timestamp;
+        const maxCacheAge = 60 * 60 * 1000; // 1 hour
+        
+        if (cacheAge < maxCacheAge) {
+          // Make request with If-None-Match header to validate cache
+          try {
+            const response = await fetch(`${this.baseUrl}${endpoint}`, {
+              method: 'GET',
+              headers: {
+                'If-None-Match': etag,
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+            });
+
+            // If 304 Not Modified, use cached data
+            if (response.status === 304) {
+              return {
+                success: true,
+                data: this.transformStores(data),
+              };
+            }
+
+            // If cache is invalid, continue to fetch new data
+          } catch (error) {
+            // If validation request fails, use cached data as fallback
+            console.warn('Cache validation failed, using cached data:', error);
+            return {
+              success: true,
+              data: this.transformStores(data),
+            };
+          }
+        }
+      }
+    } catch (error) {
+      // If cache read fails, continue to fetch fresh data
+      console.warn('Failed to read cache:', error);
+    }
+
+    // Fetch fresh data using fetch directly to get headers
+    const url = `${this.baseUrl}${endpoint}`;
+    const fetchResponse = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!fetchResponse.ok) {
+      const errorData: ApiError = await fetchResponse.json();
+      throw new Error(errorData.message || `HTTP error! status: ${fetchResponse.status}`);
+    }
+
+    const response: ApiResponse<ServerStore[]> = await fetchResponse.json();
+    const etag = fetchResponse.headers.get('ETag');
+    
+    // Store in cache with ETag if available
+    if (etag && response.success && response.data) {
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: response.data,
+          etag,
+          timestamp: Date.now(),
+        }));
+      } catch (error) {
+        console.warn('Failed to cache stores data:', error);
+      }
+    }
     
     return {
       ...response,

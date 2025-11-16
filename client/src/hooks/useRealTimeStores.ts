@@ -19,6 +19,48 @@ export const useRealTimeStores = (
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  // Try to load from cache immediately when search params change
+  useEffect(() => {
+    const loadFromCache = () => {
+      try {
+        const queryParams = new URLSearchParams();
+        if (selectedCategory && selectedCategory !== 'All') {
+          queryParams.append('category', selectedCategory);
+        }
+        if (searchQuery?.trim()) {
+          queryParams.append('search', searchQuery.trim());
+        }
+        if (searchType && searchType !== 'All') {
+          queryParams.append('searchType', searchType);
+        }
+        const endpoint = `/api/stores${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+        const cacheKey = `stores_cache_${endpoint}`;
+        const cachedData = localStorage.getItem(cacheKey);
+        
+        if (cachedData) {
+          const { data, timestamp } = JSON.parse(cachedData);
+          const cacheAge = Date.now() - timestamp;
+          const maxCacheAge = 60 * 60 * 1000; // 1 hour
+          
+          if (cacheAge < maxCacheAge && data) {
+            setStores(data);
+            setLastUpdated(new Date(timestamp));
+            setLoading(false);
+            return true; // Cache loaded
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load from cache:', error);
+      }
+      return false; // Cache not available or invalid
+    };
+
+    if (loadFromCache()) {
+      // Cache loaded, but still fetch in background to validate/update
+      setLoading(true);
+    }
+  }, [searchQuery, selectedCategory, searchType]);
+
   const fetchStores = useCallback(async () => {
     try {
       setError(null);
