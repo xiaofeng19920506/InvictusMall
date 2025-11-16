@@ -66,7 +66,13 @@ const TransactionsManagement: React.FC = () => {
 
   const fetchTransactions = useCallback(async () => {
     try {
-      const response = await transactionApi.getTransactions(filters);
+      // For non-admin users, automatically filter by their storeId
+      const filtersToUse = { ...filters };
+      if (user && user.role !== "admin" && userStoreId) {
+        filtersToUse.storeId = userStoreId;
+      }
+      
+      const response = await transactionApi.getTransactions(filtersToUse);
       if (response.success && response.data) {
         setTransactions(response.data);
       } else {
@@ -78,7 +84,7 @@ const TransactionsManagement: React.FC = () => {
         error.response?.data?.message || "Failed to fetch transactions"
       );
     }
-  }, [filters, showError]);
+  }, [filters, showError, user, userStoreId]);
 
   const fetchStripeTransactions = useCallback(async () => {
     try {
@@ -127,7 +133,7 @@ const TransactionsManagement: React.FC = () => {
 
   useEffect(() => {
     loadAllTransactions();
-  }, [loadAllTransactions]);
+  }, [loadAllTransactions, userStoreId]); // Reload when userStoreId changes
 
   const handleFilterChange = () => {
     const newFilters: TransactionFilters = {
@@ -200,11 +206,53 @@ const TransactionsManagement: React.FC = () => {
 
 
   // Role-based filtering: Non-admin users can only see their store's transactions
-  const availableStores = stores.filter(() => {
+  // Get user's storeId from the user object (if available) or fetch it
+  const [userStoreId, setUserStoreId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Fetch user's storeId if not admin
+    const fetchUserStoreId = async () => {
+      if (user && user.role !== "admin") {
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+          const token = localStorage.getItem('staff_auth_token');
+          const headers: HeadersInit = {};
+          if (token) {
+            headers.Authorization = `Bearer ${token}`;
+          }
+          const response = await fetch(`${apiUrl}/api/staff/me`, {
+            headers,
+            credentials: "include",
+          });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.user) {
+              const storeId = (data.user as any).storeId;
+              setUserStoreId(storeId || null);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching user store ID:", error);
+        }
+      } else {
+        setUserStoreId(null); // Admin can see all stores
+      }
+    };
+    
+    fetchUserStoreId();
+  }, [user]);
+
+  // Filter stores based on user role
+  const availableStores = stores.filter((store) => {
     if (user?.role === "admin") return true;
-    // For non-admin users, they should only see their own store
-    // This is handled by the backend, but we can filter here too
-    return true;
+    // For non-admin users, only show their store
+    return userStoreId ? store.id === userStoreId : false;
+  });
+  
+  // Create a map of storeId to store name for quick lookup
+  const storeMap = new Map<string, string>();
+  stores.forEach(store => {
+    storeMap.set(store.id, store.name);
   });
 
   // Calculate totals for local transactions
@@ -256,6 +304,19 @@ const TransactionsManagement: React.FC = () => {
     : viewMode === 'local'
     ? transactions.map(t => ({ ...t, source: 'local' as const }))
     : stripeTransactions.map(t => ({ ...t, source: 'stripe' as const, storeId: 'stripe' }));
+
+  // Filter transactions based on user role - non-admin users only see their store's transactions
+  if (user && user.role !== "admin" && userStoreId) {
+    allTransactions = allTransactions.filter(t => {
+      // For local transactions, filter by storeId
+      if ((t as any).source === 'local') {
+        return t.storeId === userStoreId;
+      }
+      // For Stripe transactions, we can't filter by store easily, so show all
+      // (or you could filter based on metadata if storeId is stored there)
+      return true;
+    });
+  }
 
   // Apply client-side date filtering for Stripe transactions
   if ((viewMode === 'stripe' || viewMode === 'both') && (startDate || endDate)) {
@@ -624,6 +685,7 @@ const TransactionsManagement: React.FC = () => {
             <thead>
               <tr>
                 <th>{t("transactions.date") || "Date"}</th>
+                <th>{t("transactions.store") || "Store"}</th>
                 <th>{t("transactions.customer") || "Customer"}</th>
                 <th>{t("transactions.amount") || "Amount"}</th>
                 <th>{t("transactions.status") || "Status"}</th>
@@ -638,9 +700,29 @@ const TransactionsManagement: React.FC = () => {
                 const transactionType = transaction.transactionType || (isLocal ? 'sale' : 'payment');
                 const isRefund = transactionType === "refund" || (transaction.amount < 0 && !isLocal);
                 
+                // Get store name for display
+                const transactionStoreId = (transaction as any).source === 'local' 
+                  ? transaction.storeId 
+                  : ((transaction as any).storeId || 'stripe');
+                const storeName = transactionStoreId === 'stripe' 
+                  ? 'Stripe' 
+                  : (storeMap.get(transactionStoreId) || transactionStoreId || '-');
+                
                 return (
                   <tr key={`${(transaction as any).source}-${transaction.id}`}>
                     <td>{formatDate(transaction.transactionDate)}</td>
+                    <td>
+                      <span style={{ 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.25rem',
+                        fontWeight: 500,
+                        color: '#374151'
+                      }}>
+                        <StoreIcon size={14} />
+                        {storeName}
+                      </span>
+                    </td>
                     <td>
                       {transaction.customerName ||
                         transaction.customerId ||
