@@ -360,7 +360,7 @@ const createTables = async (): Promise<void> => {
                 first_name VARCHAR(100) NOT NULL,
                 last_name VARCHAR(100) NOT NULL,
                 phone_number VARCHAR(20) NOT NULL,
-                role ENUM('customer', 'admin', 'store_owner') DEFAULT 'customer',
+                role ENUM('customer', 'admin', 'owner') DEFAULT 'customer',
                 is_active BOOLEAN DEFAULT false,
                 email_verified BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1161,6 +1161,36 @@ const createTables = async (): Promise<void> => {
         console.info(
           "Skipping foreign key constraint for categories (missing REFERENCES permission)"
         );
+      }
+    }
+
+    // Migration: Update 'store_owner' role to 'owner' and modify ENUM
+    try {
+      // First, update any existing 'store_owner' values to 'owner'
+      await connection.execute(`
+        UPDATE users 
+        SET role = 'owner' 
+        WHERE role = 'store_owner'
+      `);
+      console.log("✅ Migrated 'store_owner' role to 'owner' in users table");
+    } catch (error: any) {
+      // Ignore if table doesn't exist or column doesn't exist
+      if (error?.code !== "ER_NO_SUCH_TABLE" && error?.code !== "ER_BAD_FIELD_ERROR") {
+        console.warn("Could not migrate store_owner to owner:", error.message);
+      }
+    }
+
+    // Modify the ENUM to change 'store_owner' to 'owner'
+    try {
+      await connection.execute(`
+        ALTER TABLE users 
+        MODIFY COLUMN role ENUM('customer', 'admin', 'owner') DEFAULT 'customer'
+      `);
+      console.log("✅ Updated users.role ENUM to use 'owner' instead of 'store_owner'");
+    } catch (error: any) {
+      // Ignore if table doesn't exist or if the change is already applied
+      if (error?.code !== "ER_NO_SUCH_TABLE" && error?.code !== "ER_DUP_FIELDNAME") {
+        console.warn("Could not modify users.role ENUM:", error.message);
       }
     }
   } finally {
