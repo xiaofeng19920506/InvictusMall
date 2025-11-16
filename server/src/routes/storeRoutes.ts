@@ -71,12 +71,29 @@ router.get("/", async (req: Request, res: Response) => {
   try {
     const { category, search, limit, offset } = req.query;
 
+    // Generate ETag based on last modified timestamp
+    // For filtered results, we'll use a hash of the query params + timestamp
+    const lastModified = await StoreModel.getLastModifiedTimestamp();
+    const cacheKey = `${category || ''}-${search || ''}-${limit || ''}-${offset || ''}`;
+    const etag = `"${Buffer.from(`${lastModified}-${cacheKey}`).toString('base64')}"`;
+
+    // Check if client has cached version
+    const ifNoneMatch = req.headers['if-none-match'];
+    if (ifNoneMatch === etag) {
+      // Data hasn't changed, return 304 Not Modified
+      return res.status(304).end();
+    }
+
     // Use pagination if limit is provided (typically for admin app)
     if (limit !== undefined && !search && !category) {
       const { stores, total } = await StoreModel.findAllWithPagination({
         limit: parseInt(limit as string) || undefined,
         offset: offset !== undefined ? parseInt(offset as string) : undefined,
       });
+
+      // Set ETag header
+      res.setHeader('ETag', etag);
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
 
       return res.json({
         success: true,
@@ -95,6 +112,10 @@ router.get("/", async (req: Request, res: Response) => {
     } else {
       stores = await storeService.getAllStores();
     }
+
+    // Set ETag header
+    res.setHeader('ETag', etag);
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
 
     return res.json({
       success: true,
