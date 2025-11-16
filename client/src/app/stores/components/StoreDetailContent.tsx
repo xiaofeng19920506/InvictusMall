@@ -168,6 +168,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                   className="w-full md:w-64 h-64 object-cover rounded-lg"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
+                    // Prevent infinite onError loop by removing the handler
+                    target.onerror = null;
                     target.src = "/placeholder/store.png";
                   }}
                 />
@@ -344,6 +346,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                               className="w-full h-48 object-cover"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
+                                // Prevent infinite onError loop by removing the handler
+                                target.onerror = null;
                                 target.src = "/placeholder/product.png";
                               }}
                             />
@@ -408,6 +412,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                               className="w-full h-48 object-cover"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
+                                // Prevent infinite onError loop by removing the handler
+                                target.onerror = null;
                                 target.src = "/placeholder/service.png";
                               }}
                             />
