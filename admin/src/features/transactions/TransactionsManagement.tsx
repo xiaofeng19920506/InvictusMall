@@ -298,11 +298,14 @@ const TransactionsManagement: React.FC = () => {
   let allTransactions = viewMode === 'both' 
     ? [
         ...transactions.map(t => ({ ...t, source: 'local' as const })),
-        ...stripeTransactions.map(t => ({ ...t, source: 'stripe' as const, storeId: 'stripe' }))
+        ...stripeTransactions.map(t => ({ ...t, source: 'stripe' as const }))
       ]
     : viewMode === 'local'
     ? transactions.map(t => ({ ...t, source: 'local' as const }))
-    : stripeTransactions.map(t => ({ ...t, source: 'stripe' as const, storeId: 'stripe' }));
+    : stripeTransactions.map(t => ({ ...t, source: 'stripe' as const }));
+
+  // Filter out transactions with null storeId
+  allTransactions = allTransactions.filter(t => t.storeId != null);
 
   // Filter transactions based on user role - non-admin users only see their store's transactions
   if (user && user.role !== "admin" && userStoreId) {
@@ -311,9 +314,8 @@ const TransactionsManagement: React.FC = () => {
       if ((t as any).source === 'local') {
         return t.storeId === userStoreId;
       }
-      // For Stripe transactions, we can't filter by store easily, so show all
-      // (or you could filter based on metadata if storeId is stored there)
-      return true;
+      // For Stripe transactions, filter by storeId
+      return t.storeId === userStoreId;
     });
   }
 
@@ -700,12 +702,10 @@ const TransactionsManagement: React.FC = () => {
                 const isRefund = transactionType === "refund" || (transaction.amount < 0 && !isLocal);
                 
                 // Get store name for display
-                const transactionStoreId = (transaction as any).source === 'local' 
-                  ? transaction.storeId 
-                  : ((transaction as any).storeId || 'stripe');
-                const storeName = transactionStoreId === 'stripe' 
-                  ? 'Stripe' 
-                  : (storeMap.get(transactionStoreId) || transactionStoreId || '-');
+                const transactionStoreId = transaction.storeId;
+                const storeName = transactionStoreId 
+                  ? (storeMap.get(transactionStoreId) || transactionStoreId) 
+                  : '-';
                 
                 return (
                   <tr key={`${(transaction as any).source}-${transaction.id}`}>

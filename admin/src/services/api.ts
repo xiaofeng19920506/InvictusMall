@@ -409,6 +409,7 @@ export const transactionApi = {
 export interface StripeTransaction {
   id: string;
   stripeType: 'charge' | 'balance_transaction' | 'payment_intent';
+  storeId?: string | null;
   amount: number;
   currency: string;
   status: 'pending' | 'completed' | 'failed' | 'cancelled';
