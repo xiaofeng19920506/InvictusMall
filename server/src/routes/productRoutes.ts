@@ -131,6 +131,15 @@ router.get("/:id", async (req: Request, res: Response) => {
       });
     }
 
+    // Generate ETag based on last modified timestamp for this product
+    const lastModified = await ProductModel.getLastModifiedTimestamp();
+    const cacheKey = `product-${id}`;
+    
+    // Check ETag validation (returns true if 304 was sent)
+    if (handleETagValidation(req, res, lastModified, cacheKey)) {
+      return; // 304 Not Modified already sent
+    }
+
     const product = await ProductModel.findById(id);
 
     if (!product) {

@@ -1,9 +1,10 @@
-import { Router, Response } from 'express';
+import { Router, Response, Request } from 'express';
 import { CategoryModel } from '../models/CategoryModel';
 import {
   authenticateAnyToken,
   AuthenticatedRequest,
 } from '../middleware/auth';
+import { handleETagValidation } from '../utils/cacheUtils';
 
 const router = Router();
 const categoryModel = new CategoryModel();
@@ -44,7 +45,16 @@ const categoryModel = new CategoryModel();
  */
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { includeInactive, tree, level, parentId } = req.query;
+    const { includeInactive, tree, level, parentId, limit, offset } = req.query;
+
+    // Generate ETag based on last modified timestamp
+    const lastModified = await CategoryModel.getLastModifiedTimestamp();
+    const cacheKey = `${includeInactive || ''}-${tree || ''}-${level || ''}-${parentId || ''}-${limit || ''}-${offset || ''}`;
+    
+    // Check ETag validation (returns true if 304 was sent)
+    if (handleETagValidation(req, res, lastModified, cacheKey)) {
+      return; // 304 Not Modified already sent
+    }
 
     if (tree === 'true') {
       // Return hierarchical tree
@@ -76,8 +86,6 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
     }
 
     // Return all categories (flat list) - with optional pagination
-    const { limit, offset } = req.query;
-    
     if (limit !== undefined) {
       const { categories, total } = await categoryModel.findAllWithPagination({
         includeInactive: includeInactive === 'true',
@@ -139,6 +147,16 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
         message: 'Category ID is required',
       });
     }
+
+    // Generate ETag based on last modified timestamp
+    const lastModified = await CategoryModel.getLastModifiedTimestamp();
+    const cacheKey = `category-${id}`;
+    
+    // Check ETag validation (returns true if 304 was sent)
+    if (handleETagValidation(req, res, lastModified, cacheKey)) {
+      return; // 304 Not Modified already sent
+    }
+
     const category = await categoryModel.findById(id);
 
     if (!category) {
