@@ -14,9 +14,14 @@ const api = axios.create({
   withCredentials: true, // Always include credentials (cookies) for authentication
 });
 
-// Request interceptor
+// Request interceptor - Add Bearer token from localStorage if available
 api.interceptors.request.use(
   (config) => {
+    // Get token from localStorage (fallback when cookies don't work)
+    const token = localStorage.getItem('staff_auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {

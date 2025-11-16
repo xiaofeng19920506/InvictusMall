@@ -172,14 +172,23 @@ router.post('/login', [
       path: '/'
     });
 
-    // Return staff data without password (no token in response body)
+    // Return staff data without password
     const { password: _, ...staffWithoutPassword } = staff;
 
-    return res.json({
+    // In development, also return token in response body as fallback for Bearer token auth
+    // This is needed when cookies don't work (e.g., cross-origin with sameSite: 'none' on HTTP)
+    const responseData: any = {
       success: true,
       message: 'Login successful',
       user: staffWithoutPassword
-    });
+    };
+
+    // Only include token in response for development (not production for security)
+    if (process.env.NODE_ENV !== 'production') {
+      responseData.token = token;
+    }
+
+    return res.json(responseData);
   } catch (error) {
     console.error('Staff login error:', error);
     return res.status(500).json({

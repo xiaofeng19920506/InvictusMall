@@ -123,7 +123,13 @@ const UsersManagement: React.FC = () => {
     try {
       setLoadingStores(true);
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const token = localStorage.getItem('staff_auth_token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const staffResponse = await fetch(`${apiUrl}/api/staff/me`, {
+        headers,
         credentials: "include",
       });
 
@@ -204,11 +210,19 @@ const UsersManagement: React.FC = () => {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const token = localStorage.getItem('staff_auth_token');
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      
+      // Add Bearer token if available (fallback when cookies don't work)
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`${apiUrl}/api/staff/invite`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         credentials: "include",
         body: JSON.stringify({
           email: registerFormData.email,

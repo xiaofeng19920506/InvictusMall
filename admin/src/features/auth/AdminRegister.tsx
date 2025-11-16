@@ -84,7 +84,13 @@ export default function AdminRegister() {
       setLoadingStores(true);
       // Get current user's staff record to find their storeId
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const token = localStorage.getItem('staff_auth_token');
+      const headers: HeadersInit = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const staffResponse = await fetch(`${apiUrl}/api/staff/me`, {
+        headers,
         credentials: "include",
       });
       
@@ -160,11 +166,16 @@ export default function AdminRegister() {
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+      const token = localStorage.getItem('staff_auth_token');
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
       const response = await fetch(`${apiUrl}/api/staff/invite`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         credentials: "include",
         body: JSON.stringify({
           email: formData.email,
