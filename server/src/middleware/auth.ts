@@ -194,11 +194,55 @@ export const authenticateAnyToken = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (req.cookies?.staff_auth_token) {
-      await verifyStaffToken(req);
-    } else {
-      await verifyUserToken(req);
+    // Get token from any source (prefer cookies, fallback to Bearer)
+    const staffCookieToken = req.cookies?.staff_auth_token;
+    const userCookieToken = req.cookies?.auth_token;
+    const bearerToken = getBearerToken(req);
+    
+    // Determine which token to use
+    let token: string | undefined;
+    
+    if (staffCookieToken) {
+      token = staffCookieToken;
+    } else if (userCookieToken) {
+      token = userCookieToken;
+    } else if (bearerToken) {
+      token = bearerToken;
     }
+    
+    if (!token) {
+      throw new AuthError(401, "Access token required");
+    }
+    
+    // Decode token to determine type
+    let decoded: any;
+    try {
+      decoded = verifyJwt(token);
+    } catch (jwtError) {
+      throw new AuthError(401, "Invalid or expired token");
+    }
+    
+    // Verify based on token type
+    if (decoded?.type === "staff" || decoded?.staffId) {
+      // It's a staff token - verify as staff
+      // Set the token in cookies if it came from Bearer header
+      if (!staffCookieToken && bearerToken) {
+        if (!req.cookies) req.cookies = {};
+        req.cookies.staff_auth_token = bearerToken;
+      }
+      await verifyStaffToken(req);
+    } else if (decoded?.userId) {
+      // It's a user token - verify as user
+      // Set the token in cookies if it came from Bearer header
+      if (!userCookieToken && bearerToken) {
+        if (!req.cookies) req.cookies = {};
+        req.cookies.auth_token = bearerToken;
+      }
+      await verifyUserToken(req);
+    } else {
+      throw new AuthError(401, "Invalid token payload");
+    }
+    
     next();
   } catch (error) {
     handleAuthError(res, error);
