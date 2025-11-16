@@ -593,7 +593,7 @@ async function getStoreIdFromCharge(charge: Stripe.Charge): Promise<string | nul
               payment_intent: paymentIntentId,
               limit: 1,
             });
-            if (sessions.data.length > 0) {
+            if (sessions.data.length > 0 && sessions.data[0]) {
               sessionId = sessions.data[0].id;
             }
           } catch (sessionError) {
@@ -603,7 +603,7 @@ async function getStoreIdFromCharge(charge: Stripe.Charge): Promise<string | nul
         
         if (sessionId) {
           const orders = await orderModel.getOrdersByStripeSession(sessionId);
-          if (orders.length > 0) {
+          if (orders.length > 0 && orders[0]) {
             // Return the first order's storeId (if multiple orders, they should have same storeId)
             return orders[0].storeId;
           }
@@ -723,7 +723,8 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
               } catch (error) {
                 console.error('Error retrieving charge for balance transaction:', error);
               }
-            } else if (sourceType === 'payment_intent') {
+            } else if (typeof sourceId === 'string' && sourceId.startsWith('pi_')) {
+              // Payment intent IDs start with 'pi_', so we can identify them that way
               try {
                 const paymentIntent = await stripeClient!.paymentIntents.retrieve(sourceId);
                 if (paymentIntent.metadata?.storeId) {
@@ -732,7 +733,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
                   const sessionId = paymentIntent.metadata?.sessionId || paymentIntent.metadata?.checkout_session_id;
                   if (sessionId) {
                     const orders = await orderModel.getOrdersByStripeSession(sessionId);
-                    if (orders.length > 0) {
+                    if (orders.length > 0 && orders[0]) {
                       storeId = orders[0].storeId;
                     }
                   }
@@ -804,7 +805,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
                   payment_intent: pi.id,
                   limit: 1,
                 });
-                if (sessions.data.length > 0) {
+                if (sessions.data.length > 0 && sessions.data[0]) {
                   sessionId = sessions.data[0].id;
                 }
               } catch (sessionError) {
@@ -815,7 +816,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
             if (sessionId) {
               try {
                 const orders = await orderModel.getOrdersByStripeSession(sessionId);
-                if (orders.length > 0) {
+                if (orders.length > 0 && orders[0]) {
                   storeId = orders[0].storeId;
                 }
               } catch (error) {
