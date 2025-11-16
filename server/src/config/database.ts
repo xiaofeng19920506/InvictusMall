@@ -360,7 +360,7 @@ const createTables = async (): Promise<void> => {
                 first_name VARCHAR(100) NOT NULL,
                 last_name VARCHAR(100) NOT NULL,
                 phone_number VARCHAR(20) NOT NULL,
-                role ENUM('customer', 'admin', 'owner') DEFAULT 'customer',
+                role ENUM('customer') DEFAULT 'customer',
                 is_active BOOLEAN DEFAULT false,
                 email_verified BOOLEAN DEFAULT false,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1164,29 +1164,29 @@ const createTables = async (): Promise<void> => {
       }
     }
 
-    // Migration: Update 'store_owner' role to 'owner' and modify ENUM
+    // Migration: Update all user roles to 'customer' (users can only be customers)
     try {
-      // First, update any existing 'store_owner' values to 'owner'
+      // Update any existing 'admin' or 'owner' values to 'customer'
       await connection.execute(`
         UPDATE users 
-        SET role = 'owner' 
-        WHERE role = 'store_owner'
+        SET role = 'customer' 
+        WHERE role IN ('admin', 'owner', 'store_owner')
       `);
-      console.log("✅ Migrated 'store_owner' role to 'owner' in users table");
+      console.log("✅ Migrated all user roles to 'customer' in users table");
     } catch (error: any) {
       // Ignore if table doesn't exist or column doesn't exist
       if (error?.code !== "ER_NO_SUCH_TABLE" && error?.code !== "ER_BAD_FIELD_ERROR") {
-        console.warn("Could not migrate store_owner to owner:", error.message);
+        console.warn("Could not migrate user roles to customer:", error.message);
       }
     }
 
-    // Modify the ENUM to change 'store_owner' to 'owner'
+    // Modify the ENUM to only allow 'customer' role for users
     try {
       await connection.execute(`
         ALTER TABLE users 
-        MODIFY COLUMN role ENUM('customer', 'admin', 'owner') DEFAULT 'customer'
+        MODIFY COLUMN role ENUM('customer') DEFAULT 'customer'
       `);
-      console.log("✅ Updated users.role ENUM to use 'owner' instead of 'store_owner'");
+      console.log("✅ Updated users.role ENUM to only allow 'customer' role");
     } catch (error: any) {
       // Ignore if table doesn't exist or if the change is already applied
       if (error?.code !== "ER_NO_SUCH_TABLE" && error?.code !== "ER_DUP_FIELDNAME") {

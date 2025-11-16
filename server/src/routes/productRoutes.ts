@@ -318,14 +318,12 @@ router.delete(
 );
 
 /**
- * Upload product image (Store owner/admin only)
+ * Upload product image (Public endpoint - accessible to all roles)
  */
 router.post(
   "/upload-image",
-  authenticateAnyToken,
-  requireStoreOwner,
   uploadProductImage.single("file"),
-  async (req: AuthenticatedRequest, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
       const uploadedFile = (req as any).file as Express.Multer.File | undefined;
       const { metadata: metadataRaw, productId } = req.body || {};
