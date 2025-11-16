@@ -50,6 +50,7 @@ const TransactionsManagement: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState<number>(20);
   const [selectedTransaction, setSelectedTransaction] = useState<StoreTransaction | StripeTransaction | null>(null);
   const [showRefundModal, setShowRefundModal] = useState(false);
+  const [userStoreId, setUserStoreId] = useState<string | null>(null);
   const { showError, showSuccess } = useNotification();
   const { user } = useAuth();
 
@@ -207,8 +208,6 @@ const TransactionsManagement: React.FC = () => {
 
   // Role-based filtering: Non-admin users can only see their store's transactions
   // Get user's storeId from the user object (if available) or fetch it
-  const [userStoreId, setUserStoreId] = useState<string | null>(null);
-  
   useEffect(() => {
     // Fetch user's storeId if not admin
     const fetchUserStoreId = async () => {
