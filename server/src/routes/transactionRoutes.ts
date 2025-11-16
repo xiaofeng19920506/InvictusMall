@@ -3,10 +3,12 @@ import { body, query, validationResult } from 'express-validator';
 import { TransactionModel, CreateTransactionRequest, UpdateTransactionRequest, TransactionFilters } from '../models/TransactionModel';
 import { authenticateStaffToken, AuthenticatedRequest } from '../middleware/auth';
 import { StaffModel } from '../models/StaffModel';
+import { OrderModel } from '../models/OrderModel';
 import Stripe from 'stripe';
 
 const router = Router();
 const transactionModel = new TransactionModel();
+const orderModel = new OrderModel();
 
 // Initialize Stripe client
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -559,6 +561,72 @@ router.put('/:id', authenticateStaffToken, [
  *       200:
  *         description: Stripe transactions retrieved successfully
  */
+// Helper function to get storeId from a Stripe charge
+async function getStoreIdFromCharge(charge: Stripe.Charge): Promise<string | null> {
+  try {
+    // First, try to get storeId from charge metadata
+    if (charge.metadata?.storeId) {
+      return charge.metadata.storeId;
+    }
+
+    // If charge has a payment_intent, try to get storeId from payment intent
+    if (charge.payment_intent) {
+      const paymentIntentId = typeof charge.payment_intent === 'string' 
+        ? charge.payment_intent 
+        : charge.payment_intent.id;
+      
+      try {
+        const paymentIntent = await stripeClient!.paymentIntents.retrieve(paymentIntentId);
+        
+        // Check payment intent metadata for storeId or session ID
+        if (paymentIntent.metadata?.storeId) {
+          return paymentIntent.metadata.storeId;
+        }
+        
+        // Try to get session ID from payment intent metadata
+        let sessionId = paymentIntent.metadata?.sessionId || paymentIntent.metadata?.checkout_session_id;
+        
+        // If no session ID in metadata, try to find it by listing checkout sessions with this payment intent
+        if (!sessionId && stripeClient) {
+          try {
+            const sessions = await stripeClient.checkout.sessions.list({
+              payment_intent: paymentIntentId,
+              limit: 1,
+            });
+            if (sessions.data.length > 0) {
+              sessionId = sessions.data[0].id;
+            }
+          } catch (sessionError) {
+            console.error('Error looking up checkout session:', sessionError);
+          }
+        }
+        
+        if (sessionId) {
+          const orders = await orderModel.getOrdersByStripeSession(sessionId);
+          if (orders.length > 0) {
+            // Return the first order's storeId (if multiple orders, they should have same storeId)
+            return orders[0].storeId;
+          }
+        }
+      } catch (piError) {
+        console.error('Error retrieving payment intent:', piError);
+      }
+    }
+
+    // If we have a customer, try to find recent orders for that customer and match by amount/date
+    // This is a fallback and might not be 100% accurate
+    if (charge.customer) {
+      // This is a less reliable method, so we'll skip it for now
+      // and just return null if we can't find it through other means
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting storeId from charge:', error);
+    return null;
+  }
+}
+
 router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!stripeClient) {
@@ -572,6 +640,16 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
     const type = (req.query.type as string) || 'charge';
     const startingAfter = req.query.starting_after as string | undefined;
 
+    // Role-based filtering: Non-admin users can only see their store's transactions
+    let userStoreId: string | null = null;
+    if (req.user && req.user.role !== 'admin') {
+      const staffModel = new StaffModel();
+      const staff = await staffModel.getStaffById(req.user.id);
+      if (staff && (staff as any).storeId) {
+        userStoreId = (staff as any).storeId;
+      }
+    }
+
     let transactions: any[] = [];
 
     try {
@@ -582,32 +660,46 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
           starting_after: startingAfter,
         });
 
-        transactions = charges.data.map((charge: Stripe.Charge) => ({
-          id: charge.id,
-          stripeType: 'charge',
-          amount: charge.amount / 100, // Convert from cents to dollars
-          currency: charge.currency.toUpperCase(),
-          status: charge.status === 'succeeded' ? 'completed' : 
-                  charge.status === 'pending' ? 'pending' : 
-                  charge.status === 'failed' ? 'failed' : 'cancelled',
-          description: charge.description || `Charge for ${charge.customer || 'customer'}`,
-          customerId: charge.customer || undefined,
-          customerName: charge.billing_details?.name || undefined,
-          paymentMethod: charge.payment_method_details?.type || 
-                        (charge.payment_method_details?.card ? 'card' : 'unknown'),
-          transactionDate: new Date(charge.created * 1000).toISOString(),
-          metadata: {
-            stripeChargeId: charge.id,
-            receiptUrl: charge.receipt_url,
-            receiptNumber: charge.receipt_number,
-            refunded: charge.refunded,
-            amountRefunded: charge.amount_refunded ? charge.amount_refunded / 100 : 0,
-            outcome: charge.outcome,
-            source: charge.source,
-          },
-          createdAt: new Date(charge.created * 1000).toISOString(),
-          updatedAt: new Date(charge.created * 1000).toISOString(),
-        }));
+        // Process charges and add storeId
+        const chargePromises = charges.data.map(async (charge: Stripe.Charge) => {
+          const storeId = await getStoreIdFromCharge(charge);
+          
+          // Filter by user's store if not admin
+          if (userStoreId && storeId !== userStoreId) {
+            return null;
+          }
+
+          return {
+            id: charge.id,
+            stripeType: 'charge',
+            storeId: storeId || null, // Add storeId to the transaction
+            amount: charge.amount / 100, // Convert from cents to dollars
+            currency: charge.currency.toUpperCase(),
+            status: charge.status === 'succeeded' ? 'completed' : 
+                    charge.status === 'pending' ? 'pending' : 
+                    charge.status === 'failed' ? 'failed' : 'cancelled',
+            description: charge.description || `Charge for ${charge.customer || 'customer'}`,
+            customerId: charge.customer || undefined,
+            customerName: charge.billing_details?.name || undefined,
+            paymentMethod: charge.payment_method_details?.type || 
+                          (charge.payment_method_details?.card ? 'card' : 'unknown'),
+            transactionDate: new Date(charge.created * 1000).toISOString(),
+            metadata: {
+              stripeChargeId: charge.id,
+              receiptUrl: charge.receipt_url,
+              receiptNumber: charge.receipt_number,
+              refunded: charge.refunded,
+              amountRefunded: charge.amount_refunded ? charge.amount_refunded / 100 : 0,
+              outcome: charge.outcome,
+              source: charge.source,
+            },
+            createdAt: new Date(charge.created * 1000).toISOString(),
+            updatedAt: new Date(charge.created * 1000).toISOString(),
+          };
+        });
+
+        const chargeResults = await Promise.all(chargePromises);
+        transactions = chargeResults.filter(t => t !== null) as any[];
       } else if (type === 'balance_transaction') {
         // Get balance transactions
         const balanceTransactions = await stripeClient.balanceTransactions.list({
@@ -615,28 +707,74 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
           starting_after: startingAfter,
         });
 
-        transactions = balanceTransactions.data.map((bt: Stripe.BalanceTransaction) => ({
-          id: bt.id,
-          stripeType: 'balance_transaction',
-          amount: Math.abs(bt.amount) / 100, // Convert from cents to dollars
-          currency: bt.currency.toUpperCase(),
-          status: bt.status === 'available' || bt.status === 'pending' ? 
-                  (bt.status === 'available' ? 'completed' : 'pending') : 'failed',
-          description: bt.description || `Balance transaction: ${bt.type}`,
-          transactionType: bt.type.includes('refund') ? 'refund' : 
-                          bt.type.includes('charge') ? 'sale' : 
-                          bt.type.includes('payment') ? 'payment' : 'fee',
-          transactionDate: new Date(bt.created * 1000).toISOString(),
-          metadata: {
-            stripeBalanceTransactionId: bt.id,
-            type: bt.type,
-            net: bt.net ? bt.net / 100 : 0,
-            fee: bt.fee ? bt.fee / 100 : 0,
-            source: bt.source,
-          },
-          createdAt: new Date(bt.created * 1000).toISOString(),
-          updatedAt: new Date(bt.created * 1000).toISOString(),
-        }));
+        // For balance transactions, try to get storeId from the source (charge or payment intent)
+        const balanceTransactionPromises = balanceTransactions.data.map(async (bt: Stripe.BalanceTransaction) => {
+          let storeId: string | null = null;
+          
+          // Try to get storeId from the source
+          if (bt.source) {
+            const sourceId = typeof bt.source === 'string' ? bt.source : bt.source.id;
+            const sourceType = typeof bt.source === 'string' ? 'unknown' : bt.source.object;
+            
+            if (sourceType === 'charge') {
+              try {
+                const charge = await stripeClient!.charges.retrieve(sourceId);
+                storeId = await getStoreIdFromCharge(charge);
+              } catch (error) {
+                console.error('Error retrieving charge for balance transaction:', error);
+              }
+            } else if (sourceType === 'payment_intent') {
+              try {
+                const paymentIntent = await stripeClient!.paymentIntents.retrieve(sourceId);
+                if (paymentIntent.metadata?.storeId) {
+                  storeId = paymentIntent.metadata.storeId;
+                } else {
+                  const sessionId = paymentIntent.metadata?.sessionId || paymentIntent.metadata?.checkout_session_id;
+                  if (sessionId) {
+                    const orders = await orderModel.getOrdersByStripeSession(sessionId);
+                    if (orders.length > 0) {
+                      storeId = orders[0].storeId;
+                    }
+                  }
+                }
+              } catch (error) {
+                console.error('Error retrieving payment intent for balance transaction:', error);
+              }
+            }
+          }
+
+          // Filter by user's store if not admin
+          if (userStoreId && storeId !== userStoreId) {
+            return null;
+          }
+
+          return {
+            id: bt.id,
+            stripeType: 'balance_transaction',
+            storeId: storeId || null, // Add storeId to the transaction
+            amount: Math.abs(bt.amount) / 100, // Convert from cents to dollars
+            currency: bt.currency.toUpperCase(),
+            status: bt.status === 'available' || bt.status === 'pending' ? 
+                    (bt.status === 'available' ? 'completed' : 'pending') : 'failed',
+            description: bt.description || `Balance transaction: ${bt.type}`,
+            transactionType: bt.type.includes('refund') ? 'refund' : 
+                            bt.type.includes('charge') ? 'sale' : 
+                            bt.type.includes('payment') ? 'payment' : 'fee',
+            transactionDate: new Date(bt.created * 1000).toISOString(),
+            metadata: {
+              stripeBalanceTransactionId: bt.id,
+              type: bt.type,
+              net: bt.net ? bt.net / 100 : 0,
+              fee: bt.fee ? bt.fee / 100 : 0,
+              source: bt.source,
+            },
+            createdAt: new Date(bt.created * 1000).toISOString(),
+            updatedAt: new Date(bt.created * 1000).toISOString(),
+          };
+        });
+
+        const balanceResults = await Promise.all(balanceTransactionPromises);
+        transactions = balanceResults.filter(t => t !== null) as any[];
       } else if (type === 'payment_intent') {
         // Get payment intents
         const paymentIntents = await stripeClient.paymentIntents.list({
@@ -644,16 +782,57 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
           starting_after: startingAfter,
         });
 
-        transactions = paymentIntents.data.map((pi: Stripe.PaymentIntent) => {
+        // Process payment intents and add storeId
+        const paymentIntentPromises = paymentIntents.data.map(async (pi: Stripe.PaymentIntent) => {
           // Expand charges if available
           const chargeIds: string[] = [];
           if (pi.latest_charge) {
             chargeIds.push(typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge.id);
           }
 
+          // Get storeId from payment intent metadata or by looking up orders via session
+          let storeId: string | null = null;
+          if (pi.metadata?.storeId) {
+            storeId = pi.metadata.storeId;
+          } else {
+            let sessionId = pi.metadata?.sessionId || pi.metadata?.checkout_session_id;
+            
+            // If no session ID in metadata, try to find it by listing checkout sessions with this payment intent
+            if (!sessionId && stripeClient) {
+              try {
+                const sessions = await stripeClient.checkout.sessions.list({
+                  payment_intent: pi.id,
+                  limit: 1,
+                });
+                if (sessions.data.length > 0) {
+                  sessionId = sessions.data[0].id;
+                }
+              } catch (sessionError) {
+                console.error('Error looking up checkout session for payment intent:', sessionError);
+              }
+            }
+            
+            if (sessionId) {
+              try {
+                const orders = await orderModel.getOrdersByStripeSession(sessionId);
+                if (orders.length > 0) {
+                  storeId = orders[0].storeId;
+                }
+              } catch (error) {
+                console.error('Error getting orders by session:', error);
+              }
+            }
+          }
+
+          // Filter by user's store if not admin
+          if (userStoreId && storeId !== userStoreId) {
+            return null;
+          }
+
           return {
             id: pi.id,
             stripeType: 'payment_intent',
+            storeId: storeId || null, // Add storeId to the transaction
             amount: pi.amount / 100, // Convert from cents to dollars
             currency: pi.currency.toUpperCase(),
             status: pi.status === 'succeeded' ? 'completed' : 
@@ -672,6 +851,9 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
             updatedAt: new Date(pi.created * 1000).toISOString(), // Use created since updated may not exist
           };
         });
+
+        const paymentIntentResults = await Promise.all(paymentIntentPromises);
+        transactions = paymentIntentResults.filter(t => t !== null) as any[];
       }
 
       return res.json({
