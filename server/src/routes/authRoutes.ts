@@ -67,7 +67,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
  *                 example: "Doe"
  *               role:
  *                 type: string
- *                 enum: [customer, admin, owner]
+ *                 enum: [customer]
  *                 example: "customer"
  *     responses:
  *       201:

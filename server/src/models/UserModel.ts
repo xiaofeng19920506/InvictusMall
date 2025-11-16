@@ -10,7 +10,7 @@ export interface User {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  role: "customer" | "admin" | "owner";
+  role: "customer";
   isActive: boolean;
   emailVerified: boolean;
   avatar?: string;
@@ -403,7 +403,7 @@ export class UserModel {
         first_name VARCHAR(100) NOT NULL,
         last_name VARCHAR(100) NOT NULL,
         phone_number VARCHAR(20) NOT NULL,
-        role ENUM('customer', 'admin', 'owner') DEFAULT 'customer',
+        role ENUM('customer') DEFAULT 'customer',
         is_active BOOLEAN DEFAULT false,
         email_verified BOOLEAN DEFAULT false,
         avatar VARCHAR(500) NULL,
