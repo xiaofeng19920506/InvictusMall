@@ -89,12 +89,33 @@ class AuthService {
     axios.defaults.baseURL = this.baseUrl;
     axios.defaults.withCredentials = true; // Include cookies
     axios.defaults.headers.common['Content-Type'] = 'application/json';
+    
+    // Add request interceptor to include Bearer token from localStorage
+    axios.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem('staff_auth_token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
   }
 
   async login(credentials: LoginRequest): Promise<AuthResponse> {
     try {
       const response = await axios.post('/api/staff/login', credentials);
-      return response.data;
+      const data = response.data;
+      
+      // Store token in localStorage if provided (fallback for when cookies don't work)
+      if (data.token) {
+        localStorage.setItem('staff_auth_token', data.token);
+      }
+      
+      return data;
     } catch (error: any) {
       if (error.response?.data) {
         return error.response.data;
@@ -118,8 +139,12 @@ class AuthService {
   async logout(): Promise<AuthResponse> {
     try {
       const response = await axios.post('/api/staff/logout');
+      // Clear token from localStorage on logout
+      localStorage.removeItem('staff_auth_token');
       return response.data;
     } catch (error: any) {
+      // Clear token even if logout request fails
+      localStorage.removeItem('staff_auth_token');
       if (error.response?.data) {
         return error.response.data;
       }
