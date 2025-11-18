@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { storeApi, categoryApi, type Category } from "../../services/api";
+import { storeApi, categoryApi, staffApi, type Category, type Staff } from "../../services/api";
 import { useNotification } from "../../contexts/NotificationContext";
+import { useAuth } from "../../contexts/AuthContext";
 import type {
   Store,
   CreateStoreRequest,
@@ -45,15 +46,23 @@ interface StoreFormState {
   isActive: boolean;
   imageUrl: string;
   imagePreview: string;
+  ownerId: string;
 }
 
 const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
   const { t } = useTranslation();
   const { showError, showSuccess, showWarning } = useNotification();
+  const { user } = useAuth();
   const isEditing = Boolean(store);
   const titleId = isEditing
     ? "store-modal-title-edit"
     : "store-modal-title-create";
+  
+  // Check if user can edit owner (admin or the owner themselves)
+  const canEditOwner = user && (
+    user.role === "admin" || 
+    (user.role === "owner" && store?.owner?.id === user.id)
+  );
 
   const [formData, setFormData] = useState<StoreFormState>(() => ({
     name: store?.name ?? "",
@@ -72,12 +81,15 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     isActive: store?.isActive ?? true,
     imageUrl: store?.imageUrl ?? "",
     imagePreview: store?.imageUrl ?? "",
+    ownerId: store?.owner?.id ?? "",
   }));
 
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [availableOwners, setAvailableOwners] = useState<Staff[]>([]);
+  const [loadingOwners, setLoadingOwners] = useState(false);
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -143,6 +155,30 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     };
 
     fetchCategories();
+  }, [showError]);
+
+  // Fetch available owners (staff with owner role) when creating or editing a store
+  useEffect(() => {
+    const fetchOwners = async () => {
+      setLoadingOwners(true);
+      try {
+        const response = await staffApi.getAllStaff();
+        if (response.success && response.data) {
+          // Filter to only show staff with 'owner' role
+          const owners = response.data.filter(
+            (staff) => staff.role === "owner" && staff.isActive
+          );
+          setAvailableOwners(owners);
+        }
+      } catch (error) {
+        console.error("Error fetching owners:", error);
+        showError("Failed to load owners. Please try again.");
+      } finally {
+        setLoadingOwners(false);
+      }
+    };
+
+    fetchOwners();
   }, [showError]);
 
   const updateLocationField = (field: keyof Location, value: string) => {
@@ -242,6 +278,12 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       return;
     }
 
+    // Validate owner is required when creating a new store
+    if (!isEditing && !formData.ownerId) {
+      showWarning(t("storeModal.actions.ownerRequired") || "Store owner is required");
+      return;
+    }
+
     const sanitizedLocation: Location = {
       streetAddress: location.streetAddress.trim(),
       aptNumber: location.aptNumber?.trim() || undefined,
@@ -272,8 +314,19 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           isVerified: formData.isVerified,
           isActive: formData.isActive,
         };
+        
+        // Only include ownerId if user can edit owner and it's different from current
+        if (canEditOwner && formData.ownerId !== store.owner?.id) {
+          updateData.ownerId = formData.ownerId || undefined;
+        }
+        
         await storeApi.updateStore(store.id, updateData);
       } else {
+        if (!formData.ownerId) {
+          showError(t("storeModal.actions.ownerRequired") || "Store owner is required");
+          return;
+        }
+
         const createData: CreateStoreRequest = {
           ...baseData,
           imageUrl: "/images/default-store.png",
@@ -284,6 +337,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           discount: undefined,
           isVerified: false,
           isActive: true,
+          ownerId: formData.ownerId,
         };
         await storeApi.createStore(createData);
       }
@@ -382,6 +436,43 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
                 required
               />
             </div>
+
+            {(!isEditing || canEditOwner) && (
+              <div className="form-group">
+                <label className="form-label">
+                  {t("storeModal.fields.owner")}
+                  {!isEditing && <span className="text-red-500 ml-1">*</span>}
+                </label>
+                <select
+                  value={formData.ownerId}
+                  onChange={(event) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      ownerId: event.target.value,
+                    }))
+                  }
+                  className="form-input form-select"
+                  disabled={loadingOwners}
+                  required={!isEditing}
+                >
+                  <option value="">
+                    {loadingOwners
+                      ? t("storeModal.fields.loadingOwners")
+                      : t("storeModal.fields.selectOwner")}
+                  </option>
+                  {availableOwners.map((owner) => (
+                    <option key={owner.id} value={owner.id}>
+                      {owner.firstName} {owner.lastName} ({owner.email})
+                    </option>
+                  ))}
+                </select>
+                {availableOwners.length === 0 && !loadingOwners && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    {t("storeModal.fields.noOwnersAvailable")}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="form-group">
               <label className="form-label">

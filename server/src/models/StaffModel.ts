@@ -42,6 +42,7 @@ export interface UpdateStaffRequest {
   department?: string;
   employeeId?: string;
   isActive?: boolean;
+  storeId?: string;
 }
 
 export class StaffModel {
@@ -194,6 +195,44 @@ export class StaffModel {
     }));
   }
 
+  async getOwnerByStoreId(storeId: string): Promise<Staff | null> {
+    const query = `
+      SELECT 
+        id, email, first_name, last_name, phone_number, role, 
+        department, employee_id, store_id, is_active, email_verified, 
+        created_at, updated_at, last_login_at, created_by
+      FROM staff 
+      WHERE store_id = ? AND role = 'owner' AND is_active = true
+      LIMIT 1
+    `;
+
+    const [rows] = await pool.execute(query, [storeId]);
+    const staffArray = rows as any[];
+
+    if (staffArray.length === 0) {
+      return null;
+    }
+
+    const staff = staffArray[0];
+    return {
+      id: staff.id,
+      email: staff.email,
+      firstName: staff.first_name,
+      lastName: staff.last_name,
+      phoneNumber: staff.phone_number,
+      role: staff.role,
+      department: staff.department,
+      employeeId: staff.employee_id,
+      storeId: staff.store_id || undefined,
+      isActive: staff.is_active,
+      emailVerified: staff.email_verified,
+      createdAt: staff.created_at,
+      updatedAt: staff.updated_at,
+      lastLoginAt: staff.last_login_at,
+      createdBy: staff.created_by
+    };
+  }
+
   async getAllStaffWithPagination(options?: { limit?: number; offset?: number }): Promise<{ staff: Staff[]; total: number }> {
     // Get total count
     const [countResult] = await pool.execute(`
@@ -279,6 +318,10 @@ export class StaffModel {
     if (updateData.isActive !== undefined) {
       fields.push('is_active = ?');
       values.push(updateData.isActive);
+    }
+    if (updateData.storeId !== undefined) {
+      fields.push('store_id = ?');
+      values.push(updateData.storeId);
     }
 
     if (fields.length === 0) {

@@ -6,6 +6,7 @@
       "products": "Productos",
       "categories": "Categorías",
       "orders": "Pedidos",
+      "inventory": "Gestión de Inventario",
       "users": "Usuarios",
     "analytics": "Analítica",
     "registerStaff": "Registrar Personal",
@@ -40,6 +41,7 @@
       "products": "Productos",
       "categories": "Categorías",
       "orders": "Pedidos",
+      "inventory": "Gestión de Inventario",
       "users": "Usuarios",
     "analytics": "Analítica",
     "registerStaff": "Registrar Personal",
@@ -813,6 +815,50 @@
       "shippingAddress": "Dirección de Envío",
       "paymentInfo": "Información de Pago",
       "paymentMethod": "Método de Pago"
+    }
+  },
+  "inventory": {
+    "title": "Gestión de Inventario",
+    "subtitle": "Rastrear y gestionar los niveles de stock de productos",
+    "refresh": "Actualizar",
+    "selectStore": "Seleccionar Tienda",
+    "selectStorePlaceholder": "-- Seleccionar una tienda --",
+    "searchPlaceholder": "Buscar productos...",
+    "loading": "Cargando inventario...",
+    "lowStock": {
+      "title": "Alerta de Stock Bajo",
+      "message": "{{count}} producto(s) tienen stock bajo (≤ 10 unidades)"
+    },
+    "empty": {
+      "noStore": "Por favor seleccione una tienda para ver el inventario",
+      "noProducts": "No se encontraron productos para esta tienda"
+    },
+    "table": {
+      "title": "Inventario ({{count}})",
+      "image": "Imagen",
+      "name": "Nombre",
+      "price": "Precio",
+      "stock": "Stock",
+      "category": "Categoría",
+      "status": "Estado",
+      "actions": "Acciones",
+      "currencyFormat": "${{price}}",
+      "noCategory": "—"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "actions": {
+      "editStock": "Editar Stock",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "updateSuccess": "Stock actualizado exitosamente",
+      "updateError": "Error al actualizar el stock",
+      "invalidStock": "La cantidad de stock debe ser 0 o mayor",
+      "productNotFound": "Producto no encontrado",
+      "loadError": "Error al cargar el inventario",
+      "loadStoresError": "Error al cargar las tiendas"
     }
   }
 }

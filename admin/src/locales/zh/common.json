@@ -6,6 +6,7 @@
       "products": "商品管理",
       "categories": "分类管理",
       "orders": "订单管理",
+      "inventory": "库存管理",
       "users": "用户管理",
       "settings": "设置",
       "systemLogs": "系统日志",
@@ -38,6 +39,7 @@
     "products": "商品管理",
     "categories": "分类管理",
     "orders": "订单管理",
+    "inventory": "库存管理",
     "users": "用户管理",
     "settings": "设置",
     "systemLogs": "系统日志",
@@ -833,6 +835,50 @@
       "shippingAddress": "配送地址",
       "paymentInfo": "支付信息",
       "paymentMethod": "支付方式"
+    }
+  },
+  "inventory": {
+    "title": "库存管理",
+    "subtitle": "跟踪和管理产品库存水平",
+    "refresh": "刷新",
+    "selectStore": "选择商店",
+    "selectStorePlaceholder": "-- 选择商店 --",
+    "searchPlaceholder": "搜索产品...",
+    "loading": "加载库存中...",
+    "lowStock": {
+      "title": "低库存警报",
+      "message": "{{count}} 个产品库存不足（≤ 10 单位）"
+    },
+    "empty": {
+      "noStore": "请选择商店以查看库存",
+      "noProducts": "此商店未找到产品"
+    },
+    "table": {
+      "title": "库存 ({{count}})",
+      "image": "图片",
+      "name": "名称",
+      "price": "价格",
+      "stock": "库存",
+      "category": "类别",
+      "status": "状态",
+      "actions": "操作",
+      "currencyFormat": "¥{{price}}",
+      "noCategory": "—"
+    },
+    "status": {
+      "active": "激活",
+      "inactive": "未激活"
+    },
+    "actions": {
+      "editStock": "编辑库存",
+      "save": "保存",
+      "cancel": "取消",
+      "updateSuccess": "库存更新成功",
+      "updateError": "更新库存失败",
+      "invalidStock": "库存数量必须为 0 或更大",
+      "productNotFound": "未找到产品",
+      "loadError": "加载库存失败",
+      "loadStoresError": "加载商店失败"
     }
   }
 }

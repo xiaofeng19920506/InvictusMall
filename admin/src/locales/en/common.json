@@ -6,6 +6,7 @@
       "products": "Products",
       "categories": "Categories",
       "orders": "Orders",
+      "inventory": "Inventory Management",
       "users": "Users",
       "settings": "Settings",
       "systemLogs": "System Logs",
@@ -38,6 +39,7 @@
       "products": "Products",
       "categories": "Categories",
       "orders": "Orders",
+      "inventory": "Inventory Management",
       "users": "Users",
       "settings": "Settings",
       "systemLogs": "System Logs",
@@ -103,7 +105,11 @@
       "discount": "Discount",
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
-      "active": "Active Store"
+      "active": "Active Store",
+      "owner": "Store Owner",
+      "selectOwner": "-- Select owner --",
+      "loadingOwners": "Loading owners...",
+      "noOwnersAvailable": "No owners available. Please create an owner account first."
     },
     "actions": {
       "invalidImageType": "Please select an image file.",
@@ -111,6 +117,7 @@
       "uploadSuccess": "Image uploaded successfully.",
       "uploadFail": "Failed to upload image. Please try again.",
       "locationMissing": "Please fill in all required location fields.",
+      "ownerRequired": "Store owner is required.",
       "saveError": "Failed to save store. Please try again.",
       "removeCategory": "Remove category {{category}}",
       "saving": "Saving...",
@@ -844,6 +851,50 @@
       "shippingAddress": "Shipping Address",
       "paymentInfo": "Payment Information",
       "paymentMethod": "Payment Method"
+    }
+  },
+  "inventory": {
+    "title": "Inventory Management",
+    "subtitle": "Track and manage product stock levels",
+    "refresh": "Refresh",
+    "selectStore": "Select Store",
+    "selectStorePlaceholder": "-- Select a store --",
+    "searchPlaceholder": "Search products...",
+    "loading": "Loading inventory...",
+    "lowStock": {
+      "title": "Low Stock Alert",
+      "message": "{{count}} product(s) are running low on stock (≤ 10 units)"
+    },
+    "empty": {
+      "noStore": "Please select a store to view inventory",
+      "noProducts": "No products found for this store"
+    },
+    "table": {
+      "title": "Inventory ({{count}})",
+      "image": "Image",
+      "name": "Name",
+      "price": "Price",
+      "stock": "Stock",
+      "category": "Category",
+      "status": "Status",
+      "actions": "Actions",
+      "currencyFormat": "${{price}}",
+      "noCategory": "—"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "editStock": "Edit Stock",
+      "save": "Save",
+      "cancel": "Cancel",
+      "updateSuccess": "Stock updated successfully",
+      "updateError": "Failed to update stock",
+      "invalidStock": "Stock quantity must be 0 or greater",
+      "productNotFound": "Product not found",
+      "loadError": "Failed to load inventory",
+      "loadStoresError": "Failed to load stores"
     }
   }
 }

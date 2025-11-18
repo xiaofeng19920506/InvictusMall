@@ -35,7 +35,8 @@ export const validateStore = [
   body('location.*.country').notEmpty().withMessage('Country is required'),
   body('productsCount').optional().isInt({ min: 0 }).withMessage('Products count must be a positive integer'),
   body('establishedYear').isInt({ min: 1900, max: new Date().getFullYear() }).withMessage('Established year must be between 1900 and current year'),
-  body('discount').optional().isString().withMessage('Discount must be a string')
+  body('discount').optional().isString().withMessage('Discount must be a string'),
+  body('ownerId').notEmpty().withMessage('Store owner is required').isUUID().withMessage('Owner ID must be a valid UUID')
 ];
 
 export const validateUpdateStore = [
