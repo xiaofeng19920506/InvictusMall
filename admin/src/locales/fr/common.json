@@ -6,6 +6,7 @@
       "products": "Produits",
       "categories": "Catégories",
       "orders": "Commandes",
+      "inventory": "Gestion des Stocks",
       "users": "Utilisateurs",
     "analytics": "Analyses",
     "registerStaff": "Enregistrer le personnel",
@@ -40,6 +41,7 @@
       "products": "Produits",
       "categories": "Catégories",
       "orders": "Commandes",
+      "inventory": "Gestion des Stocks",
       "users": "Utilisateurs",
     "analytics": "Analyses",
     "registerStaff": "Enregistrer le personnel",
@@ -795,6 +797,50 @@
       "shippingAddress": "Adresse de Livraison",
       "paymentInfo": "Informations de Paiement",
       "paymentMethod": "Méthode de Paiement"
+    }
+  },
+  "inventory": {
+    "title": "Gestion des Stocks",
+    "subtitle": "Suivre et gérer les niveaux de stock des produits",
+    "refresh": "Actualiser",
+    "selectStore": "Sélectionner un Magasin",
+    "selectStorePlaceholder": "-- Sélectionner un magasin --",
+    "searchPlaceholder": "Rechercher des produits...",
+    "loading": "Chargement de l'inventaire...",
+    "lowStock": {
+      "title": "Alerte de Stock Faible",
+      "message": "{{count}} produit(s) ont un stock faible (≤ 10 unités)"
+    },
+    "empty": {
+      "noStore": "Veuillez sélectionner un magasin pour voir l'inventaire",
+      "noProducts": "Aucun produit trouvé pour ce magasin"
+    },
+    "table": {
+      "title": "Inventaire ({{count}})",
+      "image": "Image",
+      "name": "Nom",
+      "price": "Prix",
+      "stock": "Stock",
+      "category": "Catégorie",
+      "status": "Statut",
+      "actions": "Actions",
+      "currencyFormat": "{{price}} €",
+      "noCategory": "—"
+    },
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "actions": {
+      "editStock": "Modifier le Stock",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "updateSuccess": "Stock mis à jour avec succès",
+      "updateError": "Échec de la mise à jour du stock",
+      "invalidStock": "La quantité de stock doit être supérieure ou égale à 0",
+      "productNotFound": "Produit introuvable",
+      "loadError": "Échec du chargement de l'inventaire",
+      "loadStoresError": "Échec du chargement des magasins"
     }
   }
 }

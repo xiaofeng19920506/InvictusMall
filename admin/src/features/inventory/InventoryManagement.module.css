@@ -1,0 +1,223 @@
+.container {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 1rem;
+  flex: 1;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  padding: 1rem;
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.searchInput {
+  padding-left: 2.5rem;
+}
+
+.storeSelector {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.alertCard {
+  background-color: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-left: 4px solid #f59e0b;
+}
+
+.alertContent {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+}
+
+.alertIcon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.alertIconSmall {
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-left: 0.25rem;
+  color: #f59e0b;
+}
+
+.productsContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+.fullHeightCard {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.fullHeightTableWrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fullHeightTableWrapper > .table {
+  flex: 1;
+}
+
+.productImage {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: 0.375rem;
+}
+
+.productCell {
+  display: flex;
+  flex-direction: column;
+}
+
+.productName {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.productDescription {
+  font-size: 0.875rem;
+  color: #6b7280;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lowStockRow {
+  background-color: #fef3c7;
+}
+
+.stockDisplay {
+  display: flex;
+  align-items: center;
+}
+
+.stockBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  background-color: #d1fae5;
+  color: #065f46;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.lowStockBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  background-color: #fee2e2;
+  color: #991b1b;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.stockEdit {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stockInput {
+  width: 80px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.stockActions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 1rem;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.emptyIcon {
+  width: 4rem;
+  height: 4rem;
+  color: #d1d5db;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchWrapper {
+    max-width: 100%;
+  }
+
+  .stockEdit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stockInput {
+    width: 100%;
+  }
+}
+

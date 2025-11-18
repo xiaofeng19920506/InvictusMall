@@ -6,6 +6,7 @@
       "products": "상품 관리",
       "categories": "카테고리",
       "orders": "주문 관리",
+      "inventory": "재고 관리",
     "users": "사용자 관리",
     "analytics": "분석",
     "registerStaff": "직원 등록",
@@ -40,6 +41,7 @@
       "products": "상품 관리",
       "categories": "카테고리",
       "orders": "주문 관리",
+      "inventory": "재고 관리",
     "users": "사용자 관리",
     "analytics": "분석",
     "registerStaff": "직원 등록",
@@ -795,6 +797,50 @@
       "shippingAddress": "배송 주소",
       "paymentInfo": "결제 정보",
       "paymentMethod": "결제 방법"
+    }
+  },
+  "inventory": {
+    "title": "재고 관리",
+    "subtitle": "제품 재고 수준 추적 및 관리",
+    "refresh": "새로고침",
+    "selectStore": "매장 선택",
+    "selectStorePlaceholder": "-- 매장 선택 --",
+    "searchPlaceholder": "제품 검색...",
+    "loading": "재고 로딩 중...",
+    "lowStock": {
+      "title": "재고 부족 경고",
+      "message": "{{count}}개 제품의 재고가 부족합니다 (≤ 10개)"
+    },
+    "empty": {
+      "noStore": "재고를 보려면 매장을 선택하세요",
+      "noProducts": "이 매장에 제품이 없습니다"
+    },
+    "table": {
+      "title": "재고 ({{count}})",
+      "image": "이미지",
+      "name": "이름",
+      "price": "가격",
+      "stock": "재고",
+      "category": "카테고리",
+      "status": "상태",
+      "actions": "작업",
+      "currencyFormat": "₩{{price}}",
+      "noCategory": "—"
+    },
+    "status": {
+      "active": "활성",
+      "inactive": "비활성"
+    },
+    "actions": {
+      "editStock": "재고 편집",
+      "save": "저장",
+      "cancel": "취소",
+      "updateSuccess": "재고가 성공적으로 업데이트되었습니다",
+      "updateError": "재고 업데이트 실패",
+      "invalidStock": "재고 수량은 0 이상이어야 합니다",
+      "productNotFound": "제품을 찾을 수 없습니다",
+      "loadError": "재고 로드 실패",
+      "loadStoresError": "매장 로드 실패"
     }
   }
 }

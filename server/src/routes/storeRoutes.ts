@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { StoreService } from "../services/storeService";
 import { StoreModel } from "../models/StoreModel";
+import { StaffModel } from "../models/StaffModel";
 import {
   validateStore,
   validateUpdateStore,
@@ -88,10 +89,38 @@ router.get("/", async (req: Request, res: Response) => {
         offset: offset !== undefined ? parseInt(offset as string) : undefined,
       });
 
+      // Add owner information to each store
+      const staffModel = new StaffModel();
+      const storesWithOwner = await Promise.all(
+        stores.map(async (store) => {
+          try {
+            const owner = await staffModel.getOwnerByStoreId(store.id);
+            const ownerInfo = owner ? {
+              id: owner.id,
+              firstName: owner.firstName,
+              lastName: owner.lastName,
+              email: owner.email,
+              phoneNumber: owner.phoneNumber,
+              role: owner.role,
+            } : null;
+            return {
+              ...store,
+              owner: ownerInfo,
+            } as any;
+          } catch (error) {
+            // Silently fail - owner info is optional
+            return {
+              ...store,
+              owner: null,
+            } as any;
+          }
+        })
+      );
+
       return res.json({
         success: true,
-        data: stores,
-        count: stores.length,
+        data: storesWithOwner,
+        count: storesWithOwner.length,
         total,
       });
     }
@@ -106,10 +135,38 @@ router.get("/", async (req: Request, res: Response) => {
       stores = await storeService.getAllStores();
     }
 
+    // Add owner information to each store
+    const staffModel = new StaffModel();
+    const storesWithOwner = await Promise.all(
+      stores.map(async (store) => {
+        try {
+          const owner = await staffModel.getOwnerByStoreId(store.id);
+          const ownerInfo = owner ? {
+            id: owner.id,
+            firstName: owner.firstName,
+            lastName: owner.lastName,
+            email: owner.email,
+            phoneNumber: owner.phoneNumber,
+            role: owner.role,
+          } : null;
+          return {
+            ...store,
+            owner: ownerInfo,
+          } as any;
+        } catch (error) {
+          // Silently fail - owner info is optional
+          return {
+            ...store,
+            owner: null,
+          } as any;
+        }
+      })
+    );
+
     return res.json({
       success: true,
-      data: stores,
-      count: stores.length,
+      data: storesWithOwner,
+      count: storesWithOwner.length,
     });
   } catch (error) {
     console.error("Error fetching stores:", error);
@@ -254,9 +311,34 @@ router.get("/:id", async (req: Request, res: Response) => {
     }
 
     const store = await storeService.getStoreById(id);
+    
+    // Get store owner information
+    let owner = null;
+    let ownerInfo = null;
+    try {
+      const staffModel = new StaffModel();
+      owner = await staffModel.getOwnerByStoreId(id);
+      if (owner) {
+        ownerInfo = {
+          id: owner.id,
+          firstName: owner.firstName,
+          lastName: owner.lastName,
+          email: owner.email,
+          phoneNumber: owner.phoneNumber,
+          role: owner.role,
+        };
+      }
+    } catch (error) {
+      // Silently fail - owner info is optional
+      console.warn("Failed to fetch store owner:", error);
+    }
+    
     return res.json({
       success: true,
-      data: store,
+      data: {
+        ...store,
+        owner: ownerInfo,
+      },
     });
   } catch (error) {
     console.error("Error fetching store by ID:", error);
@@ -347,7 +429,62 @@ router.post(
   handleValidationErrors,
   async (req: Request, res: Response) => {
     try {
-      const store = await storeService.createStore(req.body);
+      const { ownerId, ...storeData } = req.body;
+      
+      // Validate owner exists and has the 'owner' role before creating store
+      const staffModel = new StaffModel();
+      const owner = await staffModel.getStaffById(ownerId);
+      
+      if (!owner) {
+        return res.status(400).json({
+          success: false,
+          message: "Store owner not found",
+        });
+      }
+      
+      if (owner.role !== 'owner') {
+        return res.status(400).json({
+          success: false,
+          message: "Selected staff member must have the 'owner' role",
+        });
+      }
+
+      const store = await storeService.createStore(storeData);
+
+      // Link the owner to the store
+      try {
+        await staffModel.updateStaff(ownerId, { storeId: store.id });
+      } catch (ownerError) {
+        // If linking fails, we should rollback the store creation
+        // For now, log the error - in production you might want to implement transaction rollback
+        console.error("Error linking owner to store:", ownerError);
+        return res.status(500).json({
+          success: false,
+          message: "Store created but failed to link owner. Please update the store manually.",
+          error: ownerError instanceof Error ? ownerError.message : "Unknown error",
+        });
+      }
+
+      // Fetch the created store with owner information included
+      let storeWithOwner = { ...store };
+      try {
+        const owner = await staffModel.getOwnerByStoreId(store.id);
+        const ownerInfo = owner ? {
+          id: owner.id,
+          firstName: owner.firstName,
+          lastName: owner.lastName,
+          email: owner.email,
+          phoneNumber: owner.phoneNumber,
+          role: owner.role,
+        } : null;
+        storeWithOwner = {
+          ...store,
+          owner: ownerInfo,
+        } as any;
+      } catch (error) {
+        // Silently fail - owner info is optional
+        console.warn("Failed to fetch store owner after creation:", error);
+      }
 
       // Log the activity
       const userId = getUserIdFromRequest(req as AuthenticatedRequest);
@@ -363,12 +500,13 @@ router.post(
           categories: store.category,
           rating: store.rating,
           isVerified: store.isVerified,
+          ownerId: ownerId || null,
         },
       });
 
       return res.status(201).json({
         success: true,
-        data: store,
+        data: storeWithOwner,
         message: "Store created successfully",
       });
     } catch (error) {
@@ -457,7 +595,64 @@ router.put(
         });
       }
 
-      const store = await storeService.updateStore(id, req.body);
+      const { ownerId, ...storeUpdateData } = req.body;
+      const store = await storeService.updateStore(id, storeUpdateData);
+
+      // Handle owner change if ownerId is provided
+      if (ownerId !== undefined) {
+        try {
+          const staffModel = new StaffModel();
+          
+          // Get current owner
+          const currentOwner = await staffModel.getOwnerByStoreId(id);
+          
+          // If there's a current owner and it's different from the new owner, unlink the current owner
+          if (currentOwner && currentOwner.id !== ownerId) {
+            await staffModel.updateStaff(currentOwner.id, { storeId: undefined });
+          }
+          
+          // If a new owner is specified, link them to the store
+          if (ownerId) {
+            const newOwner = await staffModel.getStaffById(ownerId);
+            if (newOwner) {
+              // Verify the new owner has the 'owner' role
+              if (newOwner.role !== 'owner') {
+                console.warn(`Staff member ${ownerId} is not an owner, skipping store assignment`);
+              } else {
+                // Update the new owner's storeId to link them to the store
+                await staffModel.updateStaff(ownerId, { storeId: id });
+              }
+            } else {
+              console.warn(`Owner with ID ${ownerId} not found, skipping store assignment`);
+            }
+          }
+        } catch (ownerError) {
+          // Log the error but don't fail the store update
+          console.error("Error updating store owner:", ownerError);
+        }
+      }
+
+      // Fetch the updated store with owner information included
+      let storeWithOwner = { ...store };
+      try {
+        const staffModel = new StaffModel();
+        const owner = await staffModel.getOwnerByStoreId(id);
+        const ownerInfo = owner ? {
+          id: owner.id,
+          firstName: owner.firstName,
+          lastName: owner.lastName,
+          email: owner.email,
+          phoneNumber: owner.phoneNumber,
+          role: owner.role,
+        } : null;
+        storeWithOwner = {
+          ...store,
+          owner: ownerInfo,
+        } as any;
+      } catch (error) {
+        // Silently fail - owner info is optional
+        console.warn("Failed to fetch store owner after update:", error);
+      }
 
       // Log the activity
       const userId = getUserIdFromRequest(req as AuthenticatedRequest);
@@ -474,12 +669,13 @@ router.put(
           categories: store.category,
           rating: store.rating,
           isVerified: store.isVerified,
+          ownerId: ownerId !== undefined ? ownerId : undefined,
         },
       });
 
       return res.json({
         success: true,
-        data: store,
+        data: storeWithOwner,
         message: "Store updated successfully",
       });
     } catch (error) {

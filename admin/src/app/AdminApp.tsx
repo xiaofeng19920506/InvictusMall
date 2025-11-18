@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import AdminLayout from "../shared/components/AdminLayout";
 import { useAuth } from "../contexts/AuthContext";
+import { authService } from "../services/auth";
 import {
   LazyDashboard,
   LazyStoresManagement,
@@ -11,6 +12,7 @@ import {
   LazyProductsManagement,
   LazyCategoriesManagement,
   LazyOrdersManagement,
+  LazyInventoryManagement,
 } from "./routes";
 import type { AdminPageKey } from "./types";
 
@@ -19,8 +21,16 @@ const AdminApp = () => {
   const { user } = useAuth();
 
   // Redirect non-admin users away from categories page
+  // Redirect non-authenticated or unauthorized users away from protected pages
   useEffect(() => {
-    if (currentPage === "categories" && user && user.role !== "admin") {
+    if (!user) return;
+    
+    if (currentPage === "categories" && user.role !== "admin") {
+      setCurrentPage("dashboard");
+    }
+    
+    // Check inventory page access - requires stores permission
+    if (currentPage === "inventory" && !authService.hasPermission(user, "stores")) {
       setCurrentPage("dashboard");
     }
   }, [currentPage, user]);
@@ -50,10 +60,16 @@ const AdminApp = () => {
         return <LazySettings />;
       case "transactions":
         return <LazyTransactionsManagement />;
+      case "inventory":
+        // Only allow access if user has stores permission
+        if (user && authService.hasPermission(user, "stores")) {
+          return <LazyInventoryManagement />;
+        }
+        return <LazyDashboard onNavigate={setCurrentPage} />;
       default:
         return <LazyDashboard onNavigate={setCurrentPage} />;
     }
-  }, [currentPage]);
+  }, [currentPage, user]);
 
   return (
     <AdminLayout currentPage={currentPage} onPageChange={setCurrentPage}>

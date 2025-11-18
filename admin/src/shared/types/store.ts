@@ -7,6 +7,15 @@ export interface Location {
   country: string;
 }
 
+export interface StoreOwner {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  role: string;
+}
+
 export interface Store {
   id: string;
   name: string;
@@ -23,6 +32,7 @@ export interface Store {
   discount?: string;
   createdAt: string;
   updatedAt: string;
+  owner?: StoreOwner | null;
 }
 
 export interface CreateStoreRequest {
@@ -38,9 +48,12 @@ export interface CreateStoreRequest {
   isActive?: boolean;
   productsCount?: number;
   discount?: string;
+  ownerId: string;
 }
 
-export interface UpdateStoreRequest extends Partial<CreateStoreRequest> {}
+export interface UpdateStoreRequest extends Partial<CreateStoreRequest> {
+  ownerId?: string;
+}
 
 export interface ActivityLog {
   id: string;

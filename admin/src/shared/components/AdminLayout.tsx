@@ -15,6 +15,7 @@ import {
   Package,
   FolderTree,
   ShoppingBag,
+  Warehouse,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
@@ -71,6 +72,13 @@ const NAV_ITEMS: NavigationItem[] = [
     icon: ShoppingBag,
     translationKey: "nav.orders",
     pageTitleKey: "pages.orders",
+  },
+  {
+    id: "inventory",
+    permission: "stores",
+    icon: Warehouse,
+    translationKey: "nav.inventory",
+    pageTitleKey: "pages.inventory",
   },
   {
     id: "users",
