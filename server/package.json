@@ -9,7 +9,6 @@
     "build": "tsc",
     "test": "jest",
     "create-admin": "ts-node scripts/createAdmin.ts",
-    "seed-sample-data": "ts-node scripts/seed-sample-data.ts",
     "seed-categories": "ts-node src/scripts/seedCategories.ts"
   },
   "dependencies": {
@@ -24,7 +23,6 @@
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
-    "crypto": "^1.0.1",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
