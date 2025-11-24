@@ -76,10 +76,6 @@ export default function HomeContent({
     setSearchType(type);
   };
 
-  const handleStoreClick = (store: Store) => {
-    window.location.href = `/stores/${store.id}`;
-  };
-
   const handleRetry = () => {
     refetch();
   };
@@ -139,7 +135,6 @@ export default function HomeContent({
 
         <StoreGrid
           stores={stores}
-          onStoreClick={handleStoreClick}
           loading={isLoading}
         />
       </main>

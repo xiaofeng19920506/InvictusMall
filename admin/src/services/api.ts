@@ -157,12 +157,95 @@ export const storeApi = {
       formData.append("storeId", storeId);
     }
 
+    // Get token from localStorage as fallback (admin uses staff_auth_token)
+    // Also check for user token in case user is logged into client app
+    const staffToken = localStorage.getItem('staff_auth_token');
+    
+    // Try to get user token from cookies
+    let userToken: string | undefined;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/stores/upload-image`, {
+      const cookies = document.cookie.split('; ');
+      const authTokenCookie = cookies.find(row => row.startsWith('auth_token='));
+      if (authTokenCookie) {
+        userToken = authTokenCookie.split('=')[1];
+      }
+    } catch (e) {
+      console.warn('Failed to read auth_token from cookies:', e);
+    }
+    
+    const token = staffToken || userToken;
+    
+    console.log('[Upload] Token sources:', {
+      hasStaffToken: !!staffToken,
+      hasUserToken: !!userToken,
+      hasToken: !!token,
+      tokenLength: token?.length || 0
+    });
+    
+    const headers: HeadersInit = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+      console.log('[Upload] Setting Authorization header with token');
+    } else {
+      console.warn('[Upload] No token found in localStorage or cookies');
+    }
+    // Don't set Content-Type - browser will set it automatically for FormData with boundary
+
+    // Helper function to refresh token
+    const refreshToken = async (): Promise<boolean> => {
+      try {
+        const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+        });
+        
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          console.log('[Upload] Token refreshed successfully');
+          return true;
+        }
+        return false;
+      } catch (refreshError) {
+        console.error('[Upload] Token refresh failed:', refreshError);
+        return false;
+      }
+    };
+
+    try {
+      let response = await fetch(`${API_BASE_URL}/api/stores/upload-image`, {
         method: "POST",
-        credentials: "include",
+        credentials: "include", // Include cookies
+        headers,
         body: formData,
       });
+
+      // If we get 401, try to refresh the token and retry once
+      if (response.status === 401) {
+        console.log('[Upload] Got 401, attempting to refresh token...');
+        const refreshed = await refreshToken();
+        
+        if (refreshed) {
+          // Retry the upload after refreshing token
+          // The refreshed token will be in the cookie, so we don't need to set Authorization header
+          // Just retry with credentials: "include" to send the cookie
+          console.log('[Upload] Retrying upload with refreshed token (cookie will be sent automatically)');
+          
+          // Create a new FormData for retry
+          const retryFormData = new FormData();
+          retryFormData.append("file", file, file.name);
+          retryFormData.append("metadata", JSON.stringify(metadata));
+          if (storeId) {
+            retryFormData.append("storeId", storeId);
+          }
+          
+          // Retry without Authorization header - rely on cookie
+          response = await fetch(`${API_BASE_URL}/api/stores/upload-image`, {
+            method: "POST",
+            credentials: "include", // This will send the refreshed cookie
+            body: retryFormData,
+          });
+        }
+      }
 
       if (!response.ok) {
         let errorMessage = `Failed to upload image (status ${response.status})`;

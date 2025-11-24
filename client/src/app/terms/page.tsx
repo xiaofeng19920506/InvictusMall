@@ -1,4 +1,18 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Service - Invictus Mall | Legal Terms",
+  description: "Read Invictus Mall's Terms of Service to understand the rules and guidelines for using our platform.",
+  openGraph: {
+    title: "Terms of Service - Invictus Mall",
+    description: "Read Invictus Mall's Terms of Service and legal terms.",
+    type: "website",
+  },
+};
+
+// Force static generation for this page
+export const dynamic = 'force-static';
 
 export default function TermsPage() {
   return (

@@ -1,4 +1,18 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy - Invictus Mall | Your Privacy Matters",
+  description: "Read Invictus Mall's Privacy Policy to understand how we collect, use, and protect your personal information.",
+  openGraph: {
+    title: "Privacy Policy - Invictus Mall",
+    description: "Learn how Invictus Mall protects your privacy and personal information.",
+    type: "website",
+  },
+};
+
+// Force static generation for this page
+export const dynamic = 'force-static';
 
 export default function PrivacyPage() {
   return (

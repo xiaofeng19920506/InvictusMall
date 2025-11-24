@@ -58,7 +58,13 @@ const getStaffToken = (req: Request): string | undefined => {
 const verifyJwt = (token: string): any => {
   try {
     return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
+  } catch (error: any) {
+    // Provide more specific error messages
+    if (error.name === 'TokenExpiredError') {
+      throw new AuthError(401, "Token expired. Please log in again.");
+    } else if (error.name === 'JsonWebTokenError') {
+      throw new AuthError(401, "Invalid token format.");
+    }
     throw new AuthError(401, "Invalid or expired token");
   }
 };
@@ -71,18 +77,40 @@ const hydrateUserFromToken = async (
     throw new AuthError(401, "Invalid token payload");
   }
 
-  const user = await userModel.getActiveUserById(decoded.userId);
-  if (!user) {
+  try {
+    const user = await userModel.getActiveUserById(decoded.userId);
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    };
+    req.staff = undefined;
+    req.authType = "user";
+  } catch (error: any) {
+    // If user not found as active, check if user exists but is inactive
+    if (error.message === "User not found") {
+      try {
+        const inactiveUser = await userModel.getUserById(decoded.userId);
+        if (inactiveUser && !inactiveUser.isActive) {
+          throw new AuthError(403, "Account is inactive. Please contact support.");
+        }
+        // User exists but something else is wrong
+        throw new AuthError(401, "Invalid or expired token");
+      } catch (inactiveCheckError: any) {
+        // If getUserById also fails, user doesn't exist
+        if (inactiveCheckError instanceof AuthError) {
+          throw inactiveCheckError;
+        }
+        throw new AuthError(401, "Invalid or expired token");
+      }
+    }
+    // Re-throw if it's already an AuthError
+    if (error instanceof AuthError) {
+      throw error;
+    }
+    // Otherwise, user doesn't exist
     throw new AuthError(401, "Invalid or expired token");
   }
-
-  req.user = {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-  };
-  req.staff = undefined;
-  req.authType = "user";
 };
 
 const hydrateStaffFromToken = async (
@@ -199,18 +227,61 @@ export const authenticateAnyToken = async (
     const userCookieToken = req.cookies?.auth_token;
     const bearerToken = getBearerToken(req);
     
-    // Determine which token to use
-    let token: string | undefined;
+    // Debug logging
+    console.log("[authenticateAnyToken] Token sources:", {
+      hasStaffCookie: !!staffCookieToken,
+      hasUserCookie: !!userCookieToken,
+      hasBearerToken: !!bearerToken,
+      cookies: req.cookies ? Object.keys(req.cookies) : 'no cookies',
+      cookieNames: req.cookies ? Object.keys(req.cookies).join(', ') : 'none',
+      authHeader: req.headers.authorization ? 'present' : 'missing',
+      url: req.url,
+      method: req.method,
+    });
     
-    if (staffCookieToken) {
+    // Determine which token to use
+    // Priority: staff token (cookie or bearer) > bearer token (any) > user token
+    // This ensures admin/staff tokens are preferred over customer tokens
+    let token: string | undefined;
+    let tokenSource: string = 'none';
+    
+    // First, check if bearer token is a staff token (highest priority)
+    if (bearerToken) {
+      try {
+        const decodedBearer = jwt.decode(bearerToken) as any;
+        if (decodedBearer?.type === "staff" || decodedBearer?.staffId) {
+          token = bearerToken;
+          tokenSource = 'bearer (staff)';
+          console.log("[authenticateAnyToken] Using Bearer token (staff) - highest priority");
+        }
+      } catch (decodeError) {
+        // Ignore decode errors, will check other sources
+      }
+    }
+    
+    // If no staff bearer token, check staff cookie
+    if (!token && staffCookieToken) {
       token = staffCookieToken;
-    } else if (userCookieToken) {
-      token = userCookieToken;
-    } else if (bearerToken) {
+      tokenSource = 'staff cookie';
+      console.log("[authenticateAnyToken] Using staff cookie token");
+    }
+    
+    // If still no token, use bearer token (even if it's a user token)
+    if (!token && bearerToken) {
       token = bearerToken;
+      tokenSource = 'bearer (any)';
+      console.log("[authenticateAnyToken] Using Bearer token");
+    }
+    
+    // Last resort: use user cookie token
+    if (!token && userCookieToken) {
+      token = userCookieToken;
+      tokenSource = 'user cookie';
+      console.log("[authenticateAnyToken] Using user cookie token (fallback)");
     }
     
     if (!token) {
+      console.error("[authenticateAnyToken] No token found in request");
       throw new AuthError(401, "Access token required");
     }
     
@@ -218,30 +289,32 @@ export const authenticateAnyToken = async (
     let decoded: any;
     try {
       decoded = verifyJwt(token);
-    } catch (jwtError) {
+    } catch (jwtError: any) {
+      console.error("[authenticateAnyToken] JWT verification failed:", jwtError.message);
       throw new AuthError(401, "Invalid or expired token");
     }
     
-    // Verify based on token type
+    // Verify based on token type - directly hydrate since we already have the decoded token
     if (decoded?.type === "staff" || decoded?.staffId) {
-      // It's a staff token - verify as staff
-      // Set the token in cookies if it came from Bearer header
-      if (!staffCookieToken && bearerToken) {
-        if (!req.cookies) req.cookies = {};
-        req.cookies.staff_auth_token = bearerToken;
+      // It's a staff token - hydrate directly
+      try {
+        await hydrateStaffFromToken(req, decoded);
+        console.log(`[authenticateAnyToken] Authenticated as staff. Role: ${req.user?.role}, ID: ${req.user?.id}`);
+      } catch (error: any) {
+        console.error("[authenticateAnyToken] Staff hydration failed:", error.message);
+        throw error;
       }
-      await verifyStaffToken(req);
-      console.log(`[authenticateAnyToken] Authenticated as staff. Role: ${req.user?.role}, ID: ${req.user?.id}`);
     } else if (decoded?.userId) {
-      // It's a user token - verify as user
-      // Set the token in cookies if it came from Bearer header
-      if (!userCookieToken && bearerToken) {
-        if (!req.cookies) req.cookies = {};
-        req.cookies.auth_token = bearerToken;
+      // It's a user token - hydrate directly
+      try {
+        await hydrateUserFromToken(req, decoded);
+        console.log(`[authenticateAnyToken] Authenticated as user. Role: ${req.user?.role}, ID: ${req.user?.id}`);
+      } catch (error: any) {
+        console.error("[authenticateAnyToken] User hydration failed:", error.message, "userId:", decoded.userId);
+        throw error;
       }
-      await verifyUserToken(req);
-      console.log(`[authenticateAnyToken] Authenticated as user. Role: ${req.user?.role}, ID: ${req.user?.id}`);
     } else {
+      console.error("[authenticateAnyToken] Invalid token payload - missing userId or staffId. Decoded:", JSON.stringify(decoded));
       throw new AuthError(401, "Invalid token payload");
     }
     

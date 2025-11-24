@@ -1,24 +1,16 @@
-"use client";
-
 import { Store } from "@/services/api";
 import { getImageUrl } from "@/utils/imageUtils";
+import Link from "next/link";
 
 interface StoreCardProps {
   store: Store;
-  onClick?: (store: Store) => void;
 }
 
-export default function StoreCard({ store, onClick }: StoreCardProps) {
-  const handleClick = () => {
-    if (onClick) {
-      onClick(store);
-    }
-  };
-
+export default function StoreCard({ store }: StoreCardProps) {
   return (
-    <div
-      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-200 hover:border-orange-500 relative overflow-hidden group"
-      onClick={handleClick}
+    <Link
+      href={`/stores/${store.id}`}
+      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-200 hover:border-orange-500 relative overflow-hidden group block"
     >
       <div className="relative h-48 overflow-hidden">
         <img
@@ -37,6 +29,6 @@ export default function StoreCard({ store, onClick }: StoreCardProps) {
           {store.description}
         </p>
       </div>
-    </div>
+    </Link>
   );
 }

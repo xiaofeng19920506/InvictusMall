@@ -1,15 +1,12 @@
-'use client';
-
 import { Store } from '@/services/api';
 import StoreCard from './StoreCard';
 
 interface StoreGridProps {
   stores: Store[];
-  onStoreClick?: (store: Store) => void;
   loading?: boolean;
 }
 
-export default function StoreGrid({ stores, onStoreClick, loading = false }: StoreGridProps) {
+export default function StoreGrid({ stores, loading = false }: StoreGridProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -49,7 +46,6 @@ export default function StoreGrid({ stores, onStoreClick, loading = false }: Sto
         <StoreCard
           key={store.id}
           store={store}
-          onClick={onStoreClick}
         />
       ))}
     </div>

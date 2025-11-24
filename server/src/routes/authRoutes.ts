@@ -395,7 +395,7 @@ router.post(
         // Continue with login even if update fails
       }
 
-      // Generate JWT token
+      // Generate JWT token (expires in 7 days to match cookie maxAge)
       const token = jwt.sign(
         {
           userId: user.id,
@@ -403,7 +403,7 @@ router.post(
           role: user.role,
         },
         JWT_SECRET as string,
-        { expiresIn: "1h" }
+        { expiresIn: "7d" }
       );
 
       // Log the activity (don't fail login if this fails)
@@ -1796,7 +1796,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
         role: user.role,
       },
       JWT_SECRET as string,
-      { expiresIn: "1h" }
+      { expiresIn: "7d" }
     );
 
     res.cookie("auth_token", refreshedToken, {

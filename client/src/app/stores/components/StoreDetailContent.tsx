@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiService, Store } from "@/services/api";
 import { productService, Product } from "@/services/product";
@@ -9,6 +9,42 @@ import Header from "@/components/common/Header";
 import Link from "next/link";
 import { getImageUrl } from "@/utils/imageUtils";
 import ReservationModal from "./ReservationModal";
+
+function StarRating({ rating, size = "text-lg" }: { rating: number; size?: string }) {
+  // If no rating or rating is 0, show all empty stars
+  if (!rating || rating === 0) {
+    return (
+      <div className="flex">
+        {[...Array(5)].map((_, i) => (
+          <span key={i} className={`${size} text-gray-300`}>
+            ☆
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex">
+      {[...Array(5)].map((_, i) => {
+        const starValue = i + 1;
+        const filled = rating >= starValue;
+        const halfFilled = rating >= starValue - 0.5 && rating < starValue;
+        
+        return (
+          <span
+            key={i}
+            className={`${size} ${
+              filled || halfFilled ? "text-yellow-400" : "text-gray-300"
+            }`}
+          >
+            {filled ? "⭐" : halfFilled ? "⭐" : "☆"}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 function AddToCartButton({
   product,
@@ -64,10 +100,11 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
   const [productsLoading, setProductsLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "overview" | "products" | "services" | "reviews"
-  >("overview");
+    "products" | "services" | "reviews"
+  >("products");
   const [selectedService, setSelectedService] = useState<Product | null>(null);
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
+  const initialTabSet = useRef(false);
 
   // Separate products and services
   const products = allItems.filter(item => item.category === "product" || !item.category);
@@ -83,6 +120,32 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
       fetchProducts();
     }
   }, [storeId]);
+
+  // Set initial tab and handle tab switching when content is unavailable
+  useEffect(() => {
+    if (!productsLoading) {
+      // Set initial tab once based on what's available
+      if (!initialTabSet.current) {
+        if (products.length > 0) {
+          setActiveTab("products");
+        } else if (services.length > 0) {
+          setActiveTab("services");
+        } else {
+          setActiveTab("reviews");
+        }
+        initialTabSet.current = true;
+      } else {
+        // If current tab has no content, switch to an available tab
+        if (activeTab === "products" && products.length === 0) {
+          // Switch to services if available, otherwise reviews
+          setActiveTab(services.length > 0 ? "services" : "reviews");
+        } else if (activeTab === "services" && services.length === 0) {
+          // Switch to products if available, otherwise reviews
+          setActiveTab(products.length > 0 ? "products" : "reviews");
+        }
+      }
+    }
+  }, [products.length, services.length, productsLoading, activeTab]);
 
   const fetchStoreDetails = async () => {
     try {
@@ -194,7 +257,10 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                     )}
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>⭐ {store.rating.toFixed(1)}</span>
+                    <div className="flex items-center gap-1">
+                      <StarRating rating={store.rating} size="text-sm" />
+                      <span>{store.rating.toFixed(1)}</span>
+                    </div>
                     <span>({store.reviewCount} reviews)</span>
                     <span>📍 {store.location}</span>
                   </div>
@@ -208,10 +274,22 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                   <span className="text-gray-500">Category:</span>
                   <span className="ml-2 font-medium">{store.category}</span>
                 </div>
-                <div>
-                  <span className="text-gray-500">Products:</span>
-                  <span className="ml-2 font-medium">{store.productsCount}</span>
-                </div>
+                {!productsLoading && (
+                  <>
+                    {products.length > 0 && (
+                      <div>
+                        <span className="text-gray-500">Products:</span>
+                        <span className="ml-2 font-medium">{products.length}</span>
+                      </div>
+                    )}
+                    {products.length === 0 && services.length > 0 && (
+                      <div>
+                        <span className="text-gray-500">Services:</span>
+                        <span className="ml-2 font-medium">{services.length}</span>
+                      </div>
+                    )}
+                  </>
+                )}
                 <div>
                   <span className="text-gray-500">Established:</span>
                   <span className="ml-2 font-medium">{store.establishedYear}</span>
@@ -233,9 +311,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6" aria-label="Tabs">
               {[
-                { id: "overview", label: "Overview" },
-                { id: "products", label: `Products (${products.length})` },
-                { id: "services", label: `Services (${services.length})` },
+                ...(products.length > 0 ? [{ id: "products", label: `Products (${products.length})` }] : []),
+                ...(services.length > 0 ? [{ id: "services", label: `Services (${services.length})` }] : []),
                 { id: "reviews", label: `Reviews (${store.reviewCount})` },
               ].map((tab) => (
                 <button
@@ -254,76 +331,6 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
           </div>
 
           <div className="p-6">
-            {/* Overview Tab */}
-            {activeTab === "overview" && (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                    About {store.name}
-                  </h3>
-                  <p className="text-gray-700 leading-relaxed">
-                    {store.description}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      Store Information
-                    </h4>
-                    <dl className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <dt className="text-gray-500">Category</dt>
-                        <dd className="font-medium">{store.category}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-gray-500">Location</dt>
-                        <dd className="font-medium">{store.location}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-gray-500">Established</dt>
-                        <dd className="font-medium">{store.establishedYear}</dd>
-                      </div>
-                      <div className="flex justify-between">
-                        <dt className="text-gray-500">Total Products</dt>
-                        <dd className="font-medium">{store.productsCount}</dd>
-                      </div>
-                    </dl>
-                  </div>
-
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      Ratings & Reviews
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-gray-900">
-                          {store.rating.toFixed(1)}
-                        </span>
-                        <div className="flex">
-                          {[...Array(5)].map((_, i) => (
-                            <span
-                              key={i}
-                              className={
-                                i < Math.floor(store.rating)
-                                  ? "text-yellow-400"
-                                  : "text-gray-300"
-                              }
-                            >
-                              ⭐
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        Based on {store.reviewCount} reviews
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Products Tab */}
             {activeTab === "products" && (
               <div>
