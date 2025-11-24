@@ -35,8 +35,23 @@ async function finalizeCheckout(
       ? serializedCookies.map(({ name, value }) => `${name}=${value}`).join("; ")
       : undefined;
 
+  // Check if user has auth cookie - if not, try guest checkout first
+  const hasAuthCookie = cookieHeader?.includes("auth_token");
+  
   try {
-    return await completeCheckoutSessionServer(cookieHeader, sessionId);
+    // Try authenticated checkout first if user has auth cookie
+    if (hasAuthCookie) {
+      try {
+        return await completeCheckoutSessionServer(cookieHeader, sessionId, false);
+      } catch (authError) {
+        // If authenticated checkout fails, try guest checkout
+        console.warn("Authenticated checkout failed, trying guest checkout:", authError);
+        return await completeCheckoutSessionServer(cookieHeader, sessionId, true);
+      }
+    } else {
+      // No auth cookie, try guest checkout
+      return await completeCheckoutSessionServer(cookieHeader, sessionId, true);
+    }
   } catch (error) {
     console.error("Failed to finalize checkout session:", error);
     return {

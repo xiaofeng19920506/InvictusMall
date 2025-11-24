@@ -92,6 +92,58 @@ async function authFetch<T = unknown>(
   }
 }
 
+async function guestFetch<T = unknown>(
+  endpoint: string,
+  init: RequestInit = {}
+): Promise<FetchResult<T>> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(init.headers instanceof Headers
+      ? Object.fromEntries(init.headers.entries())
+      : (init.headers as Record<string, string>) || {}),
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...init,
+      headers,
+      cache: 'no-store',
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const payload = isJson ? await response.json() : undefined;
+
+    if (!response.ok) {
+      const message =
+        (payload &&
+          typeof payload === 'object' &&
+          'message' in payload &&
+          payload.message) ||
+        response.statusText;
+      return {
+        ok: false,
+        status: response.status,
+        data: payload as T,
+        error: typeof message === 'string' ? message : 'Request failed.',
+      };
+    }
+
+    return {
+      ok: true,
+      status: response.status,
+      data: payload as T,
+    };
+  } catch (error) {
+    console.error('guestFetch error:', error);
+    return {
+      ok: false,
+      status: 500,
+      error: error instanceof Error ? error.message : 'Unexpected error',
+    };
+  }
+}
+
 export async function createStripeCheckoutSessionAction(
   payload: CheckoutPayload
 ): Promise<CheckoutSessionResult> {
@@ -115,6 +167,56 @@ export async function createStripeCheckoutSessionAction(
 
   const result = await authFetch<CheckoutSessionResult>(
     '/api/payments/checkout-session',
+    {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!result.ok || !result.data) {
+    return {
+      success: false,
+      message:
+        (result.data && 'message' in result.data ? result.data.message : undefined) ||
+        result.error ||
+        'Failed to start checkout. Please try again.',
+    };
+  }
+
+  return result.data;
+}
+
+export async function createGuestCheckoutSessionAction(
+  payload: CheckoutPayload
+): Promise<CheckoutSessionResult> {
+  if (!payload || !Array.isArray(payload.items) || payload.items.length === 0) {
+    return {
+      success: false,
+      message: 'Your cart is empty.',
+    };
+  }
+
+  const hasValidItems = payload.items.some(
+    (item) => typeof item.quantity === 'number' && item.quantity > 0 && item.price > 0
+  );
+
+  if (!hasValidItems) {
+    return {
+      success: false,
+      message: 'All items in your cart have invalid quantities.',
+    };
+  }
+
+  // Validate guest information
+  if (!payload.guestEmail || !payload.guestFullName || !payload.guestPhoneNumber) {
+    return {
+      success: false,
+      message: 'Guest information is required for guest checkout.',
+    };
+  }
+
+  const result = await guestFetch<CheckoutSessionResult>(
+    '/api/payments/guest-checkout-session',
     {
       method: 'POST',
       body: JSON.stringify(payload),

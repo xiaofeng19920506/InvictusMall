@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Response, Request } from 'express';
 import { OrderModel, CreateOrderRequest } from '../models/OrderModel';
 import {
   authenticateUserToken,
@@ -290,6 +290,199 @@ router.post(
     });
   }
 });
+
+/**
+ * @swagger
+ * /api/orders/guest/track:
+ *   post:
+ *     summary: Track guest orders by email
+ *     tags: [Orders]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "guest@example.com"
+ *     responses:
+ *       200:
+ *         description: Guest orders retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Order'
+ *                 count:
+ *                   type: integer
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  "/guest/track",
+  async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || typeof email !== 'string' || !email.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required to track guest orders'
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid email address'
+        });
+      }
+
+      const orders = await orderModel.getOrdersByGuestEmail(email.trim().toLowerCase());
+
+      return res.json({
+        success: true,
+        data: orders,
+        count: orders.length,
+        message: orders.length > 0 
+          ? `Found ${orders.length} order(s) for this email`
+          : 'No orders found for this email address'
+      });
+    } catch (error) {
+      console.error('Track guest orders error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to track guest orders',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/orders/guest/{id}:
+ *   get:
+ *     summary: Get guest order by ID (no authentication required)
+ *     tags: [Orders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *       - in: query
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: Guest email address for verification
+ *     responses:
+ *       200:
+ *         description: Order retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Order'
+ *       400:
+ *         description: Validation error
+ *       403:
+ *         description: Access denied (email doesn't match)
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  "/guest/:id",
+  async (req: Request, res: Response) => {
+    try {
+      const orderId = req.params.id as string;
+      const email = req.query.email as string;
+
+      if (!orderId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Order ID is required'
+        });
+      }
+
+      if (!email || typeof email !== 'string' || !email.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is required to view guest order'
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Please provide a valid email address'
+        });
+      }
+
+      const order = await orderModel.getOrderById(orderId);
+
+      // Verify that this is a guest order and email matches
+      if (order.userId !== null) {
+        return res.status(403).json({
+          success: false,
+          message: 'This is not a guest order'
+        });
+      }
+
+      if (!order.guestEmail || order.guestEmail.toLowerCase() !== email.trim().toLowerCase()) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. Email does not match this order'
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: order
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Order not found') {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      console.error('Get guest order error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve order',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
 
 export default router;
 
