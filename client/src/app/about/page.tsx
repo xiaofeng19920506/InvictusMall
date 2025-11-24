@@ -1,4 +1,18 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About Us - Invictus Mall | Your Ultimate Shopping Destination",
+  description: "Learn about Invictus Mall's mission, vision, and core values. Discover why we're your trusted online marketplace for quality stores and exceptional products.",
+  openGraph: {
+    title: "About Us - Invictus Mall",
+    description: "Learn about Invictus Mall's mission, vision, and core values.",
+    type: "website",
+  },
+};
+
+// Force static generation for this page
+export const dynamic = 'force-static';
 
 export default function AboutPage() {
   const coreValues = [

@@ -71,7 +71,17 @@ InvictusMall/
    ```
 
 3. **Install dependencies for all applications**
+   
+   **Option 1: Install all at once (from root)**
    ```bash
+   npm run install:all
+   ```
+   
+   **Option 2: Install individually**
+   ```bash
+   # Install root dependencies (includes concurrently)
+   npm install
+   
    # Install server dependencies
    cd server
    npm install
@@ -99,6 +109,21 @@ InvictusMall/
 
 ### Running the Applications
 
+#### Option 1: Run All Apps at Once (Recommended)
+
+From the root directory, you can run all three applications simultaneously:
+
+```bash
+npm run dev
+```
+
+This will start:
+- **Server** on http://localhost:3001
+- **Client** on http://localhost:3000
+- **Admin** on http://localhost:3002
+
+#### Option 2: Run Apps Individually
+
 1. **Start the backend server**
    ```bash
    cd server
@@ -119,6 +144,17 @@ InvictusMall/
    npm run dev
    ```
    Admin will run on http://localhost:3002
+
+#### Root-Level Commands
+
+From the root directory, you have access to these convenient commands:
+
+- `npm run dev` - Run all three apps in development mode
+- `npm run dev:server` - Run only the server
+- `npm run dev:client` - Run only the client
+- `npm run dev:admin` - Run only the admin
+- `npm run build` - Build all three apps for production
+- `npm run install:all` - Install dependencies for all apps
 
 ## 📱 Applications Overview
 

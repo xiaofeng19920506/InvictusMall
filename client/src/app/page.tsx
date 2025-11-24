@@ -1,5 +1,21 @@
 import HomeContent from "./components/HomeContent";
 import { fetchStoresServer, Store } from "@/lib/server-api";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Invictus Mall - Your Ultimate Shopping Destination | Discover Amazing Stores",
+  description: "Discover amazing stores and products at Invictus Mall. Shop from verified stores with great deals and excellent customer service. Browse by category or search for your favorite products.",
+  keywords: ["online shopping", "mall", "stores", "products", "shopping", "ecommerce"],
+  openGraph: {
+    title: "Invictus Mall - Your Ultimate Shopping Destination",
+    description: "Discover amazing stores and products at Invictus Mall.",
+    type: "website",
+  },
+};
+
+// Enable ISR (Incremental Static Regeneration) - revalidate every 60 seconds
+// This allows the page to be statically generated but updated periodically
+export const revalidate = 60;
 
 interface HomeProps {
   searchParams: Promise<{

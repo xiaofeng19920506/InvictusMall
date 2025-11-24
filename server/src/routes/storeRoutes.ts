@@ -10,6 +10,7 @@ import {
 import { ActivityLogModel } from "../models/ActivityLogModel";
 import {
   authenticateStaffToken,
+  authenticateAnyToken,
   AuthenticatedRequest,
 } from "../middleware/auth";
 import { getUserNameFromRequest, getUserIdFromRequest } from "../utils/activityLogHelper";
@@ -885,7 +886,7 @@ const uploadStoreImage = multer({
  * @swagger
  * /api/stores/upload-image:
  *   post:
- *     summary: Upload store image
+ *     summary: Upload store image (Public to all authenticated users)
  *     tags: [Stores]
  *     security:
  *       - bearerAuth: []
@@ -920,7 +921,7 @@ const uploadStoreImage = multer({
  */
 router.post(
   "/upload-image",
-  authenticateStaffToken,
+  authenticateAnyToken,
   uploadStoreImage.single("file"),
   async (req: AuthenticatedRequest, res: Response) => {
     try {

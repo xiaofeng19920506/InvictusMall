@@ -18,6 +18,7 @@ import paymentRoutes, { stripeWebhookHandler } from "./routes/paymentRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import productRoutes from "./routes/productRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
+import uploadRoutes from "./routes/uploadRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
@@ -169,6 +170,7 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/upload", uploadRoutes);
 
 /**
  * @swagger

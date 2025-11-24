@@ -1,4 +1,18 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contact Us - Invictus Mall | Get in Touch",
+  description: "Contact Invictus Mall customer support. Get help with orders, returns, or general inquiries. We're here to assist you!",
+  openGraph: {
+    title: "Contact Us - Invictus Mall",
+    description: "Get in touch with Invictus Mall customer support.",
+    type: "website",
+  },
+};
+
+// Force static generation for this page
+export const dynamic = 'force-static';
 
 export default function ContactPage() {
   return (
