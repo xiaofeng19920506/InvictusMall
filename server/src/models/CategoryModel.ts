@@ -60,12 +60,26 @@ export class CategoryModel {
       const level = await this.calculateLevel(data.parentId);
 
       // Generate slug if not provided
-      const slug = data.slug || this.generateSlug(data.name);
+      const slugInput = data.slug || this.generateSlug(data.name);
+      
+      // Parse multiple slugs (space-separated)
+      const slugs = slugInput.trim().split(/\s+/).map(s => {
+        const trimmed = s.trim();
+        return trimmed ? this.generateSlug(trimmed) : null;
+      }).filter(s => s !== null) as string[];
+      
+      if (slugs.length === 0) {
+        throw new Error('At least one slug is required');
+      }
+      
+      const slug = slugs.join(' '); // Store as space-separated string
 
-      // Check if slug already exists
-      const existing = await this.findBySlug(slug);
-      if (existing) {
-        throw new Error('Category slug already exists');
+      // Check if any of the slugs already exists
+      for (const singleSlug of slugs) {
+        const existing = await this.findBySlug(singleSlug);
+        if (existing) {
+          throw new Error(`Category slug "${singleSlug}" already exists`);
+        }
       }
 
       const id = uuidv4();
@@ -143,11 +157,25 @@ export class CategoryModel {
           }
         }
       } else if (data.slug) {
-        slug = data.slug;
-        // Check if new slug conflicts
-        const existingWithSlug = await this.findBySlug(slug);
-        if (existingWithSlug && existingWithSlug.id !== id) {
-          throw new Error('Category slug already exists');
+        // Parse multiple slugs (space-separated)
+        const slugInput = data.slug.trim();
+        const slugs = slugInput.split(/\s+/).map(s => {
+          const trimmed = s.trim();
+          return trimmed ? this.generateSlug(trimmed) : null;
+        }).filter(s => s !== null) as string[];
+        
+        if (slugs.length === 0) {
+          throw new Error('At least one slug is required');
+        }
+        
+        slug = slugs.join(' '); // Store as space-separated string
+        
+        // Check if any of the new slugs conflict with other categories
+        for (const singleSlug of slugs) {
+          const existingWithSlug = await this.findBySlug(singleSlug);
+          if (existingWithSlug && existingWithSlug.id !== id) {
+            throw new Error(`Category slug "${singleSlug}" already exists`);
+          }
         }
       }
 
@@ -251,25 +279,41 @@ export class CategoryModel {
   }
 
   /**
-   * Find category by slug
+   * Find category by slug (checks all slugs in space-separated slug field)
    */
   async findBySlug(slug: string): Promise<Category | null> {
+    // Normalize the search slug
+    const normalizedSlug = slug.trim().toLowerCase();
+    
+    // Get all categories and check if any contains the slug
+    // Since slug can contain multiple space-separated values, we need to check each one
     const query = `
       SELECT 
         id, name, slug, description, parent_id, level,
         display_order, is_active, created_at, updated_at
       FROM categories
-      WHERE slug = ?
+      WHERE slug LIKE ?
+         OR slug = ?
     `;
 
-    const [rows] = await this.pool.execute(query, [slug]);
+    // Search for categories that might contain this slug
+    const searchPattern = `%${normalizedSlug}%`;
+    const [rows] = await this.pool.execute(query, [searchPattern, normalizedSlug]);
     const categories = rows as any[];
 
     if (categories.length === 0) {
       return null;
     }
 
-    return this.mapRowToCategory(categories[0]);
+    // Check if any of the slugs in the category match exactly
+    for (const row of categories) {
+      const categorySlugs = row.slug.split(/\s+/).map((s: string) => s.trim().toLowerCase());
+      if (categorySlugs.includes(normalizedSlug)) {
+        return this.mapRowToCategory(row);
+      }
+    }
+
+    return null;
   }
 
   /**
