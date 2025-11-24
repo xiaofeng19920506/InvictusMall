@@ -1,12 +1,20 @@
-import CartContent from "./components/CartContent";
+import { Metadata } from "next";
+import CheckoutContent from "./components/CheckoutContent";
 import { cookies } from "next/headers";
 import {
   fetchShippingAddressesServer,
   ShippingAddress,
 } from "@/lib/server-api";
-import { createStripeCheckoutSessionAction, createGuestCheckoutSessionAction } from "./actions";
+import { createStripeCheckoutSessionAction, createGuestCheckoutSessionAction } from "../cart/actions";
 
-export default async function CartPage() {
+export const metadata: Metadata = {
+  title: "Checkout | Invictus Mall",
+};
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function CheckoutPage() {
   const cookieStore = await cookies();
   const cookieHeader = cookieStore
     .getAll()
@@ -27,21 +35,17 @@ export default async function CartPage() {
         addresses = response.data;
       }
     } catch (error) {
-      // It's fine if we can't load addresses (e.g. unauthenticated user).
-      console.warn("Unable to load shipping addresses for cart:", error);
+      console.warn("Unable to load shipping addresses for checkout:", error);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <CartContent
-        addresses={addresses}
-        defaultAddressId={addresses.find((address) => address.isDefault)?.id}
-        beginCheckout={createStripeCheckoutSessionAction}
-        beginGuestCheckout={createGuestCheckoutSessionAction}
-      />
-    </div>
+    <CheckoutContent
+      addresses={addresses}
+      defaultAddressId={addresses.find((address) => address.isDefault)?.id}
+      beginCheckout={createStripeCheckoutSessionAction}
+      beginGuestCheckout={createGuestCheckoutSessionAction}
+    />
   );
 }
-
 

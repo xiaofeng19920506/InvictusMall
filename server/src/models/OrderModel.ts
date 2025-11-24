@@ -28,7 +28,7 @@ export interface OrderItem {
 
 export interface Order {
   id: string;
-  userId: string;
+  userId: string | null;
   storeId: string;
   storeName: string;
   items: OrderItem[];
@@ -50,10 +50,14 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   stripeSessionId?: string | null;
+  // Guest order fields
+  guestEmail?: string | null;
+  guestFullName?: string | null;
+  guestPhoneNumber?: string | null;
 }
 
 export interface CreateOrderRequest {
-  userId: string;
+  userId?: string | null;
   storeId: string;
   storeName: string;
   items: Array<{
@@ -79,6 +83,10 @@ export interface CreateOrderRequest {
   paymentMethod: string;
   stripeSessionId?: string | null;
   status?: OrderStatus;
+  // Guest order fields
+  guestEmail?: string | null;
+  guestFullName?: string | null;
+  guestPhoneNumber?: string | null;
 }
 
 export class OrderModel {
@@ -96,6 +104,7 @@ export class OrderModel {
         o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
         o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
         o.tracking_number, o.created_at, o.updated_at,
+        o.guest_email, o.guest_full_name, o.guest_phone_number,
         JSON_ARRAYAGG(
           JSON_OBJECT(
             'id', oi.id,
@@ -205,15 +214,16 @@ export class OrderModel {
           id, user_id, store_id, store_name, total_amount, status,
           shipping_street_address, shipping_apt_number, shipping_city,
           shipping_state_province, shipping_zip_code, shipping_country,
-          payment_method, stripe_session_id, order_date, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          payment_method, stripe_session_id, order_date, created_at, updated_at,
+          guest_email, guest_full_name, guest_phone_number
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const status: OrderStatus = orderData.status ?? 'pending';
 
       await connection.execute(orderQuery, [
         orderId,
-        orderData.userId,
+        orderData.userId || null,
         orderData.storeId,
         orderData.storeName,
         totalAmount,
@@ -228,7 +238,10 @@ export class OrderModel {
         orderData.stripeSessionId || null,
         now,
         now,
-        now
+        now,
+        orderData.guestEmail || null,
+        orderData.guestFullName || null,
+        orderData.guestPhoneNumber || null
       ]);
 
       // Insert order items
@@ -437,6 +450,7 @@ export class OrderModel {
         o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
         o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
         o.tracking_number, o.created_at, o.updated_at,
+        o.guest_email, o.guest_full_name, o.guest_phone_number,
         JSON_ARRAYAGG(
           JSON_OBJECT(
             'id', oi.id,
@@ -466,6 +480,50 @@ export class OrderModel {
     }
 
     return this.mapRowToOrder(orders[0]);
+  }
+
+  /**
+   * Get orders by guest email (for guest order tracking)
+   */
+  async getOrdersByGuestEmail(email: string): Promise<Order[]> {
+    const query = `
+      SELECT 
+        o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
+        o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
+        o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
+        o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
+        o.tracking_number, o.created_at, o.updated_at,
+        o.guest_email, o.guest_full_name, o.guest_phone_number,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', oi.id,
+            'productId', oi.product_id,
+            'productName', oi.product_name,
+            'productImage', oi.product_image,
+            'quantity', oi.quantity,
+            'price', oi.price,
+            'subtotal', oi.subtotal,
+            'reservationDate', oi.reservation_date,
+            'reservationTime', oi.reservation_time,
+            'reservationNotes', oi.reservation_notes,
+            'isReservation', oi.is_reservation
+          )
+        ) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE o.guest_email = ? AND o.user_id IS NULL
+      GROUP BY o.id
+      ORDER BY o.order_date DESC
+    `;
+
+    const [rows] = await this.pool.execute(query, [email.toLowerCase()]);
+    const orders = rows as any[];
+
+    if (orders.length === 0) {
+      return [];
+    }
+
+    return orders.map((row) => this.mapRowToOrder(row));
   }
 
   async getAllOrders(
@@ -666,7 +724,8 @@ export class OrderModel {
           o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
           o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
           o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
-          o.tracking_number, o.created_at, o.updated_at
+          o.tracking_number, o.created_at, o.updated_at,
+          o.guest_email, o.guest_full_name, o.guest_phone_number
         FROM orders o
         WHERE o.user_id = ?
       `;
@@ -799,7 +858,10 @@ export class OrderModel {
         deliveredDate: order.delivered_date || undefined,
         trackingNumber: order.tracking_number || undefined,
         createdAt: order.created_at,
-        updatedAt: order.updated_at
+        updatedAt: order.updated_at,
+        guestEmail: order.guest_email || null,
+        guestFullName: order.guest_full_name || null,
+        guestPhoneNumber: order.guest_phone_number || null
       }));
     } catch (error) {
       console.error('Error in getOrdersByUserId:', error);
@@ -857,7 +919,10 @@ export class OrderModel {
       trackingNumber: row.tracking_number || undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      stripeSessionId: row.stripe_session_id || null
+      stripeSessionId: row.stripe_session_id || null,
+      guestEmail: row.guest_email || null,
+      guestFullName: row.guest_full_name || null,
+      guestPhoneNumber: row.guest_phone_number || null
     };
   }
 
@@ -924,6 +989,47 @@ export class OrderModel {
       try {
         await connection.execute(
           `ALTER TABLE orders ADD INDEX idx_stripe_session (stripe_session_id)`
+        );
+      } catch (error: any) {
+        // Ignore if index already exists
+      }
+
+      // Add guest order support columns
+      try {
+        await connection.execute(
+          `ALTER TABLE orders MODIFY COLUMN user_id VARCHAR(36) NULL`
+        );
+      } catch (error: any) {
+        // Ignore if column already updated
+      }
+
+      try {
+        await connection.execute(
+          `ALTER TABLE orders ADD COLUMN guest_email VARCHAR(255) NULL`
+        );
+      } catch (error: any) {
+        // Ignore if column already exists
+      }
+
+      try {
+        await connection.execute(
+          `ALTER TABLE orders ADD COLUMN guest_full_name VARCHAR(255) NULL`
+        );
+      } catch (error: any) {
+        // Ignore if column already exists
+      }
+
+      try {
+        await connection.execute(
+          `ALTER TABLE orders ADD COLUMN guest_phone_number VARCHAR(50) NULL`
+        );
+      } catch (error: any) {
+        // Ignore if column already exists
+      }
+
+      try {
+        await connection.execute(
+          `ALTER TABLE orders ADD INDEX idx_guest_email (guest_email)`
         );
       } catch (error: any) {
         // Ignore if index already exists

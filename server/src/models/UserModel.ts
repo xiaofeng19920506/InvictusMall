@@ -262,6 +262,59 @@ export class UserModel {
     return users.length > 0;
   }
 
+  async phoneExists(phoneNumber: string): Promise<boolean> {
+    const query = "SELECT id FROM users WHERE phone_number = ?";
+    const [rows] = await this.pool.execute(query, [phoneNumber]);
+    const users = rows as any[];
+    return users.length > 0;
+  }
+
+  /**
+   * Check if email or phone number is associated with an active account
+   * Returns information about which field matches
+   */
+  async checkAccountExists(email?: string, phoneNumber?: string): Promise<{
+    exists: boolean;
+    emailExists: boolean;
+    phoneExists: boolean;
+    message?: string;
+  }> {
+    let emailExists = false;
+    let phoneExists = false;
+
+    if (email) {
+      const query = "SELECT id FROM users WHERE email = ? AND is_active = true AND email_verified = true";
+      const [rows] = await this.pool.execute(query, [email.toLowerCase()]);
+      emailExists = (rows as any[]).length > 0;
+    }
+
+    if (phoneNumber) {
+      const query = "SELECT id FROM users WHERE phone_number = ? AND is_active = true AND email_verified = true";
+      const [rows] = await this.pool.execute(query, [phoneNumber]);
+      phoneExists = (rows as any[]).length > 0;
+    }
+
+    const exists = emailExists || phoneExists;
+    let message: string | undefined;
+
+    if (exists) {
+      if (emailExists && phoneExists) {
+        message = "This email and phone number are already associated with an account. Please log in to continue.";
+      } else if (emailExists) {
+        message = "This email is already associated with an account. Please log in to continue.";
+      } else if (phoneExists) {
+        message = "This phone number is already associated with an account. Please log in to continue.";
+      }
+    }
+
+    return {
+      exists,
+      emailExists,
+      phoneExists,
+      message,
+    };
+  }
+
   async updateLastLogin(userId: string): Promise<void> {
     const query = `
       UPDATE users 

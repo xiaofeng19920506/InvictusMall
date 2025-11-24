@@ -289,8 +289,45 @@ class AuthService {
       method: "POST",
     });
   }
+
+  /**
+   * Check if email or phone number is associated with an existing account
+   */
+  async checkAccountExists(email?: string, phoneNumber?: string): Promise<{
+    success: boolean;
+    exists: boolean;
+    emailExists: boolean;
+    phoneExists: boolean;
+    message?: string;
+  }> {
+    const url = `${this.baseUrl}/api/auth/check-account`;
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, phoneNumber }),
+      });
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Check account exists error:", error);
+      return {
+        success: false,
+        exists: false,
+        emailExists: false,
+        phoneExists: false,
+        message: "Failed to check account. Please try again.",
+      };
+    }
+  }
 }
 
 // Export a singleton instance
+
 export const authService = new AuthService();
 export default authService;

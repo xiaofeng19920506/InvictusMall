@@ -445,11 +445,9 @@ const UsersManagement: React.FC = () => {
                 <div className={styles.formGroup}>
                   <label className={styles.label} htmlFor="storeId">
                     {t("registerStaff.form.store")}
-                    {currentUser?.role === "admin" && (
-                      <span className={styles.optional}>
-                        {t("registerStaff.form.optional")}
-                      </span>
-                    )}
+                    <span className={styles.optional}>
+                      {t("registerStaff.form.optional")}
+                    </span>
                   </label>
                   <select
                     id="storeId"

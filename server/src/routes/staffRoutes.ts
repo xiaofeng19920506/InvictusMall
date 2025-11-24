@@ -472,8 +472,8 @@ router.post("/invite", authenticateStaffToken, [
   body('role').isIn(['admin', 'owner', 'manager', 'employee'])
 ], async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Check if user has permission to create staff (admin or owner only)
-    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'owner')) {
+    // Check if user has permission to create staff (admin, owner, or manager)
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'owner' && req.user.role !== 'manager')) {
       return res.status(403).json({
         success: false,
         message: 'Insufficient permissions to create staff members'
@@ -502,13 +502,7 @@ router.post("/invite", authenticateStaffToken, [
           message: 'Admin can only invite staff with owner role'
         });
       }
-      // Admin must specify a store for owner
-      if (!storeId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Store ID is required when inviting owner'
-        });
-      }
+      // Store ID is optional for admin inviting owner
     } else if (requesterRole === 'owner') {
       // Owner can only invite manager and employee roles
       if (role !== 'manager' && role !== 'employee') {
@@ -517,17 +511,14 @@ router.post("/invite", authenticateStaffToken, [
           message: 'Owner can only invite staff with manager or employee role'
         });
       }
-      // Get requester's store ID
-      const requesterStaff = await staffModel.getStaffById(requesterId);
-      const requesterStoreId = (requesterStaff as any)?.storeId;
-      if (!requesterStoreId) {
-        return res.status(400).json({
+    } else if (requesterRole === 'manager') {
+      // Manager can only invite employee roles
+      if (role !== 'employee') {
+        return res.status(403).json({
           success: false,
-          message: 'Owner must be associated with a store to invite staff'
+          message: 'Manager can only invite staff with employee role'
         });
       }
-      // Use requester's store ID (ignore provided storeId for security)
-      const finalStoreId = requesterStoreId;
     }
 
     // Check if email already exists in staff table
@@ -551,10 +542,25 @@ router.post("/invite", authenticateStaffToken, [
     }
 
     // Get final store ID based on requester role
-    let finalStoreId = storeId;
+    // Store ID is optional for all roles
+    let finalStoreId: string | undefined = storeId || undefined;
+    // For owner and manager, use their store ID if available, otherwise use provided storeId or undefined
     if (requesterRole === 'owner') {
       const requesterStaff = await staffModel.getStaffById(requesterId);
-      finalStoreId = (requesterStaff as any)?.storeId;
+      const requesterStoreId = (requesterStaff as any)?.storeId;
+      if (requesterStoreId) {
+        finalStoreId = requesterStoreId;
+      } else if (storeId) {
+        finalStoreId = storeId;
+      }
+    } else if (requesterRole === 'manager') {
+      const requesterStaff = await staffModel.getStaffById(requesterId);
+      const requesterStoreId = (requesterStaff as any)?.storeId;
+      if (requesterStoreId) {
+        finalStoreId = requesterStoreId;
+      } else if (storeId) {
+        finalStoreId = storeId;
+      }
     }
 
     // Create invitation

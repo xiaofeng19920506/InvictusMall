@@ -18,6 +18,10 @@ export interface CheckoutPayload {
   shippingAddressId?: string;
   newShippingAddress?: CheckoutShippingAddressInput;
   saveNewAddress?: boolean;
+  // Guest checkout fields
+  guestEmail?: string;
+  guestFullName?: string;
+  guestPhoneNumber?: string;
 }
 
 export interface CheckoutSessionResult {

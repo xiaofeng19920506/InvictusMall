@@ -1823,4 +1823,91 @@ router.post("/refresh", async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/auth/check-account:
+ *   post:
+ *     summary: Check if email or phone number is associated with an existing account
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "user@example.com"
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+1234567890"
+ *     responses:
+ *       200:
+ *         description: Account check result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 exists:
+ *                   type: boolean
+ *                 emailExists:
+ *                   type: boolean
+ *                 phoneExists:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  "/check-account",
+  async (req: Request, res: Response) => {
+    try {
+      const { email, phoneNumber } = req.body;
+
+      if (!email && !phoneNumber) {
+        return res.status(400).json({
+          success: false,
+          message: "Email or phone number is required",
+        });
+      }
+
+      // Validate email format if provided
+      if (email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid email format",
+          });
+        }
+      }
+
+      const result = await userModel.checkAccountExists(
+        email,
+        phoneNumber
+      );
+
+      return res.json({
+        success: true,
+        ...result,
+      });
+    } catch (error) {
+      console.error("Check account error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to check account",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+);
+
 export default router;

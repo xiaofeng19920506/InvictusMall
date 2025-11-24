@@ -357,16 +357,19 @@ export interface CheckoutCompletionResponse {
 
 export async function completeCheckoutSessionServer(
   cookiesHeader: string | undefined,
-  sessionId: string
+  sessionId: string,
+  isGuest: boolean = false
 ): Promise<CheckoutCompletionResponse> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-  const url = `${baseUrl}/api/payments/checkout-complete`;
+  const url = isGuest 
+    ? `${baseUrl}/api/payments/guest-checkout-complete`
+    : `${baseUrl}/api/payments/checkout-complete`;
 
   const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
 
-  if (cookiesHeader && cookiesHeader.trim()) {
+  if (cookiesHeader && cookiesHeader.trim() && !isGuest) {
     headers["Cookie"] = cookiesHeader;
   }
 

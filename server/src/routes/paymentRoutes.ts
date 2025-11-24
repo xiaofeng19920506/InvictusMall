@@ -49,6 +49,10 @@ interface CheckoutPayload {
     country: string;
   };
   saveNewAddress?: boolean;
+  // Guest checkout fields
+  guestEmail?: string;
+  guestFullName?: string;
+  guestPhoneNumber?: string;
 }
 
 interface PendingOrderItem {
@@ -241,6 +245,8 @@ async function finalizeStripeCheckoutSession(
   }
 
   const metadataUserId = session.metadata?.userId;
+  const isGuest = session.metadata?.isGuest === "true";
+  
   if (!metadataUserId) {
     throw new CheckoutFinalizationError(
       "Checkout session is missing user information.",
@@ -248,7 +254,8 @@ async function finalizeStripeCheckoutSession(
     );
   }
 
-  if (options.expectedUserId && metadataUserId !== options.expectedUserId) {
+  // For authenticated users, verify the userId matches
+  if (!isGuest && options.expectedUserId && metadataUserId !== options.expectedUserId) {
     throw new CheckoutFinalizationError(
       "You do not have permission to finalize this order.",
       403
@@ -312,9 +319,14 @@ async function finalizeStripeCheckoutSession(
       );
     }
 
+    // Get guest information from metadata if it's a guest order
+    const guestEmail = session.metadata?.guestEmail;
+    const guestFullName = session.metadata?.guestFullName;
+    const guestPhoneNumber = session.metadata?.guestPhoneNumber;
+
     for (const { storeId, storeName, items } of itemsByStore.values()) {
       const order = await orderModel.createOrder({
-        userId: metadataUserId,
+        userId: isGuest ? null : metadataUserId,
         storeId,
         storeName,
         items,
@@ -329,6 +341,9 @@ async function finalizeStripeCheckoutSession(
         paymentMethod: `stripe_checkout:${session.id}`,
         stripeSessionId: session.id,
         status: "processing",
+        guestEmail: isGuest ? guestEmail : null,
+        guestFullName: isGuest ? guestFullName : null,
+        guestPhoneNumber: isGuest ? guestPhoneNumber : null,
       });
 
       orderIds.push(order.id);
@@ -337,6 +352,306 @@ async function finalizeStripeCheckoutSession(
 
   return orderIds;
 }
+
+// Guest checkout endpoint (no authentication required)
+router.post(
+  "/guest-checkout-session",
+  async (req: Request, res: Response) => {
+    try {
+      if (!stripeClient) {
+        return res.status(500).json({
+          success: false,
+          message: "Stripe is not configured. Please contact support.",
+        });
+      }
+
+      const { items, newShippingAddress, guestEmail, guestFullName, guestPhoneNumber } =
+        req.body as CheckoutPayload;
+
+      // Validate guest information
+      if (!guestEmail || !guestEmail.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is required for guest checkout.",
+        });
+      }
+
+      if (!guestFullName || !guestFullName.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Full name is required for guest checkout.",
+        });
+      }
+
+      if (!guestPhoneNumber || !guestPhoneNumber.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number is required for guest checkout.",
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(guestEmail.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: "Please provide a valid email address.",
+        });
+      }
+
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Your cart is empty.",
+        });
+      }
+
+      if (!newShippingAddress) {
+        return res.status(400).json({
+          success: false,
+          message: "Shipping address is required for guest checkout.",
+        });
+      }
+
+      const sanitizedItems = items
+        .map((item) => ({
+          ...item,
+          quantity: Number(item.quantity) || 0,
+          price: Number(item.price) || 0,
+          productImage:
+            typeof item.productImage === "string" && item.productImage.trim()
+              ? item.productImage.trim()
+              : undefined,
+        }))
+        .filter((item) => item.quantity > 0 && item.price > 0);
+
+      if (sanitizedItems.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "All items in your cart have invalid quantities or prices.",
+        });
+      }
+
+      const itemsByStore = new Map<string, PendingOrderGroup>();
+
+      for (const item of sanitizedItems) {
+        if (!itemsByStore.has(item.storeId)) {
+          itemsByStore.set(item.storeId, {
+            storeId: item.storeId,
+            storeName: item.storeName,
+            items: [],
+          });
+        }
+
+        itemsByStore.get(item.storeId)!.items.push({
+          productId: item.productId,
+          productName: item.productName,
+          productImage: item.productImage,
+          quantity: item.quantity,
+          price: item.price,
+        });
+      }
+
+      const trimmedAddress = {
+        fullName: newShippingAddress.fullName.trim(),
+        phoneNumber: newShippingAddress.phoneNumber.trim(),
+        streetAddress: newShippingAddress.streetAddress.trim(),
+        aptNumber: newShippingAddress.aptNumber?.trim() || undefined,
+        city: newShippingAddress.city.trim(),
+        stateProvince: newShippingAddress.stateProvince.trim(),
+        zipCode: newShippingAddress.zipCode.trim(),
+        country: newShippingAddress.country.trim(),
+      };
+
+      if (
+        !trimmedAddress.fullName ||
+        !trimmedAddress.phoneNumber ||
+        !trimmedAddress.streetAddress ||
+        !trimmedAddress.city ||
+        !trimmedAddress.stateProvince ||
+        !trimmedAddress.zipCode ||
+        !trimmedAddress.country
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Please complete all required shipping address fields.",
+        });
+      }
+
+      const appUrl =
+        process.env.APP_BASE_URL ||
+        process.env.CLIENT_URL ||
+        "http://localhost:3000";
+
+      const lineItems = sanitizedItems.map((item) => {
+        const rawImage =
+          typeof item.productImage === "string" ? item.productImage.trim() : "";
+        const isAbsoluteImage =
+          rawImage.startsWith("http://") || rawImage.startsWith("https://");
+
+        return {
+          quantity: item.quantity,
+          price_data: {
+            currency: "usd",
+            unit_amount: Math.round(item.price * 100),
+            product_data: {
+              name: item.productName,
+              metadata: {
+                productId: item.productId,
+                storeId: item.storeId,
+                storeName: item.storeName,
+                productName: item.productName,
+              },
+              ...(isAbsoluteImage
+                ? {
+                    images: [rawImage],
+                  }
+                : {}),
+            },
+          },
+        };
+      });
+
+      const persistedShippingAddress = {
+        streetAddress: trimmedAddress.streetAddress,
+        aptNumber: trimmedAddress.aptNumber,
+        city: trimmedAddress.city,
+        stateProvince: trimmedAddress.stateProvince,
+        zipCode: trimmedAddress.zipCode,
+        country: trimmedAddress.country,
+      };
+
+      // Create or find Stripe customer for guest
+      let customerId: string | undefined;
+      const existingCustomers = await stripeClient.customers.list({
+        email: guestEmail.trim().toLowerCase(),
+        limit: 1,
+      });
+
+      const existingCustomer = existingCustomers.data[0];
+
+      if (existingCustomer) {
+        customerId = existingCustomer.id;
+      } else {
+        const createdCustomer = await stripeClient.customers.create({
+          email: guestEmail.trim().toLowerCase(),
+          name: guestFullName.trim(),
+          phone: guestPhoneNumber.trim(),
+        });
+        customerId = createdCustomer.id;
+      }
+
+      // Create a unique guest identifier for metadata
+      const guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      const session = await stripeClient.checkout.sessions.create({
+        mode: "payment",
+        line_items: lineItems,
+        automatic_tax: { enabled: false },
+        billing_address_collection: "required",
+        shipping_address_collection: {
+          allowed_countries: ["US", "CA"],
+        },
+        customer: customerId,
+        success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}/cart?canceled=1`,
+        metadata: {
+          userId: guestId, // Use guest ID instead of user ID
+          isGuest: "true",
+          guestEmail: guestEmail.trim().toLowerCase(),
+          guestFullName: guestFullName.trim(),
+          guestPhoneNumber: guestPhoneNumber.trim(),
+          save_new_address: "false",
+          shipping_address: JSON.stringify({
+            fullName: trimmedAddress.fullName,
+            phoneNumber: trimmedAddress.phoneNumber,
+            ...persistedShippingAddress,
+          }),
+          item_count: String(
+            sanitizedItems.reduce(
+              (count, item) => count + Math.max(0, item.quantity),
+              0
+            )
+          ),
+          store_count: String(
+            new Set(sanitizedItems.map((item) => item.storeId)).size
+          ),
+        },
+      });
+
+      if (!session.url) {
+        return res.status(500).json({
+          success: false,
+          message:
+            "Stripe checkout session was created without a redirect URL. Please try again.",
+        });
+      }
+
+      try {
+        await orderModel.deleteOrdersByStripeSession(session.id);
+
+        for (const { storeId, storeName, items } of itemsByStore.values()) {
+          await orderModel.createOrder({
+            userId: null, // Guest order
+            storeId,
+            storeName,
+            items,
+            shippingAddress: persistedShippingAddress,
+            paymentMethod: "stripe_checkout:pending",
+            stripeSessionId: session.id,
+            status: "pending_payment",
+            guestEmail: guestEmail.trim().toLowerCase(),
+            guestFullName: guestFullName.trim(),
+            guestPhoneNumber: guestPhoneNumber.trim(),
+          });
+        }
+      } catch (error) {
+        console.error(
+          "Failed to prepare pending orders for guest checkout session:",
+          error
+        );
+
+        try {
+          await orderModel.deleteOrdersByStripeSession(session.id);
+        } catch (cleanupError) {
+          console.warn(
+            "Unable to clean up staged orders after failure:",
+            cleanupError
+          );
+        }
+
+        try {
+          await stripeClient.checkout.sessions.expire(session.id);
+        } catch (expireError) {
+          console.warn(
+            "Unable to expire Stripe checkout session after failure:",
+            expireError
+          );
+        }
+
+        return res.status(500).json({
+          success: false,
+          message:
+            "Unable to prepare your checkout session. Please try again in a moment.",
+        });
+      }
+
+      return res.json({
+        success: true,
+        checkoutUrl: session.url,
+      });
+    } catch (error) {
+      console.error("Failed to create guest Stripe checkout session:", error);
+      return res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to start Stripe checkout. Please try again.",
+      });
+    }
+  }
+);
 
 router.post(
   "/checkout-session",
@@ -670,6 +985,100 @@ router.post(
   }
 );
 
+// Guest checkout completion endpoint (no authentication required)
+router.post(
+  "/guest-checkout-complete",
+  async (req: Request, res: Response) => {
+    try {
+      if (!stripeClient) {
+        return res.status(500).json({
+          success: false,
+          message: "Stripe is not configured. Please contact support.",
+        });
+      }
+
+      const { sessionId } = req.body as { sessionId?: string };
+
+      if (!sessionId || typeof sessionId !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "A valid Stripe checkout session ID is required.",
+        });
+      }
+
+      const session = await stripeClient.checkout.sessions.retrieve(sessionId, {
+        expand: ["customer"],
+      });
+
+      if (!session) {
+        return res.status(404).json({
+          success: false,
+          message: "Checkout session not found.",
+        });
+      }
+
+      // Verify it's a guest order
+      if (session.metadata?.isGuest !== "true") {
+        return res.status(403).json({
+          success: false,
+          message: "This is not a guest checkout session.",
+        });
+      }
+
+      if (session.payment_status !== "paid") {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Payment has not been completed for this session. Please try again after payment is confirmed.",
+        });
+      }
+
+      let orderIds: string[] = [];
+      try {
+        orderIds = await finalizeStripeCheckoutSession(session);
+      } catch (error) {
+        if (error instanceof CheckoutFinalizationError) {
+          return res.status(error.statusCode).json({
+            success: false,
+            message: error.message,
+          });
+        }
+
+        throw error;
+      }
+
+      try {
+        await stripeClient.checkout.sessions.update(sessionId, {
+          metadata: {
+            ...(session.metadata || {}),
+            orders_created: "true",
+          },
+        });
+      } catch (updateError) {
+        console.warn(
+          "Unable to update Stripe checkout session metadata:",
+          updateError
+        );
+      }
+
+      return res.json({
+        success: true,
+        message: "Order has been recorded successfully.",
+        orderIds,
+      });
+    } catch (error) {
+      console.error("Failed to finalize guest Stripe checkout session:", error);
+      return res.status(500).json({
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to finalize checkout session. Please contact support.",
+      });
+    }
+  }
+);
+
 router.post(
   "/checkout-complete",
   authenticateUserToken,
@@ -710,7 +1119,8 @@ router.post(
         });
       }
 
-      if (session.metadata?.userId !== userId) {
+      // Only verify userId for non-guest orders
+      if (session.metadata?.isGuest !== "true" && session.metadata?.userId !== userId) {
         return res.status(403).json({
           success: false,
           message: "You do not have permission to finalize this order.",

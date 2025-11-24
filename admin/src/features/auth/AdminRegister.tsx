@@ -335,11 +335,9 @@ export default function AdminRegister() {
               <div className={styles.inputGroup}>
                 <label className={styles.label} htmlFor="storeId">
                   {t("registerStaff.form.store")}
-                  {user?.role === "admin" && (
-                    <span className={styles.optional}>
-                      {t("registerStaff.form.optional")}
-                    </span>
-                  )}
+                  <span className={styles.optional}>
+                    {t("registerStaff.form.optional")}
+                  </span>
                 </label>
                 <select
                   id="storeId"
