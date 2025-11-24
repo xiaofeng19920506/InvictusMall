@@ -137,13 +137,15 @@ const StoresManagement: React.FC = () => {
           />
           {t("stores.refresh")}
         </button>
-        <button onClick={handleAddStore} className="btn btn-primary">
-          <Plus className="w-4 h-4 mr-2" />
-          {t("stores.addStore")}
-        </button>
+        {isAdmin && (
+          <button onClick={handleAddStore} className="btn btn-primary">
+            <Plus className="w-4 h-4 mr-2" />
+            {t("stores.addStore")}
+          </button>
+        )}
       </>
     );
-  }, [loading, refetch, handleAddStore, setHeaderActions, t]);
+  }, [loading, refetch, handleAddStore, setHeaderActions, t, isAdmin]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

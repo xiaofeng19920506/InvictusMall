@@ -58,6 +58,9 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     ? "store-modal-title-edit"
     : "store-modal-title-create";
   
+  // Only admins can create stores
+  const canCreateStore = user?.role === "admin";
+  
   // Check if user can edit owner (admin or the owner themselves)
   const canEditOwner = user && (
     user.role === "admin" || 
@@ -266,6 +269,12 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    // Only admins can create stores
+    if (!isEditing && user?.role !== 'admin') {
+      showError("Only administrators can create stores");
+      return;
+    }
+
     const { location } = formData;
     if (
       !location.streetAddress.trim() ||
@@ -350,6 +359,11 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       setSaving(false);
     }
   };
+
+  // Prevent non-admins from creating stores
+  if (!isEditing && !canCreateStore) {
+    return null;
+  }
 
   return (
     <div className={styles.backdropContainer}>
