@@ -125,6 +125,15 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
     }));
   };
 
+  const parseSlugs = (slugInput: string): string[] => {
+    return slugInput
+      .trim()
+      .split(/\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+      .map(s => generateSlug(s));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -135,9 +144,19 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
 
     setSaving(true);
     try {
+      // Parse multiple slugs from space-separated input
+      const slugInput = formData.slug.trim() || generateSlug(formData.name);
+      const slugs = parseSlugs(slugInput);
+      
+      if (slugs.length === 0) {
+        showError(t("categoryModal.error.slugRequired") || "At least one slug is required");
+        setSaving(false);
+        return;
+      }
+
       const data = {
         name: formData.name.trim(),
-        slug: formData.slug.trim() || generateSlug(formData.name),
+        slug: slugs.join(" "), // Store as space-separated string
         description: formData.description.trim() || undefined,
         parentId: formData.parentId || undefined,
         displayOrder: formData.displayOrder,
@@ -237,10 +256,10 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
                 onChange={handleChange}
                 className={styles.input}
                 required
-                placeholder={t("categoryModal.fields.slugPlaceholder") || "category-slug"}
+                placeholder={t("categoryModal.fields.slugPlaceholder") || "category-slug another-slug"}
               />
               <small className={styles.helpText}>
-                {t("categoryModal.fields.slugHelp") || "URL-friendly identifier (auto-generated from name if left empty)"}
+                {t("categoryModal.fields.slugHelp") || "URL-friendly identifier(s), separated by spaces (auto-generated from name if left empty)"}
               </small>
             </div>
 
