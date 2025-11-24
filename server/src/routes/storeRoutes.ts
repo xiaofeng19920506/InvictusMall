@@ -426,10 +426,19 @@ router.get("/:id", async (req: Request, res: Response) => {
  */
 router.post(
   "/",
+  authenticateStaffToken,
   validateStore,
   handleValidationErrors,
-  async (req: Request, res: Response) => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
+      // Only admins can create stores
+      if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: "Only administrators can create stores",
+        });
+      }
+
       const { ownerId, ...storeData } = req.body;
       
       // Validate owner exists and has the 'owner' role before creating store
