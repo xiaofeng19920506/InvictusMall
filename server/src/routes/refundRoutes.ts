@@ -308,87 +308,201 @@ router.post(
         return;
       }
 
-      // Create refund in Stripe
-      const refundMetadata: Record<string, string> = {
-        orderId: order.id,
-        refundedBy: req.user.id,
-      };
-      
-      if (itemIds && itemIds.length > 0) {
-        refundMetadata.itemIds = JSON.stringify(itemIds);
-      }
-      
-      const refund = await stripeClient.refunds.create({
-        payment_intent: paymentIntentId,
-        amount: Math.round(refundAmount * 100), // Convert to cents
-        reason: reason || undefined,
-        metadata: refundMetadata,
-      });
-
-      // Save refund record
-      const refundRecord = await refundModel.create({
-        orderId: order.id,
-        paymentIntentId: paymentIntentId, // Already validated as non-null above
-        refundId: refund.id,
-        amount: refundAmount,
-        currency: "usd",
-        reason: reason || undefined,
-        status: refund.status || 'succeeded',
-        refundedBy: req.user.id || undefined,
-        itemIds: itemIds || undefined,
-      });
-
-      // Create transaction record for the refund
+      // Verify PaymentIntent has a successful charge before attempting refund
       try {
-        await transactionModel.createTransaction({
-          storeId: order.storeId,
-          transactionType: 'refund',
-          amount: -refundAmount, // Negative amount for refund
-          currency: 'usd',
-          description: reason ? `Refund: ${reason}` : `Refund for order ${order.id}`,
+        const paymentIntent = await stripeClient.paymentIntents.retrieve(paymentIntentId);
+        
+        // Check if PaymentIntent is succeeded
+        if (paymentIntent.status !== 'succeeded') {
+          // Provide more helpful error messages based on PaymentIntent status
+          let errorMessage = '';
+          let suggestedAction = '';
+          
+          switch (paymentIntent.status) {
+            case 'requires_payment_method':
+              errorMessage = 'Payment has not been completed. The payment method is required but not provided.';
+              suggestedAction = 'This order cannot be refunded because no payment was received. You should cancel this order instead of processing a refund.';
+              break;
+            case 'requires_confirmation':
+              errorMessage = 'Payment is pending confirmation.';
+              suggestedAction = 'This order cannot be refunded until the payment is confirmed. Please wait for the payment to complete or cancel the order if payment fails.';
+              break;
+            case 'requires_action':
+              errorMessage = 'Payment requires additional action (e.g., 3D Secure authentication).';
+              suggestedAction = 'This order cannot be refunded until the payment is completed. The customer needs to complete the authentication process.';
+              break;
+            case 'processing':
+              errorMessage = 'Payment is currently being processed.';
+              suggestedAction = 'Please wait for the payment to complete before processing a refund.';
+              break;
+            case 'requires_capture':
+              errorMessage = 'Payment has been authorized but not yet captured.';
+              suggestedAction = 'You may need to capture the payment first or cancel the authorization.';
+              break;
+            case 'canceled':
+              errorMessage = 'Payment has been canceled.';
+              suggestedAction = 'This order cannot be refunded because no payment was received. The order should be canceled instead.';
+              break;
+            default:
+              errorMessage = `Payment status is "${paymentIntent.status}".`;
+              suggestedAction = 'This order cannot be refunded because the payment has not been successfully completed.';
+          }
+          
+          res.status(400).json({
+            success: false,
+            message: `${errorMessage} ${suggestedAction}`,
+            paymentStatus: paymentIntent.status,
+            canCancel: ['requires_payment_method', 'canceled'].includes(paymentIntent.status),
+            action: 'cancel', // Suggest canceling instead of refunding
+          });
+          return;
+        }
+
+        // Check if there's a successful charge
+        let chargeId: string | null = null;
+        
+        // Try to get charge from latest_charge
+        if (paymentIntent.latest_charge) {
+          const latestChargeId = typeof paymentIntent.latest_charge === 'string' 
+            ? paymentIntent.latest_charge 
+            : paymentIntent.latest_charge.id;
+          
+          try {
+            const charge = await stripeClient.charges.retrieve(latestChargeId);
+            if (charge.status === 'succeeded') {
+              chargeId = charge.id;
+            }
+          } catch (chargeError) {
+            console.error(`Error retrieving charge ${latestChargeId}:`, chargeError);
+          }
+        }
+
+        // If no charge found from latest_charge, try to list charges for this payment intent
+        if (!chargeId) {
+          try {
+            const charges = await stripeClient.charges.list({
+              payment_intent: paymentIntentId,
+              limit: 10,
+            });
+            
+            const succeededCharge = charges.data.find(c => c.status === 'succeeded');
+            if (succeededCharge) {
+              chargeId = succeededCharge.id;
+            }
+          } catch (listError) {
+            console.error('Error listing charges for payment intent:', listError);
+          }
+        }
+
+        if (!chargeId) {
+          res.status(400).json({
+            success: false,
+            message: "This PaymentIntent does not have a successful charge to refund. The payment may not have been completed.",
+          });
+          return;
+        }
+
+        // Create refund in Stripe using charge ID instead of payment_intent
+        // This is more reliable when we have the charge ID
+        const refundMetadata: Record<string, string> = {
           orderId: order.id,
-          paymentMethod: order.paymentMethod || undefined,
-          status: refund.status === 'succeeded' ? 'completed' : (refund.status === 'pending' ? 'pending' : 'failed'),
-          transactionDate: new Date(),
-          createdBy: req.user.id || undefined,
-          metadata: {
-            refundId: refund.id,
-            paymentIntentId: paymentIntentId,
-            itemIds: itemIds || undefined,
+          refundedBy: req.user.id,
+        };
+        
+        if (itemIds && itemIds.length > 0) {
+          refundMetadata.itemIds = JSON.stringify(itemIds);
+        }
+        
+        const refund = await stripeClient.refunds.create({
+          charge: chargeId, // Use charge ID instead of payment_intent
+          amount: Math.round(refundAmount * 100), // Convert to cents
+          reason: reason || undefined,
+          metadata: refundMetadata,
+        });
+
+        // Save refund record
+        const refundRecord = await refundModel.create({
+          orderId: order.id,
+          paymentIntentId: paymentIntentId,
+          refundId: refund.id,
+          amount: refundAmount,
+          currency: "usd",
+          reason: reason || undefined,
+          status: refund.status || 'succeeded',
+          refundedBy: req.user.id || undefined,
+          itemIds: itemIds || undefined,
+        });
+
+        // Create transaction record for the refund
+        try {
+          await transactionModel.createTransaction({
+            storeId: order.storeId,
+            transactionType: 'refund',
+            amount: -refundAmount, // Negative amount for refund
+            currency: 'usd',
+            description: reason ? `Refund: ${reason}` : `Refund for order ${order.id}`,
+            orderId: order.id,
+            paymentMethod: order.paymentMethod || undefined,
+            status: refund.status === 'succeeded' ? 'completed' : (refund.status === 'pending' ? 'pending' : 'failed'),
+            transactionDate: new Date(),
+            createdBy: req.user.id || undefined,
+            metadata: {
+              refundId: refund.id,
+              paymentIntentId: paymentIntentId,
+              chargeId: chargeId,
+              itemIds: itemIds || undefined,
+            },
+          });
+        } catch (transactionError) {
+          console.error("Failed to create transaction record for refund:", transactionError);
+          // Don't fail the refund if transaction record creation fails
+        }
+
+        // Check if order is fully refunded after this refund
+        // Recalculate total refunded amount to account for this new refund
+        const newTotalRefunded = totalRefunded + refundAmount;
+        const isFullyRefunded = Math.abs(newTotalRefunded - order.totalAmount) < 0.01 || newTotalRefunded >= order.totalAmount;
+        
+        // Only update order status to cancelled if fully refunded
+        if (isFullyRefunded) {
+          await orderModel.updateOrderAfterPayment(order.id, {
+            status: "cancelled",
+          });
+        }
+
+        res.json({
+          success: true,
+          message: "Refund processed successfully",
+          data: {
+            refund: {
+              id: refundRecord.id,
+              refundId: refund.id,
+              amount: refundAmount,
+              status: refund.status,
+              reason: reason || undefined,
+              createdAt: refundRecord.createdAt,
+              itemIds: refundRecord.itemIds,
+            },
+            remainingAmount: remainingAmount - refundAmount,
           },
         });
-      } catch (transactionError) {
-        console.error("Failed to create transaction record for refund:", transactionError);
-        // Don't fail the refund if transaction record creation fails
+      } catch (stripeError: any) {
+        console.error("Stripe refund error:", stripeError);
+        
+        // Provide more specific error messages
+        if (stripeError.type === 'StripeInvalidRequestError') {
+          if (stripeError.message?.includes('does not have a successful charge')) {
+            res.status(400).json({
+              success: false,
+              message: "This payment does not have a successful charge to refund. The payment may not have been completed or may have failed.",
+              error: stripeError.message,
+            });
+            return;
+          }
+        }
+        
+        throw stripeError; // Re-throw to be caught by outer catch block
       }
-
-      // Check if order is fully refunded after this refund
-      // Recalculate total refunded amount to account for this new refund
-      const newTotalRefunded = totalRefunded + refundAmount;
-      const isFullyRefunded = Math.abs(newTotalRefunded - order.totalAmount) < 0.01 || newTotalRefunded >= order.totalAmount;
-      
-      // Only update order status to cancelled if fully refunded
-      if (isFullyRefunded) {
-        await orderModel.updateOrderAfterPayment(order.id, {
-          status: "cancelled",
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "Refund processed successfully",
-        data: {
-          refund: {
-            id: refundRecord.id,
-            refundId: refund.id,
-            amount: refundAmount,
-            status: refund.status,
-            reason: reason || undefined,
-            createdAt: refundRecord.createdAt,
-          },
-          remainingAmount: remainingAmount - refundAmount,
-        },
-      });
     } catch (error: any) {
       console.error("Failed to process refund:", error);
       res.status(500).json({

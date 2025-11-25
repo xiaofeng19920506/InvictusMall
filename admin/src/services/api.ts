@@ -200,7 +200,7 @@ export const storeApi = {
         });
         
         if (refreshResponse.ok) {
-          const refreshData = await refreshResponse.json();
+          await refreshResponse.json(); // Refresh data not used
           console.log('[Upload] Token refreshed successfully');
           return true;
         }
@@ -777,6 +777,7 @@ export interface OrderItem {
   quantity: number;
   price: number;
   subtotal: number;
+  currency?: string;
   reservationDate?: string;
   reservationTime?: string;
   reservationNotes?: string;
@@ -860,6 +861,7 @@ export const refundApi = {
       reason?: string;
       status: string;
       refundedBy?: string;
+      itemIds?: string[];
       createdAt: string;
       updatedAt: string;
     }>;

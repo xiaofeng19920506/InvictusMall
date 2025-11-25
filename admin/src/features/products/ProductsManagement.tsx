@@ -10,7 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { productApi, storeApi } from "../../services/api";
 import type { Product, Store } from "../../services/api";
-import { useAuth } from "../../contexts/AuthContext";
+// import { useAuth } from "../../contexts/AuthContext"; // Unused for now
 import { useNotification } from "../../contexts/NotificationContext";
 import { getImageUrl } from "../../shared/utils/imageUtils";
 import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
@@ -31,7 +31,7 @@ const ProductsManagement: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
-  const { user } = useAuth();
+  // const { user } = useAuth(); // Unused for now
   const { showError, showSuccess } = useNotification();
   const { setHeaderActions } = useAdminHeader();
   const [confirmModal, setConfirmModal] = useState<{
@@ -188,7 +188,7 @@ const ProductsManagement: React.FC = () => {
     return matchesSearch;
   });
 
-  const selectedStore = stores.find(s => s.id === selectedStoreId);
+  // const selectedStore = stores.find(s => s.id === selectedStoreId); // Unused for now
 
   if (loading && products.length === 0) {
     return (

@@ -532,7 +532,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
                 {(() => {
                   // Calculate statistics based on order amount and refunds
                   // This is more accurate than calculating from transaction list
-                  const currency = currentOrder.items.length > 0 && currentOrder.items[0].currency 
+                  const currency = (currentOrder.items.length > 0 && currentOrder.items[0].currency) 
                     ? currentOrder.items[0].currency 
                     : "USD";
                   

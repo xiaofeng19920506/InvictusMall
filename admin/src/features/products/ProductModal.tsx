@@ -178,10 +178,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
     : "product-modal-title-create";
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay}>
       <div
         className={styles.modal}
-        onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
