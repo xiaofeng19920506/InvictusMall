@@ -943,7 +943,9 @@
       "errors": {
         "invalidAmount": "Please enter a valid refund amount",
         "exceedsRemaining": "Refund amount cannot exceed remaining amount (${{amount}})",
-        "noItemsSelected": "Please select at least one item to refund"
+        "noItemsSelected": "Please select at least one item to refund",
+        "noPaymentIntent": "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.",
+        "selectPartialMethod": "Please select a partial refund method."
       }
     }
   },

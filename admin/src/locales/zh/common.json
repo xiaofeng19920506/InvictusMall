@@ -937,7 +937,9 @@
       "errors": {
         "invalidAmount": "请输入有效的退款金额",
         "exceedsRemaining": "退款金额不能超过剩余金额（${{amount}}）",
-        "noItemsSelected": "请至少选择一个商品进行退款"
+        "noItemsSelected": "请至少选择一个商品进行退款",
+        "noPaymentIntent": "此订单没有支付方式。只能处理使用信用卡支付的订单的退款。",
+        "selectPartialMethod": "请选择部分退款方式。"
       }
     }
   },
