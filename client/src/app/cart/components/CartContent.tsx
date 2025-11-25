@@ -11,14 +11,12 @@ interface CartContentProps {
   addresses: ShippingAddress[];
   defaultAddressId?: string;
   beginCheckout: (payload: any) => Promise<any>;
-  beginGuestCheckout?: (payload: any) => Promise<any>;
 }
 
 export default function CartContent({
   addresses,
   defaultAddressId,
   beginCheckout,
-  beginGuestCheckout,
 }: CartContentProps) {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
 

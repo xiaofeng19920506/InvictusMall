@@ -28,10 +28,22 @@
   "languages": {
     "en": "English",
     "zh": "中文",
-    "es": "西班牙语",
-    "fr": "法语",
-    "ko": "韩语",
-    "ja": "日语"
+    "es": "Español",
+    "fr": "Français",
+    "ko": "한국어",
+    "ja": "日本語",
+    "de": "Deutsch",
+    "pt": "Português",
+    "ru": "Русский",
+    "ar": "العربية",
+    "it": "Italiano",
+    "nl": "Nederlands",
+    "pl": "Polski",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt",
+    "th": "ไทย",
+    "id": "Bahasa Indonesia",
+    "hi": "हिन्दी"
   },
   "pages": {
     "dashboard": "仪表盘",

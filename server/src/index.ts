@@ -15,10 +15,17 @@ import orderRoutes from "./routes/orderRoutes";
 import adminOrderRoutes from "./routes/adminOrderRoutes";
 import shippingAddressRoutes from "./routes/shippingAddressRoutes";
 import paymentRoutes, { stripeWebhookHandler } from "./routes/paymentRoutes";
+import paymentIntentsRoutes from "./routes/paymentIntentsRoutes";
+import refundRoutes from "./routes/refundRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import productRoutes from "./routes/productRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
+import productReviewRoutes from "./routes/productReviewRoutes";
+import wishlistRoutes from "./routes/wishlistRoutes";
+import browseHistoryRoutes from "./routes/browseHistoryRoutes";
+import taxRoutes from "./routes/taxRoutes";
+import reservationRoutes from "./routes/reservationRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
@@ -167,10 +174,17 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/admin/orders", adminOrderRoutes);
 app.use("/api/shipping-addresses", shippingAddressRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/payments", paymentIntentsRoutes);
+app.use("/api/refunds", refundRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/products", productReviewRoutes); // Product reviews routes
 app.use("/api/categories", categoryRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/wishlists", wishlistRoutes);
+app.use("/api/browse-history", browseHistoryRoutes);
+app.use("/api/tax", taxRoutes);
+app.use("/api/reservations", reservationRoutes);
 
 /**
  * @swagger

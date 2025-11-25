@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Package, MapPin, CreditCard, Calendar, Truck, Clock } from "lucide-react";
+import { X, Package, MapPin, CreditCard, Calendar, Truck, Clock, RefreshCw } from "lucide-react";
 import { type Order } from "../../services/api";
 import { getImageUrl } from "../../shared/utils/imageUtils";
+import RefundModal from "./RefundModal";
 import styles from "./OrderDetailModal.module.css";
 
 export interface OrderDetailModalProps {
@@ -12,6 +13,17 @@ export interface OrderDetailModalProps {
 
 const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose }) => {
   const { t } = useTranslation();
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundHistory, setRefundHistory] = useState<{
+    refunds: Array<{
+      id: string;
+      amount: number;
+      status: string;
+      reason?: string;
+      createdAt: string;
+    }>;
+    totalRefunded: number;
+  } | null>(null);
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -277,6 +289,32 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose }) =
             </div>
           </div>
 
+          {order.paymentIntentId && order.status !== "cancelled" && (
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <RefreshCw className={styles.sectionIcon} />
+                <h4 className={styles.sectionTitle}>
+                  {t("orders.modal.refunds") || "Refunds"}
+                </h4>
+              </div>
+              {refundHistory && refundHistory.totalRefunded > 0 && (
+                <div className={styles.refundInfo}>
+                  <p>
+                    {t("orders.modal.totalRefunded") || "Total Refunded"}: $
+                    {refundHistory.totalRefunded.toFixed(2)}
+                  </p>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowRefundModal(true)}
+                className="btn btn-primary"
+              >
+                {t("orders.modal.processRefund") || "Process Refund"}
+              </button>
+            </div>
+          )}
+
           <div className={styles.actions}>
             <button type="button" onClick={onClose} className="btn btn-secondary">
               {t("orders.modal.close") || "Close"}
@@ -284,6 +322,19 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose }) =
           </div>
         </div>
       </div>
+
+      {showRefundModal && (
+        <RefundModal
+          orderId={order.id}
+          orderTotal={order.totalAmount}
+          onClose={() => setShowRefundModal(false)}
+          onRefundSuccess={() => {
+            setShowRefundModal(false);
+            // Reload order or refresh refund history
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };

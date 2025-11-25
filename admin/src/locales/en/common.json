@@ -31,7 +31,19 @@
     "es": "Español",
     "fr": "Français",
     "ko": "한국어",
-    "ja": "日本語"
+    "ja": "日本語",
+    "de": "Deutsch",
+    "pt": "Português",
+    "ru": "Русский",
+    "ar": "العربية",
+    "it": "Italiano",
+    "nl": "Nederlands",
+    "pl": "Polski",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt",
+    "th": "ไทย",
+    "id": "Bahasa Indonesia",
+    "hi": "हिन्दी"
   },
     "pages": {
       "dashboard": "Dashboard",

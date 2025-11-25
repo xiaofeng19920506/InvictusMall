@@ -1,21 +1,78 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { getImageUrl } from "@/utils/imageUtils";
+import { apiService } from "@/services/api";
 import type { CartItem } from "@/contexts/CartContext";
+import type { ShippingAddress } from "@/lib/server-api";
+import type { CheckoutShippingAddressInput } from "../../cart/types";
 
 interface OrderSummaryProps {
   items: CartItem[];
   subtotal: number;
   itemCount: number;
+  shippingAddress?: ShippingAddress | CheckoutShippingAddressInput | null;
 }
 
 export default function OrderSummary({
   items,
   subtotal,
   itemCount,
+  shippingAddress,
 }: OrderSummaryProps) {
-  const estimatedTax = useMemo(() => subtotal * 0.08, [subtotal]); // 8% tax estimate
+  const [taxData, setTaxData] = useState<{
+    taxAmount: number;
+    taxRate: number;
+  } | null>(null);
+  const [isCalculatingTax, setIsCalculatingTax] = useState(false);
+
+  // Calculate tax when address changes
+  useEffect(() => {
+    const calculateTaxFromBackend = async () => {
+      if (!shippingAddress || !subtotal || subtotal <= 0) {
+        setTaxData(null);
+        return;
+      }
+
+      // Both ShippingAddress and CheckoutShippingAddressInput have these fields
+      const zipCode = (shippingAddress as any).zipCode;
+      const stateProvince = (shippingAddress as any).stateProvince;
+      const country = (shippingAddress as any).country || 'US';
+
+      if (!zipCode || zipCode.trim() === '') {
+        setTaxData(null);
+        return;
+      }
+
+      setIsCalculatingTax(true);
+      try {
+        const result = await apiService.calculateTax({
+          subtotal,
+          zipCode: zipCode.trim(),
+          stateProvince: stateProvince?.trim(),
+          country: country?.trim() || 'US',
+        });
+
+        if (result.success && result.data) {
+          setTaxData({
+            taxAmount: result.data.taxAmount,
+            taxRate: result.data.taxRate,
+          });
+        } else {
+          setTaxData(null);
+        }
+      } catch (error) {
+        console.error('Failed to calculate tax:', error);
+        setTaxData(null);
+      } finally {
+        setIsCalculatingTax(false);
+      }
+    };
+
+    calculateTaxFromBackend();
+  }, [subtotal, shippingAddress]);
+
+  const estimatedTax = taxData?.taxAmount || 0;
   const estimatedShipping = useMemo(() => {
     // Free shipping over $50, otherwise $5.99
     return subtotal >= 50 ? 0 : 5.99;
@@ -80,10 +137,24 @@ export default function OrderSummary({
             )}
           </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Estimated tax</span>
-          <span className="font-medium">${estimatedTax.toFixed(2)}</span>
-        </div>
+        {shippingAddress ? (
+          <div className="flex justify-between">
+            <span className="text-gray-600">
+              Estimated tax
+              {isCalculatingTax && (
+                <span className="ml-2 text-xs text-gray-400">(calculating...)</span>
+              )}
+            </span>
+            <span className="font-medium">
+              {isCalculatingTax ? '...' : `$${estimatedTax.toFixed(2)}`}
+            </span>
+          </div>
+        ) : (
+          <div className="flex justify-between">
+            <span className="text-gray-500 italic">Estimated tax</span>
+            <span className="text-gray-400 italic">Enter address</span>
+          </div>
+        )}
         {subtotal < 50 && (
           <p className="text-xs text-green-600 mt-1">
             Add ${(50 - subtotal).toFixed(2)} more for FREE shipping

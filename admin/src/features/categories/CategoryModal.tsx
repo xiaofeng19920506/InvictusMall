@@ -109,11 +109,9 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
 
   const generateSlug = (name: string): string => {
     return name
-      .toLowerCase()
       .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+      .replace(/[\s_-]+/g, "-")  // Replace spaces, underscores, and multiple dashes with single dash
+      .replace(/^-+|-+$/g, "");  // Remove leading/trailing dashes
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,12 +124,12 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   };
 
   const parseSlugs = (slugInput: string): string[] => {
+    // Split by spaces and keep each identifier as-is (preserve Chinese and Unicode)
     return slugInput
       .trim()
       .split(/\s+/)
       .map(s => s.trim())
-      .filter(s => s.length > 0)
-      .map(s => generateSlug(s));
+      .filter(s => s.length > 0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

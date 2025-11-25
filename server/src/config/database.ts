@@ -1193,6 +1193,307 @@ const createTables = async (): Promise<void> => {
         console.warn("Could not modify users.role ENUM:", error.message);
       }
     }
+
+    // ========== Amazon-Style Features: Core Tables ==========
+    
+    // Create product_reviews table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS product_reviews (
+        id VARCHAR(36) PRIMARY KEY,
+        product_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        order_id VARCHAR(36),
+        rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        title VARCHAR(255),
+        comment TEXT,
+        is_verified_purchase BOOLEAN DEFAULT FALSE,
+        helpful_count INT DEFAULT 0,
+        images JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_product_id (product_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_rating (rating),
+        INDEX idx_created_at (created_at),
+        UNIQUE KEY unique_user_product (user_id, product_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create review_helpful_votes table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS review_helpful_votes (
+        id VARCHAR(36) PRIMARY KEY,
+        review_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        is_helpful BOOLEAN NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_user_review (user_id, review_id),
+        INDEX idx_review_id (review_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create wishlists table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS wishlists (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        name VARCHAR(255) NOT NULL DEFAULT 'My Wishlist',
+        is_public BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create wishlist_items table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS wishlist_items (
+        id VARCHAR(36) PRIMARY KEY,
+        wishlist_id VARCHAR(36) NOT NULL,
+        product_id VARCHAR(36) NOT NULL,
+        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        notes TEXT,
+        INDEX idx_wishlist_id (wishlist_id),
+        INDEX idx_product_id (product_id),
+        UNIQUE KEY unique_wishlist_product (wishlist_id, product_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create browse_history table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS browse_history (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        product_id VARCHAR(36) NOT NULL,
+        viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id),
+        INDEX idx_product_id (product_id),
+        INDEX idx_viewed_at (viewed_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create product_questions table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS product_questions (
+        id VARCHAR(36) PRIMARY KEY,
+        product_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        question TEXT NOT NULL,
+        helpful_count INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_product_id (product_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_created_at (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create product_answers table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS product_answers (
+        id VARCHAR(36) PRIMARY KEY,
+        question_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        answer TEXT NOT NULL,
+        is_seller_answer BOOLEAN DEFAULT FALSE,
+        helpful_count INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_question_id (question_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_created_at (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create saved_payment_methods table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS saved_payment_methods (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        stripe_payment_method_id VARCHAR(255) NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        last4 VARCHAR(4),
+        brand VARCHAR(50),
+        expiry_month INT,
+        expiry_year INT,
+        is_default BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id),
+        INDEX idx_stripe_payment_method_id (stripe_payment_method_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create promotions table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS promotions (
+        id VARCHAR(36) PRIMARY KEY,
+        store_id VARCHAR(36),
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        discount_type ENUM('percentage', 'fixed_amount') NOT NULL,
+        discount_value DECIMAL(10,2) NOT NULL,
+        min_purchase_amount DECIMAL(10,2),
+        max_discount_amount DECIMAL(10,2),
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        applicable_to ENUM('all_products', 'category', 'specific_products') DEFAULT 'all_products',
+        applicable_data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_store_id (store_id),
+        INDEX idx_is_active (is_active),
+        INDEX idx_dates (start_date, end_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create coupons table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS coupons (
+        id VARCHAR(36) PRIMARY KEY,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        store_id VARCHAR(36),
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        discount_type ENUM('percentage', 'fixed_amount') NOT NULL,
+        discount_value DECIMAL(10,2) NOT NULL,
+        min_purchase_amount DECIMAL(10,2),
+        max_discount_amount DECIMAL(10,2),
+        max_uses INT,
+        current_uses INT DEFAULT 0,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        applicable_to ENUM('all_products', 'category', 'specific_products') DEFAULT 'all_products',
+        applicable_data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_code (code),
+        INDEX idx_store_id (store_id),
+        INDEX idx_is_active (is_active),
+        INDEX idx_dates (start_date, end_date)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create user_coupons table (track which users have used which coupons)
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS user_coupons (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36) NOT NULL,
+        coupon_id VARCHAR(36) NOT NULL,
+        order_id VARCHAR(36),
+        used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id),
+        INDEX idx_coupon_id (coupon_id),
+        INDEX idx_order_id (order_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create order_cancellations table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS order_cancellations (
+        id VARCHAR(36) PRIMARY KEY,
+        order_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        reason TEXT,
+        status ENUM('pending', 'approved', 'rejected', 'refunded') DEFAULT 'pending',
+        refund_amount DECIMAL(10,2),
+        cancelled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        processed_at TIMESTAMP NULL,
+        INDEX idx_order_id (order_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create order_returns table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS order_returns (
+        id VARCHAR(36) PRIMARY KEY,
+        order_id VARCHAR(36) NOT NULL,
+        order_item_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        reason TEXT NOT NULL,
+        status ENUM('pending', 'approved', 'rejected', 'received', 'refunded') DEFAULT 'pending',
+        refund_amount DECIMAL(10,2),
+        return_tracking_number VARCHAR(255),
+        requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        processed_at TIMESTAMP NULL,
+        INDEX idx_order_id (order_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create product_recommendations table (for storing recommendation data)
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS product_recommendations (
+        id VARCHAR(36) PRIMARY KEY,
+        user_id VARCHAR(36),
+        product_id VARCHAR(36) NOT NULL,
+        recommendation_type ENUM('browsing_history', 'purchase_history', 'similar_users', 'popular', 'new') NOT NULL,
+        score DECIMAL(10,4),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_user_id (user_id),
+        INDEX idx_product_id (product_id),
+        INDEX idx_type (recommendation_type)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create permissions table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS permissions (
+        id VARCHAR(36) PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        description TEXT,
+        resource VARCHAR(100) NOT NULL,
+        action VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_resource (resource),
+        INDEX idx_action (action)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Create role_permissions table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS role_permissions (
+        id VARCHAR(36) PRIMARY KEY,
+        role VARCHAR(50) NOT NULL,
+        permission_id VARCHAR(36) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_role_permission (role, permission_id),
+        INDEX idx_role (role),
+        INDEX idx_permission_id (permission_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Enhance products table with additional Amazon-style fields
+    try {
+      await connection.execute(`
+        ALTER TABLE products
+        ADD COLUMN sku VARCHAR(100),
+        ADD COLUMN brand VARCHAR(255),
+        ADD COLUMN weight DECIMAL(10,2),
+        ADD COLUMN dimensions VARCHAR(100),
+        ADD COLUMN images JSON,
+        ADD COLUMN specifications JSON,
+        ADD COLUMN average_rating DECIMAL(3,2) DEFAULT 0.00,
+        ADD COLUMN review_count INT DEFAULT 0,
+        ADD COLUMN view_count INT DEFAULT 0,
+        ADD COLUMN purchase_count INT DEFAULT 0,
+        ADD INDEX idx_sku (sku),
+        ADD INDEX idx_brand (brand),
+        ADD INDEX idx_average_rating (average_rating)
+      `);
+      console.log("✅ Enhanced products table with Amazon-style fields");
+    } catch (error: any) {
+      if (error.code !== "ER_DUP_FIELDNAME") {
+        console.warn("Could not enhance products table:", error.message);
+      }
+    }
+
+    console.log("✅ Created all Amazon-style feature tables");
   } finally {
     connection.release();
   }

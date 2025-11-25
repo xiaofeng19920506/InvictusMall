@@ -29,11 +29,23 @@
   },
   "languages": {
     "en": "English",
-    "zh": "中国語",
-    "es": "スペイン語",
-    "fr": "フランス語",
-    "ko": "韓国語",
-    "ja": "日本語"
+    "zh": "中文",
+    "es": "Español",
+    "fr": "Français",
+    "ko": "한국어",
+    "ja": "日本語",
+    "de": "Deutsch",
+    "pt": "Português",
+    "ru": "Русский",
+    "ar": "العربية",
+    "it": "Italiano",
+    "nl": "Nederlands",
+    "pl": "Polski",
+    "tr": "Türkçe",
+    "vi": "Tiếng Việt",
+    "th": "ไทย",
+    "id": "Bahasa Indonesia",
+    "hi": "हिन्दी"
   },
   "pages": {
     "dashboard": "ダッシュボード",

@@ -10,6 +10,7 @@ import {
   authenticateStaffToken,
   AuthenticatedRequest,
 } from "../middleware/auth";
+import { handleValidationErrors } from '../middleware/validation';
 
 const router = Router();
 const staffModel = new StaffModel();
@@ -469,7 +470,8 @@ router.post("/invite", authenticateStaffToken, [
   body('email').isEmail().normalizeEmail(),
   body('firstName').trim().isLength({ min: 1 }),
   body('lastName').trim().isLength({ min: 1 }),
-  body('role').isIn(['admin', 'owner', 'manager', 'employee'])
+  body('role').isIn(['admin', 'owner', 'manager', 'employee']),
+  handleValidationErrors
 ], async (req: AuthenticatedRequest, res: Response) => {
   try {
     // Check if user has permission to create staff (admin, owner, or manager)
@@ -477,15 +479,6 @@ router.post("/invite", authenticateStaffToken, [
       return res.status(403).json({
         success: false,
         message: 'Insufficient permissions to create staff members'
-      });
-    }
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid input data',
-        errors: errors.array()
       });
     }
 

@@ -11,6 +11,7 @@ const TransactionsManagement = lazy(() => import("../features/transactions/Trans
 const ProductsManagement = lazy(() => import("../features/products/ProductsManagement"));
 const CategoriesManagement = lazy(() => import("../features/categories/CategoriesManagement"));
 const OrdersManagement = lazy(() => import("../features/orders/OrdersManagement"));
+const OrdersAndTransactionsManagement = lazy(() => import("../features/orders-transactions/OrdersAndTransactionsManagement"));
 const InventoryManagement = lazy(() => import("../features/inventory/InventoryManagement"));
 
 // Loading fallback component
@@ -41,4 +42,5 @@ export const LazyProductsManagement = withSuspense(ProductsManagement);
 export const LazyCategoriesManagement = withSuspense(CategoriesManagement);
 export const LazyOrdersManagement = withSuspense(OrdersManagement);
 export const LazyInventoryManagement = withSuspense(InventoryManagement);
+export const LazyOrdersAndTransactionsManagement = withSuspense(OrdersAndTransactionsManagement);
 

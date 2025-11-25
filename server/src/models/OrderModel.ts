@@ -50,6 +50,7 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   stripeSessionId?: string | null;
+  paymentIntentId?: string | null;
   // Guest order fields
   guestEmail?: string | null;
   guestFullName?: string | null;
@@ -82,6 +83,7 @@ export interface CreateOrderRequest {
   };
   paymentMethod: string;
   stripeSessionId?: string | null;
+  paymentIntentId?: string | null;
   status?: OrderStatus;
   // Guest order fields
   guestEmail?: string | null;
@@ -102,7 +104,7 @@ export class OrderModel {
         o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
         o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
         o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
-        o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
+        o.payment_method, o.stripe_session_id, o.payment_intent_id, o.order_date, o.shipped_date, o.delivered_date,
         o.tracking_number, o.created_at, o.updated_at,
         o.guest_email, o.guest_full_name, o.guest_phone_number,
         JSON_ARRAYAGG(
@@ -127,6 +129,43 @@ export class OrderModel {
     `;
 
     const [rows] = await this.pool.execute(query, [sessionId]);
+    const orders = rows as any[];
+
+    return orders.map((row) => this.mapRowToOrder(row));
+  }
+
+  async getOrdersByPaymentIntentId(paymentIntentId: string): Promise<Order[]> {
+    const query = `
+      SELECT 
+        o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
+        o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
+        o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
+        o.payment_method, o.stripe_session_id, o.payment_intent_id, o.order_date, o.shipped_date, o.delivered_date,
+        o.tracking_number, o.created_at, o.updated_at,
+        o.guest_email, o.guest_full_name, o.guest_phone_number,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', oi.id,
+            'productId', oi.product_id,
+            'productName', oi.product_name,
+            'productImage', oi.product_image,
+            'quantity', oi.quantity,
+            'price', oi.price,
+            'subtotal', oi.subtotal,
+            'reservationDate', oi.reservation_date,
+            'reservationTime', oi.reservation_time,
+            'reservationNotes', oi.reservation_notes,
+            'isReservation', oi.is_reservation
+          )
+        ) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE o.payment_intent_id = ?
+      GROUP BY o.id
+      ORDER BY o.order_date DESC
+    `;
+
+    const [rows] = await this.pool.execute(query, [paymentIntentId]);
     const orders = rows as any[];
 
     return orders.map((row) => this.mapRowToOrder(row));
@@ -214,9 +253,9 @@ export class OrderModel {
           id, user_id, store_id, store_name, total_amount, status,
           shipping_street_address, shipping_apt_number, shipping_city,
           shipping_state_province, shipping_zip_code, shipping_country,
-          payment_method, stripe_session_id, order_date, created_at, updated_at,
+          payment_method, stripe_session_id, payment_intent_id, order_date, created_at, updated_at,
           guest_email, guest_full_name, guest_phone_number
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const status: OrderStatus = orderData.status ?? 'pending';
@@ -236,6 +275,7 @@ export class OrderModel {
         orderData.shippingAddress.country,
         orderData.paymentMethod,
         orderData.stripeSessionId || null,
+        orderData.paymentIntentId || null,
         now,
         now,
         now,
@@ -326,6 +366,7 @@ export class OrderModel {
       status?: OrderStatus;
       paymentMethod?: string;
       stripeSessionId?: string | null;
+      paymentIntentId?: string | null;
       orderDate?: Date;
       shippingAddress?: {
         streetAddress: string;
@@ -357,6 +398,11 @@ export class OrderModel {
     if (updates.stripeSessionId !== undefined) {
       fields.push('stripe_session_id = ?');
       params.push(updates.stripeSessionId);
+    }
+
+    if (updates.paymentIntentId !== undefined) {
+      fields.push('payment_intent_id = ?');
+      params.push(updates.paymentIntentId);
     }
 
     if (updates.orderDate) {
@@ -448,7 +494,7 @@ export class OrderModel {
         o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
         o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
         o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
-        o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
+        o.payment_method, o.stripe_session_id, o.payment_intent_id, o.order_date, o.shipped_date, o.delivered_date,
         o.tracking_number, o.created_at, o.updated_at,
         o.guest_email, o.guest_full_name, o.guest_phone_number,
         JSON_ARRAYAGG(
@@ -491,7 +537,7 @@ export class OrderModel {
         o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
         o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
         o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
-        o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
+        o.payment_method, o.stripe_session_id, o.payment_intent_id, o.order_date, o.shipped_date, o.delivered_date,
         o.tracking_number, o.created_at, o.updated_at,
         o.guest_email, o.guest_full_name, o.guest_phone_number,
         JSON_ARRAYAGG(
@@ -576,7 +622,7 @@ export class OrderModel {
           o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
           o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
           o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
-          o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
+          o.payment_method, o.stripe_session_id, o.payment_intent_id, o.order_date, o.shipped_date, o.delivered_date,
           o.tracking_number, o.created_at, o.updated_at
         FROM orders o
         ${whereClause}
@@ -682,6 +728,7 @@ export class OrderModel {
         },
         paymentMethod: order.payment_method,
         stripeSessionId: order.stripe_session_id || null,
+        paymentIntentId: order.payment_intent_id || null,
         orderDate: order.order_date,
         shippedDate: order.shipped_date || undefined,
         deliveredDate: order.delivered_date || undefined,
@@ -723,7 +770,7 @@ export class OrderModel {
           o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
           o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
           o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
-          o.payment_method, o.stripe_session_id, o.order_date, o.shipped_date, o.delivered_date,
+          o.payment_method, o.stripe_session_id, o.payment_intent_id, o.order_date, o.shipped_date, o.delivered_date,
           o.tracking_number, o.created_at, o.updated_at,
           o.guest_email, o.guest_full_name, o.guest_phone_number
         FROM orders o
@@ -853,6 +900,7 @@ export class OrderModel {
         },
         paymentMethod: order.payment_method,
         stripeSessionId: order.stripe_session_id || null,
+        paymentIntentId: order.payment_intent_id || null,
         orderDate: order.order_date,
         shippedDate: order.shipped_date || undefined,
         deliveredDate: order.delivered_date || undefined,
@@ -1034,6 +1082,46 @@ export class OrderModel {
       } catch (error: any) {
         // Ignore if index already exists
       }
+
+      // Add payment_intent_id column for Payment Intents API
+      try {
+        await connection.execute(
+          `ALTER TABLE orders ADD COLUMN payment_intent_id VARCHAR(255) NULL`
+        );
+      } catch (error: any) {
+        // Ignore if column already exists
+      }
+
+      try {
+        await connection.execute(
+          `ALTER TABLE orders ADD INDEX idx_payment_intent (payment_intent_id)`
+        );
+      } catch (error: any) {
+        // Ignore if index already exists
+      }
+
+      // Create refunds table for tracking refunds
+      const refundsTableQuery = `
+        CREATE TABLE IF NOT EXISTS refunds (
+          id VARCHAR(36) PRIMARY KEY,
+          order_id VARCHAR(36) NOT NULL,
+          payment_intent_id VARCHAR(255) NOT NULL,
+          refund_id VARCHAR(255) NOT NULL,
+          amount DECIMAL(10, 2) NOT NULL,
+          currency VARCHAR(3) DEFAULT 'usd',
+          reason VARCHAR(255) NULL,
+          status VARCHAR(50) NOT NULL,
+          refunded_by VARCHAR(36) NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_order_id (order_id),
+          INDEX idx_payment_intent_id (payment_intent_id),
+          INDEX idx_refund_id (refund_id),
+          INDEX idx_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `;
+
+      await connection.execute(refundsTableQuery);
 
       // Create order_items table (without foreign key first)
       const orderItemsTableQuery = `

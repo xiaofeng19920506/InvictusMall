@@ -110,6 +110,7 @@ class ApiService {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      credentials: 'include', // Include cookies for authentication
       ...options,
     };
 
@@ -317,6 +318,91 @@ class ApiService {
     
     const endpoint = `/api/categories${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return await this.cachedRequest<ApiResponse<Category[]>>(endpoint);
+  }
+
+  // Tax calculation
+  async calculateTax(params: {
+    subtotal: number;
+    zipCode: string;
+    stateProvince?: string;
+    country?: string;
+  }): Promise<{
+    success: boolean;
+    data?: {
+      taxAmount: number;
+      taxRate: number;
+      total: number;
+    };
+    message?: string;
+  }> {
+    return this.request('/api/tax/calculate', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
+  // Payment Intents
+  async createPaymentIntent(payload: {
+    items: Array<{
+      productId: string;
+      productName: string;
+      productImage?: string;
+      quantity: number;
+      price: number;
+      storeId: string;
+      storeName: string;
+    }>;
+    shippingAddressId?: string;
+    newShippingAddress?: {
+      fullName: string;
+      phoneNumber: string;
+      streetAddress: string;
+      aptNumber?: string;
+      city: string;
+      stateProvince: string;
+      zipCode: string;
+      country: string;
+    };
+    saveNewAddress?: boolean;
+  }): Promise<{
+    success: boolean;
+    data?: {
+      clientSecret: string;
+      paymentIntentId: string;
+      orderIds: string[];
+    };
+    message?: string;
+  }> {
+    return this.request('/api/payments/create-payment-intent', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async confirmPayment(paymentIntentId: string): Promise<{
+    success: boolean;
+    message?: string;
+    data?: {
+      orderIds: string[];
+    };
+  }> {
+    return this.request('/api/payments/confirm-payment', {
+      method: 'POST',
+      body: JSON.stringify({ paymentIntentId }),
+    });
+  }
+
+  async getAvailableTimeSlots(productId: string, date: string): Promise<{
+    success: boolean;
+    data?: {
+      availableTimeSlots: string[];
+      bookedTimeSlots: string[];
+    };
+    message?: string;
+  }> {
+    return this.request(`/api/reservations/available-time-slots?productId=${encodeURIComponent(productId)}&date=${encodeURIComponent(date)}`, {
+      method: 'GET',
+    });
   }
 }
 

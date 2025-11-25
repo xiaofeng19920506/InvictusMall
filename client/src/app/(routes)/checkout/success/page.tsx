@@ -28,30 +28,25 @@ async function finalizeCheckout(
     };
   }
 
-  const cookieStore = cookies();
-  const serializedCookies = cookieStore.getAll();
+  const cookieStore = await cookies();
+  const allCookies = cookieStore.getAll();
   const cookieHeader =
-    serializedCookies.length > 0
-      ? serializedCookies.map(({ name, value }) => `${name}=${value}`).join("; ")
+    allCookies.length > 0
+      ? allCookies.map(({ name, value }) => `${name}=${value}`).join("; ")
       : undefined;
 
-  // Check if user has auth cookie - if not, try guest checkout first
+  // User must be authenticated to complete checkout
   const hasAuthCookie = cookieHeader?.includes("auth_token");
   
+  if (!hasAuthCookie) {
+    return {
+      success: false,
+      message: "Authentication required to complete checkout. Please log in.",
+    };
+  }
+  
   try {
-    // Try authenticated checkout first if user has auth cookie
-    if (hasAuthCookie) {
-      try {
-        return await completeCheckoutSessionServer(cookieHeader, sessionId, false);
-      } catch (authError) {
-        // If authenticated checkout fails, try guest checkout
-        console.warn("Authenticated checkout failed, trying guest checkout:", authError);
-        return await completeCheckoutSessionServer(cookieHeader, sessionId, true);
-      }
-    } else {
-      // No auth cookie, try guest checkout
-      return await completeCheckoutSessionServer(cookieHeader, sessionId, true);
-    }
+    return await completeCheckoutSessionServer(cookieHeader, sessionId, false);
   } catch (error) {
     console.error("Failed to finalize checkout session:", error);
     return {

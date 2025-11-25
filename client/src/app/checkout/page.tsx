@@ -1,11 +1,12 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 import CheckoutContent from "./components/CheckoutContent";
 import { cookies } from "next/headers";
 import {
   fetchShippingAddressesServer,
   ShippingAddress,
 } from "@/lib/server-api";
-import { createStripeCheckoutSessionAction, createGuestCheckoutSessionAction } from "../cart/actions";
+import { createStripeCheckoutSessionAction } from "../cart/actions";
 
 export const metadata: Metadata = {
   title: "Checkout | Invictus Mall",
@@ -21,22 +22,25 @@ export default async function CheckoutPage() {
     .map((cookie) => `${cookie.name}=${cookie.value}`)
     .join("; ");
 
-  let addresses: ShippingAddress[] = [];
-
-  // Only fetch addresses if user has auth cookie (authenticated)
+  // Check if user is authenticated - redirect to login if not
   const hasAuthCookie = cookieHeader?.includes("auth_token");
   
-  if (hasAuthCookie) {
-    try {
-      const response = await fetchShippingAddressesServer(
-        cookieHeader || undefined
-      );
-      if (response.success && Array.isArray(response.data)) {
-        addresses = response.data;
-      }
-    } catch (error) {
-      console.warn("Unable to load shipping addresses for checkout:", error);
+  if (!hasAuthCookie) {
+    redirect("/login?redirect=/checkout");
+  }
+
+  let addresses: ShippingAddress[] = [];
+
+  // Fetch addresses for authenticated user
+  try {
+    const response = await fetchShippingAddressesServer(
+      cookieHeader || undefined
+    );
+    if (response.success && Array.isArray(response.data)) {
+      addresses = response.data;
     }
+  } catch (error) {
+    console.warn("Unable to load shipping addresses for checkout:", error);
   }
 
   return (
@@ -44,7 +48,6 @@ export default async function CheckoutPage() {
       addresses={addresses}
       defaultAddressId={addresses.find((address) => address.isDefault)?.id}
       beginCheckout={createStripeCheckoutSessionAction}
-      beginGuestCheckout={createGuestCheckoutSessionAction}
     />
   );
 }

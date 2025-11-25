@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useCart } from "@/contexts/CartContext";
+import { useCart, type CartItem } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import Header from "@/components/common/Header";
@@ -12,7 +12,7 @@ import type {
   CheckoutSessionResult,
   CheckoutShippingAddressInput,
 } from "../../cart/types";
-import { authService } from "@/services/auth";
+import { apiService } from "@/services/api";
 import DeliveryAddressStep from "./DeliveryAddressStep";
 import PaymentMethodStep from "./PaymentMethodStep";
 import ReviewOrderStep from "./ReviewOrderStep";
@@ -21,8 +21,7 @@ import OrderSummary from "./OrderSummary";
 interface CheckoutContentProps {
   addresses: ShippingAddress[];
   defaultAddressId?: string;
-  beginCheckout: (payload: CheckoutPayload) => Promise<CheckoutSessionResult>;
-  beginGuestCheckout?: (payload: CheckoutPayload) => Promise<CheckoutSessionResult>;
+  beginCheckout?: (payload: CheckoutPayload) => Promise<CheckoutSessionResult>;
 }
 
 type CheckoutStep = "delivery" | "payment" | "review";
@@ -42,15 +41,23 @@ export default function CheckoutContent({
   addresses,
   defaultAddressId,
   beginCheckout,
-  beginGuestCheckout,
 }: CheckoutContentProps) {
   const { items, clearCart } = useCart();
   const { isAuthenticated } = useAuth();
   const router = useRouter();
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login?redirect=/checkout");
+    }
+  }, [isAuthenticated, router]);
+
   const [currentStep, setCurrentStep] = useState<CheckoutStep>("delivery");
   const [statusError, setStatusError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   // Delivery address state
   const [useExistingAddress, setUseExistingAddress] = useState(
@@ -63,73 +70,12 @@ export default function CheckoutContent({
     useState<CheckoutShippingAddressInput>(EMPTY_ADDRESS);
   const [saveNewAddress, setSaveNewAddress] = useState(true);
 
-  // Guest checkout fields
-  const [guestEmail, setGuestEmail] = useState("");
-  const [guestFullName, setGuestFullName] = useState("");
-  const [guestPhoneNumber, setGuestPhoneNumber] = useState("");
-
-  // Account check state
-  const [accountCheckResult, setAccountCheckResult] = useState<{
-    exists: boolean;
-    message?: string;
-  } | null>(null);
-  const [isCheckingAccount, setIsCheckingAccount] = useState(false);
-
   // Redirect to cart if empty
   useEffect(() => {
     if (items.length === 0) {
       router.push("/cart");
     }
   }, [items.length, router]);
-
-  // Check for existing account when guest email or phone changes
-  useEffect(() => {
-    if (isAuthenticated) {
-      setAccountCheckResult(null);
-      return;
-    }
-
-    const checkAccount = async () => {
-      if (!guestEmail.trim() && !guestPhoneNumber.trim()) {
-        setAccountCheckResult(null);
-        return;
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const hasValidEmail = guestEmail.trim() && emailRegex.test(guestEmail.trim());
-      const hasValidPhone = guestPhoneNumber.trim().length >= 10;
-
-      if (!hasValidEmail && !hasValidPhone) {
-        setAccountCheckResult(null);
-        return;
-      }
-
-      setIsCheckingAccount(true);
-      try {
-        const result = await authService.checkAccountExists(
-          hasValidEmail ? guestEmail.trim() : undefined,
-          hasValidPhone ? guestPhoneNumber.trim() : undefined
-        );
-
-        if (result.success) {
-          setAccountCheckResult({
-            exists: result.exists,
-            message: result.message,
-          });
-        } else {
-          setAccountCheckResult(null);
-        }
-      } catch (error) {
-        console.error("Failed to check account:", error);
-        setAccountCheckResult(null);
-      } finally {
-        setIsCheckingAccount(false);
-      }
-    };
-
-    const timeoutId = setTimeout(checkAccount, 500);
-    return () => clearTimeout(timeoutId);
-  }, [guestEmail, guestPhoneNumber, isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated && addresses.length > 0) {
@@ -155,31 +101,30 @@ export default function CheckoutContent({
     [items]
   );
 
-  const validateDeliveryStep = (): string | null => {
-    // For guest checkout, validate guest information
-    if (!isAuthenticated) {
-      if (!guestEmail.trim()) {
-        return "Email is required for guest checkout.";
-      }
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(guestEmail.trim())) {
-        return "Please enter a valid email address.";
-      }
-      if (!guestFullName.trim()) {
-        return "Full name is required for guest checkout.";
-      }
-      if (!guestPhoneNumber.trim()) {
-        return "Phone number is required for guest checkout.";
-      }
+  // Get current shipping address for tax calculation
+  const currentShippingAddress = useMemo(() => {
+    if (useExistingAddress && isAuthenticated && addresses.length > 0 && selectedAddressId) {
+      return addresses.find((a) => a.id === selectedAddressId) || null;
     }
+    // Check if new address has required fields filled
+    if (
+      newAddress.stateProvince.trim() &&
+      newAddress.city.trim() &&
+      newAddress.zipCode.trim()
+    ) {
+      return newAddress;
+    }
+    return null;
+  }, [useExistingAddress, isAuthenticated, addresses, selectedAddressId, newAddress]);
 
-    // Check if account exists for guest checkout
-    if (!isAuthenticated && accountCheckResult?.exists) {
-      return accountCheckResult.message || "Please log in to continue with your order.";
+  const validateDeliveryStep = (): string | null => {
+    // User must be authenticated to checkout
+    if (!isAuthenticated) {
+      return "Please log in to continue with checkout.";
     }
 
     // Validate shipping address
-    if (useExistingAddress && isAuthenticated && addresses.length > 0) {
+    if (useExistingAddress && addresses.length > 0) {
       if (!selectedAddressId) {
         return "Please select a shipping address.";
       }
@@ -211,9 +156,59 @@ export default function CheckoutContent({
     setCurrentStep("payment");
   };
 
-  const handleContinueToReview = () => {
+  const handleContinueToReview = (paymentIntentId: string, clientSecret: string) => {
     setStatusError(null);
+    setPaymentIntentId(paymentIntentId);
+    setClientSecret(clientSecret);
     setCurrentStep("review");
+  };
+
+  const handleCreatePaymentIntent = async (
+    itemsToProcess: CartItem[],
+    shippingAddress: ShippingAddress | CheckoutShippingAddressInput | null
+  ) => {
+    if (!shippingAddress) {
+      throw new Error("Shipping address is required");
+    }
+
+    const payload: CheckoutPayload = {
+      items: itemsToProcess.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        productImage: item.productImage,
+        quantity: item.quantity,
+        price: item.price,
+        storeId: item.storeId,
+        storeName: item.storeName,
+        // Include reservation fields if present
+        reservationDate: item.reservationDate,
+        reservationTime: item.reservationTime,
+        reservationNotes: item.reservationNotes,
+        isReservation: item.isReservation,
+      })),
+      shippingAddressId: useExistingAddress && selectedAddressId ? selectedAddressId : undefined,
+      newShippingAddress: !useExistingAddress && shippingAddress && 'fullName' in shippingAddress
+        ? {
+            fullName: shippingAddress.fullName,
+            phoneNumber: shippingAddress.phoneNumber,
+            streetAddress: shippingAddress.streetAddress,
+            aptNumber: shippingAddress.aptNumber,
+            city: shippingAddress.city,
+            stateProvince: shippingAddress.stateProvince,
+            zipCode: shippingAddress.zipCode,
+            country: shippingAddress.country,
+          }
+        : undefined,
+      saveNewAddress: !useExistingAddress && saveNewAddress,
+    };
+
+    const result = await apiService.createPaymentIntent(payload);
+    if (!result.success || !result.data) {
+      throw new Error(result.message || "Failed to create payment intent");
+    }
+
+    return result.data;
   };
 
   const handleBackToDelivery = () => {
@@ -227,56 +222,35 @@ export default function CheckoutContent({
   const handlePlaceOrder = async () => {
     setStatusError(null);
 
-    const validationError = validateDeliveryStep();
-    if (validationError) {
-      setStatusError(validationError);
-      setCurrentStep("delivery");
+    if (!paymentIntentId) {
+      setStatusError("Payment intent is missing. Please go back to payment step.");
       return;
     }
 
-    const payload: CheckoutPayload = {
-      items: items.map((item) => ({ ...item })),
-      shippingAddressId: useExistingAddress && isAuthenticated ? selectedAddressId : undefined,
-      newShippingAddress: !useExistingAddress || !isAuthenticated
-        ? {
-            fullName: newAddress.fullName.trim(),
-            phoneNumber: newAddress.phoneNumber.trim(),
-            streetAddress: newAddress.streetAddress.trim(),
-            aptNumber: newAddress.aptNumber?.trim() || undefined,
-            city: newAddress.city.trim(),
-            stateProvince: newAddress.stateProvince.trim(),
-            zipCode: newAddress.zipCode.trim(),
-            country: newAddress.country.trim(),
-          }
-        : undefined,
-      saveNewAddress: !useExistingAddress && saveNewAddress && isAuthenticated,
-      guestEmail: !isAuthenticated ? guestEmail.trim() : undefined,
-      guestFullName: !isAuthenticated ? guestFullName.trim() : undefined,
-      guestPhoneNumber: !isAuthenticated ? guestPhoneNumber.trim() : undefined,
-    };
-
     try {
       setIsProcessing(true);
-      const checkoutFunction = !isAuthenticated && beginGuestCheckout 
-        ? beginGuestCheckout 
-        : beginCheckout;
-      const result = await checkoutFunction(payload);
+      
+      // Payment was already confirmed in PaymentMethodStep
+      // Now we just need to finalize the order on backend
+      // This matches Amazon's flow: payment is processed before review, then order is finalized
+      const result = await apiService.confirmPayment(paymentIntentId);
 
-      if (result.success && result.checkoutUrl) {
+      if (result.success) {
         clearCart();
-        window.location.href = result.checkoutUrl;
+        // Redirect to success page
+        router.push(`/checkout/success?payment_intent=${paymentIntentId}`);
         return;
       }
 
       setStatusError(
-        result.message || "Unable to start checkout. Please try again."
+        result.message || "Unable to complete order. Please try again."
       );
     } catch (error) {
-      console.error("Failed to start checkout:", error);
+      console.error("Failed to complete order:", error);
       setStatusError(
         error instanceof Error
           ? error.message
-          : "Unexpected error starting checkout. Please try again."
+          : "Unexpected error completing order. Please try again."
       );
     } finally {
       setIsProcessing(false);
@@ -359,22 +333,17 @@ export default function CheckoutContent({
                     setNewAddress={setNewAddress}
                     saveNewAddress={saveNewAddress}
                     setSaveNewAddress={setSaveNewAddress}
-                    guestEmail={guestEmail}
-                    setGuestEmail={setGuestEmail}
-                    guestFullName={guestFullName}
-                    setGuestFullName={setGuestFullName}
-                    guestPhoneNumber={guestPhoneNumber}
-                    setGuestPhoneNumber={setGuestPhoneNumber}
-                    accountCheckResult={accountCheckResult}
-                    isCheckingAccount={isCheckingAccount}
                     onContinue={handleContinueToPayment}
                   />
                 )}
 
                 {currentStep === "payment" && (
                   <PaymentMethodStep
+                    items={items}
+                    shippingAddress={currentShippingAddress}
                     onContinue={handleContinueToReview}
                     onBack={handleBackToDelivery}
+                    onCreatePaymentIntent={handleCreatePaymentIntent}
                   />
                 )}
 
@@ -382,7 +351,7 @@ export default function CheckoutContent({
                   <ReviewOrderStep
                     items={items}
                     shippingAddress={
-                      useExistingAddress && isAuthenticated && addresses.length > 0
+                      useExistingAddress && addresses.length > 0
                         ? addresses.find((a) => a.id === selectedAddressId)
                         : {
                             fullName: newAddress.fullName,
@@ -395,8 +364,6 @@ export default function CheckoutContent({
                             country: newAddress.country,
                           }
                     }
-                    guestEmail={guestEmail}
-                    guestFullName={guestFullName}
                     isAuthenticated={isAuthenticated}
                     onPlaceOrder={handlePlaceOrder}
                     onBack={handleBackToPayment}
@@ -413,6 +380,7 @@ export default function CheckoutContent({
                 items={items}
                 subtotal={subtotal}
                 itemCount={itemCount}
+                shippingAddress={currentShippingAddress}
               />
             </div>
           </div>
