@@ -7,6 +7,8 @@ import {
 } from "../middleware/auth";
 import { body, param, validationResult } from 'express-validator';
 import { handleValidationErrors } from '../middleware/validation';
+import { ApiResponseHelper } from '../utils/apiResponse';
+import { logger } from '../utils/logger';
 
 const router = Router();
 const returnModel = new ReturnModel();
@@ -33,31 +35,20 @@ const orderModel = new OrderModel();
 router.get(
   "/order/:orderId",
   authenticateStaffToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { orderId } = req.params;
 
       if (!orderId) {
-        res.status(400).json({
-          success: false,
-          message: "Order ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Order ID is required");
       }
 
       const returns = await returnModel.findByOrderId(orderId);
 
-      res.json({
-        success: true,
-        data: returns,
-      });
+      return ApiResponseHelper.success(res, returns);
     } catch (error: any) {
-      console.error("Failed to fetch returns:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch returns",
-        error: error.message,
-      });
+      logger.error("Failed to fetch returns", error, { orderId: req.params.orderId, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to fetch returns", 500, error);
     }
   }
 );
@@ -100,14 +91,10 @@ router.post(
     body('reason').notEmpty().withMessage('Reason is required'),
   ],
   handleValidationErrors,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       const { orderId, orderItemId, reason } = req.body;
@@ -115,21 +102,13 @@ router.post(
       // Verify order exists and belongs to user (or user is admin/staff)
       const order = await orderModel.getOrderById(orderId);
       if (!order) {
-        res.status(404).json({
-          success: false,
-          message: "Order not found",
-        });
-        return;
+        return ApiResponseHelper.notFound(res, "Order");
       }
 
       // Check if order item exists in the order
       const orderItem = order.items.find(item => item.id === orderItemId);
       if (!orderItem) {
-        res.status(404).json({
-          success: false,
-          message: "Order item not found",
-        });
-        return;
+        return ApiResponseHelper.notFound(res, "Order item");
       }
 
       // Check if there's already a pending return for this item
@@ -137,11 +116,7 @@ router.post(
       const hasPendingReturn = existingReturns.some(r => r.status === 'pending' || r.status === 'approved');
       
       if (hasPendingReturn) {
-        res.status(400).json({
-          success: false,
-          message: "A return request already exists for this item",
-        });
-        return;
+        return ApiResponseHelper.error(res, "A return request already exists for this item", 400);
       }
 
       const returnRequest = await returnModel.create({
@@ -151,18 +126,10 @@ router.post(
         reason,
       });
 
-      res.json({
-        success: true,
-        message: "Return request created successfully",
-        data: returnRequest,
-      });
+      return ApiResponseHelper.success(res, returnRequest, "Return request created successfully");
     } catch (error: any) {
-      console.error("Failed to create return:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create return request",
-        error: error.message,
-      });
+      logger.error("Failed to create return", error, { orderId: req.body.orderId, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to create return request", 500, error);
     }
   }
 );
@@ -209,26 +176,18 @@ router.put(
     body('status').isIn(['pending', 'approved', 'rejected', 'received', 'refunded']).withMessage('Invalid status'),
   ],
   handleValidationErrors,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       const { status, refundAmount, returnTrackingNumber } = req.body;
 
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Return ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Return ID is required");
       }
 
       const returnRequest = await returnModel.findById(id);
       if (!returnRequest) {
-        res.status(404).json({
-          success: false,
-          message: "Return request not found",
-        });
-        return;
+        return ApiResponseHelper.notFound(res, "Return request");
       }
 
       const updatedReturn = await returnModel.updateStatus(id, {
@@ -237,18 +196,10 @@ router.put(
         returnTrackingNumber,
       });
 
-      res.json({
-        success: true,
-        message: "Return status updated successfully",
-        data: updatedReturn,
-      });
+      return ApiResponseHelper.success(res, updatedReturn, "Return status updated successfully");
     } catch (error: any) {
-      console.error("Failed to update return status:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to update return status",
-        error: error.message,
-      });
+      logger.error("Failed to update return status", error, { returnId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to update return status", 500, error);
     }
   }
 );
@@ -274,38 +225,23 @@ router.put(
 router.get(
   "/:id",
   authenticateStaffToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
 
       if (!id) {
-        res.status(400).json({
-          success: false,
-          message: "Return ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Return ID is required");
       }
 
       const returnRequest = await returnModel.findById(id);
       if (!returnRequest) {
-        res.status(404).json({
-          success: false,
-          message: "Return request not found",
-        });
-        return;
+        return ApiResponseHelper.notFound(res, "Return request");
       }
 
-      res.json({
-        success: true,
-        data: returnRequest,
-      });
+      return ApiResponseHelper.success(res, returnRequest);
     } catch (error: any) {
-      console.error("Failed to fetch return:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch return",
-        error: error.message,
-      });
+      logger.error("Failed to fetch return", error, { returnId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to fetch return", 500, error);
     }
   }
 );

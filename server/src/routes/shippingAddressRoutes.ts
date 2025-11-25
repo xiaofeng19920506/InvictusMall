@@ -10,6 +10,8 @@ import {
   handleValidationErrors,
 } from "../middleware/validation";
 import { addressValidationService } from "../services/addressValidationService";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 const shippingAddressModel = new ShippingAddressModel();
@@ -43,10 +45,7 @@ router.get(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        return ApiResponseHelper.unauthorized(res, "Unauthorized");
       }
       const userId = req.user.id;
       const addresses = await shippingAddressModel.getAddressesByUserId(userId);
@@ -58,17 +57,10 @@ router.get(
         return 0;
       });
 
-      return res.json({
-        success: true,
-        data: sortedAddresses,
-      });
+      return ApiResponseHelper.success(res, sortedAddresses);
     } catch (error: any) {
-      console.error("Error fetching shipping addresses:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch shipping addresses",
-        error: error.message,
-      });
+      logger.error("Error fetching shipping addresses", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to fetch shipping addresses", 500, error);
     }
   }
 );
@@ -93,10 +85,7 @@ router.get(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        return ApiResponseHelper.unauthorized(res, "Unauthorized");
       }
       const userId = req.user.id;
       const address = await shippingAddressModel.getDefaultAddress(userId);
@@ -156,10 +145,7 @@ router.get(
         });
       }
       if (!req.user?.id) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        return ApiResponseHelper.unauthorized(res, "Unauthorized");
       }
       const userId = req.user.id;
 
@@ -250,10 +236,7 @@ router.post(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        return ApiResponseHelper.unauthorized(res, "Unauthorized");
       }
       const userId = req.user.id;
       const addressData: CreateShippingAddressRequest = req.body;
@@ -383,10 +366,7 @@ router.put(
         });
       }
       if (!req.user?.id) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        return ApiResponseHelper.unauthorized(res, "Unauthorized");
       }
       const userId = req.user.id;
       const addressData: UpdateShippingAddressRequest = req.body;
@@ -514,10 +494,7 @@ router.post(
         });
       }
       if (!req.user?.id) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        return ApiResponseHelper.unauthorized(res, "Unauthorized");
       }
       const userId = req.user.id;
 
@@ -594,10 +571,7 @@ router.delete(
         });
       }
       if (!req.user?.id) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        return ApiResponseHelper.unauthorized(res, "Unauthorized");
       }
       const userId = req.user.id;
 

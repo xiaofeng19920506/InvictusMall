@@ -4,6 +4,8 @@ import FormData from "form-data";
 import fetch from "node-fetch";
 import { authenticateAnyToken, AuthenticatedRequest } from "../middleware/auth";
 import { validateImageFile } from "../utils/imageValidation";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -96,10 +98,7 @@ router.post(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "No image file uploaded",
-        });
+        return ApiResponseHelper.validationError(res, "No image file uploaded");
       }
 
       const uploadedFile = req.file;
@@ -112,21 +111,15 @@ router.post(
       );
 
       if (!validation.valid) {
-        return res.status(400).json({
-          success: false,
-          message: validation.error || "Invalid image file",
-        });
+        return ApiResponseHelper.validationError(res, validation.error || "Invalid image file");
       }
 
       // Get the external upload URL from environment
       const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
 
       if (!externalUploadUrl) {
-        console.error("[Upload] FILE_UPLOAD_API_URL not configured");
-        return res.status(500).json({
-          success: false,
-          message: "File upload service not configured",
-        });
+        logger.error("FILE_UPLOAD_API_URL not configured", undefined, { userId: req.user?.id || req.staff?.id });
+        return ApiResponseHelper.error(res, "File upload service not configured", 500);
       }
 
       // Prepare form data to forward to external upload service
@@ -147,29 +140,27 @@ router.post(
 
         if (!uploadResponse.ok) {
           const errorText = await uploadResponse.text();
-          console.error("[Upload] Upload failed:", {
+          logger.error("Upload failed", {
             status: uploadResponse.status,
             statusText: uploadResponse.statusText,
             error: errorText,
+            userId: req.user?.id || req.staff?.id,
           });
 
-          return res.status(uploadResponse.status || 500).json({
-            success: false,
-            message: "Failed to upload file to storage",
-            error: errorText || `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`,
-          });
+          return ApiResponseHelper.error(
+            res,
+            "Failed to upload file to storage",
+            uploadResponse.status || 500,
+            errorText || `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`
+          );
         }
 
         const uploadResult: any = await uploadResponse.json();
         const imageUrl = uploadResult.data;
 
         if (!imageUrl) {
-          return res.status(500).json({
-            success: false,
-            message: "Failed to get image URL from upload service",
-            error: "Upload service did not return image URL",
-            response: uploadResult,
-          });
+          logger.error("Upload service did not return image URL", { uploadResult, userId: req.user?.id || req.staff?.id });
+          return ApiResponseHelper.error(res, "Failed to get image URL from upload service", 500);
         }
 
         // Get user info for logging
@@ -177,18 +168,13 @@ router.post(
         const userEmail = req.user?.email || req.staff?.email;
         const authType = req.authType || "user";
 
-        console.log(`[Upload] Image uploaded successfully by ${authType} ${userEmail} (ID: ${userId})`);
+        logger.info("Image uploaded successfully", { authType, userEmail, userId });
 
-        return res.status(200).json({
-          success: true,
-          message: "Image uploaded successfully",
-          data: imageUrl,
-        });
+        return ApiResponseHelper.success(res, imageUrl, "Image uploaded successfully");
       } catch (fetchError: any) {
-        console.error("[Upload] Error calling storage service:", {
-          error: fetchError.message,
-          stack: fetchError.stack,
+        logger.error("Error calling storage service", fetchError, {
           url: externalUploadUrl,
+          userId: req.user?.id || req.staff?.id,
         });
 
         let errorMessage = "Failed to connect to file upload service";
@@ -200,20 +186,11 @@ router.post(
           errorMessage = `Host not found. Cannot resolve the address for ${externalUploadUrl}.`;
         }
 
-        return res.status(500).json({
-          success: false,
-          message: errorMessage,
-          error: fetchError.message,
-          url: externalUploadUrl,
-        });
+        return ApiResponseHelper.error(res, errorMessage, 500, fetchError);
       }
     } catch (error: any) {
-      console.error("[Upload] Unexpected error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to upload image",
-        error: error.message,
-      });
+      logger.error("Unexpected upload error", error, { userId: req.user?.id || req.staff?.id });
+      return ApiResponseHelper.error(res, "Failed to upload image", 500, error);
     }
   }
 );

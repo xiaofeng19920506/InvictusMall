@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { WishlistModel, CreateWishlistRequest } from "../models/WishlistModel";
 import { authenticateUserToken, AuthenticatedRequest } from "../middleware/auth";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 const wishlistModel = new WishlistModel();
@@ -20,29 +22,18 @@ const wishlistModel = new WishlistModel();
 router.get(
   "/",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       const wishlists = await wishlistModel.findByUserId(req.user.id);
 
-      res.json({
-        success: true,
-        data: wishlists,
-      });
+      return ApiResponseHelper.success(res, wishlists);
     } catch (error: any) {
-      console.error("Error fetching wishlists:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch wishlists",
-        error: error.message,
-      });
+      logger.error("Error fetching wishlists", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to fetch wishlists", 500, error);
     }
   }
 );
@@ -73,14 +64,10 @@ router.get(
 router.post(
   "/",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       const { name, isPublic } = req.body;
@@ -93,18 +80,10 @@ router.post(
 
       const wishlist = await wishlistModel.create(wishlistData);
 
-      res.status(201).json({
-        success: true,
-        data: wishlist,
-        message: "Wishlist created successfully",
-      });
+      return ApiResponseHelper.success(res, wishlist, "Wishlist created successfully", 201);
     } catch (error: any) {
-      console.error("Error creating wishlist:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create wishlist",
-        error: error.message,
-      });
+      logger.error("Error creating wishlist", error, { userId: req.user?.id, name: req.body.name });
+      return ApiResponseHelper.error(res, "Failed to create wishlist", 500, error);
     }
   }
 );
@@ -130,51 +109,31 @@ router.post(
 router.put(
   "/:wishlistId",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { wishlistId } = req.params;
       const { name, isPublic } = req.body;
 
       if (!wishlistId) {
-        res.status(400).json({
-          success: false,
-          message: "Wishlist ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Wishlist ID is required");
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       // Verify ownership
       const wishlist = await wishlistModel.findById(wishlistId);
       if (wishlist.userId !== req.user.id) {
-        res.status(403).json({
-          success: false,
-          message: "You don't have permission to update this wishlist",
-        });
-        return;
+        return ApiResponseHelper.forbidden(res, "You don't have permission to update this wishlist");
       }
 
       const updated = await wishlistModel.update(wishlistId, { name, isPublic });
 
-      res.json({
-        success: true,
-        data: updated,
-        message: "Wishlist updated successfully",
-      });
+      return ApiResponseHelper.success(res, updated, "Wishlist updated successfully");
     } catch (error: any) {
-      console.error("Error updating wishlist:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to update wishlist",
-        error: error.message,
-      });
+      logger.error("Error updating wishlist", error, { userId: req.user?.id, wishlistId: req.params.wishlistId });
+      return ApiResponseHelper.error(res, "Failed to update wishlist", 500, error);
     }
   }
 );
@@ -200,49 +159,30 @@ router.put(
 router.delete(
   "/:wishlistId",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { wishlistId } = req.params;
 
       if (!wishlistId) {
-        res.status(400).json({
-          success: false,
-          message: "Wishlist ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Wishlist ID is required");
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       // Verify ownership
       const wishlist = await wishlistModel.findById(wishlistId);
       if (wishlist.userId !== req.user.id) {
-        res.status(403).json({
-          success: false,
-          message: "You don't have permission to delete this wishlist",
-        });
-        return;
+        return ApiResponseHelper.forbidden(res, "You don't have permission to delete this wishlist");
       }
 
       await wishlistModel.delete(wishlistId);
 
-      res.json({
-        success: true,
-        message: "Wishlist deleted successfully",
-      });
+      return ApiResponseHelper.success(res, null, "Wishlist deleted successfully");
     } catch (error: any) {
-      console.error("Error deleting wishlist:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to delete wishlist",
-        error: error.message,
-      });
+      logger.error("Error deleting wishlist", error, { userId: req.user?.id, wishlistId: req.params.wishlistId });
+      return ApiResponseHelper.error(res, "Failed to delete wishlist", 500, error);
     }
   }
 );
@@ -268,49 +208,30 @@ router.delete(
 router.get(
   "/:wishlistId/items",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { wishlistId } = req.params;
 
       if (!wishlistId) {
-        res.status(400).json({
-          success: false,
-          message: "Wishlist ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Wishlist ID is required");
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       // Verify ownership
       const wishlist = await wishlistModel.findById(wishlistId);
       if (wishlist.userId !== req.user.id && !wishlist.isPublic) {
-        res.status(403).json({
-          success: false,
-          message: "You don't have permission to view this wishlist",
-        });
-        return;
+        return ApiResponseHelper.forbidden(res, "You don't have permission to view this wishlist");
       }
 
       const items = await wishlistModel.getItems(wishlistId);
 
-      res.json({
-        success: true,
-        data: items,
-      });
+      return ApiResponseHelper.success(res, items);
     } catch (error: any) {
-      console.error("Error fetching wishlist items:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch wishlist items",
-        error: error.message,
-      });
+      logger.error("Error fetching wishlist items", error, { userId: req.user?.id, wishlistId: req.params.wishlistId });
+      return ApiResponseHelper.error(res, "Failed to fetch wishlist items", 500, error);
     }
   }
 );
@@ -349,59 +270,35 @@ router.get(
 router.post(
   "/:wishlistId/items",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { wishlistId } = req.params;
       const { productId, notes } = req.body;
 
       if (!wishlistId) {
-        res.status(400).json({
-          success: false,
-          message: "Wishlist ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Wishlist ID is required");
       }
 
       if (!productId) {
-        res.status(400).json({
-          success: false,
-          message: "Product ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Product ID is required");
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       // Verify ownership
       const wishlist = await wishlistModel.findById(wishlistId);
       if (wishlist.userId !== req.user.id) {
-        res.status(403).json({
-          success: false,
-          message: "You don't have permission to modify this wishlist",
-        });
-        return;
+        return ApiResponseHelper.forbidden(res, "You don't have permission to modify this wishlist");
       }
 
       const item = await wishlistModel.addItem(wishlistId, productId, notes);
 
-      res.status(201).json({
-        success: true,
-        data: item,
-        message: "Item added to wishlist successfully",
-      });
+      return ApiResponseHelper.success(res, item, "Item added to wishlist successfully", 201);
     } catch (error: any) {
-      console.error("Error adding item to wishlist:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to add item to wishlist",
-        error: error.message,
-      });
+      logger.error("Error adding item to wishlist", error, { userId: req.user?.id, wishlistId: req.params.wishlistId, productId: req.body.productId });
+      return ApiResponseHelper.error(res, "Failed to add item to wishlist", 500, error);
     }
   }
 );
@@ -432,49 +329,30 @@ router.post(
 router.delete(
   "/:wishlistId/items/:productId",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { wishlistId, productId } = req.params;
 
       if (!wishlistId || !productId) {
-        res.status(400).json({
-          success: false,
-          message: "Wishlist ID and Product ID are required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Wishlist ID and Product ID are required");
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       // Verify ownership
       const wishlist = await wishlistModel.findById(wishlistId);
       if (wishlist.userId !== req.user.id) {
-        res.status(403).json({
-          success: false,
-          message: "You don't have permission to modify this wishlist",
-        });
-        return;
+        return ApiResponseHelper.forbidden(res, "You don't have permission to modify this wishlist");
       }
 
       await wishlistModel.removeItem(wishlistId, productId);
 
-      res.json({
-        success: true,
-        message: "Item removed from wishlist successfully",
-      });
+      return ApiResponseHelper.success(res, null, "Item removed from wishlist successfully");
     } catch (error: any) {
-      console.error("Error removing item from wishlist:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to remove item from wishlist",
-        error: error.message,
-      });
+      logger.error("Error removing item from wishlist", error, { userId: req.user?.id, wishlistId: req.params.wishlistId, productId: req.params.productId });
+      return ApiResponseHelper.error(res, "Failed to remove item from wishlist", 500, error);
     }
   }
 );
