@@ -6,11 +6,14 @@ import {
 } from "../middleware/auth";
 import { ShippingAddressModel } from "../models/ShippingAddressModel";
 import { OrderModel } from "../models/OrderModel";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
+
 const router = Router();
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey) {
-  console.warn(
+  logger.warn(
     "Stripe secret key (STRIPE_SECRET_KEY) is not configured. Payment routes will be disabled."
   );
 }
@@ -117,7 +120,7 @@ function resolveShippingAddressFromSession(
         }
       }
     } catch (error) {
-      console.warn("Unable to parse shipping address metadata:", error);
+      logger.warn("Unable to parse shipping address metadata", { error });
     }
   }
 
@@ -359,10 +362,7 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       if (!stripeClient) {
-        return res.status(500).json({
-          success: false,
-          message: "Stripe is not configured. Please contact support.",
-        });
+        return ApiResponseHelper.error(res, "Stripe is not configured. Please contact support.", 500);
       }
 
       const { items, newShippingAddress, guestEmail, guestFullName, guestPhoneNumber } =
@@ -370,47 +370,29 @@ router.post(
 
       // Validate guest information
       if (!guestEmail || !guestEmail.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Email is required for guest checkout.",
-        });
+        return ApiResponseHelper.validationError(res, "Email is required for guest checkout.");
       }
 
       if (!guestFullName || !guestFullName.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Full name is required for guest checkout.",
-        });
+        return ApiResponseHelper.validationError(res, "Full name is required for guest checkout.");
       }
 
       if (!guestPhoneNumber || !guestPhoneNumber.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: "Phone number is required for guest checkout.",
-        });
+        return ApiResponseHelper.validationError(res, "Phone number is required for guest checkout.");
       }
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(guestEmail.trim())) {
-        return res.status(400).json({
-          success: false,
-          message: "Please provide a valid email address.",
-        });
+        return ApiResponseHelper.validationError(res, "Please provide a valid email address.");
       }
 
       if (!Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Your cart is empty.",
-        });
+        return ApiResponseHelper.validationError(res, "Your cart is empty.");
       }
 
       if (!newShippingAddress) {
-        return res.status(400).json({
-          success: false,
-          message: "Shipping address is required for guest checkout.",
-        });
+        return ApiResponseHelper.validationError(res, "Shipping address is required for guest checkout.");
       }
 
       const sanitizedItems = items
@@ -426,10 +408,7 @@ router.post(
         .filter((item) => item.quantity > 0 && item.price > 0);
 
       if (sanitizedItems.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "All items in your cart have invalid quantities or prices.",
-        });
+        return ApiResponseHelper.validationError(res, "All items in your cart have invalid quantities or prices.");
       }
 
       const itemsByStore = new Map<string, PendingOrderGroup>();
@@ -472,10 +451,7 @@ router.post(
         !trimmedAddress.zipCode ||
         !trimmedAddress.country
       ) {
-        return res.status(400).json({
-          success: false,
-          message: "Please complete all required shipping address fields.",
-        });
+        return ApiResponseHelper.validationError(res, "Please complete all required shipping address fields.");
       }
 
       const appUrl =
@@ -580,11 +556,7 @@ router.post(
       });
 
       if (!session.url) {
-        return res.status(500).json({
-          success: false,
-          message:
-            "Stripe checkout session was created without a redirect URL. Please try again.",
-        });
+        return ApiResponseHelper.error(res, "Stripe checkout session was created without a redirect URL. Please try again.", 500);
       }
 
       try {
@@ -606,49 +578,37 @@ router.post(
           });
         }
       } catch (error) {
-        console.error(
-          "Failed to prepare pending orders for guest checkout session:",
-          error
+        logger.error(
+          "Failed to prepare pending orders for guest checkout session",
+          error,
+          { sessionId: session.id }
         );
 
         try {
           await orderModel.deleteOrdersByStripeSession(session.id);
         } catch (cleanupError) {
-          console.warn(
-            "Unable to clean up staged orders after failure:",
-            cleanupError
+          logger.warn(
+            "Unable to clean up staged orders after failure",
+            { sessionId: session.id, cleanupError }
           );
         }
 
         try {
           await stripeClient.checkout.sessions.expire(session.id);
         } catch (expireError) {
-          console.warn(
-            "Unable to expire Stripe checkout session after failure:",
-            expireError
+          logger.warn(
+            "Unable to expire Stripe checkout session after failure",
+            { sessionId: session.id, expireError }
           );
         }
 
-        return res.status(500).json({
-          success: false,
-          message:
-            "Unable to prepare your checkout session. Please try again in a moment.",
-        });
+        return ApiResponseHelper.error(res, "Unable to prepare your checkout session. Please try again in a moment.", 500);
       }
 
-      return res.json({
-        success: true,
-        checkoutUrl: session.url,
-      });
+      return ApiResponseHelper.success(res, { checkoutUrl: session.url });
     } catch (error) {
-      console.error("Failed to create guest Stripe checkout session:", error);
-      return res.status(500).json({
-        success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to start Stripe checkout. Please try again.",
-      });
+      logger.error("Failed to create guest Stripe checkout session", error);
+      return ApiResponseHelper.error(res, error instanceof Error ? error.message : "Failed to start Stripe checkout. Please try again.", 500, error);
     }
   }
 );
@@ -659,18 +619,12 @@ router.post(
   async (req: AuthenticatedRequest, res) => {
     try {
       if (!stripeClient) {
-        return res.status(500).json({
-          success: false,
-          message: "Stripe is not configured. Please contact support.",
-        });
+        return ApiResponseHelper.error(res, "Stripe is not configured. Please contact support.", 500);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        return ApiResponseHelper.unauthorized(res, "Unauthorized");
       }
 
       const { items, shippingAddressId, newShippingAddress, saveNewAddress } =
@@ -678,17 +632,11 @@ router.post(
 
       const userEmail = req.user?.email;
       if (!userEmail) {
-        return res.status(400).json({
-          success: false,
-          message: "User email is required to start checkout.",
-        });
+        return ApiResponseHelper.validationError(res, "User email is required to start checkout.");
       }
 
       if (!Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Your cart is empty.",
-        });
+        return ApiResponseHelper.validationError(res, "Your cart is empty.");
       }
 
       const sanitizedItems = items
@@ -704,10 +652,7 @@ router.post(
         .filter((item) => item.quantity > 0 && item.price > 0);
 
       if (sanitizedItems.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "All items in your cart have invalid quantities or prices.",
-        });
+        return ApiResponseHelper.validationError(res, "All items in your cart have invalid quantities or prices.");
       }
 
       const itemsByStore = new Map<string, PendingOrderGroup>();
@@ -738,10 +683,7 @@ router.post(
             shippingAddressId
           );
           if (existingAddress.userId !== userId) {
-            return res.status(403).json({
-              success: false,
-              message: "Selected shipping address does not belong to the user.",
-            });
+            return ApiResponseHelper.forbidden(res, "Selected shipping address does not belong to the user.");
           }
 
           shippingAddress = {
@@ -755,10 +697,7 @@ router.post(
             country: existingAddress.country,
           };
         } catch (error) {
-          return res.status(404).json({
-            success: false,
-            message: "Selected shipping address could not be found.",
-          });
+          return ApiResponseHelper.notFound(res, "Shipping address");
         }
       } else if (newShippingAddress) {
         const trimmedAddress = {
@@ -781,10 +720,7 @@ router.post(
           !trimmedAddress.zipCode ||
           !trimmedAddress.country
         ) {
-          return res.status(400).json({
-            success: false,
-            message: "Please complete all required shipping address fields.",
-          });
+        return ApiResponseHelper.validationError(res, "Please complete all required shipping address fields.");
         }
 
         shippingAddress = trimmedAddress;
@@ -803,18 +739,12 @@ router.post(
               isDefault: false,
             });
           } catch (error) {
-            console.error("Failed to save shipping address:", error);
-            return res.status(500).json({
-              success: false,
-              message: "Failed to save shipping address.",
-            });
+            logger.error("Failed to save shipping address", error, { userId });
+            return ApiResponseHelper.error(res, "Failed to save shipping address.", 500, error);
           }
         }
       } else {
-        return res.status(400).json({
-          success: false,
-          message: "Please select or provide a shipping address.",
-        });
+        return ApiResponseHelper.validationError(res, "Please select or provide a shipping address.");
       }
 
       const appUrl =
@@ -863,10 +793,7 @@ router.post(
       };
 
       if (!resolvedShippingAddress) {
-        return res.status(500).json({
-          success: false,
-          message: "Unable to resolve shipping address for checkout session.",
-        });
+        return ApiResponseHelper.error(res, "Unable to resolve shipping address for checkout session.", 500);
       }
 
       let customerId: string | undefined;
@@ -915,11 +842,7 @@ router.post(
       });
 
       if (!session.url) {
-        return res.status(500).json({
-          success: false,
-          message:
-            "Stripe checkout session was created without a redirect URL. Please try again.",
-        });
+        return ApiResponseHelper.error(res, "Stripe checkout session was created without a redirect URL. Please try again.", 500);
       }
 
       try {
@@ -938,49 +861,37 @@ router.post(
           });
         }
       } catch (error) {
-        console.error(
-          "Failed to prepare pending orders for checkout session:",
-          error
+        logger.error(
+          "Failed to prepare pending orders for checkout session",
+          error,
+          { sessionId: session.id, userId }
         );
 
         try {
           await orderModel.deleteOrdersByStripeSession(session.id);
         } catch (cleanupError) {
-          console.warn(
-            "Unable to clean up staged orders after failure:",
-            cleanupError
+          logger.warn(
+            "Unable to clean up staged orders after failure",
+            { sessionId: session.id, cleanupError }
           );
         }
 
         try {
           await stripeClient.checkout.sessions.expire(session.id);
         } catch (expireError) {
-          console.warn(
-            "Unable to expire Stripe checkout session after failure:",
-            expireError
+          logger.warn(
+            "Unable to expire Stripe checkout session after failure",
+            { sessionId: session.id, expireError }
           );
         }
 
-        return res.status(500).json({
-          success: false,
-          message:
-            "Unable to prepare your checkout session. Please try again in a moment.",
-        });
+        return ApiResponseHelper.error(res, "Unable to prepare your checkout session. Please try again in a moment.", 500);
       }
 
-      return res.json({
-        success: true,
-        checkoutUrl: session.url,
-      });
+      return ApiResponseHelper.success(res, { checkoutUrl: session.url });
     } catch (error) {
-      console.error("Failed to create Stripe checkout session:", error);
-      return res.status(500).json({
-        success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to start Stripe checkout. Please try again.",
-      });
+      logger.error("Failed to create Stripe checkout session", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, error instanceof Error ? error.message : "Failed to start Stripe checkout. Please try again.", 500, error);
     }
   }
 );
@@ -991,19 +902,13 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       if (!stripeClient) {
-        return res.status(500).json({
-          success: false,
-          message: "Stripe is not configured. Please contact support.",
-        });
+        return ApiResponseHelper.error(res, "Stripe is not configured. Please contact support.", 500);
       }
 
       const { sessionId } = req.body as { sessionId?: string };
 
       if (!sessionId || typeof sessionId !== "string") {
-        return res.status(400).json({
-          success: false,
-          message: "A valid Stripe checkout session ID is required.",
-        });
+        return ApiResponseHelper.validationError(res, "A valid Stripe checkout session ID is required.");
       }
 
       const session = await stripeClient.checkout.sessions.retrieve(sessionId, {
@@ -1011,26 +916,16 @@ router.post(
       });
 
       if (!session) {
-        return res.status(404).json({
-          success: false,
-          message: "Checkout session not found.",
-        });
+        return ApiResponseHelper.notFound(res, "Checkout session");
       }
 
       // Verify it's a guest order
       if (session.metadata?.isGuest !== "true") {
-        return res.status(403).json({
-          success: false,
-          message: "This is not a guest checkout session.",
-        });
+        return ApiResponseHelper.forbidden(res, "This is not a guest checkout session.");
       }
 
       if (session.payment_status !== "paid") {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Payment has not been completed for this session. Please try again after payment is confirmed.",
-        });
+        return ApiResponseHelper.error(res, "Payment has not been completed for this session. Please try again after payment is confirmed.", 400);
       }
 
       let orderIds: string[] = [];
@@ -1038,10 +933,7 @@ router.post(
         orderIds = await finalizeStripeCheckoutSession(session);
       } catch (error) {
         if (error instanceof CheckoutFinalizationError) {
-          return res.status(error.statusCode).json({
-            success: false,
-            message: error.message,
-          });
+          return ApiResponseHelper.error(res, error.message, error.statusCode, error);
         }
 
         throw error;
@@ -1055,26 +947,16 @@ router.post(
           },
         });
       } catch (updateError) {
-        console.warn(
-          "Unable to update Stripe checkout session metadata:",
-          updateError
+        logger.warn(
+          "Unable to update Stripe checkout session metadata",
+          { sessionId, updateError }
         );
       }
 
-      return res.json({
-        success: true,
-        message: "Order has been recorded successfully.",
-        orderIds,
-      });
+      return ApiResponseHelper.success(res, { orderIds }, "Order has been recorded successfully.");
     } catch (error) {
-      console.error("Failed to finalize guest Stripe checkout session:", error);
-      return res.status(500).json({
-        success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to finalize checkout session. Please contact support.",
-      });
+      logger.error("Failed to finalize guest Stripe checkout session", error, { sessionId: req.body?.sessionId });
+      return ApiResponseHelper.error(res, error instanceof Error ? error.message : "Failed to finalize checkout session. Please contact support.", 500, error);
     }
   }
 );
@@ -1085,27 +967,18 @@ router.post(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!stripeClient) {
-        return res.status(500).json({
-          success: false,
-          message: "Stripe is not configured. Please contact support.",
-        });
+        return ApiResponseHelper.error(res, "Stripe is not configured. Please contact support.", 500);
       }
 
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: "Unauthorized",
-        });
+        return ApiResponseHelper.unauthorized(res, "Unauthorized");
       }
 
       const { sessionId } = req.body as { sessionId?: string };
 
       if (!sessionId || typeof sessionId !== "string") {
-        return res.status(400).json({
-          success: false,
-          message: "A valid Stripe checkout session ID is required.",
-        });
+        return ApiResponseHelper.validationError(res, "A valid Stripe checkout session ID is required.");
       }
 
       const session = await stripeClient.checkout.sessions.retrieve(sessionId, {
@@ -1113,26 +986,16 @@ router.post(
       });
 
       if (!session) {
-        return res.status(404).json({
-          success: false,
-          message: "Checkout session not found.",
-        });
+        return ApiResponseHelper.notFound(res, "Checkout session");
       }
 
       // Only verify userId for non-guest orders
       if (session.metadata?.isGuest !== "true" && session.metadata?.userId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "You do not have permission to finalize this order.",
-        });
+        return ApiResponseHelper.forbidden(res, "You do not have permission to finalize this order.");
       }
 
       if (session.payment_status !== "paid") {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Payment has not been completed for this session. Please try again after payment is confirmed.",
-        });
+        return ApiResponseHelper.error(res, "Payment has not been completed for this session. Please try again after payment is confirmed.", 400);
       }
 
       let orderIds: string[] = [];
@@ -1142,10 +1005,7 @@ router.post(
         });
       } catch (error) {
         if (error instanceof CheckoutFinalizationError) {
-          return res.status(error.statusCode).json({
-            success: false,
-            message: error.message,
-          });
+          return ApiResponseHelper.error(res, error.message, error.statusCode, error);
         }
 
         throw error;
@@ -1159,39 +1019,26 @@ router.post(
           },
         });
       } catch (updateError) {
-        console.warn(
-          "Unable to update Stripe checkout session metadata:",
-          updateError
+        logger.warn(
+          "Unable to update Stripe checkout session metadata",
+          { sessionId, updateError }
         );
       }
 
-      return res.json({
-        success: true,
-        message: "Order has been recorded successfully.",
-        orderIds,
-      });
+      return ApiResponseHelper.success(res, { orderIds }, "Order has been recorded successfully.");
     } catch (error) {
-      console.error("Failed to finalize Stripe checkout session:", error);
-      return res.status(500).json({
-        success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to finalize checkout session. Please contact support.",
-      });
+      logger.error("Failed to finalize Stripe checkout session", error, { sessionId: req.body?.sessionId, userId: req.user?.id });
+      return ApiResponseHelper.error(res, error instanceof Error ? error.message : "Failed to finalize checkout session. Please contact support.", 500, error);
     }
   }
 );
 
 export async function stripeWebhookHandler(req: Request, res: Response) {
-  if (!stripeClient || !stripeWebhookSecret) {
-    console.warn(
+      if (!stripeClient || !stripeWebhookSecret) {
+    logger.warn(
       "Stripe webhook invoked without proper configuration. Ensure STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET are set."
     );
-    return res.status(500).json({
-      success: false,
-      message: "Stripe webhook is not configured.",
-    });
+    return ApiResponseHelper.error(res, "Stripe webhook is not configured.", 500);
   }
 
   const signature = req.headers["stripe-signature"];
@@ -1208,7 +1055,7 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
       stripeWebhookSecret
     );
   } catch (error) {
-    console.error("Stripe webhook signature verification failed:", error);
+    logger.error("Stripe webhook signature verification failed", error);
     const message =
       error instanceof Error ? error.message : "Unknown signature error";
     return res.status(400).send(`Webhook Error: ${message}`);
@@ -1233,13 +1080,10 @@ export async function stripeWebhookHandler(req: Request, res: Response) {
         break;
     }
 
-    return res.json({ received: true });
+    return ApiResponseHelper.success(res, { received: true });
   } catch (error) {
-    console.error("Stripe webhook processing failed:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Stripe webhook processing failed.",
-    });
+    logger.error("Stripe webhook processing failed", error);
+    return ApiResponseHelper.error(res, "Stripe webhook processing failed.", 500, error);
   }
 }
 
