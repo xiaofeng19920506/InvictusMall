@@ -58,6 +58,7 @@ export async function preparePendingOrders(
   orderModel: any,
   itemsByStore: Map<string, PendingOrderGroup>,
   sessionId: string,
+  userId: string,
   shippingAddress: {
     streetAddress: string;
     aptNumber?: string;
@@ -65,18 +66,13 @@ export async function preparePendingOrders(
     stateProvince: string;
     zipCode: string;
     country: string;
-  },
-  guestInfo?: {
-    email: string;
-    fullName: string;
-    phoneNumber: string;
   }
 ): Promise<void> {
   await orderModel.deleteOrdersByStripeSession(sessionId);
 
   for (const { storeId, storeName, items } of itemsByStore.values()) {
     await orderModel.createOrder({
-      userId: guestInfo ? null : undefined,
+      userId,
       storeId,
       storeName,
       items,
@@ -84,9 +80,6 @@ export async function preparePendingOrders(
       paymentMethod: "stripe_checkout:pending",
       stripeSessionId: sessionId,
       status: "pending_payment",
-      guestEmail: guestInfo?.email,
-      guestFullName: guestInfo?.fullName,
-      guestPhoneNumber: guestInfo?.phoneNumber,
     });
   }
 }
