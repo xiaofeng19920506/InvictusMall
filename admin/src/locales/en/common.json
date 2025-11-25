@@ -884,6 +884,9 @@
       "processRefund": "Process Refund",
       "refunds": "Refunds",
       "totalRefunded": "Total Refunded",
+      "originalAmount": "Original",
+      "refunded": "Refunded",
+      "total": "Total",
       "transactionDetails": {
         "title": "Transaction Details",
         "overview": "Overview",
@@ -935,6 +938,7 @@
       "selectItems": "Select Items to Refund",
       "selectedItemsTotal": "Selected Items Total",
       "alreadyRefunded": "Already Refunded",
+      "refunded": "Refunded",
       "refundingFullAmount": "Refunding Full Amount",
       "back": "Back",
       "cancel": "Cancel",

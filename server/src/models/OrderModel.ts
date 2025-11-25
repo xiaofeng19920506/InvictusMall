@@ -709,7 +709,34 @@ export class OrderModel {
         return acc;
       }, {} as Record<string, any[]>);
 
-      // Map orders with their items
+      // Batch query refunds for all orders
+      let refundsByOrderId: Record<string, number> = {};
+      if (orderIds.length > 0) {
+        try {
+          const refundsQuery = `
+            SELECT 
+              order_id,
+              COALESCE(SUM(amount), 0) as total_refunded
+            FROM refunds
+            WHERE order_id IN (${orderIds.map(() => '?').join(',')})
+              AND status = 'succeeded'
+            GROUP BY order_id
+          `;
+          const [refundRows] = await this.pool.execute(refundsQuery, orderIds);
+          const refunds = refundRows as any[];
+          refundsByOrderId = refunds.reduce((acc, refund) => {
+            acc[refund.order_id] = parseFloat(String(refund.total_refunded || 0));
+            return acc;
+          }, {} as Record<string, number>);
+        } catch (error: any) {
+          // If refunds table doesn't exist or query fails, just continue without refund data
+          if (error?.code !== 'ER_NO_SUCH_TABLE' && !this.isConnectionError(error)) {
+            console.warn('Failed to query refunds for orders:', error);
+          }
+        }
+      }
+
+      // Map orders with their items and refund information
       const mappedOrders = orders.map(order => ({
         id: order.id,
         userId: order.user_id,
@@ -717,6 +744,7 @@ export class OrderModel {
         storeName: order.store_name,
         items: itemsByOrderId[order.id] || [],
         totalAmount: parseFloat(order.total_amount),
+        totalRefunded: refundsByOrderId[order.id] || 0,
         status: order.status,
         shippingAddress: {
           streetAddress: order.shipping_street_address,
