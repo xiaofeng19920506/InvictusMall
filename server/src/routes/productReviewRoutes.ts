@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { ProductReviewModel, CreateReviewRequest } from "../models/ProductReviewModel";
 import { authenticateUserToken, AuthenticatedRequest } from "../middleware/auth";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 const reviewModel = new ProductReviewModel();
@@ -38,17 +40,13 @@ const reviewModel = new ProductReviewModel();
  *       200:
  *         description: Reviews retrieved successfully
  */
-router.get("/:productId/reviews", async (req: Request, res: Response): Promise<void> => {
+router.get("/:productId/reviews", async (req: Request, res: Response) => {
   try {
     const { productId } = req.params;
     const { limit, offset, rating, sortBy } = req.query;
 
     if (!productId) {
-      res.status(400).json({
-        success: false,
-        message: "Product ID is required",
-      });
-      return;
+      return ApiResponseHelper.validationError(res, "Product ID is required");
     }
 
     const result = await reviewModel.findByProductId(productId, {
@@ -58,18 +56,10 @@ router.get("/:productId/reviews", async (req: Request, res: Response): Promise<v
       sortBy: sortBy as any,
     });
 
-    res.json({
-      success: true,
-      data: result.reviews,
-      total: result.total,
-    });
+    return ApiResponseHelper.successWithPagination(res, result.reviews, result.total);
   } catch (error: any) {
-    console.error("Error fetching reviews:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch reviews",
-      error: error.message,
-    });
+    logger.error("Error fetching reviews", error, { productId: req.params.productId });
+    return ApiResponseHelper.error(res, "Failed to fetch reviews", 500, error);
   }
 });
 
@@ -89,31 +79,20 @@ router.get("/:productId/reviews", async (req: Request, res: Response): Promise<v
  *       200:
  *         description: Review stats retrieved successfully
  */
-router.get("/:productId/reviews/stats", async (req: Request, res: Response): Promise<void> => {
+router.get("/:productId/reviews/stats", async (req: Request, res: Response) => {
   try {
     const { productId } = req.params;
     
     if (!productId) {
-      res.status(400).json({
-        success: false,
-        message: "Product ID is required",
-      });
-      return;
+      return ApiResponseHelper.validationError(res, "Product ID is required");
     }
 
     const stats = await reviewModel.getReviewStats(productId);
 
-    res.json({
-      success: true,
-      data: stats,
-    });
+    return ApiResponseHelper.success(res, stats);
   } catch (error: any) {
-    console.error("Error fetching review stats:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch review stats",
-      error: error.message,
-    });
+    logger.error("Error fetching review stats", error, { productId: req.params.productId });
+    return ApiResponseHelper.error(res, "Failed to fetch review stats", 500, error);
   }
 });
 
@@ -161,43 +140,27 @@ router.get("/:productId/reviews/stats", async (req: Request, res: Response): Pro
 router.post(
   "/:productId/reviews",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { productId } = req.params;
       const { rating, title, comment, orderId, images } = req.body;
 
       if (!productId) {
-        res.status(400).json({
-          success: false,
-          message: "Product ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Product ID is required");
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       if (!rating || rating < 1 || rating > 5) {
-        res.status(400).json({
-          success: false,
-          message: "Rating must be between 1 and 5",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Rating must be between 1 and 5");
       }
 
       // Check if user already reviewed this product
       const hasReviewed = await reviewModel.userHasReviewed(productId, req.user.id);
       if (hasReviewed) {
-        res.status(400).json({
-          success: false,
-          message: "You have already reviewed this product",
-        });
-        return;
+        return ApiResponseHelper.error(res, "You have already reviewed this product", 400);
       }
 
       const reviewData: CreateReviewRequest = {
@@ -212,18 +175,10 @@ router.post(
 
       const review = await reviewModel.create(reviewData);
 
-      res.status(201).json({
-        success: true,
-        data: review,
-        message: "Review created successfully",
-      });
+      return ApiResponseHelper.success(res, review, "Review created successfully", 201);
     } catch (error: any) {
-      console.error("Error creating review:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create review",
-        error: error.message,
-      });
+      logger.error("Error creating review", error, { userId: req.user?.id, productId: req.params.productId });
+      return ApiResponseHelper.error(res, "Failed to create review", 500, error);
     }
   }
 );
@@ -260,40 +215,25 @@ router.post(
 router.post(
   "/reviews/:reviewId/helpful",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { reviewId } = req.params;
       const { isHelpful } = req.body;
 
       if (!reviewId) {
-        res.status(400).json({
-          success: false,
-          message: "Review ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Review ID is required");
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       await reviewModel.markHelpful(reviewId, req.user.id, isHelpful);
 
-      res.json({
-        success: true,
-        message: "Vote recorded successfully",
-      });
+      return ApiResponseHelper.success(res, null, "Vote recorded successfully");
     } catch (error: any) {
-      console.error("Error marking review helpful:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to record vote",
-        error: error.message,
-      });
+      logger.error("Error marking review helpful", error, { userId: req.user?.id, reviewId: req.params.reviewId });
+      return ApiResponseHelper.error(res, "Failed to record vote", 500, error);
     }
   }
 );

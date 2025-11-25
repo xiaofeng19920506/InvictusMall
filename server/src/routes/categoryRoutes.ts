@@ -194,10 +194,7 @@ router.post(
       const { name, slug, description, parentId, displayOrder, isActive } = req.body;
 
       if (!name || !name.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category name is required',
-        });
+        return ApiResponseHelper.validationError(res, 'Category name is required');
       }
 
       const category = await categoryModel.create({
@@ -209,18 +206,10 @@ router.post(
         isActive,
       });
 
-      return res.status(201).json({
-        success: true,
-        data: category,
-        message: 'Category created successfully',
-      });
+      return ApiResponseHelper.success(res, category, 'Category created successfully', 201);
     } catch (error) {
-      console.error('Create category error:', error);
-      return res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : 'Failed to create category',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      logger.error('Create category error', error, { name: req.body.name, userId: req.user?.id });
+      return ApiResponseHelper.error(res, 'Failed to create category', 500, error);
     }
   }
 );
@@ -275,10 +264,7 @@ router.put(
     try {
       const { id } = req.params;
       if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category ID is required',
-        });
+        return ApiResponseHelper.validationError(res, 'Category ID is required');
       }
       const { name, slug, description, parentId, displayOrder, isActive } = req.body;
 
@@ -291,25 +277,14 @@ router.put(
         isActive,
       });
 
-      return res.json({
-        success: true,
-        data: category,
-        message: 'Category updated successfully',
-      });
+      return ApiResponseHelper.success(res, category, 'Category updated successfully');
     } catch (error) {
       if (error instanceof Error && error.message === 'Category not found') {
-        return res.status(404).json({
-          success: false,
-          message: 'Category not found',
-        });
+        return ApiResponseHelper.notFound(res, 'Category');
       }
 
-      console.error('Update category error:', error);
-      return res.status(500).json({
-        success: false,
-        message: error instanceof Error ? error.message : 'Failed to update category',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      logger.error('Update category error', error, { categoryId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, 'Failed to update category', 500, error);
     }
   }
 );

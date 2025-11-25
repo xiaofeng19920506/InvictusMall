@@ -195,31 +195,20 @@ router.delete(
 router.get(
   "/recommendations",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
 
       const productIds = await historyModel.getRecommendedProducts(req.user.id, limit);
 
-      res.json({
-        success: true,
-        data: productIds,
-      });
+      return ApiResponseHelper.success(res, productIds);
     } catch (error: any) {
-      console.error("Error fetching recommendations:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch recommendations",
-        error: error.message,
-      });
+      logger.error("Error fetching recommendations", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to fetch recommendations", 500, error);
     }
   }
 );
