@@ -16,6 +16,8 @@ import {
 import { getUserNameFromRequest, getUserIdFromRequest } from "../utils/activityLogHelper";
 import { validateImageFile } from "../utils/imageValidation";
 import { handleETagValidation } from "../utils/cacheUtils";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 import multer from "multer";
 import FormData from "form-data";
 import fetch from "node-fetch";
@@ -118,12 +120,7 @@ router.get("/", async (req: Request, res: Response) => {
         })
       );
 
-      return res.json({
-        success: true,
-        data: storesWithOwner,
-        count: storesWithOwner.length,
-        total,
-      });
+      return ApiResponseHelper.successWithPagination(res, storesWithOwner, total);
     }
 
     // Regular fetch without pagination (for client app or when category/search is provided)
@@ -164,25 +161,10 @@ router.get("/", async (req: Request, res: Response) => {
       })
     );
 
-    return res.json({
-      success: true,
-      data: storesWithOwner,
-      count: storesWithOwner.length,
-    });
+    return ApiResponseHelper.successWithCount(res, storesWithOwner, storesWithOwner.length);
   } catch (error) {
-    console.error("Error fetching stores:", error);
-    console.error(
-      "Error stack:",
-      error instanceof Error ? error.stack : "No stack trace"
-    );
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch stores",
-      error: error instanceof Error ? error.message : "Unknown error",
-      ...(process.env.NODE_ENV === "development" && {
-        stack: error instanceof Error ? error.stack : undefined,
-      }),
-    });
+    logger.error("Error fetching stores", error);
+    return ApiResponseHelper.error(res, "Failed to fetch stores", 500, error);
   }
 });
 
@@ -229,24 +211,10 @@ router.get("/categories", async (req: Request, res: Response) => {
     }
 
     const categories = await storeService.getCategories();
-    return res.json({
-      success: true,
-      data: categories,
-    });
+    return ApiResponseHelper.success(res, categories);
   } catch (error) {
-    console.error("Error fetching categories:", error);
-    console.error(
-      "Error stack:",
-      error instanceof Error ? error.stack : "No stack trace"
-    );
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch categories",
-      error: error instanceof Error ? error.message : "Unknown error",
-      ...(process.env.NODE_ENV === "development" && {
-        stack: error instanceof Error ? error.stack : undefined,
-      }),
-    });
+    logger.error("Error fetching categories", error);
+    return ApiResponseHelper.error(res, "Failed to fetch categories", 500, error);
   }
 });
 
@@ -296,10 +264,7 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "Store ID is required",
-      });
+      return ApiResponseHelper.validationError(res, "Store ID is required");
     }
 
     // Generate ETag based on last modified timestamp
@@ -331,33 +296,20 @@ router.get("/:id", async (req: Request, res: Response) => {
       }
     } catch (error) {
       // Silently fail - owner info is optional
-      console.warn("Failed to fetch store owner:", error);
+      logger.warn("Failed to fetch store owner", { storeId: req.params.id, error });
     }
     
-    return res.json({
-      success: true,
-      data: {
-        ...store,
-        owner: ownerInfo,
-      },
+    return ApiResponseHelper.success(res, {
+      ...store,
+      owner: ownerInfo,
     });
   } catch (error) {
-    console.error("Error fetching store by ID:", error);
-    console.error(
-      "Error stack:",
-      error instanceof Error ? error.stack : "No stack trace"
-    );
+    logger.error("Error fetching store by ID", error, { storeId: req.params.id });
     const statusCode =
       error instanceof Error && "statusCode" in error
         ? (error as any).statusCode
         : 500;
-    return res.status(statusCode).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Unknown error",
-      ...(process.env.NODE_ENV === "development" && {
-        stack: error instanceof Error ? error.stack : undefined,
-      }),
-    });
+    return ApiResponseHelper.error(res, error instanceof Error ? error.message : "Unknown error", statusCode, error);
   }
 });
 
@@ -433,10 +385,7 @@ router.post(
     try {
       // Only admins can create stores
       if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: "Only administrators can create stores",
-        });
+        return ApiResponseHelper.forbidden(res, "Only administrators can create stores");
       }
 
       const { ownerId, ...storeData } = req.body;
@@ -446,17 +395,11 @@ router.post(
       const owner = await staffModel.getStaffById(ownerId);
       
       if (!owner) {
-        return res.status(400).json({
-          success: false,
-          message: "Store owner not found",
-        });
+        return ApiResponseHelper.validationError(res, "Store owner not found");
       }
       
       if (owner.role !== 'owner') {
-        return res.status(400).json({
-          success: false,
-          message: "Selected staff member must have the 'owner' role",
-        });
+        return ApiResponseHelper.validationError(res, "Selected staff member must have the 'owner' role");
       }
 
       const store = await storeService.createStore(storeData);
@@ -467,12 +410,8 @@ router.post(
       } catch (ownerError) {
         // If linking fails, we should rollback the store creation
         // For now, log the error - in production you might want to implement transaction rollback
-        console.error("Error linking owner to store:", ownerError);
-        return res.status(500).json({
-          success: false,
-          message: "Store created but failed to link owner. Please update the store manually.",
-          error: ownerError instanceof Error ? ownerError.message : "Unknown error",
-        });
+        logger.error("Error linking owner to store", ownerError, { storeId: store.id, ownerId });
+        return ApiResponseHelper.error(res, "Store created but failed to link owner. Please update the store manually.", 500, ownerError);
       }
 
       // Fetch the created store with owner information included
@@ -493,7 +432,7 @@ router.post(
         } as any;
       } catch (error) {
         // Silently fail - owner info is optional
-        console.warn("Failed to fetch store owner after creation:", error);
+        logger.warn("Failed to fetch store owner after creation", { storeId: store.id, error });
       }
 
       // Log the activity
@@ -514,17 +453,10 @@ router.post(
         },
       });
 
-      return res.status(201).json({
-        success: true,
-        data: storeWithOwner,
-        message: "Store created successfully",
-      });
+      return ApiResponseHelper.success(res, storeWithOwner, "Store created successfully", 201);
     } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to create store",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("Failed to create store", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to create store", 500, error);
     }
   }
 );
@@ -599,10 +531,7 @@ router.put(
     try {
       const { id } = req.params;
       if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Store ID is required",
-        });
+        return ApiResponseHelper.validationError(res, "Store ID is required");
       }
 
       const { ownerId, ...storeUpdateData } = req.body;
@@ -627,18 +556,18 @@ router.put(
             if (newOwner) {
               // Verify the new owner has the 'owner' role
               if (newOwner.role !== 'owner') {
-                console.warn(`Staff member ${ownerId} is not an owner, skipping store assignment`);
+                logger.warn(`Staff member ${ownerId} is not an owner, skipping store assignment`, { ownerId, storeId: id });
               } else {
                 // Update the new owner's storeId to link them to the store
                 await staffModel.updateStaff(ownerId, { storeId: id });
               }
             } else {
-              console.warn(`Owner with ID ${ownerId} not found, skipping store assignment`);
+              logger.warn(`Owner with ID ${ownerId} not found, skipping store assignment`, { ownerId, storeId: id });
             }
           }
         } catch (ownerError) {
           // Log the error but don't fail the store update
-          console.error("Error updating store owner:", ownerError);
+          logger.error("Error updating store owner", ownerError, { storeId: id, ownerId });
         }
       }
 
@@ -661,7 +590,7 @@ router.put(
         } as any;
       } catch (error) {
         // Silently fail - owner info is optional
-        console.warn("Failed to fetch store owner after update:", error);
+        logger.warn("Failed to fetch store owner after update", { storeId: id, error });
       }
 
       // Log the activity
@@ -683,20 +612,14 @@ router.put(
         },
       });
 
-      return res.json({
-        success: true,
-        data: storeWithOwner,
-        message: "Store updated successfully",
-      });
+      return ApiResponseHelper.success(res, storeWithOwner, "Store updated successfully");
     } catch (error) {
+      logger.error("Error updating store", error, { storeId: req.params.id });
       const statusCode =
         error instanceof Error && "statusCode" in error
           ? (error as any).statusCode
           : 500;
-      return res.status(statusCode).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
+      return ApiResponseHelper.error(res, error instanceof Error ? error.message : "Unknown error", statusCode, error);
     }
   }
 );
@@ -734,10 +657,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "Store ID is required",
-      });
+      return ApiResponseHelper.validationError(res, "Store ID is required");
     }
 
     // Get store info before deleting for logging
@@ -764,14 +684,12 @@ router.delete("/:id", async (req: Request, res: Response) => {
 
     return res.status(204).send();
   } catch (error) {
+    logger.error("Error deleting store", error, { storeId: req.params.id });
     const statusCode =
       error instanceof Error && "statusCode" in error
         ? (error as any).statusCode
         : 500;
-    return res.status(statusCode).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Unknown error",
-    });
+    return ApiResponseHelper.error(res, error instanceof Error ? error.message : "Unknown error", statusCode, error);
   }
 });
 
@@ -821,17 +739,11 @@ router.put(
 
       // Only admin can verify stores
       if (user.role !== "admin") {
-        return res.status(403).json({
-          success: false,
-          message: "Only administrators can verify stores",
-        });
+        return ApiResponseHelper.forbidden(res, "Only administrators can verify stores");
       }
 
       if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Store ID is required",
-        });
+        return ApiResponseHelper.validationError(res, "Store ID is required");
       }
 
       // Update store verification status
@@ -852,20 +764,14 @@ router.put(
         },
       });
 
-      return res.json({
-        success: true,
-        data: store,
-        message: "Store verified successfully",
-      });
+      return ApiResponseHelper.success(res, store, "Store verified successfully");
     } catch (error) {
+      logger.error("Error updating store", error, { storeId: req.params.id });
       const statusCode =
         error instanceof Error && "statusCode" in error
           ? (error as any).statusCode
           : 500;
-      return res.status(statusCode).json({
-        success: false,
-        message: error instanceof Error ? error.message : "Unknown error",
-      });
+      return ApiResponseHelper.error(res, error instanceof Error ? error.message : "Unknown error", statusCode, error);
     }
   }
 );
@@ -934,30 +840,16 @@ router.post(
   uploadStoreImage.single("file"),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      console.log("[Store Upload] Request headers:", req.headers);
+      logger.debug("[Store Upload] Request received", { 
+        hasFile: !!(req as any).file,
+        storeId: req.body?.storeId 
+      });
       const uploadedFile = (req as any).file as Express.Multer.File | undefined;
 
       const { metadata: metadataRaw, storeId } = req.body || {};
-      console.log("[Store Upload] Request body fields:", {
-        metadataRaw,
-        storeId,
-      });
-      console.log(
-        "[Store Upload] Multer single file:",
-        uploadedFile
-          ? {
-              originalname: uploadedFile.originalname,
-              mimetype: uploadedFile.mimetype,
-              size: uploadedFile.size,
-            }
-          : null
-      );
 
       if (!uploadedFile) {
-        return res.status(400).json({
-          success: false,
-          message: "No image file uploaded",
-        });
+        return ApiResponseHelper.validationError(res, "No image file uploaded");
       }
 
       let metadata: {
@@ -971,10 +863,7 @@ router.post(
         try {
           metadata = JSON.parse(metadataRaw);
         } catch (parseError) {
-          console.warn(
-            "[Store Upload] Failed to parse metadata, falling back to defaults:",
-            parseError
-          );
+          logger.warn("[Store Upload] Failed to parse metadata, falling back to defaults", { parseError });
         }
       } else if (metadataRaw && typeof metadataRaw === "object") {
         metadata = metadataRaw as any;
@@ -993,18 +882,13 @@ router.post(
         uploadedFile.mimetype,
         uploadedFile.size
       );
-      console.log("[Store Upload] Validation result:", validation);
 
       if (!validation.valid) {
-        return res.status(400).json({
-          success: false,
-          message: validation.error || "Invalid image file",
-        });
+        return ApiResponseHelper.validationError(res, validation.error || "Invalid image file");
       }
 
       // Forward the file to the external MinIO storage API only after validation passes
       const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
-      console.log("[Store Upload] External upload URL:", externalUploadUrl);
 
       let imageUrl;
       let previousImageUrl: string | undefined;
@@ -1016,7 +900,7 @@ router.post(
             const currentStore = await storeService.getStoreById(storeId);
             previousImageUrl = currentStore?.imageUrl;
           } catch (fetchStoreError) {
-            console.warn("[Store Upload] Unable to fetch current store for previous image cleanup:", fetchStoreError);
+            logger.warn("[Store Upload] Unable to fetch current store for previous image cleanup", { storeId, fetchStoreError });
           }
         }
 
@@ -1029,7 +913,7 @@ router.post(
         });
 
         // Do not forward additional metadata to the external service to keep compatibility
-        console.log("[Store Upload] Forwarding file to storage service...");
+        logger.debug("[Store Upload] Forwarding file to storage service", { storeId });
 
         // Forward the file to external API
         const uploadResponse = await fetch(externalUploadUrl, {
@@ -1037,40 +921,32 @@ router.post(
           body: formData,
           headers: formData.getHeaders(),
         });
-        console.log(
-          "[Store Upload] Storage response:",
-          uploadResponse.status,
-          uploadResponse.statusText
-        );
+        logger.debug("[Store Upload] Storage response", { 
+          status: uploadResponse.status, 
+          statusText: uploadResponse.statusText 
+        });
 
         if (!uploadResponse.ok) {
           const errorText = await uploadResponse.text();
-          console.error("[Store Upload] Upload failed:", {
+          logger.error("[Store Upload] Upload failed", undefined, {
             status: uploadResponse.status,
             statusText: uploadResponse.statusText,
             body: errorText,
           });
-          return res.status(uploadResponse.status || 500).json({
-            success: false,
-            message: "Failed to upload file to storage",
-            error:
-              errorText ||
-              `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`,
-          });
+          return ApiResponseHelper.error(res, "Failed to upload file to storage", uploadResponse.status || 500, 
+            errorText || `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`);
         }
 
         // Parse the response to get the image URL
         const uploadResult: any = await uploadResponse.json();
-        console.log("[Store Upload] Parsed response:", uploadResult);
+        logger.debug("[Store Upload] Parsed response", { uploadResult });
 
         // Extract the image URL from the response
         // Response format: { "data": "/images/...", "status": 200 }
         imageUrl = uploadResult.data;
 
         if (!imageUrl) {
-          return res.status(500).json({
-            success: false,
-            message: "Failed to get image URL from upload service",
+          return ApiResponseHelper.error(res, "Failed to get image URL from upload service", 500, {
             error: "Response did not contain image URL in data field",
             response: uploadResult,
           });
@@ -1083,26 +959,27 @@ router.post(
               process.env.FILE_STORAGE_BASE_URL ||
               externalUploadUrl.replace("/api/files/upload", "");
             const deleteUrl = `${storageBaseUrl}/api/files/delete?fileName=${encodeURIComponent(previousImageUrl)}`;
-            console.log("[Store Upload] Deleting previous image:", previousImageUrl);
+            logger.debug("[Store Upload] Deleting previous image", { previousImageUrl });
             const deleteResponse = await fetch(deleteUrl, { method: "DELETE" });
             if (!deleteResponse.ok) {
               const deleteText = await deleteResponse.text();
-              console.warn("[Store Upload] Failed to delete previous image:", {
+              logger.warn("[Store Upload] Failed to delete previous image", {
                 status: deleteResponse.status,
                 body: deleteText,
+                previousImageUrl,
               });
             }
           } catch (deleteError) {
-            console.warn("[Store Upload] Error deleting previous image:", deleteError);
+            logger.warn("[Store Upload] Error deleting previous image", { deleteError, previousImageUrl });
           }
         }
 
       } catch (fetchError: any) {
-        console.error("[Store Upload] Error calling storage service:", {
-          message: fetchError.message,
+        logger.error("[Store Upload] Error calling storage service", fetchError, {
           code: fetchError.code,
           errno: fetchError.errno,
           type: fetchError.type,
+          url: externalUploadUrl,
         });
         // Provide more specific error messages
         let errorMessage = "Failed to connect to file upload service";
@@ -1114,9 +991,7 @@ router.post(
           errorMessage = `Host not found. Cannot resolve the address for ${externalUploadUrl}.`;
         }
 
-        return res.status(503).json({
-          success: false,
-          message: errorMessage,
+        return ApiResponseHelper.error(res, errorMessage, 503, {
           error: fetchError.message,
           code: fetchError.code,
           url: externalUploadUrl,
@@ -1131,29 +1006,18 @@ router.post(
             imageUrl,
           });
         } catch (updateError) {
-          console.error("[Store Upload] Failed to update store imageUrl:", {
-            storeId,
-            error: updateError,
-          });
+          logger.error("[Store Upload] Failed to update store imageUrl", updateError, { storeId });
         }
       }
 
-      return res.json({
-        success: true,
-        data: {
-          imageUrl,
-          metadata,
-          store: updatedStore,
-        },
-        message: "Image uploaded successfully",
-      });
+      return ApiResponseHelper.success(res, {
+        imageUrl,
+        metadata,
+        store: updatedStore,
+      }, "Image uploaded successfully");
     } catch (error) {
-      console.error("[Store Upload] Unexpected error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to upload image",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("[Store Upload] Unexpected error", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to upload image", 500, error);
     }
   }
 );
