@@ -799,6 +799,7 @@ export interface Order {
   storeName: string;
   items: OrderItem[];
   totalAmount: number;
+  totalRefunded?: number;
   status: OrderStatus;
   shippingAddress: {
     streetAddress: string;

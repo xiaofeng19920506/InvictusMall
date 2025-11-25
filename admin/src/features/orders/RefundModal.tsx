@@ -9,6 +9,7 @@ export interface RefundModalProps {
   orderId: string;
   orderTotal: number;
   orderItems: OrderItem[];
+  paymentIntentId?: string | null;
   onClose: () => void;
   onRefundSuccess: () => void;
 }
@@ -17,10 +18,18 @@ const RefundModal: React.FC<RefundModalProps> = ({
   orderId,
   orderTotal,
   orderItems,
+  paymentIntentId,
   onClose,
   onRefundSuccess,
 }) => {
   const { t } = useTranslation();
+
+  // Check if order has payment intent when modal opens
+  useEffect(() => {
+    if (!paymentIntentId) {
+      setError(t("orders.refund.errors.noPaymentIntent") || "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.");
+    }
+  }, [paymentIntentId, t]);
   const [refundType, setRefundType] = useState<"full" | "partial" | null>(null);
   const [partialRefundMethod, setPartialRefundMethod] = useState<"items" | "custom" | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -40,12 +49,24 @@ const RefundModal: React.FC<RefundModalProps> = ({
   }>({ refunds: [], totalRefunded: 0 });
 
   useEffect(() => {
+    // Check if order has payment intent when modal opens
+    if (!paymentIntentId) {
+      setError(t("orders.refund.errors.noPaymentIntent") || "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.");
+    }
+
     // Load existing refunds
     const loadRefunds = async () => {
       try {
         const response = await refundApi.getOrderRefunds(orderId);
         if (response.success && response.data) {
-          setExistingRefunds(response.data);
+          // Ensure totalRefunded is always a number
+          const totalRefunded = typeof response.data.totalRefunded === 'number' 
+            ? response.data.totalRefunded 
+            : parseFloat(String(response.data.totalRefunded || 0));
+          setExistingRefunds({
+            refunds: response.data.refunds || [],
+            totalRefunded: totalRefunded
+          });
         } else {
           // If no refunds exist, set empty state
           setExistingRefunds({ refunds: [], totalRefunded: 0 });
@@ -58,10 +79,13 @@ const RefundModal: React.FC<RefundModalProps> = ({
     };
 
     loadRefunds();
-  }, [orderId, orderTotal]);
+  }, [orderId, orderTotal, paymentIntentId, t]);
 
   // Calculate remaining amount
-  const remainingAmount = orderTotal - existingRefunds.totalRefunded;
+  const totalRefunded = typeof existingRefunds.totalRefunded === 'number' 
+    ? existingRefunds.totalRefunded 
+    : parseFloat(String(existingRefunds.totalRefunded || 0));
+  const remainingAmount = orderTotal - totalRefunded;
 
   // Calculate refund amount based on selected items
   useEffect(() => {
@@ -110,6 +134,12 @@ const RefundModal: React.FC<RefundModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Double check payment intent before submitting
+    if (!paymentIntentId) {
+      setError(t("orders.refund.errors.noPaymentIntent") || "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.");
+      return;
+    }
 
     let finalAmount: number;
     if (refundType === "full") {
@@ -229,7 +259,7 @@ const RefundModal: React.FC<RefundModalProps> = ({
                 <span>
                   {t("orders.refund.totalRefunded") || "Total Refunded"}:
                 </span>
-                <strong>${existingRefunds.totalRefunded.toFixed(2)}</strong>
+                <strong>${(typeof existingRefunds.totalRefunded === 'number' ? existingRefunds.totalRefunded : parseFloat(String(existingRefunds.totalRefunded || 0))).toFixed(2)}</strong>
               </div>
             </div>
           )}

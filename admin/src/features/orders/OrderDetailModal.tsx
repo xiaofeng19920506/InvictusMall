@@ -27,6 +27,9 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
   const [showRefundTransactionModal, setShowRefundTransactionModal] = useState(false);
   const [showTransactionDetailsModal, setShowTransactionDetailsModal] = useState(false);
   const [selectedTransactionForDetails, setSelectedTransactionForDetails] = useState<StoreTransaction | StripeTransaction | null>(null);
+  const [totalRefunded, setTotalRefunded] = useState<number>(0);
+  const [refundedItemIds, setRefundedItemIds] = useState<Set<string>>(new Set());
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Update current order when prop changes
   useEffect(() => {
@@ -41,9 +44,9 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
     };
   }, []);
 
-  // Load transactions for this order
+  // Load transactions and refunds for this order
   useEffect(() => {
-    const loadTransactions = async () => {
+    const loadData = async () => {
       if (!currentOrder.id) return;
       
       setLoadingTransactions(true);
@@ -68,6 +71,47 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
             setStripeTransactions(filtered);
           }
         }
+
+        // Load refunds to calculate actual order amount and get refunded item IDs
+        try {
+          const { refundApi } = await import("../../services/api");
+          const refundResponse = await refundApi.getOrderRefunds(currentOrder.id);
+          if (refundResponse.success && refundResponse.data) {
+            const refunded = typeof refundResponse.data.totalRefunded === 'number' 
+              ? refundResponse.data.totalRefunded 
+              : parseFloat(String(refundResponse.data.totalRefunded || 0));
+            setTotalRefunded(refunded);
+            
+            // Collect all refunded item IDs
+            const refundedIds = new Set<string>();
+            if (refundResponse.data.refunds && Array.isArray(refundResponse.data.refunds)) {
+              refundResponse.data.refunds.forEach((refund: any) => {
+                if (refund.itemIds && Array.isArray(refund.itemIds) && refund.itemIds.length > 0) {
+                  // Partial refund by items - mark specific items
+                  refund.itemIds.forEach((itemId: string) => {
+                    refundedIds.add(itemId);
+                  });
+                } else if (!refund.itemIds || (Array.isArray(refund.itemIds) && refund.itemIds.length === 0)) {
+                  // Refund without itemIds - check if it's a full refund
+                  const refundAmount = typeof refund.amount === 'number' ? refund.amount : parseFloat(String(refund.amount || 0));
+                  const orderTotal = currentOrder.totalAmount;
+                  // If refund amount equals or exceeds order total (within 0.01 tolerance), mark all items
+                  if (Math.abs(refundAmount - orderTotal) < 0.01 || refundAmount >= orderTotal) {
+                    currentOrder.items.forEach((item: any) => {
+                      refundedIds.add(item.id);
+                    });
+                  }
+                }
+              });
+            }
+            console.log('Refunded item IDs (useEffect):', Array.from(refundedIds), 'Total refunded:', refunded, 'Order total:', currentOrder.totalAmount);
+            setRefundedItemIds(new Set(refundedIds)); // Create new Set to ensure React detects the change
+          }
+        } catch (error) {
+          console.error("Error loading refunds:", error);
+          setTotalRefunded(0);
+          setRefundedItemIds(new Set());
+        }
       } catch (error) {
         console.error("Error loading transactions:", error);
       } finally {
@@ -75,8 +119,8 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
       }
     };
 
-    loadTransactions();
-  }, [currentOrder.id, currentOrder.paymentIntentId]);
+    loadData();
+  }, [currentOrder.id, currentOrder.paymentIntentId, refreshKey]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -176,20 +220,59 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
             const { orderApi } = await import("../../services/api");
             const orderResponse = await orderApi.getOrderById(currentOrder.id);
             if (orderResponse.success && orderResponse.data) {
-              setCurrentOrder(orderResponse.data);
+              const updatedOrder = orderResponse.data;
+              setCurrentOrder(updatedOrder);
               if (onOrderUpdate) {
-                onOrderUpdate(orderResponse.data);
+                onOrderUpdate(updatedOrder);
+              }
+              
+              // Reload transactions
+              const localResponse = await transactionApi.getTransactions({ orderId: updatedOrder.id });
+              if (localResponse.success && localResponse.data) {
+                setTransactions(localResponse.data);
+              }
+              
+              // Reload refunds
+              const { refundApi: refundApiReload } = await import("../../services/api");
+              const refundResponseReload = await refundApiReload.getOrderRefunds(updatedOrder.id);
+              if (refundResponseReload.success && refundResponseReload.data) {
+                const refunded = typeof refundResponseReload.data.totalRefunded === 'number' 
+                  ? refundResponseReload.data.totalRefunded 
+                  : parseFloat(String(refundResponseReload.data.totalRefunded || 0));
+                setTotalRefunded(refunded);
+                
+                // Collect all refunded item IDs
+                const refundedIds = new Set<string>();
+                if (refundResponseReload.data.refunds && Array.isArray(refundResponseReload.data.refunds)) {
+                  refundResponseReload.data.refunds.forEach((refund: any) => {
+                    if (refund.itemIds && Array.isArray(refund.itemIds) && refund.itemIds.length > 0) {
+                      // Partial refund by items - mark specific items
+                      refund.itemIds.forEach((itemId: string) => {
+                        refundedIds.add(itemId);
+                      });
+                    } else if (!refund.itemIds || (Array.isArray(refund.itemIds) && refund.itemIds.length === 0)) {
+                      // Refund without itemIds - check if it's a full refund
+                      const refundAmount = typeof refund.amount === 'number' ? refund.amount : parseFloat(String(refund.amount || 0));
+                      const orderTotal = updatedOrder.totalAmount;
+                      // If refund amount equals or exceeds order total (within 0.01 tolerance), mark all items
+                      if (Math.abs(refundAmount - orderTotal) < 0.01 || refundAmount >= orderTotal) {
+                        updatedOrder.items.forEach((item: any) => {
+                          refundedIds.add(item.id);
+                        });
+                      }
+                    }
+                  });
+                }
+                console.log('Refunded item IDs (handleRefundTransaction):', Array.from(refundedIds), 'Total refunded:', refunded, 'Order total:', updatedOrder.totalAmount);
+                setRefundedItemIds(new Set(refundedIds)); // Create new Set to ensure React detects the change
               }
             }
           } catch (error) {
             console.error("Error reloading order:", error);
           }
           
-          // Reload transactions
-          const localResponse = await transactionApi.getTransactions({ orderId: currentOrder.id });
-          if (localResponse.success && localResponse.data) {
-            setTransactions(localResponse.data);
-          }
+          // Force refresh by updating refreshKey
+          setRefreshKey(prev => prev + 1);
           setShowRefundTransactionModal(false);
           setSelectedTransaction(null);
         } else {
@@ -263,9 +346,16 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
                 <span className={styles.infoLabel}>
                   {t("orders.modal.total") || "Total"}:
                 </span>
-                <span className={`${styles.infoValue} ${styles.totalAmount}`}>
-                  {formatCurrency(currentOrder.totalAmount)}
-                </span>
+                <div className={styles.totalAmountContainer}>
+                  <span className={`${styles.infoValue} ${styles.totalAmount}`}>
+                    {formatCurrency(currentOrder.totalAmount - totalRefunded)}
+                  </span>
+                  {totalRefunded > 0 && (
+                    <span className={styles.refundedNote}>
+                      ({t("orders.modal.originalAmount") || "Original"}: {formatCurrency(currentOrder.totalAmount)}, {t("orders.modal.refunded") || "Refunded"}: {formatCurrency(totalRefunded)})
+                    </span>
+                  )}
+                </div>
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>
@@ -327,7 +417,11 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
                   <div className={styles.itemDetails}>
                     <div className={styles.itemHeader}>
                       <h5 className={styles.itemName}>{item.productName}</h5>
-                      {item.isReservation && (
+                      {refundedItemIds.has(item.id) ? (
+                        <span className={styles.refundedBadge}>
+                          {t("orders.refund.refunded") || "Refunded"}
+                        </span>
+                      ) : item.isReservation && (
                         <span className={styles.reservationBadge}>
                           {t("orders.reservation") || "Reservation"}
                         </span>
@@ -436,30 +530,20 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
               <>
                 {/* Transaction Statistics */}
                 {(() => {
-                  const allTransactions = [
-                    ...transactions.map(t => ({ ...t, source: 'local' as const })),
-                    ...stripeTransactions.map(t => ({ ...t, source: 'stripe' as const }))
-                  ];
-                  
-                  // Get currency from first transaction or default to USD
-                  const currency = allTransactions.length > 0 
-                    ? (allTransactions[0].currency || "USD")
+                  // Calculate statistics based on order amount and refunds
+                  // This is more accurate than calculating from transaction list
+                  const currency = currentOrder.items.length > 0 && currentOrder.items[0].currency 
+                    ? currentOrder.items[0].currency 
                     : "USD";
                   
-                  const totalAmount = allTransactions
-                    .filter(t => t.status === 'completed')
-                    .reduce((sum, t) => {
-                      const isRefund = t.transactionType === 'refund' || (t.amount < 0);
-                      return sum + (isRefund ? -Math.abs(t.amount) : Math.abs(t.amount));
-                    }, 0);
-
-                  const totalSales = allTransactions
-                    .filter(t => (t.transactionType === 'sale' || !t.transactionType || t.transactionType === 'payment') && t.status === 'completed' && t.amount > 0)
-                    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-
-                  const totalRefunds = allTransactions
-                    .filter(t => (t.transactionType === 'refund' || t.amount < 0) && t.status === 'completed')
-                    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+                  // Total sales = original order amount
+                  const totalSales = currentOrder.totalAmount;
+                  
+                  // Total refunds = sum of all successful refunds
+                  const totalRefunds = totalRefunded;
+                  
+                  // Total amount = sales - refunds (net amount)
+                  const totalAmount = totalSales - totalRefunds;
 
                   return (
                     <div className={styles.transactionStats}>
@@ -605,6 +689,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
           orderId={currentOrder.id}
           orderTotal={currentOrder.totalAmount}
           orderItems={currentOrder.items}
+          paymentIntentId={currentOrder.paymentIntentId}
           onClose={() => setShowRefundModal(false)}
           onRefundSuccess={async () => {
             setShowRefundModal(false);
@@ -613,38 +698,76 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
               const { orderApi } = await import("../../services/api");
               const orderResponse = await orderApi.getOrderById(currentOrder.id);
               if (orderResponse.success && orderResponse.data) {
-                setCurrentOrder(orderResponse.data);
+                const updatedOrder = orderResponse.data;
+                setCurrentOrder(updatedOrder);
                 if (onOrderUpdate) {
-                  onOrderUpdate(orderResponse.data);
+                  onOrderUpdate(updatedOrder);
                 }
+                
+                // Reload transactions and refunds with updated order data
+                try {
+                  const localResponse = await transactionApi.getTransactions({ orderId: updatedOrder.id });
+                  if (localResponse.success && localResponse.data) {
+                    setTransactions(localResponse.data);
+                  }
+                  
+                  if (updatedOrder.paymentIntentId) {
+                    const stripeResponse = await transactionApi.getStripeTransactions({ 
+                      limit: 100,
+                      type: 'payment_intent'
+                    });
+                    if (stripeResponse.success && stripeResponse.data) {
+                      const filtered = stripeResponse.data.filter(
+                        (t: StripeTransaction) => t.id === updatedOrder.paymentIntentId
+                      );
+                      setStripeTransactions(filtered);
+                    }
+                  }
+                  
+                  // Reload refunds to update totalRefunded and refundedItemIds
+                  const { refundApi } = await import("../../services/api");
+                  const refundResponse = await refundApi.getOrderRefunds(updatedOrder.id);
+                  if (refundResponse.success && refundResponse.data) {
+                    const refunded = typeof refundResponse.data.totalRefunded === 'number' 
+                      ? refundResponse.data.totalRefunded 
+                      : parseFloat(String(refundResponse.data.totalRefunded || 0));
+                    setTotalRefunded(refunded);
+                    
+                    // Collect all refunded item IDs
+                    const refundedIds = new Set<string>();
+                    if (refundResponse.data.refunds && Array.isArray(refundResponse.data.refunds)) {
+                      refundResponse.data.refunds.forEach((refund: any) => {
+                        if (refund.itemIds && Array.isArray(refund.itemIds) && refund.itemIds.length > 0) {
+                          // Partial refund by items - mark specific items
+                          refund.itemIds.forEach((itemId: string) => {
+                            refundedIds.add(itemId);
+                          });
+                        } else if (!refund.itemIds || (Array.isArray(refund.itemIds) && refund.itemIds.length === 0)) {
+                          // Refund without itemIds - check if it's a full refund
+                          const refundAmount = typeof refund.amount === 'number' ? refund.amount : parseFloat(String(refund.amount || 0));
+                          const orderTotal = updatedOrder.totalAmount;
+                          // If refund amount equals or exceeds order total (within 0.01 tolerance), mark all items
+                          if (Math.abs(refundAmount - orderTotal) < 0.01 || refundAmount >= orderTotal) {
+                            updatedOrder.items.forEach((item: any) => {
+                              refundedIds.add(item.id);
+                            });
+                          }
+                        }
+                      });
+                    }
+                    console.log('Refunded item IDs:', Array.from(refundedIds), 'Total refunded:', refunded, 'Order total:', updatedOrder.totalAmount);
+                    setRefundedItemIds(new Set(refundedIds)); // Create new Set to ensure React detects the change
+                  }
+                } catch (error) {
+                  console.error("Error reloading transactions and refunds:", error);
+                }
+                
+                // Force refresh by updating refreshKey
+                setRefreshKey(prev => prev + 1);
               }
             } catch (error) {
               console.error("Error reloading order:", error);
             }
-            // Reload transactions
-            const reloadTransactions = async () => {
-              try {
-                const localResponse = await transactionApi.getTransactions({ orderId: currentOrder.id });
-                if (localResponse.success && localResponse.data) {
-                  setTransactions(localResponse.data);
-                }
-                if (currentOrder.paymentIntentId) {
-                  const stripeResponse = await transactionApi.getStripeTransactions({ 
-                    limit: 100,
-                    type: 'payment_intent'
-                  });
-                  if (stripeResponse.success && stripeResponse.data) {
-                    const filtered = stripeResponse.data.filter(
-                      (t: StripeTransaction) => t.id === currentOrder.paymentIntentId
-                    );
-                    setStripeTransactions(filtered);
-                  }
-                }
-              } catch (error) {
-                console.error("Error reloading transactions:", error);
-              }
-            };
-            reloadTransactions();
           }}
         />
       )}

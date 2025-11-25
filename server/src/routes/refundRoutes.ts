@@ -6,6 +6,7 @@ import {
 } from "../middleware/auth";
 import { OrderModel } from "../models/OrderModel";
 import { RefundModel } from "../models/RefundModel";
+import { TransactionModel } from "../models/TransactionModel";
 
 const router = Router();
 
@@ -18,6 +19,7 @@ const stripeClient = stripeSecretKey
 
 const orderModel = new OrderModel();
 const refundModel = new RefundModel();
+const transactionModel = new TransactionModel();
 
 /**
  * @swagger
@@ -72,7 +74,7 @@ router.post(
       }
 
       const { orderId } = req.params;
-      const { amount, reason } = req.body;
+      const { amount, reason, itemIds } = req.body;
 
       if (!orderId) {
         res.status(400).json({
@@ -92,7 +94,177 @@ router.post(
         return;
       }
 
-      const paymentIntentId = order.paymentIntentId;
+      let paymentIntentId = order.paymentIntentId;
+      
+      // Try to extract paymentIntentId from paymentMethod if it's in the format "stripe_payment_intent:pi_xxx"
+      if (!paymentIntentId && order.paymentMethod) {
+        const paymentMethodMatch = order.paymentMethod.match(/stripe_payment_intent:(pi_[a-zA-Z0-9_]+)/);
+        if (paymentMethodMatch && paymentMethodMatch[1]) {
+          paymentIntentId = paymentMethodMatch[1];
+          console.log(`Extracted paymentIntentId ${paymentIntentId} from paymentMethod for order ${orderId}`);
+          // Update order record with paymentIntentId
+          await orderModel.updateOrderAfterPayment(orderId, {
+            paymentIntentId: paymentIntentId,
+          });
+        }
+      }
+      
+      // If order doesn't have paymentIntentId, try to find it from Stripe
+      if (!paymentIntentId && stripeClient) {
+        try {
+          console.log(`Searching for payment intent for order ${orderId}, amount: ${order.totalAmount}, created: ${order.createdAt}`);
+          
+          // First, try searching charges (more likely to have orderId in metadata)
+          // Search with pagination to find more results
+          try {
+            let allCharges: Stripe.Charge[] = [];
+            let hasMore = true;
+            let startingAfter: string | undefined = undefined;
+            
+            // Collect up to 500 charges
+            while (hasMore && allCharges.length < 500) {
+              const chargesResponse: Stripe.Response<Stripe.ApiList<Stripe.Charge>> = await stripeClient.charges.list({
+                limit: 100,
+                starting_after: startingAfter,
+              });
+              
+              allCharges = allCharges.concat(chargesResponse.data);
+              hasMore = chargesResponse.has_more;
+              if (chargesResponse.data.length > 0) {
+                const lastCharge = chargesResponse.data[chargesResponse.data.length - 1];
+                if (lastCharge) {
+                  startingAfter = lastCharge.id;
+                } else {
+                  hasMore = false;
+                }
+              } else {
+                hasMore = false;
+              }
+            }
+            
+            for (const charge of allCharges) {
+              // Check charge metadata for orderId
+              if (charge.metadata?.orderId === orderId) {
+                const chargePaymentIntentId = typeof charge.payment_intent === 'string' 
+                  ? charge.payment_intent 
+                  : charge.payment_intent?.id;
+                
+                if (chargePaymentIntentId) {
+                  paymentIntentId = chargePaymentIntentId;
+                  await orderModel.updateOrderAfterPayment(orderId, {
+                    paymentIntentId: chargePaymentIntentId,
+                  });
+                  console.log(`Found paymentIntentId ${chargePaymentIntentId} for order ${orderId} via charge metadata`);
+                  break;
+                }
+              }
+              
+              // Also check by amount and date
+              const orderDate = new Date(order.createdAt);
+              const chargeDate = new Date(charge.created * 1000);
+              const timeDiff = Math.abs(orderDate.getTime() - chargeDate.getTime());
+              const amountMatches = Math.abs(charge.amount / 100 - order.totalAmount) < 0.01;
+              
+              if (amountMatches && timeDiff < 3600000) {
+                const chargePaymentIntentId = typeof charge.payment_intent === 'string' 
+                  ? charge.payment_intent 
+                  : charge.payment_intent?.id;
+                
+                if (chargePaymentIntentId) {
+                  paymentIntentId = chargePaymentIntentId;
+                  await orderModel.updateOrderAfterPayment(orderId, {
+                    paymentIntentId: chargePaymentIntentId,
+                  });
+                  console.log(`Found paymentIntentId ${chargePaymentIntentId} for order ${orderId} via charge amount/date match`);
+                  break;
+                }
+              }
+            }
+          } catch (chargeError: any) {
+            console.error("Error searching charges:", chargeError);
+          }
+
+          // If still not found, search payment intents with pagination
+          if (!paymentIntentId) {
+            let allPaymentIntents: Stripe.PaymentIntent[] = [];
+            let hasMore = true;
+            let startingAfter: string | undefined = undefined;
+            
+            // Collect up to 500 payment intents
+            while (hasMore && allPaymentIntents.length < 500) {
+              const paymentIntentsResponse: Stripe.Response<Stripe.ApiList<Stripe.PaymentIntent>> = await stripeClient.paymentIntents.list({
+                limit: 100,
+                starting_after: startingAfter,
+              });
+              
+              allPaymentIntents = allPaymentIntents.concat(paymentIntentsResponse.data);
+              hasMore = paymentIntentsResponse.has_more;
+              if (paymentIntentsResponse.data.length > 0) {
+                const lastPaymentIntent = paymentIntentsResponse.data[paymentIntentsResponse.data.length - 1];
+                if (lastPaymentIntent) {
+                  startingAfter = lastPaymentIntent.id;
+                } else {
+                  hasMore = false;
+                }
+              } else {
+                hasMore = false;
+              }
+            }
+
+            const orderDate = new Date(order.createdAt);
+            
+            for (const pi of allPaymentIntents) {
+              // Check if metadata contains orderId or orderIds array
+              const metadataOrderIds = pi.metadata?.orderId || 
+                (pi.metadata?.orderIds ? (typeof pi.metadata.orderIds === 'string' ? JSON.parse(pi.metadata.orderIds) : pi.metadata.orderIds) : null);
+              
+              if (metadataOrderIds === orderId || 
+                  (Array.isArray(metadataOrderIds) && metadataOrderIds.includes(orderId))) {
+                paymentIntentId = pi.id;
+                await orderModel.updateOrderAfterPayment(orderId, {
+                  paymentIntentId: pi.id,
+                });
+                console.log(`Found paymentIntentId ${pi.id} for order ${orderId} via payment intent metadata`);
+                break;
+              }
+              
+              // Also check by amount and approximate date (within 1 hour of order creation)
+              const piDate = new Date(pi.created * 1000);
+              const timeDiff = Math.abs(orderDate.getTime() - piDate.getTime());
+              const amountMatches = Math.abs(pi.amount / 100 - order.totalAmount) < 0.01; // Within 1 cent
+              
+              if (amountMatches && timeDiff < 3600000) { // Within 1 hour
+                // Double check by looking at charges associated with this payment intent
+                if (pi.latest_charge) {
+                  try {
+                    const charge = await stripeClient.charges.retrieve(
+                      typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge.id
+                    );
+                    if (charge.metadata?.orderId === orderId) {
+                      paymentIntentId = pi.id;
+                      await orderModel.updateOrderAfterPayment(orderId, {
+                        paymentIntentId: pi.id,
+                      });
+                      console.log(`Found paymentIntentId ${pi.id} for order ${orderId} via charge metadata`);
+                      break;
+                    }
+                  } catch (chargeError) {
+                    // Ignore charge retrieval errors
+                  }
+                }
+              }
+            }
+          }
+          
+          if (!paymentIntentId) {
+            console.log(`Could not find payment intent for order ${orderId} after searching Stripe`);
+          }
+        } catch (stripeError: any) {
+          console.error("Error searching for payment intent:", stripeError);
+          // Continue with the error handling below
+        }
+      }
+
       if (!paymentIntentId) {
         res.status(400).json({
           success: false,
@@ -137,14 +309,20 @@ router.post(
       }
 
       // Create refund in Stripe
+      const refundMetadata: Record<string, string> = {
+        orderId: order.id,
+        refundedBy: req.user.id,
+      };
+      
+      if (itemIds && itemIds.length > 0) {
+        refundMetadata.itemIds = JSON.stringify(itemIds);
+      }
+      
       const refund = await stripeClient.refunds.create({
         payment_intent: paymentIntentId,
         amount: Math.round(refundAmount * 100), // Convert to cents
         reason: reason || undefined,
-        metadata: {
-          orderId: order.id,
-          refundedBy: req.user.id,
-        },
+        metadata: refundMetadata,
       });
 
       // Save refund record
@@ -157,10 +335,40 @@ router.post(
         reason: reason || undefined,
         status: refund.status || 'succeeded',
         refundedBy: req.user.id || undefined,
+        itemIds: itemIds || undefined,
       });
 
-      // Update order status if fully refunded
-      if (refundAmount >= remainingAmount) {
+      // Create transaction record for the refund
+      try {
+        await transactionModel.createTransaction({
+          storeId: order.storeId,
+          transactionType: 'refund',
+          amount: -refundAmount, // Negative amount for refund
+          currency: 'usd',
+          description: reason ? `Refund: ${reason}` : `Refund for order ${order.id}`,
+          orderId: order.id,
+          paymentMethod: order.paymentMethod || undefined,
+          status: refund.status === 'succeeded' ? 'completed' : (refund.status === 'pending' ? 'pending' : 'failed'),
+          transactionDate: new Date(),
+          createdBy: req.user.id || undefined,
+          metadata: {
+            refundId: refund.id,
+            paymentIntentId: paymentIntentId,
+            itemIds: itemIds || undefined,
+          },
+        });
+      } catch (transactionError) {
+        console.error("Failed to create transaction record for refund:", transactionError);
+        // Don't fail the refund if transaction record creation fails
+      }
+
+      // Check if order is fully refunded after this refund
+      // Recalculate total refunded amount to account for this new refund
+      const newTotalRefunded = totalRefunded + refundAmount;
+      const isFullyRefunded = Math.abs(newTotalRefunded - order.totalAmount) < 0.01 || newTotalRefunded >= order.totalAmount;
+      
+      // Only update order status to cancelled if fully refunded
+      if (isFullyRefunded) {
         await orderModel.updateOrderAfterPayment(order.id, {
           status: "cancelled",
         });
@@ -231,7 +439,10 @@ router.get(
       res.json({
         success: true,
         data: {
-          refunds,
+          refunds: refunds.map(refund => ({
+            ...refund,
+            itemIds: refund.itemIds || undefined,
+          })),
           totalRefunded,
         },
       });

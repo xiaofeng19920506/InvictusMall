@@ -97,6 +97,9 @@ router.get('/', authenticateStaffToken, async (req: AuthenticatedRequest, res: R
     if (req.query.offset) {
       filters.offset = parseInt(req.query.offset as string);
     }
+    if (req.query.orderId) {
+      filters.orderId = req.query.orderId as string;
+    }
 
     // Role-based filtering: owners/managers can only see their store's transactions
     if (req.user && req.user.role !== 'admin') {

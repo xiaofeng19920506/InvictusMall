@@ -133,10 +133,22 @@
   font-size: 0.75rem;
 }
 
+.totalAmountContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .totalAmount {
   font-size: 1.25rem;
   font-weight: 700;
   color: #059669;
+}
+
+.refundedNote {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 400;
 }
 
 .statusBadge {
@@ -243,6 +255,15 @@
   padding: 0.25rem 0.5rem;
   background-color: #dbeafe;
   color: #1e40af;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.refundedBadge {
+  padding: 0.25rem 0.5rem;
+  background-color: #fee2e2;
+  color: #991b1b;
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 500;

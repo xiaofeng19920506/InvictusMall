@@ -12,6 +12,7 @@ export interface Refund {
   reason?: string;
   status: string;
   refundedBy?: string;
+  itemIds?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +26,7 @@ export interface CreateRefundRequest {
   reason?: string;
   status: string;
   refundedBy?: string;
+  itemIds?: string[];
 }
 
 export class RefundModel {
@@ -37,13 +39,29 @@ export class RefundModel {
   async create(refundData: CreateRefundRequest): Promise<Refund> {
     const connection = await this.pool.getConnection();
     try {
+      // Try to add item_ids column if it doesn't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE refunds 
+          ADD COLUMN item_ids JSON
+        `);
+      } catch (error: any) {
+        // Column already exists or other error, ignore
+        if (error.code !== 'ER_DUP_FIELDNAME') {
+          console.warn('Could not add item_ids column to refunds table:', error.message);
+        }
+      }
+
       const id = uuidv4();
       const currency = refundData.currency || 'usd';
+      const itemIdsJson = refundData.itemIds && refundData.itemIds.length > 0 
+        ? JSON.stringify(refundData.itemIds) 
+        : null;
 
       await connection.execute(
         `INSERT INTO refunds (
-          id, order_id, payment_intent_id, refund_id, amount, currency, reason, status, refunded_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          id, order_id, payment_intent_id, refund_id, amount, currency, reason, status, refunded_by, item_ids
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           refundData.orderId,
@@ -54,6 +72,7 @@ export class RefundModel {
           refundData.reason || null,
           refundData.status,
           refundData.refundedBy ? refundData.refundedBy : null,
+          itemIdsJson,
         ]
       );
 
@@ -119,13 +138,26 @@ export class RefundModel {
       );
 
       const result = rows as any[];
-      return result[0]?.total || 0;
+      const total = result[0]?.total;
+      // Ensure we return a number, as MySQL SUM can return Decimal or string
+      return total ? parseFloat(String(total)) : 0;
     } finally {
       connection.release();
     }
   }
 
   private mapRowToRefund(row: any): Refund {
+    let itemIds: string[] | undefined = undefined;
+    if (row.item_ids) {
+      try {
+        itemIds = typeof row.item_ids === 'string' 
+          ? JSON.parse(row.item_ids) 
+          : row.item_ids;
+      } catch (error) {
+        console.warn('Failed to parse item_ids from refund:', error);
+      }
+    }
+
     return {
       id: row.id,
       orderId: row.order_id,
@@ -136,6 +168,7 @@ export class RefundModel {
       reason: row.reason || undefined,
       status: row.status,
       refundedBy: row.refunded_by || undefined,
+      itemIds: itemIds,
       createdAt: row.created_at.toISOString(),
       updatedAt: row.updated_at.toISOString(),
     };

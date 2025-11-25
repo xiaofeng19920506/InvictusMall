@@ -878,6 +878,9 @@
       "processRefund": "处理退款",
       "refunds": "退款",
       "totalRefunded": "已退款总额",
+      "originalAmount": "原始金额",
+      "refunded": "已退款",
+      "total": "总计",
       "transactionDetails": {
         "title": "交易详情",
         "overview": "概览",
@@ -929,6 +932,7 @@
       "selectItems": "选择要退款的商品",
       "selectedItemsTotal": "已选商品总额",
       "alreadyRefunded": "已退款",
+      "refunded": "已退款",
       "refundingFullAmount": "退款全额",
       "back": "返回",
       "cancel": "取消",

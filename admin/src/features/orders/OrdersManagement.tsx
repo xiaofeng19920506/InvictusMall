@@ -232,9 +232,16 @@ const OrdersManagement: React.FC = () => {
                     </div>
                   </td>
                   <td>
-                    <span className={styles.totalAmount}>
-                      {formatCurrency(order.totalAmount)}
-                    </span>
+                    <div className={styles.totalAmountContainer}>
+                      <span className={styles.totalAmount}>
+                        {formatCurrency(order.totalAmount - (order.totalRefunded || 0))}
+                      </span>
+                      {order.totalRefunded && order.totalRefunded > 0 && (
+                        <span className={styles.refundedNote}>
+                          ({t("orders.modal.originalAmount") || "Original"}: {formatCurrency(order.totalAmount)}, {t("orders.modal.refunded") || "Refunded"}: {formatCurrency(order.totalRefunded)})
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <span

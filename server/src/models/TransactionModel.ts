@@ -156,8 +156,8 @@ export class TransactionModel {
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const limit = filters.limit || 100;
-    const offset = filters.offset || 0;
+    const limit = typeof filters.limit === 'number' ? filters.limit : (filters.limit ? parseInt(String(filters.limit)) : 100);
+    const offset = typeof filters.offset === 'number' ? filters.offset : (filters.offset ? parseInt(String(filters.offset)) : 0);
 
     const query = `
       SELECT 
