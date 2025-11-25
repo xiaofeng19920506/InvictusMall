@@ -120,8 +120,11 @@ const RefundModal: React.FC<RefundModalProps> = ({
         return;
       }
       finalAmount = selectedItemsTotal;
-    } else {
+    } else if (refundType === "partial" && partialRefundMethod === "custom") {
       finalAmount = typeof refundAmount === "number" ? refundAmount : 0;
+    } else {
+      setError(t("orders.refund.errors.selectPartialMethod") || "Please select a partial refund method.");
+      return;
     }
 
     if (finalAmount <= 0) {
@@ -153,10 +156,22 @@ const RefundModal: React.FC<RefundModalProps> = ({
         onRefundSuccess();
         onClose();
       } else {
-        setError(response.message || "Failed to process refund");
+        const errorMessage = response.message || "Failed to process refund";
+        // Check for specific error messages and provide user-friendly translations
+        if (errorMessage.toLowerCase().includes("payment intent") || errorMessage.toLowerCase().includes("does not have a payment")) {
+          setError(t("orders.refund.errors.noPaymentIntent") || "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.");
+        } else {
+          setError(errorMessage);
+        }
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Failed to process refund");
+      const errorMessage = err.response?.data?.message || err.message || "Failed to process refund";
+      // Check for specific error messages and provide user-friendly translations
+      if (errorMessage.toLowerCase().includes("payment intent") || errorMessage.toLowerCase().includes("does not have a payment")) {
+        setError(t("orders.refund.errors.noPaymentIntent") || "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.");
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -270,6 +285,63 @@ const RefundModal: React.FC<RefundModalProps> = ({
               </div>
             </div>
           ) : (
+            <>
+            {refundType === "partial" && !partialRefundMethod && (
+              <div className={styles.refundTypeSelection}>
+                <h4 className={styles.sectionTitle}>
+                  {t("orders.refund.selectPartialMethod") || "Select Partial Refund Method"}
+                </h4>
+                <p className={styles.helpText}>
+                  {t("orders.refund.selectPartialMethodHelp") || "Choose how to specify the partial refund amount."}
+                </p>
+                <div className={styles.refundTypeButtons}>
+                  <button
+                    type="button"
+                    onClick={() => setPartialRefundMethod("items")}
+                    className={`${styles.refundTypeButton} ${styles.partialRefundButton}`}
+                  >
+                    <div className={styles.refundTypeButtonContent}>
+                      <span className={styles.refundTypeButtonTitle}>
+                        {t("orders.refund.refundByItems") || "By Items"}
+                      </span>
+                      <span className={styles.refundTypeButtonDescription}>
+                        {t("orders.refund.refundByItemsDesc") || "Select specific items to refund."}
+                      </span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPartialRefundMethod("custom")}
+                    className={`${styles.refundTypeButton} ${styles.partialRefundButton}`}
+                  >
+                    <div className={styles.refundTypeButtonContent}>
+                      <span className={styles.refundTypeButtonTitle}>
+                        {t("orders.refund.customAmount") || "Custom Amount"}
+                      </span>
+                      <span className={styles.refundTypeButtonDescription}>
+                        {t("orders.refund.customAmountDesc") || "Enter a specific amount to refund."}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRefundType(null);
+                      setPartialRefundMethod(null);
+                      setSelectedItems(new Set());
+                      setError(null);
+                    }}
+                    className="btn btn-secondary"
+                  >
+                    {t("orders.refund.back") || "Back"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {refundType && (refundType === "full" || partialRefundMethod) && (
             <form onSubmit={handleSubmit} className={styles.form}>
             {refundType === "partial" && partialRefundMethod === "items" && (
               <div className={styles.formGroup}>
@@ -286,12 +358,28 @@ const RefundModal: React.FC<RefundModalProps> = ({
                       <div
                         key={item.id}
                         className={`${styles.itemCard} ${isSelected ? styles.itemSelected : ""} ${isRefunded ? styles.itemRefunded : ""}`}
-                        onClick={() => !isRefunded && handleItemToggle(item.id)}
+                        onClick={(e) => {
+                          // Don't trigger if clicking on checkbox or its label
+                          if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).closest('input')) {
+                            return;
+                          }
+                          if (!isRefunded) {
+                            handleItemToggle(item.id);
+                          }
+                        }}
                       >
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => !isRefunded && handleItemToggle(item.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (!isRefunded) {
+                              handleItemToggle(item.id);
+                            }
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
                           disabled={isRefunded}
                           className={styles.itemCheckbox}
                         />
@@ -449,6 +537,8 @@ const RefundModal: React.FC<RefundModalProps> = ({
               </button>
             </div>
           </form>
+            )}
+          </>
           )}
         </div>
       </div>
