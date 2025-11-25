@@ -92,6 +92,70 @@ router.get(
 
 /**
  * @swagger
+ * /api/admin/orders/{id}:
+ *   get:
+ *     summary: Get order by ID (Admin only)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *     responses:
+ *       200:
+ *         description: Order retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (Admin only)
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  "/:id",
+  authenticateStaffToken,
+  requireAdmin,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const orderId = req.params.id as string;
+      if (!orderId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Order ID is required'
+        });
+      }
+
+      const order = await orderModel.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Order not found'
+        });
+      }
+
+      return res.json({
+        success: true,
+        data: order
+      });
+    } catch (error) {
+      console.error('Get order by ID error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve order',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
+
+/**
+ * @swagger
  * /api/admin/orders/{id}/status:
  *   put:
  *     summary: Update order status (Admin only)

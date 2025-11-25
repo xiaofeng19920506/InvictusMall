@@ -11,7 +11,6 @@ import {
   UserCheck,
   TrendingUp,
   FileText,
-  CreditCard,
   Package,
   FolderTree,
   ShoppingBag,
@@ -86,13 +85,6 @@ const NAV_ITEMS: NavigationItem[] = [
     icon: Users,
     translationKey: "nav.users",
     pageTitleKey: "pages.users",
-  },
-  {
-    id: "transactions",
-    permission: "stores",
-    icon: CreditCard,
-    translationKey: "nav.transactions",
-    pageTitleKey: "pages.transactions",
   },
   {
     id: "system_logs",

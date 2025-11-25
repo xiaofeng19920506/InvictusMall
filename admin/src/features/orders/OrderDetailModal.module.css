@@ -341,3 +341,195 @@
   margin-top: 1rem;
 }
 
+/* Transaction History Styles */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 1rem;
+  color: #6b7280;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.transactionStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.statIcon {
+  width: 2rem;
+  height: 2rem;
+  color: #f97316;
+  flex-shrink: 0;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.statValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.emptyTransactions {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px dashed #e5e7eb;
+}
+
+.transactionsTable {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table thead {
+  background-color: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+}
+
+.table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #1f2937;
+}
+
+.table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.transactionType {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.positiveAmount {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.negativeAmount {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.statusCompleted {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.statusFailed {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.statusRefunded {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: #8b5cf6;
+}
+
+.transactionActions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.refundButton,
+.viewButton {
+  padding: 0.375rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refundButton {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.refundButton:hover {
+  background-color: #fecaca;
+}
+
+.viewButton {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.viewButton:hover {
+  background-color: #dbeafe;
+}
+
+.refundSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.buttonIcon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+}
+

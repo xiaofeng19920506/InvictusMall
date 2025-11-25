@@ -11,7 +11,7 @@ import {
   LazyProductsManagement,
   LazyCategoriesManagement,
   LazyInventoryManagement,
-  LazyOrdersAndTransactionsManagement,
+  LazyOrdersManagement,
 } from "./routes";
 import type { AdminPageKey } from "./types";
 
@@ -50,15 +50,13 @@ const AdminApp = () => {
         }
         return <LazyDashboard onNavigate={setCurrentPage} />;
       case "orders":
-        return <LazyOrdersAndTransactionsManagement />;
+        return <LazyOrdersManagement />;
       case "users":
         return <LazyUsersManagement />;
       case "system_logs":
         return <LazySystemLogs />;
       case "settings":
         return <LazySettings />;
-      case "transactions":
-        return <LazyOrdersAndTransactionsManagement />;
       case "inventory":
         // Only allow access if user has stores permission
         if (user && authService.hasPermission(user, "stores")) {
