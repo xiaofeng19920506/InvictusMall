@@ -84,7 +84,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
           <div className={styles.headerContent}>
             <CreditCard className={styles.headerIcon} />
             <h3 className={styles.title}>
-              {t("orders.transactionDetails.title") || "Transaction Details"}
+              {t("orders.modal.transactionDetails.title") || "Transaction Details"}
             </h3>
           </div>
           <button
@@ -101,18 +101,18 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
           {/* Transaction Overview */}
           <div className={styles.section}>
             <h4 className={styles.sectionTitle}>
-              {t("orders.transactionDetails.overview") || "Overview"}
+              {t("orders.modal.transactionDetails.overview") || "Overview"}
             </h4>
             <div className={styles.infoGrid}>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>
-                  {t("orders.transactionDetails.id") || "Transaction ID"}:
+                  {t("orders.modal.transactionDetails.id") || "Transaction ID"}:
                 </span>
                 <span className={styles.infoValue}>{transaction.id}</span>
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>
-                  {t("orders.transactionDetails.type") || "Type"}:
+                  {t("orders.modal.transactionDetails.type") || "Type"}:
                 </span>
                 <span className={styles.infoValue}>
                   {isLocal
@@ -122,7 +122,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>
-                  {t("orders.transactionDetails.amount") || "Amount"}:
+                  {t("orders.modal.transactionDetails.amount") || "Amount"}:
                 </span>
                 <span className={`${styles.infoValue} ${transaction.amount < 0 ? styles.negativeAmount : styles.positiveAmount}`}>
                   {transaction.amount < 0 ? "-" : "+"}
@@ -131,7 +131,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               </div>
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>
-                  {t("orders.transactionDetails.status") || "Status"}:
+                  {t("orders.modal.transactionDetails.status") || "Status"}:
                 </span>
                 <span className={`${styles.statusBadge} ${getStatusClass(transaction.status)}`}>
                   {getStatusIcon(transaction.status)}
@@ -141,7 +141,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               <div className={styles.infoItem}>
                 <span className={styles.infoLabel}>
                   <Calendar className={styles.icon} size={16} />
-                  {t("orders.transactionDetails.date") || "Date"}:
+                  {t("orders.modal.transactionDetails.date") || "Date"}:
                 </span>
                 <span className={styles.infoValue}>
                   {formatDate(transaction.transactionDate)}
@@ -155,13 +155,13 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
             <>
               <div className={styles.section}>
                 <h4 className={styles.sectionTitle}>
-                  {t("orders.transactionDetails.localDetails") || "Local Transaction Details"}
+                  {t("orders.modal.transactionDetails.localDetails") || "Local Transaction Details"}
                 </h4>
                 <div className={styles.infoGrid}>
                   {localTransaction.orderId && (
                     <div className={styles.infoItem}>
                       <span className={styles.infoLabel}>
-                        {t("orders.transactionDetails.orderId") || "Order ID"}:
+                        {t("orders.modal.transactionDetails.orderId") || "Order ID"}:
                       </span>
                       <span className={styles.infoValue}>{localTransaction.orderId}</span>
                     </div>
@@ -169,7 +169,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                   {localTransaction.storeId && (
                     <div className={styles.infoItem}>
                       <span className={styles.infoLabel}>
-                        {t("orders.transactionDetails.storeId") || "Store ID"}:
+                        {t("orders.modal.transactionDetails.storeId") || "Store ID"}:
                       </span>
                       <span className={styles.infoValue}>{localTransaction.storeId}</span>
                     </div>
@@ -177,7 +177,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                   {localTransaction.paymentMethod && (
                     <div className={styles.infoItem}>
                       <span className={styles.infoLabel}>
-                        {t("orders.transactionDetails.paymentMethod") || "Payment Method"}:
+                        {t("orders.modal.transactionDetails.paymentMethod") || "Payment Method"}:
                       </span>
                       <span className={styles.infoValue}>{localTransaction.paymentMethod}</span>
                     </div>
@@ -192,13 +192,13 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
             <>
               <div className={styles.section}>
                 <h4 className={styles.sectionTitle}>
-                  {t("orders.transactionDetails.stripeDetails") || "Stripe Payment Details"}
+                  {t("orders.modal.transactionDetails.stripeDetails") || "Stripe Payment Details"}
                 </h4>
                 <div className={styles.infoGrid}>
                   {stripeTransaction.paymentIntentId && (
                     <div className={styles.infoItem}>
                       <span className={styles.infoLabel}>
-                        {t("orders.transactionDetails.paymentIntentId") || "Payment Intent ID"}:
+                        {t("orders.modal.transactionDetails.paymentIntentId") || "Payment Intent ID"}:
                       </span>
                       <span className={styles.infoValue}>{stripeTransaction.paymentIntentId}</span>
                     </div>
@@ -206,7 +206,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                   {stripeTransaction.customerId && (
                     <div className={styles.infoItem}>
                       <span className={styles.infoLabel}>
-                        {t("orders.transactionDetails.customerId") || "Customer ID"}:
+                        {t("orders.modal.transactionDetails.customerId") || "Customer ID"}:
                       </span>
                       <span className={styles.infoValue}>{stripeTransaction.customerId}</span>
                     </div>
@@ -214,7 +214,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                   {stripeTransaction.paymentMethod && (
                     <div className={styles.infoItem}>
                       <span className={styles.infoLabel}>
-                        {t("orders.transactionDetails.paymentMethod") || "Payment Method"}:
+                        {t("orders.modal.transactionDetails.paymentMethod") || "Payment Method"}:
                       </span>
                       <span className={styles.infoValue}>
                         {stripeTransaction.paymentMethod || "N/A"}
@@ -224,7 +224,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                   {stripeTransaction.cardBrand && (
                     <div className={styles.infoItem}>
                       <span className={styles.infoLabel}>
-                        {t("orders.transactionDetails.cardBrand") || "Card Brand"}:
+                        {t("orders.modal.transactionDetails.cardBrand") || "Card Brand"}:
                       </span>
                       <span className={styles.infoValue}>
                         {stripeTransaction.cardBrand || "N/A"}
@@ -234,7 +234,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                   {stripeTransaction.cardLast4 && (
                     <div className={styles.infoItem}>
                       <span className={styles.infoLabel}>
-                        {t("orders.transactionDetails.cardLast4") || "Card Last 4"}:
+                        {t("orders.modal.transactionDetails.cardLast4") || "Card Last 4"}:
                       </span>
                       <span className={styles.infoValue}>
                         **** {stripeTransaction.cardLast4 || "N/A"}
@@ -244,7 +244,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                   {stripeTransaction.description && (
                     <div className={styles.infoItem}>
                       <span className={styles.infoLabel}>
-                        {t("orders.transactionDetails.description") || "Description"}:
+                        {t("orders.modal.transactionDetails.description") || "Description"}:
                       </span>
                       <span className={styles.infoValue}>{stripeTransaction.description}</span>
                     </div>
@@ -256,7 +256,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
               {stripeTransaction.metadata && Object.keys(stripeTransaction.metadata).length > 0 && (
                 <div className={styles.section}>
                   <h4 className={styles.sectionTitle}>
-                    {t("orders.transactionDetails.metadata") || "Metadata"}
+                    {t("orders.modal.transactionDetails.metadata") || "Metadata"}
                   </h4>
                   <div className={styles.metadataContainer}>
                     {Object.entries(stripeTransaction.metadata).map(([key, value]) => (
@@ -275,7 +275,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
           <div className={styles.section}>
             <details className={styles.details}>
               <summary className={styles.summary}>
-                {t("orders.transactionDetails.rawData") || "Raw Transaction Data"}
+                {t("orders.modal.transactionDetails.rawData") || "Raw Transaction Data"}
               </summary>
               <pre className={styles.jsonPreview}>
                 {JSON.stringify(transaction, null, 2)}
