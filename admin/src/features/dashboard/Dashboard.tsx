@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Store,
   TrendingUp,
@@ -23,7 +23,7 @@ interface DashboardStats {
   serverUptime?: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+const Dashboard: React.FC<DashboardProps> = () => {
   const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats>({
     totalStores: 0,

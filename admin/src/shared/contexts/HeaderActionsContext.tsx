@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
 interface HeaderActionsContextType {
   setHeaderActions: (actions: ReactNode) => void;
@@ -8,7 +8,7 @@ interface HeaderActionsContextType {
 const HeaderActionsContext = createContext<HeaderActionsContextType | undefined>(undefined);
 
 export const HeaderActionsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [headerActions, setHeaderActionsState] = useState<ReactNode>(null);
+  const [, setHeaderActionsState] = useState<ReactNode>(null);
 
   const setHeaderActions = useCallback((actions: ReactNode) => {
     setHeaderActionsState(actions);

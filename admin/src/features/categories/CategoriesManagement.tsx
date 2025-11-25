@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Edit2, Trash2, Search, Filter } from "lucide-react";
+import { Plus, Edit2, Trash2, Search } from "lucide-react";
 import { categoryApi, type Category } from "../../services/api";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useAdminHeader } from "../../shared/hooks/useAdminHeader";

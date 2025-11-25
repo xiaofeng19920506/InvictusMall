@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { X, AlertCircle, Package } from "lucide-react";
-import { refundApi, type OrderItem } from "../../services/api";
+import { refundApi, orderApi, type OrderItem } from "../../services/api";
 import { getImageUrl } from "../../shared/utils/imageUtils";
+import { useNotification } from "../../contexts/NotificationContext";
 import styles from "./RefundModal.module.css";
 
 export interface RefundModalProps {
@@ -23,6 +24,7 @@ const RefundModal: React.FC<RefundModalProps> = ({
   onRefundSuccess,
 }) => {
   const { t } = useTranslation();
+  const { showSuccess, showError } = useNotification();
 
   // Check if order has payment intent when modal opens
   useEffect(() => {
@@ -37,6 +39,8 @@ const RefundModal: React.FC<RefundModalProps> = ({
   const [reason, setReason] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canCancelOrder, setCanCancelOrder] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
   const [existingRefunds, setExistingRefunds] = useState<{
     refunds: Array<{
       id: string;
@@ -49,6 +53,10 @@ const RefundModal: React.FC<RefundModalProps> = ({
   }>({ refunds: [], totalRefunded: 0 });
 
   useEffect(() => {
+    // Reset states when modal opens
+    setError(null);
+    setCanCancelOrder(false);
+    
     // Check if order has payment intent when modal opens
     if (!paymentIntentId) {
       setError(t("orders.refund.errors.noPaymentIntent") || "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.");
@@ -187,6 +195,9 @@ const RefundModal: React.FC<RefundModalProps> = ({
         onClose();
       } else {
         const errorMessage = response.message || "Failed to process refund";
+        // Note: canCancel is not available in response object, it's in the error response
+        setCanCancelOrder(false);
+        
         // Check for specific error messages and provide user-friendly translations
         if (errorMessage.toLowerCase().includes("payment intent") || errorMessage.toLowerCase().includes("does not have a payment")) {
           setError(t("orders.refund.errors.noPaymentIntent") || "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.");
@@ -196,6 +207,9 @@ const RefundModal: React.FC<RefundModalProps> = ({
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || "Failed to process refund";
+      const canCancel = err.response?.data?.canCancel || false;
+      setCanCancelOrder(canCancel);
+      
       // Check for specific error messages and provide user-friendly translations
       if (errorMessage.toLowerCase().includes("payment intent") || errorMessage.toLowerCase().includes("does not have a payment")) {
         setError(t("orders.refund.errors.noPaymentIntent") || "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.");
@@ -204,6 +218,28 @@ const RefundModal: React.FC<RefundModalProps> = ({
       }
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleCancelOrder = async () => {
+    setIsCancelling(true);
+    try {
+      const response = await orderApi.updateOrderStatus(orderId, {
+        status: "cancelled",
+      });
+
+      if (response.success) {
+        showSuccess(t("orders.refund.orderCancelled") || "Order cancelled successfully");
+        onRefundSuccess(); // Refresh order data
+        onClose();
+      } else {
+        showError(response.message || t("orders.refund.cancelFailed") || "Failed to cancel order");
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || t("orders.refund.cancelFailed") || "Failed to cancel order";
+      showError(errorMessage);
+    } finally {
+      setIsCancelling(false);
     }
   };
 
@@ -521,7 +557,21 @@ const RefundModal: React.FC<RefundModalProps> = ({
             {error && (
               <div className={styles.error}>
                 <AlertCircle className={styles.errorIcon} />
-                <span>{error}</span>
+                <div className={styles.errorContent}>
+                  <span>{error}</span>
+                  {canCancelOrder && (
+                    <button
+                      type="button"
+                      onClick={handleCancelOrder}
+                      className={styles.cancelOrderButton}
+                      disabled={isCancelling}
+                    >
+                      {isCancelling
+                        ? t("orders.refund.cancelling") || "Cancelling..."
+                        : t("orders.refund.cancelOrder") || "Cancel Order"}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

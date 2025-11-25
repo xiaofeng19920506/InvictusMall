@@ -938,6 +938,10 @@
       "cancel": "取消",
       "processing": "处理中...",
       "process": "处理退款",
+      "cancelOrder": "取消订单",
+      "cancelling": "取消中...",
+      "orderCancelled": "订单已成功取消",
+      "cancelFailed": "取消订单失败",
       "errors": {
         "invalidAmount": "请输入有效的退款金额",
         "exceedsRemaining": "退款金额不能超过剩余金额（${{amount}}）",

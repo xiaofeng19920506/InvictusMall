@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import type { ChangeEvent, FormEvent, KeyboardEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { storeApi, categoryApi, staffApi, type Category, type Staff } from "../../services/api";
@@ -194,22 +194,6 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     }));
   };
 
-  const handleAddCategory = () => {
-    const value = formData.selectedCategory.trim();
-    if (!value) {
-      return;
-    }
-    if (formData.category.includes(value)) {
-      setFormData((prev) => ({ ...prev, selectedCategory: "" }));
-      return;
-    }
-    setFormData((prev) => ({
-      ...prev,
-      category: [...prev.category, value],
-      selectedCategory: "",
-    }));
-  };
-
   const handleCategorySelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     if (value && !formData.category.includes(value)) {
@@ -307,6 +291,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       description: formData.description.trim(),
       establishedYear: formData.establishedYear,
       location: [sanitizedLocation],
+      ownerId: formData.ownerId || user?.id || '',
     };
 
     setSaving(true);

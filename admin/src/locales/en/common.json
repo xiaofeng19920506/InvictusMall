@@ -944,6 +944,10 @@
       "cancel": "Cancel",
       "processing": "Processing...",
       "process": "Process Refund",
+      "cancelOrder": "Cancel Order",
+      "cancelling": "Cancelling...",
+      "orderCancelled": "Order cancelled successfully",
+      "cancelFailed": "Failed to cancel order",
       "errors": {
         "invalidAmount": "Please enter a valid refund amount",
         "exceedsRemaining": "Refund amount cannot exceed remaining amount (${{amount}})",

@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { X, CreditCard, Calendar, DollarSign, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { X, CreditCard, Calendar, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
 import type { StoreTransaction, StripeTransaction } from "../../services/api";
 import styles from "./TransactionDetailsModal.module.css";
 

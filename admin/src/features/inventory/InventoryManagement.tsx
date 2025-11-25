@@ -11,7 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { productApi, storeApi } from "../../services/api";
 import type { Product, Store } from "../../services/api";
-import { useAuth } from "../../contexts/AuthContext";
+// import { useAuth } from "../../contexts/AuthContext"; // Unused for now
 import { useNotification } from "../../contexts/NotificationContext";
 import { getImageUrl } from "../../shared/utils/imageUtils";
 import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
@@ -32,7 +32,6 @@ const InventoryManagement: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [editingStock, setEditingStock] = useState<{ [key: string]: number }>({});
   const [savingStock, setSavingStock] = useState<string | null>(null);
-  const { user } = useAuth();
   const { showError, showSuccess } = useNotification();
   const { setHeaderActions } = useAdminHeader();
 
@@ -180,7 +179,7 @@ const InventoryManagement: React.FC = () => {
     (p) => p.stockQuantity <= LOW_STOCK_THRESHOLD
   );
 
-  const selectedStore = stores.find((s) => s.id === selectedStoreId);
+  // const selectedStore = stores.find((s) => s.id === selectedStoreId); // Unused for now
 
   if (loading && products.length === 0) {
     return (

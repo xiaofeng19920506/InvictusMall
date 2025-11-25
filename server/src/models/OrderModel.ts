@@ -33,6 +33,7 @@ export interface Order {
   storeName: string;
   items: OrderItem[];
   totalAmount: number;
+  totalRefunded?: number;
   status: OrderStatus;
   shippingAddress: {
     streetAddress: string;
@@ -497,6 +498,7 @@ export class OrderModel {
         o.payment_method, o.stripe_session_id, o.payment_intent_id, o.order_date, o.shipped_date, o.delivered_date,
         o.tracking_number, o.created_at, o.updated_at,
         o.guest_email, o.guest_full_name, o.guest_phone_number,
+        COALESCE(SUM(r.amount), 0) AS total_refunded,
         JSON_ARRAYAGG(
           JSON_OBJECT(
             'id', oi.id,
@@ -514,6 +516,7 @@ export class OrderModel {
         ) as items
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN refunds r ON o.id = r.order_id AND r.status = 'succeeded'
       WHERE o.id = ?
       GROUP BY o.id
     `;
@@ -979,6 +982,7 @@ export class OrderModel {
         isReservation: item.isReservation || false
       })),
       totalAmount: parseFloat(row.total_amount),
+      totalRefunded: row.total_refunded ? parseFloat(String(row.total_refunded)) : 0,
       status: row.status,
       shippingAddress: {
         streetAddress: row.shipping_street_address,
@@ -996,6 +1000,7 @@ export class OrderModel {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       stripeSessionId: row.stripe_session_id || null,
+      paymentIntentId: row.payment_intent_id || null,
       guestEmail: row.guest_email || null,
       guestFullName: row.guest_full_name || null,
       guestPhoneNumber: row.guest_phone_number || null

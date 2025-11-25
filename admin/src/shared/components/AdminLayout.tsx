@@ -127,10 +127,6 @@ const AdminLayout = ({
   const navigationItems = useMemo(() => {
     return user
       ? NAV_ITEMS.filter((item) => {
-          // Hide register-staff for employee role
-          if (item.id === "register-staff" && user.role === "employee") {
-            return false;
-          }
           // Hide categories for non-admin roles
           if (item.id === "categories" && user.role !== "admin") {
             return false;

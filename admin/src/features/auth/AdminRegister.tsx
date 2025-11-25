@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
-import { storeApi, staffApi } from "../../services/api";
+import { storeApi } from "../../services/api";
 import type { Store } from "../../shared/types/store";
 import styles from "./AdminRegister.module.css";
 

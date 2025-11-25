@@ -1,4 +1,4 @@
-import { useEffect, useCallback, ReactNode } from "react";
+import { useEffect, useCallback, type ReactNode } from "react";
 
 export const useAdminHeader = () => {
   const setHeaderActions = useCallback((actions: ReactNode) => {

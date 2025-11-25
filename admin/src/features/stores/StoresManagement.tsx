@@ -58,7 +58,7 @@ const StoresManagement: React.FC = () => {
     return { limit: itemsPerPage, offset };
   }, [currentPage, itemsPerPage]);
 
-  const { stores, loading, refetch, lastUpdated, total: totalItems = 0 } = useRealTimeStores(
+  const { stores, loading, refetch, total: totalItems = 0 } = useRealTimeStores(
     10000,
     pagination
   );
