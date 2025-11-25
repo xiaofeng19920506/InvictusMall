@@ -227,9 +227,7 @@ export async function fetchOrdersServer(
 
     const response = await fetch(url, {
       headers,
-      next: { revalidate: 0 }, // Don't cache authenticated requests
-      // Don't cache authenticated requests
-      cache: "no-store",
+      cache: "no-store", // Don't cache authenticated requests
     });
 
     if (!response.ok) {
@@ -424,8 +422,7 @@ export async function fetchShippingAddressesServer(
 
     const response = await fetch(url, {
       headers,
-      next: { revalidate: 0 }, // Don't cache authenticated requests
-      cache: "no-store",
+      cache: "no-store", // Don't cache authenticated requests
     });
 
     if (!response.ok) {
@@ -485,8 +482,7 @@ export async function fetchUserServer(
 
     const response = await fetch(url, {
       headers,
-      next: { revalidate: 0 }, // Don't cache authenticated requests
-      cache: "no-store",
+      cache: "no-store", // Don't cache authenticated requests
     });
 
     if (!response.ok) {

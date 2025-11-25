@@ -20,6 +20,8 @@ import {
   AuthenticatedRequest,
 } from "../middleware/auth";
 import { emailService } from "../services/emailService";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 import multer from "multer";
 import FormData from "form-data";
 import fetch from "node-fetch";
@@ -132,23 +134,14 @@ router.post(
           dbError.code === "ENOTFOUND" ||
           dbError.code === "ETIMEDOUT"
         ) {
-          console.error(
-            "Database connection error during signup:",
-            dbError.message
-          );
-          return res.status(503).json({
-            success: false,
-            message: "Service temporarily unavailable. Please try again later.",
-          });
+          logger.error("Database connection error during signup", dbError, { email });
+          return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
         }
         throw dbError;
       }
 
       if (emailExists) {
-        return res.status(400).json({
-          success: false,
-          message: "Email already registered",
-        });
+        return ApiResponseHelper.validationError(res, "Email already registered");
       }
 
       // Create unverified user
@@ -168,14 +161,8 @@ router.post(
           dbError.code === "ENOTFOUND" ||
           dbError.code === "ETIMEDOUT"
         ) {
-          console.error(
-            "Database connection error during signup:",
-            dbError.message
-          );
-          return res.status(503).json({
-            success: false,
-            message: "Service temporarily unavailable. Please try again later.",
-          });
+          logger.error("Database connection error during user creation", dbError, { email });
+          return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
         }
         throw dbError;
       }
@@ -214,24 +201,20 @@ router.post(
           },
         });
       } catch (logError) {
-        console.error("Failed to log user registration:", logError);
+        logger.warn("Failed to log user registration", { error: logError, userId: user.id });
         // Continue with registration even if logging fails
       }
 
       // Return success message (no token until email is verified)
-      return res.status(201).json({
-        success: true,
-        message:
-          "Registration successful! Please check your email to verify your account and complete setup.",
-        emailSent,
-      });
+      return ApiResponseHelper.success(
+        res,
+        { emailSent },
+        "Registration successful! Please check your email to verify your account and complete setup.",
+        201
+      );
     } catch (error) {
-      console.error("Signup error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to register user",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("Signup error", error, { email: req.body.email });
+      return ApiResponseHelper.error(res, "Failed to register user", 500, error);
     }
   }
 );
@@ -336,44 +319,21 @@ router.post(
           dbError.message?.includes("Connection lost");
 
         if (isConnectionError) {
-          console.error("Database connection error during login:", {
-            code: dbError.code,
-            errno: dbError.errno,
-            message: dbError.message,
-            fatal: dbError.fatal,
-            stack: process.env.NODE_ENV === "development" ? dbError.stack : undefined
-          });
-          return res.status(503).json({
-            success: false,
-            message: "Service temporarily unavailable. Please try again later.",
-            ...(process.env.NODE_ENV === "development" && {
-              error: `Database connection failed: ${dbError.message || dbError.code || "Unknown error"}`,
-            }),
-          });
+          logger.error("Database connection error during login", dbError, { email: req.body.email });
+          return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
         }
         // Re-throw other database errors
-        console.error("Unexpected database error during login:", {
-          code: dbError.code,
-          errno: dbError.errno,
-          message: dbError.message,
-          stack: process.env.NODE_ENV === "development" ? dbError.stack : undefined
-        });
+        logger.error("Unexpected database error during login", dbError, { email: req.body.email });
         throw dbError;
       }
 
       if (!user) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid email or password",
-        });
+        return ApiResponseHelper.unauthorized(res, "Invalid email or password");
       }
 
       // Verify password
       if (!user.password) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid email or password",
-        });
+        return ApiResponseHelper.unauthorized(res, "Invalid email or password");
       }
 
       const isPasswordValid = await userModel.verifyPassword(
@@ -381,17 +341,14 @@ router.post(
         user.password!
       );
       if (!isPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid email or password",
-        });
+        return ApiResponseHelper.unauthorized(res, "Invalid email or password");
       }
 
       // Update last login (don't fail login if this fails)
       try {
         await userModel.updateLastLogin(user.id);
       } catch (updateError) {
-        console.error("Failed to update last login:", updateError);
+        logger.warn("Failed to update last login", { error: updateError, userId: user.id });
         // Continue with login even if update fails
       }
 
@@ -421,7 +378,7 @@ router.post(
           },
         });
       } catch (logError) {
-        console.error("Failed to log user login:", logError);
+        logger.warn("Failed to log user login", { error: logError, userId: user.id });
         // Continue with login even if logging fails
       }
 
@@ -437,20 +394,10 @@ router.post(
       // Return user data without password (no token in response body)
       const { password: _, ...userWithoutPassword } = user;
 
-      return res.json({
-        success: true,
-        message: "Login successful",
-        user: userWithoutPassword,
-      });
+      return ApiResponseHelper.success(res, userWithoutPassword, "Login successful");
     } catch (error) {
-      console.error("Login error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to login. Please try again later.",
-        ...(process.env.NODE_ENV === "development" && {
-          error: error instanceof Error ? error.message : "Unknown error",
-        }),
-      });
+      logger.error("Login error", error, { email: req.body.email });
+      return ApiResponseHelper.error(res, "Failed to login. Please try again later.", 500, error);
     }
   }
 );

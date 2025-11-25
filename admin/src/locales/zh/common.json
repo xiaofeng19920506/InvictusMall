@@ -949,6 +949,29 @@
         "noPaymentIntent": "此订单没有支付方式。只能处理使用信用卡支付的订单的退款。",
         "selectPartialMethod": "请选择部分退款方式。"
       }
+    },
+    "return": {
+      "title": "申请退货",
+      "close": "关闭",
+      "itemInfo": "商品信息",
+      "reason": "退货原因",
+      "reasonPlaceholder": "请详细说明退货原因...",
+      "cancel": "取消",
+      "submit": "提交退货申请",
+      "processing": "处理中...",
+      "requestReturn": "申请退货",
+      "createSuccess": "退货申请创建成功",
+      "createError": "创建退货申请失败",
+      "errors": {
+        "reasonRequired": "请提供退货原因"
+      },
+      "status": {
+        "pending": "待处理",
+        "approved": "已批准",
+        "rejected": "已拒绝",
+        "received": "已收到",
+        "refunded": "已退款"
+      }
     }
   },
   "inventory": {

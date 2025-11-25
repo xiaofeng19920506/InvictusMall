@@ -6,10 +6,13 @@ import {
   authenticateAnyToken,
   AuthenticatedRequest,
   requireStoreOwner,
+  checkStoreOwnership,
 } from "../middleware/auth";
 import { validateImageFile } from "../utils/imageValidation";
 import { StoreModel } from "../models/StoreModel";
 import { handleETagValidation } from "../utils/cacheUtils";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 import multer from "multer";
 import FormData from "form-data";
 import fetch from "node-fetch";
@@ -47,19 +50,13 @@ router.get("/store/:storeId", async (req: Request, res: Response) => {
     const { isActive, limit, offset } = req.query;
 
     if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: "Store ID is required",
-      });
+      return ApiResponseHelper.validationError(res, "Store ID is required");
     }
 
     // Verify store exists
     const store = await StoreModel.findById(storeId);
     if (!store) {
-      return res.status(404).json({
-        success: false,
-        message: "Store not found",
-      });
+      return ApiResponseHelper.notFound(res, "Store");
     }
 
     // Generate ETag based on last modified timestamp for this store's products
@@ -86,12 +83,7 @@ router.get("/store/:storeId", async (req: Request, res: Response) => {
 
       const { products, total } = await ProductModel.findByStoreIdWithPagination(storeId, options);
 
-      return res.json({
-        success: true,
-        data: products,
-        count: products.length,
-        total,
-      });
+      return ApiResponseHelper.successWithPagination(res, products, total);
     }
 
     // Regular fetch without pagination
@@ -102,18 +94,10 @@ router.get("/store/:storeId", async (req: Request, res: Response) => {
 
     const products = await ProductModel.findByStoreId(storeId, options);
 
-    return res.json({
-      success: true,
-      data: products,
-      count: products.length,
-    });
+    return ApiResponseHelper.successWithCount(res, products, products.length);
   } catch (error) {
-    console.error("Error fetching products:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch products",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    logger.error("Failed to fetch products", error, { storeId: req.params.storeId });
+    return ApiResponseHelper.error(res, "Failed to fetch products", 500, error);
   }
 });
 
@@ -191,8 +175,14 @@ router.post(
         });
       }
 
-      // TODO: Add authorization check to verify store owner owns this store
-      // For now, allow any owner/admin to create products for any store
+      // Verify store ownership (admin can access any store, owners only their own)
+      const ownershipCheck = await checkStoreOwnership(req, productData.storeId);
+      if (!ownershipCheck.authorized) {
+        return res.status(403).json({
+          success: false,
+          message: ownershipCheck.error || "You do not have permission to access this store",
+        });
+      }
 
       if (productData.price < 0) {
         return res.status(400).json({
@@ -316,8 +306,14 @@ router.delete(
         });
       }
 
-      // TODO: Add authorization check to verify store owner owns this store
-      // For now, allow any owner/admin to delete products for any store
+      // Verify store ownership (admin can access any store, owners only their own)
+      const ownershipCheck = await checkStoreOwnership(req, existingProduct.storeId);
+      if (!ownershipCheck.authorized) {
+        return res.status(403).json({
+          success: false,
+          message: ownershipCheck.error || "You do not have permission to access this store",
+        });
+      }
 
       await ProductModel.delete(id);
 
@@ -365,9 +361,9 @@ router.post(
         try {
           metadata = JSON.parse(metadataRaw);
         } catch (parseError) {
-          console.warn(
-            "[Product Upload] Failed to parse metadata, falling back to defaults:",
-            parseError
+          logger.warn(
+            "[Product Upload] Failed to parse metadata, falling back to defaults",
+            { error: parseError }
           );
         }
       } else if (metadataRaw && typeof metadataRaw === "object") {
@@ -408,9 +404,9 @@ router.post(
             const currentProduct = await ProductModel.findById(productId);
             previousImageUrl = currentProduct?.imageUrl;
           } catch (fetchProductError) {
-            console.warn(
-              "[Product Upload] Unable to fetch current product for previous image cleanup:",
-              fetchProductError
+            logger.warn(
+              "[Product Upload] Unable to fetch current product for previous image cleanup",
+              { error: fetchProductError }
             );
           }
         }
@@ -463,15 +459,15 @@ router.post(
             const deleteUrl = `${storageBaseUrl}/api/files/delete?fileName=${encodeURIComponent(previousImageUrl)}`;
             const deleteResponse = await fetch(deleteUrl, { method: "DELETE" });
             if (!deleteResponse.ok) {
-              console.warn(
-                "[Product Upload] Failed to delete previous image:",
-                deleteResponse.status
+              logger.warn(
+                "[Product Upload] Failed to delete previous image",
+                { status: deleteResponse.status }
               );
             }
           } catch (deleteError) {
-            console.warn(
-              "[Product Upload] Error deleting previous image:",
-              deleteError
+            logger.warn(
+              "[Product Upload] Error deleting previous image",
+              { error: deleteError }
             );
           }
         }

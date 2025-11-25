@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Package, MapPin, CreditCard, Calendar, Truck, Clock, RefreshCw, DollarSign, TrendingUp, TrendingDown, Eye, RotateCcw } from "lucide-react";
-import { type Order, transactionApi, type StoreTransaction, type StripeTransaction } from "../../services/api";
+import { X, Package, MapPin, CreditCard, Calendar, Truck, Clock, RefreshCw, DollarSign, TrendingUp, TrendingDown, Eye, RotateCcw, ArrowLeft } from "lucide-react";
+import { type Order, transactionApi, returnApi, type StoreTransaction, type StripeTransaction, type OrderReturn } from "../../services/api";
 import { getImageUrl } from "../../shared/utils/imageUtils";
 import { useNotification } from "../../contexts/NotificationContext";
 import RefundModal from "./RefundModal";
+import ReturnModal from "./ReturnModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import TransactionDetailsModal from "./TransactionDetailsModal";
 import styles from "./OrderDetailModal.module.css";
@@ -30,6 +31,10 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
   const [totalRefunded, setTotalRefunded] = useState<number>(0);
   const [refundedItemIds, setRefundedItemIds] = useState<Set<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [selectedItemForReturn, setSelectedItemForReturn] = useState<Order["items"][0] | null>(null);
+  const [orderReturns, setOrderReturns] = useState<OrderReturn[]>([]);
+  const [loadingReturns, setLoadingReturns] = useState(false);
 
   // Update current order when prop changes
   useEffect(() => {
@@ -417,15 +422,29 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
                   <div className={styles.itemDetails}>
                     <div className={styles.itemHeader}>
                       <h5 className={styles.itemName}>{item.productName}</h5>
-                      {refundedItemIds.has(item.id) ? (
-                        <span className={styles.refundedBadge}>
-                          {t("orders.refund.refunded") || "Refunded"}
-                        </span>
-                      ) : item.isReservation && (
-                        <span className={styles.reservationBadge}>
-                          {t("orders.reservation") || "Reservation"}
-                        </span>
-                      )}
+                      <div className={styles.itemBadges}>
+                        {refundedItemIds.has(item.id) ? (
+                          <span className={styles.refundedBadge}>
+                            {t("orders.refund.refunded") || "Refunded"}
+                          </span>
+                        ) : null}
+                        {(() => {
+                          const itemReturn = orderReturns.find(r => r.orderItemId === item.id);
+                          if (itemReturn) {
+                            return (
+                              <span className={styles.returnBadge} data-status={itemReturn.status}>
+                                {t(`orders.return.status.${itemReturn.status}`) || itemReturn.status}
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
+                        {!refundedItemIds.has(item.id) && !orderReturns.find(r => r.orderItemId === item.id) && item.isReservation && (
+                          <span className={styles.reservationBadge}>
+                            {t("orders.reservation") || "Reservation"}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className={styles.itemInfo}>
                       <span className={styles.itemQuantity}>
@@ -459,6 +478,21 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
                             {item.reservationNotes}
                           </div>
                         )}
+                      </div>
+                    )}
+                    {!refundedItemIds.has(item.id) && !orderReturns.find(r => r.orderItemId === item.id && (r.status === 'pending' || r.status === 'approved')) && (
+                      <div className={styles.itemActions}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedItemForReturn(item);
+                            setShowReturnModal(true);
+                          }}
+                          className={styles.returnButton}
+                        >
+                          <ArrowLeft className={styles.returnButtonIcon} />
+                          {t("orders.return.requestReturn") || "Request Return"}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -797,6 +831,40 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
           onClose={() => {
             setShowTransactionDetailsModal(false);
             setSelectedTransactionForDetails(null);
+          }}
+        />
+      )}
+
+      {showReturnModal && selectedItemForReturn && (
+        <ReturnModal
+          orderId={currentOrder.id}
+          orderItem={selectedItemForReturn}
+          onClose={() => {
+            setShowReturnModal(false);
+            setSelectedItemForReturn(null);
+          }}
+          onReturnSuccess={async () => {
+            setShowReturnModal(false);
+            setSelectedItemForReturn(null);
+            // Reload returns and order data
+            try {
+              const returnsResponse = await returnApi.getOrderReturns(currentOrder.id);
+              if (returnsResponse.success && returnsResponse.data) {
+                setOrderReturns(returnsResponse.data);
+              }
+              // Reload order to get updated status
+              const { orderApi } = await import("../../services/api");
+              const orderResponse = await orderApi.getOrderById(currentOrder.id);
+              if (orderResponse.success && orderResponse.data) {
+                setCurrentOrder(orderResponse.data);
+                if (onOrderUpdate) {
+                  onOrderUpdate(orderResponse.data);
+                }
+                setRefreshKey(prev => prev + 1);
+              }
+            } catch (error) {
+              console.error("Error reloading order after return:", error);
+            }
           }}
         />
       )}
