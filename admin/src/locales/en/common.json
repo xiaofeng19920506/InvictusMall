@@ -577,7 +577,11 @@
     "stripeTransactions": "Stripe Transactions",
     "localTransactions": "Local Transactions",
     "allTransactions": "All Transactions",
-    "source": "Source",
+    "source": {
+      "label": "Source",
+      "local": "Local",
+      "stripe": "Stripe"
+    },
     "stripeType": "Stripe Type",
     "stripeTypes": {
       "charge": "Charges",
@@ -831,7 +835,8 @@
     "quantity": "Quantity",
     "reservation": "Reservation",
     "success": {
-      "statusUpdated": "Order status updated successfully"
+      "statusUpdated": "Order status updated successfully",
+      "orderUpdated": "Order updated successfully"
     },
     "error": {
       "loadFailed": "Failed to load orders",
@@ -862,7 +867,41 @@
       "notes": "Notes",
       "shippingAddress": "Shipping Address",
       "paymentInfo": "Payment Information",
-      "paymentMethod": "Payment Method"
+      "paymentMethod": "Payment Method",
+      "transactions": "Transaction History",
+      "loadingTransactions": "Loading transactions...",
+      "totalAmount": "Total Amount",
+      "totalSales": "Total Sales",
+      "totalRefunds": "Total Refunds",
+      "noTransactions": "No transactions found for this order",
+      "transactionDate": "Date",
+      "transactionType": "Type",
+      "transactionAmount": "Amount",
+      "transactionStatus": "Status",
+      "transactionActions": "Actions",
+      "refundTransaction": "Refund",
+      "viewDetails": "View Details",
+      "processRefund": "Process Refund",
+      "refunds": "Refunds",
+      "totalRefunded": "Total Refunded"
+    },
+    "refund": {
+      "title": "Process Refund",
+      "close": "Close",
+      "history": "Refund History",
+      "totalRefunded": "Total Refunded",
+      "amount": "Refund Amount",
+      "remaining": "Remaining amount",
+      "reason": "Reason (Optional)",
+      "selectReason": "Select a reason",
+      "reasons": {
+        "duplicate": "Duplicate",
+        "fraudulent": "Fraudulent",
+        "requested_by_customer": "Requested by Customer"
+      },
+      "cancel": "Cancel",
+      "processing": "Processing...",
+      "process": "Process Refund"
     }
   },
   "inventory": {

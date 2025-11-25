@@ -881,6 +881,14 @@ export const orderApi = {
     return response.data;
   },
 
+  // Get order by ID (admin only)
+  getOrderById: async (orderId: string): Promise<ApiResponse<Order>> => {
+    const response = await api.get(`/api/admin/orders/${orderId}`, {
+      withCredentials: true,
+    });
+    return response.data;
+  },
+
   // Update order status (admin only)
   updateOrderStatus: async (
     orderId: string,

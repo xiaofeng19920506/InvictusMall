@@ -183,10 +183,10 @@ const RefundModal: React.FC<RefundModalProps> = ({
                 onChange={(e) => setReason(e.target.value)}
                 className={styles.select}
               >
-                <option value="">Select a reason</option>
-                <option value="duplicate">Duplicate</option>
-                <option value="fraudulent">Fraudulent</option>
-                <option value="requested_by_customer">Requested by Customer</option>
+                <option value="">{t("orders.refund.selectReason") || "Select a reason"}</option>
+                <option value="duplicate">{t("orders.refund.reasons.duplicate") || "Duplicate"}</option>
+                <option value="fraudulent">{t("orders.refund.reasons.fraudulent") || "Fraudulent"}</option>
+                <option value="requested_by_customer">{t("orders.refund.reasons.requested_by_customer") || "Requested by Customer"}</option>
               </select>
             </div>
 

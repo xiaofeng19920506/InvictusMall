@@ -65,6 +65,20 @@ const OrdersManagement: React.FC = () => {
     showSuccess(t("orders.success.statusUpdated") || "Order status updated successfully");
   };
 
+  const handleOrderUpdate = (updatedOrder: Order) => {
+    // Update the order in the list
+    setOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.id === updatedOrder.id ? updatedOrder : order
+      )
+    );
+    // Update selected order if it's the same one
+    if (selectedOrder && selectedOrder.id === updatedOrder.id) {
+      setSelectedOrder(updatedOrder);
+    }
+    showSuccess(t("orders.success.orderUpdated") || "Order updated successfully");
+  };
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -277,6 +291,7 @@ const OrdersManagement: React.FC = () => {
         <OrderDetailModal
           order={selectedOrder}
           onClose={handleModalClose}
+          onOrderUpdate={handleOrderUpdate}
         />
       )}
     </div>
