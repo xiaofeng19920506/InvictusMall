@@ -6,6 +6,7 @@ import { getImageUrl } from "../../shared/utils/imageUtils";
 import { useNotification } from "../../contexts/NotificationContext";
 import RefundModal from "./RefundModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
+import TransactionDetailsModal from "./TransactionDetailsModal";
 import styles from "./OrderDetailModal.module.css";
 
 export interface OrderDetailModalProps {
@@ -24,6 +25,8 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<StoreTransaction | StripeTransaction | null>(null);
   const [showRefundTransactionModal, setShowRefundTransactionModal] = useState(false);
+  const [showTransactionDetailsModal, setShowTransactionDetailsModal] = useState(false);
+  const [selectedTransactionForDetails, setSelectedTransactionForDetails] = useState<StoreTransaction | StripeTransaction | null>(null);
 
   // Update current order when prop changes
   useEffect(() => {
@@ -553,8 +556,8 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
                                     )}
                                     <button
                                       onClick={() => {
-                                        const details = JSON.stringify(transaction, null, 2);
-                                        alert(t("orders.modal.transactionDetails") || "Transaction Details:\n\n" + details);
+                                        setSelectedTransactionForDetails(transaction);
+                                        setShowTransactionDetailsModal(true);
                                       }}
                                       className={styles.viewButton}
                                       title={t("orders.modal.viewDetails") || "View Details"}
@@ -601,6 +604,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
         <RefundModal
           orderId={currentOrder.id}
           orderTotal={currentOrder.totalAmount}
+          orderItems={currentOrder.items}
           onClose={() => setShowRefundModal(false)}
           onRefundSuccess={async () => {
             setShowRefundModal(false);
@@ -662,6 +666,17 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ order, onClose, onO
         onCancel={cancelRefundTransaction}
         type="danger"
       />
+
+      {selectedTransactionForDetails && (
+        <TransactionDetailsModal
+          transaction={selectedTransactionForDetails}
+          isOpen={showTransactionDetailsModal}
+          onClose={() => {
+            setShowTransactionDetailsModal(false);
+            setSelectedTransactionForDetails(null);
+          }}
+        />
+      )}
     </div>
   );
 };

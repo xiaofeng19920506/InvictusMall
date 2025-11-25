@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { X, AlertCircle } from "lucide-react";
-import { refundApi } from "../../services/api";
+import { X, AlertCircle, Package } from "lucide-react";
+import { refundApi, type OrderItem } from "../../services/api";
+import { getImageUrl } from "../../shared/utils/imageUtils";
 import styles from "./RefundModal.module.css";
 
 export interface RefundModalProps {
   orderId: string;
   orderTotal: number;
+  orderItems: OrderItem[];
   onClose: () => void;
   onRefundSuccess: () => void;
 }
@@ -14,10 +16,14 @@ export interface RefundModalProps {
 const RefundModal: React.FC<RefundModalProps> = ({
   orderId,
   orderTotal,
+  orderItems,
   onClose,
   onRefundSuccess,
 }) => {
   const { t } = useTranslation();
+  const [refundType, setRefundType] = useState<"full" | "partial" | null>(null);
+  const [partialRefundMethod, setPartialRefundMethod] = useState<"items" | "custom" | null>(null);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [refundAmount, setRefundAmount] = useState<number | "">(orderTotal);
   const [reason, setReason] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -31,7 +37,7 @@ const RefundModal: React.FC<RefundModalProps> = ({
       createdAt: string;
     }>;
     totalRefunded: number;
-  } | null>(null);
+  }>({ refunds: [], totalRefunded: 0 });
 
   useEffect(() => {
     // Load existing refunds
@@ -40,42 +46,108 @@ const RefundModal: React.FC<RefundModalProps> = ({
         const response = await refundApi.getOrderRefunds(orderId);
         if (response.success && response.data) {
           setExistingRefunds(response.data);
-          const remaining = orderTotal - response.data.totalRefunded;
-          setRefundAmount(remaining > 0 ? remaining : 0);
+        } else {
+          // If no refunds exist, set empty state
+          setExistingRefunds({ refunds: [], totalRefunded: 0 });
         }
       } catch (err: any) {
         console.error("Failed to load refunds:", err);
+        // Set empty state on error so modal can still function
+        setExistingRefunds({ refunds: [], totalRefunded: 0 });
       }
     };
 
     loadRefunds();
   }, [orderId, orderTotal]);
 
-  const remainingAmount = existingRefunds
-    ? orderTotal - existingRefunds.totalRefunded
-    : orderTotal;
+  // Calculate remaining amount
+  const remainingAmount = orderTotal - existingRefunds.totalRefunded;
+
+  // Calculate refund amount based on selected items
+  useEffect(() => {
+    if (refundType === "full") {
+      setRefundAmount(remainingAmount > 0 ? remainingAmount : 0);
+    } else if (refundType === "partial" && partialRefundMethod === "items") {
+      // Calculate amount from selected items
+      const selectedItemsAmount = Array.from(selectedItems).reduce((sum, itemId) => {
+        const item = orderItems.find(i => i.id === itemId);
+        return sum + (item ? item.subtotal : 0);
+      }, 0);
+      setRefundAmount(selectedItemsAmount);
+    } else if (refundType === "partial" && partialRefundMethod === "custom") {
+      // Keep custom amount or set default
+      if (typeof refundAmount !== "number" || refundAmount === 0) {
+        setRefundAmount(remainingAmount > 0 ? remainingAmount / 2 : 0);
+      }
+    }
+  }, [refundType, partialRefundMethod, selectedItems, orderItems, remainingAmount]);
+
+  // Calculate selected items total
+  const selectedItemsTotal = Array.from(selectedItems).reduce((sum, itemId) => {
+    const item = orderItems.find(i => i.id === itemId);
+    return sum + (item ? item.subtotal : 0);
+  }, 0);
+
+  const handleItemToggle = (itemId: string) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (typeof refundAmount !== "number" || refundAmount <= 0) {
-      setError("Please enter a valid refund amount");
+    let finalAmount: number;
+    if (refundType === "full") {
+      finalAmount = remainingAmount;
+    } else if (refundType === "partial" && partialRefundMethod === "items") {
+      if (selectedItems.size === 0) {
+        setError(t("orders.refund.errors.noItemsSelected") || "Please select at least one item to refund");
+        return;
+      }
+      finalAmount = selectedItemsTotal;
+    } else {
+      finalAmount = typeof refundAmount === "number" ? refundAmount : 0;
+    }
+
+    if (finalAmount <= 0) {
+      setError(t("orders.refund.errors.invalidAmount") || "Please enter a valid refund amount");
       return;
     }
 
-    if (refundAmount > remainingAmount) {
-      setError(`Refund amount cannot exceed remaining amount ($${remainingAmount.toFixed(2)})`);
+    if (finalAmount > remainingAmount) {
+      setError(t("orders.refund.errors.exceedsRemaining", { amount: remainingAmount.toFixed(2) }) || `Refund amount cannot exceed remaining amount ($${remainingAmount.toFixed(2)})`);
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      const response = await refundApi.createRefund(orderId, {
-        amount: refundAmount,
+      const refundData: any = {
+        amount: finalAmount,
         reason: reason.trim() || undefined,
-      });
+      };
+
+      // If refunding by items, include item IDs
+      if (refundType === "partial" && partialRefundMethod === "items") {
+        refundData.itemIds = Array.from(selectedItems);
+      }
+
+      const response = await refundApi.createRefund(orderId, refundData);
 
       if (response.success) {
         onRefundSuccess();
@@ -147,32 +219,170 @@ const RefundModal: React.FC<RefundModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <div className={styles.formGroup}>
-              <label className={styles.label}>
-                {t("orders.refund.amount") || "Refund Amount"}
-              </label>
-              <div className={styles.amountInput}>
-                <span className={styles.currency}>$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max={remainingAmount}
-                  value={refundAmount}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setRefundAmount(value === "" ? "" : parseFloat(value));
-                  }}
-                  className={styles.input}
-                  required
-                />
-              </div>
+          {!refundType ? (
+            <div className={styles.refundTypeSelection}>
+              <h4 className={styles.sectionTitle}>
+                {t("orders.refund.selectType") || "Select Refund Type"}
+              </h4>
               <p className={styles.helpText}>
-                {t("orders.refund.remaining") || "Remaining amount"}: $
-                {remainingAmount.toFixed(2)}
+                {t("orders.refund.selectTypeHelp") || "Choose whether to refund the full amount or a partial amount"}
               </p>
+              <div className={styles.refundTypeButtons}>
+                <button
+                  type="button"
+                  onClick={() => setRefundType("full")}
+                  className={`${styles.refundTypeButton} ${styles.fullRefundButton}`}
+                  disabled={remainingAmount <= 0}
+                >
+                  <div className={styles.refundTypeButtonContent}>
+                    <span className={styles.refundTypeButtonTitle}>
+                      {t("orders.refund.fullRefund") || "Full Refund"}
+                    </span>
+                    <span className={styles.refundTypeButtonAmount}>
+                      ${remainingAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRefundType("partial")}
+                  className={`${styles.refundTypeButton} ${styles.partialRefundButton}`}
+                  disabled={remainingAmount <= 0}
+                >
+                  <div className={styles.refundTypeButtonContent}>
+                    <span className={styles.refundTypeButtonTitle}>
+                      {t("orders.refund.partialRefund") || "Partial Refund"}
+                    </span>
+                    <span className={styles.refundTypeButtonDescription}>
+                      {t("orders.refund.partialRefundDesc") || "Enter custom amount"}
+                    </span>
+                  </div>
+                </button>
+              </div>
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="btn btn-secondary"
+                >
+                  {t("orders.refund.cancel") || "Cancel"}
+                </button>
+              </div>
             </div>
+          ) : (
+            <form onSubmit={handleSubmit} className={styles.form}>
+            {refundType === "partial" && partialRefundMethod === "items" && (
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  {t("orders.refund.selectItems") || "Select Items to Refund"}
+                </label>
+                <div className={styles.itemsList}>
+                  {orderItems.map((item) => {
+                    const isSelected = selectedItems.has(item.id);
+                    const isRefunded = existingRefunds.refunds.some(
+                      (r: any) => r.itemIds && r.itemIds.includes(item.id)
+                    );
+                    return (
+                      <div
+                        key={item.id}
+                        className={`${styles.itemCard} ${isSelected ? styles.itemSelected : ""} ${isRefunded ? styles.itemRefunded : ""}`}
+                        onClick={() => !isRefunded && handleItemToggle(item.id)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => !isRefunded && handleItemToggle(item.id)}
+                          disabled={isRefunded}
+                          className={styles.itemCheckbox}
+                        />
+                        {item.productImage ? (
+                          <img
+                            src={getImageUrl(item.productImage)}
+                            alt={item.productName}
+                            className={styles.itemImage}
+                          />
+                        ) : (
+                          <div className={styles.itemImagePlaceholder}>
+                            <Package className={styles.itemImageIcon} />
+                          </div>
+                        )}
+                        <div className={styles.itemDetails}>
+                          <div className={styles.itemHeader}>
+                            <h5 className={styles.itemName}>{item.productName}</h5>
+                            {isRefunded && (
+                              <span className={styles.refundedBadge}>
+                                {t("orders.refund.alreadyRefunded") || "Already Refunded"}
+                              </span>
+                            )}
+                          </div>
+                          <div className={styles.itemInfo}>
+                            <span className={styles.itemQuantity}>
+                              {t("orders.quantity") || "Qty"}: {item.quantity}
+                            </span>
+                            <span className={styles.itemPrice}>
+                              {formatCurrency(item.subtotal)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {selectedItems.size > 0 && (
+                  <div className={styles.selectedItemsSummary}>
+                    <span className={styles.selectedItemsLabel}>
+                      {t("orders.refund.selectedItemsTotal") || "Selected Items Total"}:
+                    </span>
+                    <span className={styles.selectedItemsAmount}>
+                      {formatCurrency(selectedItemsTotal)}
+                    </span>
+                  </div>
+                )}
+                <p className={styles.helpText}>
+                  {t("orders.refund.remaining") || "Remaining amount"}: {formatCurrency(remainingAmount)}
+                </p>
+              </div>
+            )}
+
+            {refundType === "partial" && partialRefundMethod === "custom" && (
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  {t("orders.refund.amount") || "Refund Amount"}
+                </label>
+                <div className={styles.amountInput}>
+                  <span className={styles.currency}>$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={remainingAmount}
+                    value={refundAmount}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setRefundAmount(value === "" ? "" : parseFloat(value));
+                    }}
+                    className={styles.input}
+                    required
+                  />
+                </div>
+                <p className={styles.helpText}>
+                  {t("orders.refund.remaining") || "Remaining amount"}: {formatCurrency(remainingAmount)}
+                </p>
+              </div>
+            )}
+
+            {refundType === "full" && (
+              <div className={styles.formGroup}>
+                <div className={styles.fullRefundInfo}>
+                  <span className={styles.fullRefundLabel}>
+                    {t("orders.refund.refundingFullAmount") || "Refunding Full Amount"}:
+                  </span>
+                  <span className={styles.fullRefundValue}>
+                    {formatCurrency(remainingAmount)}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className={styles.formGroup}>
               <label className={styles.label}>
@@ -200,6 +410,24 @@ const RefundModal: React.FC<RefundModalProps> = ({
             <div className={styles.actions}>
               <button
                 type="button"
+                onClick={() => {
+                  if (refundType === "partial" && partialRefundMethod) {
+                    setPartialRefundMethod(null);
+                    setSelectedItems(new Set());
+                  } else {
+                    setRefundType(null);
+                    setPartialRefundMethod(null);
+                    setSelectedItems(new Set());
+                  }
+                  setError(null);
+                }}
+                className="btn btn-secondary"
+                disabled={isProcessing}
+              >
+                {t("orders.refund.back") || "Back"}
+              </button>
+              <button
+                type="button"
                 onClick={onClose}
                 className="btn btn-secondary"
                 disabled={isProcessing}
@@ -209,7 +437,11 @@ const RefundModal: React.FC<RefundModalProps> = ({
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={isProcessing || remainingAmount <= 0}
+                disabled={
+                  isProcessing || 
+                  remainingAmount <= 0 || 
+                  (refundType === "partial" && partialRefundMethod === "items" && selectedItems.size === 0)
+                }
               >
                 {isProcessing
                   ? t("orders.refund.processing") || "Processing..."
@@ -217,6 +449,7 @@ const RefundModal: React.FC<RefundModalProps> = ({
               </button>
             </div>
           </form>
+          )}
         </div>
       </div>
     </div>
