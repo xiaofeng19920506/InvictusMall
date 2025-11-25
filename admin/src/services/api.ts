@@ -501,6 +501,9 @@ export interface StripeTransaction {
   customerId?: string;
   customerName?: string;
   paymentMethod?: string;
+  paymentIntentId?: string;
+  cardBrand?: string;
+  cardLast4?: string;
   transactionDate: string;
   metadata?: Record<string, any>;
   createdAt: string;

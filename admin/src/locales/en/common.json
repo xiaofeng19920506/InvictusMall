@@ -882,12 +882,34 @@
       "refundTransaction": "Refund",
       "viewDetails": "View Details",
       "processRefund": "Process Refund",
+    "transactionDetails": {
+      "title": "Transaction Details",
+      "overview": "Overview",
+      "id": "Transaction ID",
+      "type": "Type",
+      "amount": "Amount",
+      "status": "Status",
+      "date": "Date",
+      "localDetails": "Local Transaction Details",
+      "stripeDetails": "Stripe Payment Details",
+      "orderId": "Order ID",
+      "storeId": "Store ID",
+      "paymentMethod": "Payment Method",
+      "paymentIntentId": "Payment Intent ID",
+      "customerId": "Customer ID",
+      "cardBrand": "Card Brand",
+      "cardLast4": "Card Last 4",
+      "description": "Description",
+      "metadata": "Metadata",
+      "rawData": "Raw Transaction Data"
+    },
       "refunds": "Refunds",
       "totalRefunded": "Total Refunded"
     },
     "refund": {
       "title": "Process Refund",
       "close": "Close",
+      "loading": "Loading refund information...",
       "history": "Refund History",
       "totalRefunded": "Total Refunded",
       "amount": "Refund Amount",
@@ -899,9 +921,30 @@
         "fraudulent": "Fraudulent",
         "requested_by_customer": "Requested by Customer"
       },
+      "selectType": "Select Refund Type",
+      "selectTypeHelp": "Choose whether to refund the full amount or a partial amount",
+      "fullRefund": "Full Refund",
+      "partialRefund": "Partial Refund",
+      "partialRefundDesc": "Select items or enter custom amount",
+      "selectPartialMethod": "Select Partial Refund Method",
+      "selectPartialMethodHelp": "Choose how you want to process the partial refund",
+      "refundByItems": "Refund by Items",
+      "refundByItemsDesc": "Select specific items to refund",
+      "customAmount": "Custom Amount",
+      "customAmountDesc": "Enter a specific refund amount",
+      "selectItems": "Select Items to Refund",
+      "selectedItemsTotal": "Selected Items Total",
+      "alreadyRefunded": "Already Refunded",
+      "refundingFullAmount": "Refunding Full Amount",
+      "back": "Back",
       "cancel": "Cancel",
       "processing": "Processing...",
-      "process": "Process Refund"
+      "process": "Process Refund",
+      "errors": {
+        "invalidAmount": "Please enter a valid refund amount",
+        "exceedsRemaining": "Refund amount cannot exceed remaining amount (${{amount}})",
+        "noItemsSelected": "Please select at least one item to refund"
+      }
     }
   },
   "inventory": {
