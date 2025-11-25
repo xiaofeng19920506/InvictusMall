@@ -115,29 +115,18 @@ router.post(
 router.delete(
   "/",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       await historyModel.clearUserHistory(req.user.id);
 
-      res.json({
-        success: true,
-        message: "Browse history cleared successfully",
-      });
+      return ApiResponseHelper.success(res, null, "Browse history cleared successfully");
     } catch (error: any) {
-      console.error("Error clearing browse history:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to clear browse history",
-        error: error.message,
-      });
+      logger.error("Error clearing browse history", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to clear browse history", 500, error);
     }
   }
 );
@@ -163,39 +152,24 @@ router.delete(
 router.delete(
   "/:historyId",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { historyId } = req.params;
 
       if (!historyId) {
-        res.status(400).json({
-          success: false,
-          message: "History ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "History ID is required");
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       await historyModel.deleteHistoryItem(req.user.id, historyId);
 
-      res.json({
-        success: true,
-        message: "History item deleted successfully",
-      });
+      return ApiResponseHelper.success(res, null, "History item deleted successfully");
     } catch (error: any) {
-      console.error("Error deleting history item:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to delete history item",
-        error: error.message,
-      });
+      logger.error("Error deleting history item", error, { userId: req.user?.id, historyId: req.params.historyId });
+      return ApiResponseHelper.error(res, "Failed to delete history item", 500, error);
     }
   }
 );
