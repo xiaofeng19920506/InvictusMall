@@ -1,10 +1,12 @@
-import { Router, Request, Response } from 'express';
-import { body, query, validationResult } from 'express-validator';
+import { Router, Response } from 'express';
+import { body, validationResult } from 'express-validator';
 import { TransactionModel, CreateTransactionRequest, UpdateTransactionRequest, TransactionFilters } from '../models/TransactionModel';
 import { authenticateStaffToken, AuthenticatedRequest } from '../middleware/auth';
 import { StaffModel } from '../models/StaffModel';
 import { OrderModel } from '../models/OrderModel';
 import Stripe from 'stripe';
+import { ApiResponseHelper } from '../utils/apiResponse';
+import { logger } from '../utils/logger';
 
 const router = Router();
 const transactionModel = new TransactionModel();
@@ -110,28 +112,16 @@ router.get('/', authenticateStaffToken, async (req: AuthenticatedRequest, res: R
         filters.storeId = (staff as any).storeId;
       } else {
         // If no store ID, return empty array for non-admin users
-        return res.json({
-          success: true,
-          data: [],
-          count: 0
-        });
+        return ApiResponseHelper.successWithCount(res, [], 0);
       }
     }
 
     const transactions = await transactionModel.getTransactions(filters);
 
-    return res.json({
-      success: true,
-      data: transactions,
-      count: transactions.length
-    });
+    return ApiResponseHelper.successWithCount(res, transactions, transactions.length);
   } catch (error) {
-    console.error('Error fetching transactions:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch transactions',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Error fetching transactions', error, { userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Failed to fetch transactions', 500, error);
   }
 });
 
@@ -164,10 +154,7 @@ router.get('/store/:storeId', authenticateStaffToken, async (req: AuthenticatedR
   try {
     const { storeId } = req.params;
     if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Store ID is required'
-      });
+      return ApiResponseHelper.validationError(res, 'Store ID is required');
     }
 
     // Role-based access control
@@ -175,28 +162,17 @@ router.get('/store/:storeId', authenticateStaffToken, async (req: AuthenticatedR
       const staffModel = new StaffModel();
       const staff = await staffModel.getStaffById(req.user.id);
       if (staff && (staff as any).storeId !== storeId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions to view this store\'s transactions'
-        });
+        return ApiResponseHelper.forbidden(res, 'Insufficient permissions to view this store\'s transactions');
       }
     }
 
     const limit = parseInt(req.query.limit as string) || 50;
     const transactions = await transactionModel.getTransactionsByStoreId(storeId, limit);
 
-    return res.json({
-      success: true,
-      data: transactions,
-      count: transactions.length
-    });
+    return ApiResponseHelper.successWithCount(res, transactions, transactions.length);
   } catch (error) {
-    console.error('Error fetching store transactions:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch store transactions',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Error fetching store transactions', error, { storeId: req.params.storeId, userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Failed to fetch store transactions', 500, error);
   }
 });
 
@@ -235,10 +211,7 @@ router.get('/stats/:storeId', authenticateStaffToken, async (req: AuthenticatedR
   try {
     const { storeId } = req.params;
     if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Store ID is required'
-      });
+      return ApiResponseHelper.validationError(res, 'Store ID is required');
     }
 
     // Role-based access control
@@ -246,10 +219,7 @@ router.get('/stats/:storeId', authenticateStaffToken, async (req: AuthenticatedR
       const staffModel = new StaffModel();
       const staff = await staffModel.getStaffById(req.user.id);
       if (staff && (staff as any).storeId !== storeId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions to view this store\'s statistics'
-        });
+        return ApiResponseHelper.forbidden(res, 'Insufficient permissions to view this store\'s statistics');
       }
     }
 
@@ -258,17 +228,10 @@ router.get('/stats/:storeId', authenticateStaffToken, async (req: AuthenticatedR
 
     const stats = await transactionModel.getStoreTransactionStats(storeId, startDate, endDate);
 
-    return res.json({
-      success: true,
-      data: stats
-    });
+    return ApiResponseHelper.success(res, stats);
   } catch (error) {
-    console.error('Error fetching transaction stats:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch transaction statistics',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Error fetching transaction stats', error, { storeId: req.params.storeId, userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Failed to fetch transaction statistics', 500, error);
   }
 });
 
@@ -297,18 +260,12 @@ router.get('/:id', authenticateStaffToken, async (req: AuthenticatedRequest, res
   try {
     const { id } = req.params;
     if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Transaction ID is required'
-      });
+      return ApiResponseHelper.validationError(res, 'Transaction ID is required');
     }
 
     const transaction = await transactionModel.getTransactionById(id);
     if (!transaction) {
-      return res.status(404).json({
-        success: false,
-        message: 'Transaction not found'
-      });
+      return ApiResponseHelper.notFound(res, 'Transaction');
     }
 
     // Role-based access control
@@ -316,24 +273,14 @@ router.get('/:id', authenticateStaffToken, async (req: AuthenticatedRequest, res
       const staffModel = new StaffModel();
       const staff = await staffModel.getStaffById(req.user.id);
       if (staff && (staff as any).storeId !== transaction.storeId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions to view this transaction'
-        });
+        return ApiResponseHelper.forbidden(res, 'Insufficient permissions to view this transaction');
       }
     }
 
-    return res.json({
-      success: true,
-      data: transaction
-    });
+    return ApiResponseHelper.success(res, transaction);
   } catch (error) {
-    console.error('Error fetching transaction:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch transaction',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Error fetching transaction', error, { transactionId: req.params.id, userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Failed to fetch transaction', 500, error);
   }
 });
 
@@ -396,11 +343,7 @@ router.post('/', authenticateStaffToken, [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      });
+      return ApiResponseHelper.validationError(res, 'Validation failed', errors.array());
     }
 
     // Role-based access control
@@ -408,10 +351,7 @@ router.post('/', authenticateStaffToken, [
       const staffModel = new StaffModel();
       const staff = await staffModel.getStaffById(req.user.id);
       if (staff && (staff as any).storeId !== req.body.storeId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions to create transactions for this store'
-        });
+        return ApiResponseHelper.forbidden(res, 'Insufficient permissions to create transactions for this store');
       }
     }
 
@@ -423,18 +363,10 @@ router.post('/', authenticateStaffToken, [
 
     const transaction = await transactionModel.createTransaction(transactionData);
 
-    return res.status(201).json({
-      success: true,
-      data: transaction,
-      message: 'Transaction created successfully'
-    });
+    return ApiResponseHelper.success(res, transaction, 'Transaction created successfully', 201);
   } catch (error) {
-    console.error('Error creating transaction:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to create transaction',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Error creating transaction', error, { userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Failed to create transaction', 500, error);
   }
 });
 
@@ -477,27 +409,17 @@ router.put('/:id', authenticateStaffToken, [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      });
+      return ApiResponseHelper.validationError(res, 'Validation failed', errors.array());
     }
 
     const { id } = req.params;
     if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Transaction ID is required'
-      });
+      return ApiResponseHelper.validationError(res, 'Transaction ID is required');
     }
 
     const existingTransaction = await transactionModel.getTransactionById(id);
     if (!existingTransaction) {
-      return res.status(404).json({
-        success: false,
-        message: 'Transaction not found'
-      });
+      return ApiResponseHelper.notFound(res, 'Transaction');
     }
 
     // Role-based access control
@@ -505,10 +427,7 @@ router.put('/:id', authenticateStaffToken, [
       const staffModel = new StaffModel();
       const staff = await staffModel.getStaffById(req.user.id);
       if (staff && (staff as any).storeId !== existingTransaction.storeId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions to update this transaction'
-        });
+        return ApiResponseHelper.forbidden(res, 'Insufficient permissions to update this transaction');
       }
     }
 
@@ -519,18 +438,10 @@ router.put('/:id', authenticateStaffToken, [
 
     const updatedTransaction = await transactionModel.updateTransaction(id, updateData);
 
-    return res.json({
-      success: true,
-      data: updatedTransaction,
-      message: 'Transaction updated successfully'
-    });
+    return ApiResponseHelper.success(res, updatedTransaction, 'Transaction updated successfully');
   } catch (error) {
-    console.error('Error updating transaction:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to update transaction',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Error updating transaction', error, { transactionId: req.params.id, userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Failed to update transaction', 500, error);
   }
 });
 
@@ -607,7 +518,7 @@ async function getStoreIdFromCharge(charge: Stripe.Charge): Promise<string | nul
               sessionId = sessions.data[0].id;
             }
           } catch (sessionError) {
-            console.error('Error looking up checkout session:', sessionError);
+            logger.error('Error looking up checkout session', sessionError, { paymentIntentId });
           }
         }
         
@@ -619,7 +530,7 @@ async function getStoreIdFromCharge(charge: Stripe.Charge): Promise<string | nul
           }
         }
       } catch (piError) {
-        console.error('Error retrieving payment intent:', piError);
+        logger.error('Error retrieving payment intent', piError, { chargeId: charge.id });
       }
     }
 
@@ -632,7 +543,7 @@ async function getStoreIdFromCharge(charge: Stripe.Charge): Promise<string | nul
 
     return null;
   } catch (error) {
-    console.error('Error getting storeId from charge:', error);
+    logger.error('Error getting storeId from charge', error, { chargeId: charge.id });
     return null;
   }
 }
@@ -640,10 +551,7 @@ async function getStoreIdFromCharge(charge: Stripe.Charge): Promise<string | nul
 router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!stripeClient) {
-      return res.status(503).json({
-        success: false,
-        message: 'Stripe is not configured. Please set STRIPE_SECRET_KEY in environment variables.'
-      });
+      return ApiResponseHelper.error(res, 'Stripe is not configured. Please set STRIPE_SECRET_KEY in environment variables.', 503);
     }
 
     const limit = parseInt(req.query.limit as string) || 50;
@@ -731,7 +639,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
                 const charge = await stripeClient!.charges.retrieve(sourceId);
                 storeId = await getStoreIdFromCharge(charge);
               } catch (error) {
-                console.error('Error retrieving charge for balance transaction:', error);
+                logger.error('Error retrieving charge for balance transaction', error, { balanceTransactionId: bt.id });
               }
             } else if (typeof sourceId === 'string' && sourceId.startsWith('pi_')) {
               // Payment intent IDs start with 'pi_', so we can identify them that way
@@ -749,7 +657,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
                   }
                 }
               } catch (error) {
-                console.error('Error retrieving payment intent for balance transaction:', error);
+                logger.error('Error retrieving payment intent for balance transaction', error, { balanceTransactionId: bt.id });
               }
             }
           }
@@ -813,7 +721,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
                 storeId = orders[0].storeId;
               }
             } catch (error) {
-              console.error('Error getting orders by payment intent ID:', error);
+              logger.error('Error getting orders by payment intent ID', error, { paymentIntentId: pi.id });
               // Fallback: try to find via checkout session (for backward compatibility)
               let sessionId = pi.metadata?.sessionId || pi.metadata?.checkout_session_id;
               if (!sessionId && stripeClient) {
@@ -826,7 +734,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
                     sessionId = sessions.data[0].id;
                   }
                 } catch (sessionError) {
-                  console.error('Error looking up checkout session for payment intent:', sessionError);
+                  logger.error('Error looking up checkout session for payment intent', sessionError, { paymentIntentId: pi.id });
                 }
               }
               if (sessionId) {
@@ -836,7 +744,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
                     storeId = orders[0].storeId;
                   }
                 } catch (sessionError) {
-                  console.error('Error getting orders by session:', sessionError);
+                  logger.error('Error getting orders by session', sessionError, { sessionId });
                 }
               }
             }
@@ -896,7 +804,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
         transactions = paymentIntentResults.filter(t => t !== null) as any[];
       }
 
-      return res.json({
+      return res.status(200).json({
         success: true,
         data: transactions,
         count: transactions.length,
@@ -904,20 +812,12 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
         lastId: transactions.length > 0 ? transactions[transactions.length - 1].id : undefined,
       });
     } catch (stripeError: any) {
-      console.error('Stripe API error:', stripeError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to fetch Stripe transactions',
-        error: stripeError.message || 'Stripe API error'
-      });
+      logger.error('Stripe API error', stripeError, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, 'Failed to fetch Stripe transactions', 500, stripeError);
     }
   } catch (error) {
-    console.error('Error fetching Stripe transactions:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch Stripe transactions',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Error fetching Stripe transactions', error, { userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Failed to fetch Stripe transactions', 500, error);
   }
 });
 

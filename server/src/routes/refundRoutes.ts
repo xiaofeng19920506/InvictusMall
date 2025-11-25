@@ -7,6 +7,8 @@ import {
 import { OrderModel } from "../models/OrderModel";
 import { RefundModel } from "../models/RefundModel";
 import { TransactionModel } from "../models/TransactionModel";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -55,43 +57,27 @@ const transactionModel = new TransactionModel();
 router.post(
   "/:orderId",
   authenticateStaffToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!stripeClient) {
-        res.status(500).json({
-          success: false,
-          message: "Payment processing is not configured. Please contact support.",
-        });
-        return;
+        return ApiResponseHelper.error(res, "Payment processing is not configured. Please contact support.", 500);
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       const { orderId } = req.params;
       const { amount, reason, itemIds } = req.body;
 
       if (!orderId) {
-        res.status(400).json({
-          success: false,
-          message: "Order ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Order ID is required");
       }
 
       // Get order
       const order = await orderModel.getOrderById(orderId);
       if (!order) {
-        res.status(404).json({
-          success: false,
-          message: "Order not found",
-        });
-        return;
+        return ApiResponseHelper.notFound(res, "Order");
       }
 
       let paymentIntentId = order.paymentIntentId;
@@ -101,7 +87,7 @@ router.post(
         const paymentMethodMatch = order.paymentMethod.match(/stripe_payment_intent:(pi_[a-zA-Z0-9_]+)/);
         if (paymentMethodMatch && paymentMethodMatch[1]) {
           paymentIntentId = paymentMethodMatch[1];
-          console.log(`Extracted paymentIntentId ${paymentIntentId} from paymentMethod for order ${orderId}`);
+                logger.info(`Extracted paymentIntentId ${paymentIntentId} from paymentMethod for order ${orderId}`, { orderId, paymentIntentId });
           // Update order record with paymentIntentId
           await orderModel.updateOrderAfterPayment(orderId, {
             paymentIntentId: paymentIntentId,
@@ -112,7 +98,7 @@ router.post(
       // If order doesn't have paymentIntentId, try to find it from Stripe
       if (!paymentIntentId && stripeClient) {
         try {
-          console.log(`Searching for payment intent for order ${orderId}, amount: ${order.totalAmount}, created: ${order.createdAt}`);
+          logger.info(`Searching for payment intent for order ${orderId}`, { orderId, amount: order.totalAmount, createdAt: order.createdAt });
           
           // First, try searching charges (more likely to have orderId in metadata)
           // Search with pagination to find more results
@@ -154,7 +140,7 @@ router.post(
                   await orderModel.updateOrderAfterPayment(orderId, {
                     paymentIntentId: chargePaymentIntentId,
                   });
-                  console.log(`Found paymentIntentId ${chargePaymentIntentId} for order ${orderId} via charge metadata`);
+                  logger.info(`Found paymentIntentId ${chargePaymentIntentId} for order ${orderId} via charge metadata`, { orderId, paymentIntentId: chargePaymentIntentId });
                   break;
                 }
               }
@@ -175,13 +161,13 @@ router.post(
                   await orderModel.updateOrderAfterPayment(orderId, {
                     paymentIntentId: chargePaymentIntentId,
                   });
-                  console.log(`Found paymentIntentId ${chargePaymentIntentId} for order ${orderId} via charge amount/date match`);
+                  logger.info(`Found paymentIntentId ${chargePaymentIntentId} for order ${orderId} via charge amount/date match`, { orderId, paymentIntentId: chargePaymentIntentId });
                   break;
                 }
               }
             }
           } catch (chargeError: any) {
-            console.error("Error searching charges:", chargeError);
+            logger.error("Error searching charges", chargeError, { orderId });
           }
 
           // If still not found, search payment intents with pagination
@@ -224,7 +210,7 @@ router.post(
                 await orderModel.updateOrderAfterPayment(orderId, {
                   paymentIntentId: pi.id,
                 });
-                console.log(`Found paymentIntentId ${pi.id} for order ${orderId} via payment intent metadata`);
+                logger.info(`Found paymentIntentId ${pi.id} for order ${orderId} via payment intent metadata`, { orderId, paymentIntentId: pi.id });
                 break;
               }
               
@@ -245,7 +231,7 @@ router.post(
                       await orderModel.updateOrderAfterPayment(orderId, {
                         paymentIntentId: pi.id,
                       });
-                      console.log(`Found paymentIntentId ${pi.id} for order ${orderId} via charge metadata`);
+                      logger.info(`Found paymentIntentId ${pi.id} for order ${orderId} via charge metadata`, { orderId, paymentIntentId: pi.id });
                       break;
                     }
                   } catch (chargeError) {
@@ -257,29 +243,21 @@ router.post(
           }
           
           if (!paymentIntentId) {
-            console.log(`Could not find payment intent for order ${orderId} after searching Stripe`);
+            logger.warn(`Could not find payment intent for order ${orderId} after searching Stripe`, { orderId });
           }
         } catch (stripeError: any) {
-          console.error("Error searching for payment intent:", stripeError);
+          logger.error("Error searching for payment intent", stripeError, { orderId });
           // Continue with the error handling below
         }
       }
 
       if (!paymentIntentId) {
-        res.status(400).json({
-          success: false,
-          message: "This order does not have a payment intent. Cannot process refund.",
-        });
-        return;
+        return ApiResponseHelper.error(res, "This order does not have a payment intent. Cannot process refund.", 400);
       }
 
       // Check if order is refundable
       if (order.status === "cancelled") {
-        res.status(400).json({
-          success: false,
-          message: "Cannot refund a cancelled order",
-        });
-        return;
+        return ApiResponseHelper.error(res, "Cannot refund a cancelled order", 400);
       }
 
       // Get existing refunds for this order
@@ -288,11 +266,7 @@ router.post(
       const remainingAmount = order.totalAmount - totalRefunded;
 
       if (remainingAmount <= 0) {
-        res.status(400).json({
-          success: false,
-          message: "Order has already been fully refunded",
-        });
-        return;
+        return ApiResponseHelper.error(res, "Order has already been fully refunded", 400);
       }
 
       // Determine refund amount
@@ -301,11 +275,7 @@ router.post(
         : remainingAmount;
 
       if (refundAmount <= 0) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid refund amount",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Invalid refund amount");
       }
 
       // Verify PaymentIntent has a successful charge before attempting refund
@@ -348,14 +318,11 @@ router.post(
               suggestedAction = 'This order cannot be refunded because the payment has not been successfully completed.';
           }
           
-          res.status(400).json({
-            success: false,
-            message: `${errorMessage} ${suggestedAction}`,
+          return ApiResponseHelper.error(res, `${errorMessage} ${suggestedAction}`, 400, {
             paymentStatus: paymentIntent.status,
             canCancel: ['requires_payment_method', 'canceled'].includes(paymentIntent.status),
             action: 'cancel', // Suggest canceling instead of refunding
           });
-          return;
         }
 
         // Check if there's a successful charge
@@ -373,7 +340,7 @@ router.post(
               chargeId = charge.id;
             }
           } catch (chargeError) {
-            console.error(`Error retrieving charge ${latestChargeId}:`, chargeError);
+            logger.error(`Error retrieving charge ${latestChargeId}`, chargeError, { chargeId: latestChargeId, orderId });
           }
         }
 
@@ -390,16 +357,12 @@ router.post(
               chargeId = succeededCharge.id;
             }
           } catch (listError) {
-            console.error('Error listing charges for payment intent:', listError);
+            logger.error('Error listing charges for payment intent', listError, { paymentIntentId, orderId });
           }
         }
 
         if (!chargeId) {
-          res.status(400).json({
-            success: false,
-            message: "This PaymentIntent does not have a successful charge to refund. The payment may not have been completed.",
-          });
-          return;
+          return ApiResponseHelper.error(res, "This PaymentIntent does not have a successful charge to refund. The payment may not have been completed.", 400);
         }
 
         // Create refund in Stripe using charge ID instead of payment_intent
@@ -454,7 +417,7 @@ router.post(
             },
           });
         } catch (transactionError) {
-          console.error("Failed to create transaction record for refund:", transactionError);
+          logger.error("Failed to create transaction record for refund", transactionError, { orderId, refundId: refund.id });
           // Don't fail the refund if transaction record creation fails
         }
 
@@ -470,46 +433,33 @@ router.post(
           });
         }
 
-        res.json({
-          success: true,
-          message: "Refund processed successfully",
-          data: {
-            refund: {
-              id: refundRecord.id,
-              refundId: refund.id,
-              amount: refundAmount,
-              status: refund.status,
-              reason: reason || undefined,
-              createdAt: refundRecord.createdAt,
-              itemIds: refundRecord.itemIds,
-            },
-            remainingAmount: remainingAmount - refundAmount,
+        return ApiResponseHelper.success(res, {
+          refund: {
+            id: refundRecord.id,
+            refundId: refund.id,
+            amount: refundAmount,
+            status: refund.status,
+            reason: reason || undefined,
+            createdAt: refundRecord.createdAt,
+            itemIds: refundRecord.itemIds,
           },
-        });
+          remainingAmount: remainingAmount - refundAmount,
+        }, "Refund processed successfully");
       } catch (stripeError: any) {
-        console.error("Stripe refund error:", stripeError);
+        logger.error("Stripe refund error", stripeError, { orderId, paymentIntentId, userId: req.user?.id });
         
         // Provide more specific error messages
         if (stripeError.type === 'StripeInvalidRequestError') {
           if (stripeError.message?.includes('does not have a successful charge')) {
-            res.status(400).json({
-              success: false,
-              message: "This payment does not have a successful charge to refund. The payment may not have been completed or may have failed.",
-              error: stripeError.message,
-            });
-            return;
+            return ApiResponseHelper.error(res, "This payment does not have a successful charge to refund. The payment may not have been completed or may have failed.", 400, stripeError);
           }
         }
         
         throw stripeError; // Re-throw to be caught by outer catch block
       }
     } catch (error: any) {
-      console.error("Failed to process refund:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to process refund",
-        error: error.message,
-      });
+      logger.error("Failed to process refund", error, { orderId: req.params.orderId, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to process refund", 500, error);
     }
   }
 );
@@ -535,38 +485,27 @@ router.post(
 router.get(
   "/order/:orderId",
   authenticateStaffToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { orderId } = req.params;
 
       if (!orderId) {
-        res.status(400).json({
-          success: false,
-          message: "Order ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Order ID is required");
       }
 
       const refunds = await refundModel.findByOrderId(orderId);
       const totalRefunded = await refundModel.getTotalRefundedAmount(orderId);
 
-      res.json({
-        success: true,
-        data: {
-          refunds: refunds.map(refund => ({
-            ...refund,
-            itemIds: refund.itemIds || undefined,
-          })),
-          totalRefunded,
-        },
+      return ApiResponseHelper.success(res, {
+        refunds: refunds.map(refund => ({
+          ...refund,
+          itemIds: refund.itemIds || undefined,
+        })),
+        totalRefunded,
       });
     } catch (error: any) {
-      console.error("Failed to fetch refunds:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch refunds",
-        error: error.message,
-      });
+      logger.error("Failed to fetch refunds", error, { orderId: req.params.orderId, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to fetch refunds", 500, error);
     }
   }
 );
