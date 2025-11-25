@@ -5,6 +5,8 @@ import {
   AuthenticatedRequest,
 } from "../middleware/auth";
 import { ActivityLogModel } from '../models/ActivityLogModel';
+import { ApiResponseHelper } from '../utils/apiResponse';
+import { logger } from '../utils/logger';
 
 const router = Router();
 const orderModel = new OrderModel();
@@ -71,20 +73,10 @@ router.get(
       offset: offset ? parseInt(offset as string) : undefined
     });
 
-    return res.json({
-      success: true,
-      data: orders,
-      count: orders.length
-    });
+    return ApiResponseHelper.successWithCount(res, orders, orders.length);
   } catch (error) {
-    console.error('Get orders error:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve orders',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
-    });
+    logger.error('Failed to retrieve orders', error, { userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Failed to retrieve orders', 500, error);
   }
 });
 
@@ -129,10 +121,7 @@ router.get(
   try {
     const orderId = req.params.id as string;
     if (!orderId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Order ID is required'
-      });
+      return ApiResponseHelper.validationError(res, 'Order ID is required');
     }
     const userId = req.user!.id;
 
@@ -140,30 +129,17 @@ router.get(
 
     // Verify that the order belongs to the user
     if (order.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+      return ApiResponseHelper.forbidden(res, 'Access denied');
     }
 
-    return res.json({
-      success: true,
-      data: order
-    });
+    return ApiResponseHelper.success(res, order);
   } catch (error) {
     if (error instanceof Error && error.message === 'Order not found') {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found'
-      });
+      return ApiResponseHelper.notFound(res, 'Order');
     }
 
-    console.error('Get order error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve order',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Failed to retrieve order', error, { orderId: req.params.id, userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Failed to retrieve order', 500, error);
   }
 });
 
@@ -234,17 +210,11 @@ router.post(
 
     // Validate required fields
     if (!orderData.storeId || !orderData.storeName || !orderData.items || !orderData.items.length) {
-      return res.status(400).json({
-        success: false,
-        message: 'Store ID, store name, and items are required'
-      });
+      return ApiResponseHelper.validationError(res, 'Store ID, store name, and items are required');
     }
 
     if (!orderData.shippingAddress || !orderData.paymentMethod) {
-      return res.status(400).json({
-        success: false,
-        message: 'Shipping address and payment method are required'
-      });
+      return ApiResponseHelper.validationError(res, 'Shipping address and payment method are required');
     }
 
     const order = await orderModel.createOrder(orderData);
@@ -263,16 +233,12 @@ router.post(
         }
       });
     } catch (logError) {
-      console.error('Failed to log order creation:', logError);
+      logger.warn('Failed to log order creation', { orderId: order.id, error: logError });
     }
 
-    return res.status(201).json({
-      success: true,
-      data: order,
-      message: 'Order created successfully'
-    });
+    return ApiResponseHelper.success(res, order, 'Order created successfully', 201);
   } catch (error) {
-    console.error('Create order error:', error);
+    logger.error('Failed to create order', error, { userId: req.user?.id, storeId: req.body.storeId });
     
     // Handle duplicate reservation conflicts with 409 status
     if (error instanceof Error && error.message.includes('Reservation time slot conflict')) {
@@ -283,11 +249,7 @@ router.post(
       });
     }
     
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to create order',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    return ApiResponseHelper.error(res, 'Failed to create order', 500, error);
   }
 });
 
@@ -338,38 +300,25 @@ router.post(
       const { email } = req.body;
 
       if (!email || typeof email !== 'string' || !email.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email is required to track guest orders'
-        });
+        return ApiResponseHelper.validationError(res, 'Email is required to track guest orders');
       }
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide a valid email address'
-        });
+        return ApiResponseHelper.validationError(res, 'Please provide a valid email address');
       }
 
       const orders = await orderModel.getOrdersByGuestEmail(email.trim().toLowerCase());
 
-      return res.json({
-        success: true,
-        data: orders,
-        count: orders.length,
-        message: orders.length > 0 
-          ? `Found ${orders.length} order(s) for this email`
-          : 'No orders found for this email address'
-      });
+      const message = orders.length > 0 
+        ? `Found ${orders.length} order(s) for this email`
+        : 'No orders found for this email address';
+
+      return ApiResponseHelper.successWithCount(res, orders, orders.length, message);
     } catch (error) {
-      console.error('Track guest orders error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to track guest orders',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      logger.error('Failed to track guest orders', error, { email: req.body.email });
+      return ApiResponseHelper.error(res, 'Failed to track guest orders', 500, error);
     }
   }
 );
@@ -423,63 +372,38 @@ router.get(
       const email = req.query.email as string;
 
       if (!orderId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Order ID is required'
-        });
+        return ApiResponseHelper.validationError(res, 'Order ID is required');
       }
 
       if (!email || typeof email !== 'string' || !email.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email is required to view guest order'
-        });
+        return ApiResponseHelper.validationError(res, 'Email is required to view guest order');
       }
 
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide a valid email address'
-        });
+        return ApiResponseHelper.validationError(res, 'Please provide a valid email address');
       }
 
       const order = await orderModel.getOrderById(orderId);
 
       // Verify that this is a guest order and email matches
       if (order.userId !== null) {
-        return res.status(403).json({
-          success: false,
-          message: 'This is not a guest order'
-        });
+        return ApiResponseHelper.forbidden(res, 'This is not a guest order');
       }
 
       if (!order.guestEmail || order.guestEmail.toLowerCase() !== email.trim().toLowerCase()) {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied. Email does not match this order'
-        });
+        return ApiResponseHelper.forbidden(res, 'Access denied. Email does not match this order');
       }
 
-      return res.json({
-        success: true,
-        data: order
-      });
+      return ApiResponseHelper.success(res, order);
     } catch (error) {
       if (error instanceof Error && error.message === 'Order not found') {
-        return res.status(404).json({
-          success: false,
-          message: 'Order not found'
-        });
+        return ApiResponseHelper.notFound(res, 'Order');
       }
 
-      console.error('Get guest order error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve order',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      logger.error('Failed to retrieve guest order', error, { orderId: req.params.id, email: req.query.email });
+      return ApiResponseHelper.error(res, 'Failed to retrieve order', 500, error);
     }
   }
 );

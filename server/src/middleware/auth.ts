@@ -358,3 +358,48 @@ export const requireRole = (roles: string[]) => {
 export const requireAdmin = requireRole(["admin"]);
 export const requireStoreOwner = requireRole(["owner", "admin"]);
 export const requireCustomer = requireRole(["customer"]);
+
+/**
+ * Helper function to verify that the authenticated user owns the store
+ * Admin can access any store, owners can only access their own store
+ * Returns true if authorized, false otherwise
+ */
+export const checkStoreOwnership = async (
+  req: AuthenticatedRequest,
+  storeId: string
+): Promise<{ authorized: boolean; error?: string }> => {
+  try {
+    // Admin can access any store
+    if (req.user?.role === "admin" || req.staff?.role === "admin") {
+      return { authorized: true };
+    }
+
+    if (!storeId) {
+      return { authorized: false, error: "Store ID is required" };
+    }
+
+    // For staff authentication, check if staff member owns the store
+    if (req.staff) {
+      if (req.staff.role === "owner" && req.staff.id) {
+        // Get staff member's store_id
+        const staffMember = await staffModel.getStaffById(req.staff.id);
+        if (!staffMember) {
+          return { authorized: false, error: "Staff member not found" };
+        }
+
+        // Owner must have matching store_id, or be admin
+        if (staffMember.storeId !== storeId) {
+          return { authorized: false, error: "You do not have permission to access this store" };
+        }
+      }
+    }
+
+    // For user authentication (if users can own stores in the future)
+    // This can be extended if needed
+
+    return { authorized: true };
+  } catch (error) {
+    console.error("Error verifying store ownership:", error);
+    return { authorized: false, error: "Failed to verify store ownership" };
+  }
+};

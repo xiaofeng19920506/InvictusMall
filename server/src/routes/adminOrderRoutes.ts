@@ -6,9 +6,21 @@ import {
   requireAdmin,
 } from "../middleware/auth";
 import { ActivityLogModel } from '../models/ActivityLogModel';
+import { RefundModel } from '../models/RefundModel';
+import { TransactionModel } from '../models/TransactionModel';
+import Stripe from 'stripe';
 
 const router = Router();
 const orderModel = new OrderModel();
+const refundModel = new RefundModel();
+const transactionModel = new TransactionModel();
+
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripeClient = stripeSecretKey
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: "2025-02-24.acacia",
+    })
+  : null;
 
 /**
  * @swagger
@@ -237,7 +249,128 @@ router.put(
         });
       }
 
+      // Get order before updating status
+      const order = await orderModel.getOrderById(orderId);
+      
       await orderModel.updateOrderStatus(orderId, status, trackingNumber);
+
+      // If order is being cancelled, automatically process full refund
+      if (status === 'cancelled' && stripeClient) {
+        try {
+          // Only process refund if order has payment intent and hasn't been fully refunded
+          if (order.paymentIntentId) {
+            const totalRefunded = order.totalRefunded || 0;
+            const remainingAmount = order.totalAmount - totalRefunded;
+            
+            if (remainingAmount > 0.01) {
+              try {
+                // Get payment intent
+                const paymentIntent = await stripeClient.paymentIntents.retrieve(order.paymentIntentId);
+                
+                if (paymentIntent.status === 'succeeded') {
+                  // Find successful charge
+                  let chargeId: string | null = null;
+                  
+                  if (paymentIntent.latest_charge) {
+                    const latestChargeId = typeof paymentIntent.latest_charge === 'string' 
+                      ? paymentIntent.latest_charge 
+                      : paymentIntent.latest_charge.id;
+                    
+                    try {
+                      const charge = await stripeClient.charges.retrieve(latestChargeId);
+                      if (charge.status === 'succeeded') {
+                        chargeId = charge.id;
+                      }
+                    } catch (chargeError) {
+                      console.error(`Error retrieving charge ${latestChargeId}:`, chargeError);
+                    }
+                  }
+                  
+                  // If no charge found from latest_charge, try to list charges
+                  if (!chargeId) {
+                    try {
+                      const charges = await stripeClient.charges.list({
+                        payment_intent: order.paymentIntentId,
+                        limit: 10,
+                      });
+                      
+                      const succeededCharge = charges.data.find(c => c.status === 'succeeded');
+                      if (succeededCharge) {
+                        chargeId = succeededCharge.id;
+                      }
+                    } catch (listError) {
+                      console.error('Error listing charges for payment intent:', listError);
+                    }
+                  }
+                  
+                  if (chargeId) {
+                    // Create refund in Stripe
+                    const refund = await stripeClient.refunds.create({
+                      charge: chargeId,
+                      amount: Math.round(remainingAmount * 100),
+                      reason: 'requested_by_customer',
+                      metadata: {
+                        orderId: order.id,
+                        refundedBy: req.user!.id,
+                        autoRefund: 'true',
+                        reason: 'Order cancelled',
+                      },
+                    });
+                    
+                    // Save refund record
+                    await refundModel.create({
+                      orderId: order.id,
+                      paymentIntentId: order.paymentIntentId,
+                      refundId: refund.id,
+                      amount: remainingAmount,
+                      currency: "usd",
+                      reason: "Order cancelled - automatic full refund",
+                      status: refund.status || 'succeeded',
+                      refundedBy: req.user!.id,
+                    });
+                    
+                    // Create transaction record
+                    try {
+                      await transactionModel.createTransaction({
+                        storeId: order.storeId,
+                        transactionType: 'refund',
+                        amount: -remainingAmount,
+                        currency: 'usd',
+                        description: `Automatic full refund for cancelled order ${order.id}`,
+                        orderId: order.id,
+                        paymentMethod: order.paymentMethod || undefined,
+                        status: refund.status === 'succeeded' ? 'completed' : (refund.status === 'pending' ? 'pending' : 'failed'),
+                        transactionDate: new Date(),
+                        createdBy: req.user!.id,
+                        metadata: {
+                          refundId: refund.id,
+                          paymentIntentId: order.paymentIntentId,
+                          chargeId: chargeId,
+                          autoRefund: true,
+                        },
+                      });
+                    } catch (transactionError) {
+                      console.error("Failed to create transaction record for auto refund:", transactionError);
+                    }
+                    
+                    console.log(`Automatic full refund processed for cancelled order ${orderId}: $${remainingAmount}`);
+                  } else {
+                    console.warn(`No successful charge found for payment intent ${order.paymentIntentId} when cancelling order ${orderId}`);
+                  }
+                } else {
+                  console.warn(`Payment intent ${order.paymentIntentId} is not succeeded (status: ${paymentIntent.status}) when cancelling order ${orderId}`);
+                }
+              } catch (refundError: any) {
+                console.error(`Failed to process automatic refund for cancelled order ${orderId}:`, refundError);
+                // Don't fail the cancellation if refund fails - just log it
+              }
+            }
+          }
+        } catch (autoRefundError) {
+          console.error(`Error processing automatic refund for cancelled order ${orderId}:`, autoRefundError);
+          // Don't fail the cancellation if auto-refund fails
+        }
+      }
 
       // Log the activity
       try {

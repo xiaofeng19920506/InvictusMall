@@ -955,6 +955,29 @@
         "noPaymentIntent": "This order does not have a payment method. Refunds can only be processed for orders paid with credit cards.",
         "selectPartialMethod": "Please select a partial refund method."
       }
+    },
+    "return": {
+      "title": "Request Return",
+      "close": "Close",
+      "itemInfo": "Item Information",
+      "reason": "Reason for Return",
+      "reasonPlaceholder": "Please provide a detailed reason for the return...",
+      "cancel": "Cancel",
+      "submit": "Submit Return Request",
+      "processing": "Processing...",
+      "requestReturn": "Request Return",
+      "createSuccess": "Return request created successfully",
+      "createError": "Failed to create return request",
+      "errors": {
+        "reasonRequired": "Please provide a reason for the return"
+      },
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "received": "Received",
+        "refunded": "Refunded"
+      }
     }
   },
   "inventory": {

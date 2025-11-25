@@ -17,6 +17,7 @@ import shippingAddressRoutes from "./routes/shippingAddressRoutes";
 import paymentRoutes, { stripeWebhookHandler } from "./routes/paymentRoutes";
 import paymentIntentsRoutes from "./routes/paymentIntentsRoutes";
 import refundRoutes from "./routes/refundRoutes";
+import returnRoutes from "./routes/returnRoutes";
 import transactionRoutes from "./routes/transactionRoutes";
 import productRoutes from "./routes/productRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
@@ -176,6 +177,7 @@ app.use("/api/shipping-addresses", shippingAddressRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/payments", paymentIntentsRoutes);
 app.use("/api/refunds", refundRoutes);
+app.use("/api/returns", returnRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/products", productReviewRoutes); // Product reviews routes

@@ -240,7 +240,15 @@
 .itemHeader {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.itemBadges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   flex-wrap: wrap;
 }
 
@@ -267,6 +275,69 @@
   border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+.returnBadge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.returnBadge[data-status="pending"] {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.returnBadge[data-status="approved"] {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.returnBadge[data-status="rejected"] {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.returnBadge[data-status="received"] {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.returnBadge[data-status="refunded"] {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+
+.itemActions {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.returnButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.returnButton:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.returnButtonIcon {
+  width: 1rem;
+  height: 1rem;
 }
 
 .itemInfo {
