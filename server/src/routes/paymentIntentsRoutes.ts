@@ -6,14 +6,14 @@ import {
 } from "../middleware/auth";
 import { ShippingAddressModel } from "../models/ShippingAddressModel";
 import { OrderModel, Order } from "../models/OrderModel";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey) {
-  console.warn(
-    "Stripe secret key (STRIPE_SECRET_KEY) is not configured. Payment routes will be disabled."
-  );
+  logger.warn("Stripe secret key (STRIPE_SECRET_KEY) is not configured. Payment routes will be disabled.");
 }
 
 const stripeClient = stripeSecretKey
@@ -88,33 +88,21 @@ interface PaymentIntentRequest {
 router.post(
   "/create-payment-intent",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!stripeClient) {
-        res.status(500).json({
-          success: false,
-          message: "Payment processing is not configured. Please contact support.",
-        });
-        return;
+        return ApiResponseHelper.error(res, "Payment processing is not configured. Please contact support.", 500);
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       const { items, shippingAddressId, newShippingAddress, saveNewAddress } =
         req.body as PaymentIntentRequest;
 
       if (!items || !Array.isArray(items) || items.length === 0) {
-        res.status(400).json({
-          success: false,
-          message: "Items are required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Items are required");
       }
 
       // Validate shipping address
@@ -123,11 +111,7 @@ router.post(
         const addresses = await shippingAddressModel.getAddressesByUserId(req.user.id);
         const address = addresses.find((a) => a.id === shippingAddressId);
         if (!address) {
-          res.status(400).json({
-            success: false,
-            message: "Invalid shipping address",
-          });
-          return;
+          return ApiResponseHelper.validationError(res, "Invalid shipping address");
         }
         resolvedAddress = {
           streetAddress: address.streetAddress,
@@ -147,11 +131,7 @@ router.post(
           !newShippingAddress.zipCode ||
           !newShippingAddress.country
         ) {
-          res.status(400).json({
-            success: false,
-            message: "Complete shipping address is required",
-          });
-          return;
+          return ApiResponseHelper.validationError(res, "Complete shipping address is required");
         }
         resolvedAddress = {
           streetAddress: newShippingAddress.streetAddress,
@@ -176,11 +156,7 @@ router.post(
           });
         }
       } else {
-        res.status(400).json({
-          success: false,
-          message: "Shipping address is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Shipping address is required");
       }
 
       // Calculate total amount
@@ -190,11 +166,7 @@ router.post(
       );
 
       if (totalAmount <= 0) {
-        res.status(400).json({
-          success: false,
-          message: "Invalid order total",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Invalid order total");
       }
 
       // Group items by store
@@ -268,31 +240,20 @@ router.post(
         orderIds.push(order.id);
       }
 
-      res.json({
-        success: true,
-        data: {
-          clientSecret: paymentIntent.client_secret,
-          paymentIntentId: paymentIntent.id,
-          orderIds,
-        },
+      return ApiResponseHelper.success(res, {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        orderIds,
       });
     } catch (error: any) {
-      console.error("Failed to create payment intent:", error);
-      console.error("Error stack:", error.stack);
-      console.error("Error details:", {
-        message: error.message,
-        code: error.code,
-        type: error.type,
+      logger.error("Failed to create payment intent", error, {
+        userId: req.user?.id,
+        itemsCount: req.body.items?.length,
+        errorCode: error.code,
+        errorType: error.type,
         statusCode: error.statusCode,
       });
-      res.status(500).json({
-        success: false,
-        message: "Failed to create payment intent",
-        error: error.message || "Unknown error",
-        ...(process.env.NODE_ENV === "development" && {
-          details: error.stack,
-        }),
-      });
+      return ApiResponseHelper.error(res, "Failed to create payment intent", 500, error);
     }
   }
 );
@@ -323,32 +284,20 @@ router.post(
 router.post(
   "/confirm-payment",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!stripeClient) {
-        res.status(500).json({
-          success: false,
-          message: "Payment processing is not configured. Please contact support.",
-        });
-        return;
+        return ApiResponseHelper.error(res, "Payment processing is not configured. Please contact support.", 500);
       }
 
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       const { paymentIntentId } = req.body;
 
       if (!paymentIntentId) {
-        res.status(400).json({
-          success: false,
-          message: "Payment Intent ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Payment Intent ID is required");
       }
 
       // Retrieve Payment Intent from Stripe
@@ -358,11 +307,7 @@ router.post(
 
       // Verify user owns this payment intent
       if (paymentIntent.metadata?.userId !== req.user.id) {
-        res.status(403).json({
-          success: false,
-          message: "You do not have permission to confirm this payment",
-        });
-        return;
+        return ApiResponseHelper.forbidden(res, "You do not have permission to confirm this payment");
       }
 
       // Amazon-style checkout flow:
@@ -370,11 +315,7 @@ router.post(
       // This endpoint just finalizes the order after payment confirmation
       // Check payment status - must be succeeded (confirmed on frontend)
       if (paymentIntent.status !== "succeeded") {
-        res.status(400).json({
-          success: false,
-          message: `Payment has not been completed. Status: ${paymentIntent.status}. Please complete payment first.`,
-        });
-        return;
+        return ApiResponseHelper.error(res, `Payment has not been completed. Status: ${paymentIntent.status}. Please complete payment first.`, 400);
       }
 
       // Update orders to processing status (Amazon-style: payment done, now finalize order)
@@ -390,20 +331,12 @@ router.post(
         });
       }
 
-      res.json({
-        success: true,
-        message: "Payment confirmed successfully",
-        data: {
-          orderIds: orders.map((o) => o.id),
-        },
-      });
+      return ApiResponseHelper.success(res, {
+        orderIds: orders.map((o) => o.id),
+      }, "Payment confirmed successfully");
     } catch (error: any) {
-      console.error("Failed to confirm payment:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to confirm payment",
-        error: error.message,
-      });
+      logger.error("Failed to confirm payment", error, { paymentIntentId: req.body.paymentIntentId, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to confirm payment", 500, error);
     }
   }
 );

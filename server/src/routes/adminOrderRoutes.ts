@@ -9,6 +9,8 @@ import { ActivityLogModel } from '../models/ActivityLogModel';
 import { RefundModel } from '../models/RefundModel';
 import { TransactionModel } from '../models/TransactionModel';
 import Stripe from 'stripe';
+import { ApiResponseHelper } from '../utils/apiResponse';
+import { logger } from '../utils/logger';
 
 const router = Router();
 const orderModel = new OrderModel();
@@ -85,19 +87,10 @@ router.get(
         offset: offset ? parseInt(offset as string) : undefined
       });
 
-      return res.json({
-        success: true,
-        data: orders,
-        count: orders.length,
-        total
-      });
+      return ApiResponseHelper.successWithPagination(res, orders, total);
     } catch (error) {
-      console.error('Get all orders error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve orders',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      logger.error('Get all orders error', error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, 'Failed to retrieve orders', 500, error);
     }
   }
 );
@@ -137,31 +130,18 @@ router.get(
     try {
       const orderId = req.params.id as string;
       if (!orderId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Order ID is required'
-        });
+        return ApiResponseHelper.validationError(res, 'Order ID is required');
       }
 
       const order = await orderModel.getOrderById(orderId);
       if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: 'Order not found'
-        });
+        return ApiResponseHelper.notFound(res, 'Order');
       }
 
-      return res.json({
-        success: true,
-        data: order
-      });
+      return ApiResponseHelper.success(res, order);
     } catch (error) {
-      console.error('Get order by ID error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve order',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      logger.error('Get order by ID error', error, { orderId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, 'Failed to retrieve order', 500, error);
     }
   }
 );
@@ -218,19 +198,13 @@ router.put(
     try {
       const orderId = req.params.id as string;
       if (!orderId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Order ID is required'
-        });
+        return ApiResponseHelper.validationError(res, 'Order ID is required');
       }
 
       const { status, trackingNumber } = req.body;
 
       if (!status) {
-        return res.status(400).json({
-          success: false,
-          message: 'Status is required'
-        });
+        return ApiResponseHelper.validationError(res, 'Status is required');
       }
 
       const validStatuses: OrderStatus[] = [
@@ -243,10 +217,7 @@ router.put(
       ];
 
       if (!validStatuses.includes(status)) {
-        return res.status(400).json({
-          success: false,
-          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`
-        });
+        return ApiResponseHelper.validationError(res, `Invalid status. Must be one of: ${validStatuses.join(', ')}`);
       }
 
       // Get order before updating status
@@ -282,7 +253,7 @@ router.put(
                         chargeId = charge.id;
                       }
                     } catch (chargeError) {
-                      console.error(`Error retrieving charge ${latestChargeId}:`, chargeError);
+                      logger.error(`Error retrieving charge ${latestChargeId}`, chargeError, { chargeId: latestChargeId, orderId });
                     }
                   }
                   
@@ -299,7 +270,7 @@ router.put(
                         chargeId = succeededCharge.id;
                       }
                     } catch (listError) {
-                      console.error('Error listing charges for payment intent:', listError);
+                      logger.error('Error listing charges for payment intent', listError, { paymentIntentId: order.paymentIntentId });
                     }
                   }
                   
@@ -350,24 +321,24 @@ router.put(
                         },
                       });
                     } catch (transactionError) {
-                      console.error("Failed to create transaction record for auto refund:", transactionError);
+                      logger.error("Failed to create transaction record for auto refund", transactionError, { orderId, refundId: refund.id });
                     }
                     
-                    console.log(`Automatic full refund processed for cancelled order ${orderId}: $${remainingAmount}`);
+                    logger.info(`Automatic full refund processed for cancelled order ${orderId}: $${remainingAmount}`, { orderId, amount: remainingAmount });
                   } else {
-                    console.warn(`No successful charge found for payment intent ${order.paymentIntentId} when cancelling order ${orderId}`);
+                    logger.warn(`No successful charge found for payment intent ${order.paymentIntentId} when cancelling order ${orderId}`, { paymentIntentId: order.paymentIntentId, orderId });
                   }
                 } else {
-                  console.warn(`Payment intent ${order.paymentIntentId} is not succeeded (status: ${paymentIntent.status}) when cancelling order ${orderId}`);
+                  logger.warn(`Payment intent ${order.paymentIntentId} is not succeeded (status: ${paymentIntent.status}) when cancelling order ${orderId}`, { paymentIntentId: order.paymentIntentId, orderId, status: paymentIntent.status });
                 }
               } catch (refundError: any) {
-                console.error(`Failed to process automatic refund for cancelled order ${orderId}:`, refundError);
+                logger.error(`Failed to process automatic refund for cancelled order ${orderId}`, refundError, { orderId, paymentIntentId: order.paymentIntentId });
                 // Don't fail the cancellation if refund fails - just log it
               }
             }
           }
         } catch (autoRefundError) {
-          console.error(`Error processing automatic refund for cancelled order ${orderId}:`, autoRefundError);
+          logger.error(`Error processing automatic refund for cancelled order ${orderId}`, autoRefundError, { orderId });
           // Don't fail the cancellation if auto-refund fails
         }
       }
@@ -385,7 +356,7 @@ router.put(
           }
         });
       } catch (logError) {
-        console.error('Failed to log order status update:', logError);
+        logger.error('Failed to log order status update', logError, { orderId, userId: req.user?.id });
       }
 
       // Get updated order to return
@@ -398,18 +369,11 @@ router.put(
       });
     } catch (error) {
       if (error instanceof Error && error.message === 'Order not found') {
-        return res.status(404).json({
-          success: false,
-          message: 'Order not found'
-        });
+        return ApiResponseHelper.notFound(res, 'Order');
       }
 
-      console.error('Update order status error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to update order status',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      logger.error('Update order status error', error, { orderId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, 'Failed to update order status', 500, error);
     }
   }
 );

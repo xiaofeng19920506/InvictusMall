@@ -91,23 +91,13 @@ router.get(
       const address = await shippingAddressModel.getDefaultAddress(userId);
 
       if (!address) {
-        return res.status(404).json({
-          success: false,
-          message: "No default shipping address found",
-        });
+        return ApiResponseHelper.notFound(res, "Default shipping address");
       }
 
-      return res.json({
-        success: true,
-        data: address,
-      });
+      return ApiResponseHelper.success(res, address);
     } catch (error: any) {
-      console.error("Error fetching default shipping address:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch default shipping address",
-        error: error.message,
-      });
+      logger.error("Error fetching default shipping address", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to fetch default shipping address", 500, error);
     }
   }
 );
@@ -139,10 +129,7 @@ router.get(
     try {
       const { id } = req.params;
       if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Address ID is required",
-        });
+        return ApiResponseHelper.validationError(res, "Address ID is required");
       }
       if (!req.user?.id) {
         return ApiResponseHelper.unauthorized(res, "Unauthorized");
@@ -153,30 +140,17 @@ router.get(
 
       // Verify the address belongs to the user
       if (address.userId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "Unauthorized: Address does not belong to user",
-        });
+        return ApiResponseHelper.forbidden(res, "Unauthorized: Address does not belong to user");
       }
 
-      return res.json({
-        success: true,
-        data: address,
-      });
+      return ApiResponseHelper.success(res, address);
     } catch (error: any) {
       if (error.message === "Shipping address not found") {
-        return res.status(404).json({
-          success: false,
-          message: "Shipping address not found",
-        });
+        return ApiResponseHelper.notFound(res, "Shipping address");
       }
 
-      console.error("Error fetching shipping address:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch shipping address",
-        error: error.message,
-      });
+      logger.error("Error fetching shipping address", error, { addressId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to fetch shipping address", 500, error);
     }
   }
 );
@@ -254,9 +228,7 @@ router.post(
       // If validation failed (invalid address) or validation service is unavailable, return error
       // This blocks saving invalid addresses or when validation cannot be performed
       if (!validationResult.valid) {
-        return res.status(400).json({
-          success: false,
-          message: validationResult.message || "Address validation failed",
+        return ApiResponseHelper.validationError(res, validationResult.message || "Address validation failed", {
           validationDetails: validationResult.success ? {
             confidence: validationResult.confidence,
             normalizedAddress: validationResult.normalizedAddress,
@@ -286,22 +258,16 @@ router.post(
         return 0;
       });
 
-      return res.status(201).json({
-        success: true,
-        message: validationResult.message || "Shipping address created successfully",
-        data: sortedAddresses,
+      return ApiResponseHelper.success(res, {
+        addresses: sortedAddresses,
         validation: {
           validated: validationResult.success,
           normalized: !!validationResult.normalizedAddress,
         },
-      });
+      }, validationResult.message || "Shipping address created successfully", 201);
     } catch (error: any) {
-      console.error("Error creating shipping address:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to create shipping address",
-        error: error.message,
-      });
+      logger.error("Error creating shipping address", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to create shipping address", 500, error);
     }
   }
 );
@@ -360,10 +326,7 @@ router.put(
     try {
       const { id } = req.params;
       if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Address ID is required",
-        });
+        return ApiResponseHelper.validationError(res, "Address ID is required");
       }
       if (!req.user?.id) {
         return ApiResponseHelper.unauthorized(res, "Unauthorized");
@@ -383,10 +346,7 @@ router.put(
         // Get existing address to fill in missing fields
         const existingAddress = await shippingAddressModel.getAddressById(id);
         if (existingAddress.userId !== userId) {
-          return res.status(403).json({
-            success: false,
-            message: "Unauthorized: Address does not belong to user",
-          });
+          return ApiResponseHelper.forbidden(res, "Unauthorized: Address does not belong to user");
         }
 
         const validationResult = await addressValidationService.validateAddress({
@@ -401,14 +361,12 @@ router.put(
         // If validation failed (invalid address) or validation service is unavailable, return error
         // This blocks saving invalid addresses or when validation cannot be performed
         if (!validationResult.valid) {
-          return res.status(400).json({
-            success: false,
-            message: validationResult.message || "Address validation failed",
-            validationDetails: validationResult.success ? {
-              confidence: validationResult.confidence,
-              normalizedAddress: validationResult.normalizedAddress,
-            } : undefined,
-          });
+        return ApiResponseHelper.validationError(res, validationResult.message || "Address validation failed", {
+          validationDetails: validationResult.success ? {
+            confidence: validationResult.confidence,
+            normalizedAddress: validationResult.normalizedAddress,
+          } : undefined,
+        });
         }
 
         // Use normalized address if available
@@ -431,32 +389,18 @@ router.put(
         return 0;
       });
 
-      return res.json({
-        success: true,
-        message: "Shipping address updated successfully",
-        data: sortedAddresses,
-      });
+      return ApiResponseHelper.success(res, sortedAddresses, "Shipping address updated successfully");
     } catch (error: any) {
       if (error.message === "Shipping address not found") {
-        return res.status(404).json({
-          success: false,
-          message: "Shipping address not found",
-        });
+        return ApiResponseHelper.notFound(res, "Shipping address");
       }
 
       if (error.message.includes("Unauthorized")) {
-        return res.status(403).json({
-          success: false,
-          message: error.message,
-        });
+        return ApiResponseHelper.forbidden(res, error.message);
       }
 
-      console.error("Error updating shipping address:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to update shipping address",
-        error: error.message,
-      });
+      logger.error("Error updating shipping address", error, { addressId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to update shipping address", 500, error);
     }
   }
 );
@@ -488,10 +432,7 @@ router.post(
     try {
       const { id } = req.params;
       if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Address ID is required",
-        });
+        return ApiResponseHelper.validationError(res, "Address ID is required");
       }
       if (!req.user?.id) {
         return ApiResponseHelper.unauthorized(res, "Unauthorized");
@@ -508,32 +449,18 @@ router.post(
         return 0;
       });
 
-      return res.json({
-        success: true,
-        message: "Shipping address set as default successfully",
-        data: sortedAddresses,
-      });
+      return ApiResponseHelper.success(res, sortedAddresses, "Shipping address set as default successfully");
     } catch (error: any) {
       if (error.message === "Shipping address not found") {
-        return res.status(404).json({
-          success: false,
-          message: "Shipping address not found",
-        });
+        return ApiResponseHelper.notFound(res, "Shipping address");
       }
 
       if (error.message.includes("Unauthorized")) {
-        return res.status(403).json({
-          success: false,
-          message: error.message,
-        });
+        return ApiResponseHelper.forbidden(res, error.message);
       }
 
-      console.error("Error setting default shipping address:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to set default shipping address",
-        error: error.message,
-      });
+      logger.error("Error setting default shipping address", error, { addressId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to set default shipping address", 500, error);
     }
   }
 );
@@ -565,10 +492,7 @@ router.delete(
     try {
       const { id } = req.params;
       if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: "Address ID is required",
-        });
+        return ApiResponseHelper.validationError(res, "Address ID is required");
       }
       if (!req.user?.id) {
         return ApiResponseHelper.unauthorized(res, "Unauthorized");
@@ -592,18 +516,11 @@ router.delete(
       });
     } catch (error: any) {
       if (error.message === "Shipping address not found or unauthorized") {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
+        return ApiResponseHelper.notFound(res, "Shipping address");
       }
 
-      console.error("Error deleting shipping address:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to delete shipping address",
-        error: error.message,
-      });
+      logger.error("Error deleting shipping address", error, { addressId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to delete shipping address", 500, error);
     }
   }
 );
