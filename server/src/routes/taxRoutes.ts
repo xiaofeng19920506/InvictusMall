@@ -1,5 +1,7 @@
 import { Router, Request, Response } from "express";
 import { calculateTax } from "../services/taxService";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -73,25 +75,17 @@ const router = Router();
  *                   type: string
  *                   example: "Invalid subtotal amount"
  */
-router.post("/calculate", async (req: Request, res: Response): Promise<void> => {
+router.post("/calculate", async (req: Request, res: Response) => {
   try {
     const { subtotal, zipCode, stateProvince, country } = req.body;
 
     // Validate required fields
     if (!subtotal || typeof subtotal !== "number" || subtotal <= 0) {
-      res.status(400).json({
-        success: false,
-        message: "Valid subtotal amount is required",
-      });
-      return;
+      return ApiResponseHelper.validationError(res, "Valid subtotal amount is required");
     }
 
     if (!zipCode || typeof zipCode !== "string" || zipCode.trim() === "") {
-      res.status(400).json({
-        success: false,
-        message: "ZIP or postal code is required",
-      });
-      return;
+      return ApiResponseHelper.validationError(res, "ZIP or postal code is required");
     }
 
     const result = await calculateTax({
@@ -102,27 +96,17 @@ router.post("/calculate", async (req: Request, res: Response): Promise<void> => 
     });
 
     if (result.success) {
-      res.json({
-        success: true,
-        data: {
-          taxAmount: result.taxAmount,
-          taxRate: result.taxRate,
-          total: result.total,
-        },
+      return ApiResponseHelper.success(res, {
+        taxAmount: result.taxAmount,
+        taxRate: result.taxRate,
+        total: result.total,
       });
     } else {
-      res.status(400).json({
-        success: false,
-        message: result.message || "Failed to calculate tax",
-      });
+      return ApiResponseHelper.error(res, result.message || "Failed to calculate tax", 400);
     }
   } catch (error: any) {
-    console.error("Error calculating tax:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to calculate tax",
-      error: error.message,
-    });
+    logger.error("Error calculating tax", error, { subtotal: req.body.subtotal, zipCode: req.body.zipCode });
+    return ApiResponseHelper.error(res, "Failed to calculate tax", 500, error);
   }
 });
 

@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { body, validationResult } from 'express-validator';
 import { StaffModel, CreateStaffRequest, UpdateStaffRequest } from '../models/StaffModel';
-import { StaffInvitationModel, CreateInvitationRequest } from '../models/StaffInvitationModel';
+import { StaffInvitationModel } from '../models/StaffInvitationModel';
 import { ActivityLogModel } from '../models/ActivityLogModel';
 import { getUserNameFromRequest, getUserIdFromRequest } from '../utils/activityLogHelper';
 import { emailService } from '../services/emailService';
@@ -11,6 +11,8 @@ import {
   AuthenticatedRequest,
 } from "../middleware/auth";
 import { handleValidationErrors } from '../middleware/validation';
+import { ApiResponseHelper } from '../utils/apiResponse';
+import { logger } from '../utils/logger';
 
 const router = Router();
 const staffModel = new StaffModel();
@@ -80,11 +82,13 @@ router.post('/login', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid input data',
-        errors: errors.array()
+      const errorMap: { [key: string]: string } = {};
+      errors.array().forEach((err: any) => {
+        if (err.param) {
+          errorMap[err.param] = err.msg;
+        }
       });
+      return ApiResponseHelper.validationError(res, 'Invalid input data', errorMap);
     }
 
     const { email, password } = req.body;
@@ -92,19 +96,13 @@ router.post('/login', [
     // Get staff member
     const staff = await staffModel.getStaffByEmail(email);
     if (!staff) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
+      return ApiResponseHelper.unauthorized(res, 'Invalid email or password');
     }
 
     // Verify password
     const isValidPassword = await staffModel.verifyPassword(staff, password);
     if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
+      return ApiResponseHelper.unauthorized(res, 'Invalid email or password');
     }
 
     // Update last login
@@ -118,14 +116,13 @@ router.post('/login', [
       type: 'staff'
     };
 
-    console.log('JWT Payload:', tokenPayload);
-    console.log('JWT_SECRET length:', JWT_SECRET?.length || 0);
+    logger.debug('JWT Payload', { tokenPayload, jwtSecretLength: JWT_SECRET?.length || 0 });
 
     // Calculate expiration time explicitly (7 days from now)
     const now = Math.floor(Date.now() / 1000);
     const exp = now + (7 * 24 * 60 * 60); // 7 days in seconds
 
-    console.log('JWT signing - now:', now, 'exp:', exp, 'exp date:', new Date(exp * 1000));
+    logger.debug('JWT signing', { now, exp, expDate: new Date(exp * 1000) });
 
     const token = jwt.sign(
       {
@@ -138,7 +135,7 @@ router.post('/login', [
 
     // Decode and log the token to check expiration
     const decoded = jwt.decode(token) as any;
-    console.log('JWT decoded:', { iat: decoded.iat, exp: decoded.exp, expDate: new Date(decoded.exp * 1000) });
+    logger.debug('JWT decoded', { iat: decoded.iat, exp: decoded.exp, expDate: new Date(decoded.exp * 1000) });
 
     // Log the activity
     try {
@@ -156,7 +153,7 @@ router.post('/login', [
         }
       });
     } catch (logError) {
-      console.error('Failed to log staff login:', logError);
+      logger.warn('Failed to log staff login', { error: logError, staffId: staff.id });
       // Continue with login even if logging fails
     }
 
@@ -189,14 +186,10 @@ router.post('/login', [
       responseData.token = token;
     }
 
-    return res.json(responseData);
+    return ApiResponseHelper.success(res, responseData, 'Login successful');
   } catch (error) {
-    console.error('Staff login error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to login',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Staff login error', error, { email: req.body.email });
+    return ApiResponseHelper.error(res, 'Failed to login', 500, error);
   }
 });
 
@@ -242,40 +235,25 @@ router.get("/me", authenticateStaffToken, async (req: Request, res: Response) =>
     const token = req.cookies.staff_auth_token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
     
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'Access token required'
-      });
+      return ApiResponseHelper.unauthorized(res, 'Access token required');
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     
     if (decoded.type !== 'staff') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token type'
-      });
+      return ApiResponseHelper.unauthorized(res, 'Invalid token type');
     }
 
     // Get staff member
     const staff = await staffModel.getStaffById(decoded.staffId);
     if (!staff) {
-      return res.status(401).json({
-        success: false,
-        message: 'Staff member not found'
-      });
+      return ApiResponseHelper.unauthorized(res, 'Staff member not found');
     }
 
-    return res.json({
-      success: true,
-      user: staff
-    });
+    return ApiResponseHelper.success(res, { user: staff });
   } catch (error) {
-    console.error('Get staff member error:', error);
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid or expired token'
-    });
+    logger.error('Get staff member error', error);
+    return ApiResponseHelper.unauthorized(res, 'Invalid or expired token');
   }
 });
 
@@ -341,19 +319,18 @@ router.post("/register", authenticateStaffToken, [
   try {
     // Check if user has permission to create staff (admin or owner only)
     if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'owner')) {
-      return res.status(403).json({
-        success: false,
-        message: 'Insufficient permissions to create staff members'
-      });
+      return ApiResponseHelper.forbidden(res, 'Insufficient permissions to create staff members');
     }
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid input data',
-        errors: errors.array()
+      const errorMap: { [key: string]: string } = {};
+      errors.array().forEach((err: any) => {
+        if (err.param) {
+          errorMap[err.param] = err.msg;
+        }
       });
+      return ApiResponseHelper.validationError(res, 'Invalid input data', errorMap);
     }
 
     const staffData: CreateStaffRequest = req.body;
@@ -361,20 +338,14 @@ router.post("/register", authenticateStaffToken, [
     // Check if email already exists
     const emailExists = await staffModel.emailExists(staffData.email);
     if (emailExists) {
-      return res.status(409).json({
-        success: false,
-        message: 'Email already registered'
-      });
+      return ApiResponseHelper.error(res, 'Email already registered', 409);
     }
 
     // Check if employee ID already exists (if provided)
     if (staffData.employeeId) {
       const employeeIdExists = await staffModel.employeeIdExists(staffData.employeeId);
       if (employeeIdExists) {
-        return res.status(409).json({
-          success: false,
-          message: 'Employee ID already exists'
-        });
+        return ApiResponseHelper.error(res, 'Employee ID already exists', 409);
       }
     }
 
@@ -400,25 +371,24 @@ router.post("/register", authenticateStaffToken, [
       }
     });
 
-    return res.status(201).json({
-      success: true,
-      message: 'Staff member created successfully',
-      user: {
-        id: staff.id,
-        email: staff.email,
-        firstName: staff.firstName,
-        lastName: staff.lastName,
-        role: staff.role,
-        employeeId: staff.employeeId
-      }
-    });
+    return ApiResponseHelper.success(
+      res,
+      {
+        user: {
+          id: staff.id,
+          email: staff.email,
+          firstName: staff.firstName,
+          lastName: staff.lastName,
+          role: staff.role,
+          employeeId: staff.employeeId
+        }
+      },
+      'Staff member created successfully',
+      201
+    );
   } catch (error) {
-    console.error('Staff registration error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Staff registration error', error, { email: req.body.email, userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Internal server error', 500, error);
   }
 });
 
@@ -476,10 +446,7 @@ router.post("/invite", authenticateStaffToken, [
   try {
     // Check if user has permission to create staff (admin, owner, or manager)
     if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'owner' && req.user.role !== 'manager')) {
-      return res.status(403).json({
-        success: false,
-        message: 'Insufficient permissions to create staff members'
-      });
+      return ApiResponseHelper.forbidden(res, 'Insufficient permissions to create staff members');
     }
 
     const { email, firstName, lastName, role, department, employeeId, storeId } = req.body;
@@ -490,47 +457,32 @@ router.post("/invite", authenticateStaffToken, [
     if (requesterRole === 'admin') {
       // Admin can only invite owner role
       if (role !== 'owner') {
-        return res.status(403).json({
-          success: false,
-          message: 'Admin can only invite staff with owner role'
-        });
+        return ApiResponseHelper.forbidden(res, 'Admin can only invite staff with owner role');
       }
       // Store ID is optional for admin inviting owner
     } else if (requesterRole === 'owner') {
       // Owner can only invite manager and employee roles
       if (role !== 'manager' && role !== 'employee') {
-        return res.status(403).json({
-          success: false,
-          message: 'Owner can only invite staff with manager or employee role'
-        });
+        return ApiResponseHelper.forbidden(res, 'Owner can only invite staff with manager or employee role');
       }
     } else if (requesterRole === 'manager') {
       // Manager can only invite employee roles
       if (role !== 'employee') {
-        return res.status(403).json({
-          success: false,
-          message: 'Manager can only invite staff with employee role'
-        });
+        return ApiResponseHelper.forbidden(res, 'Manager can only invite staff with employee role');
       }
     }
 
     // Check if email already exists in staff table
     const emailExists = await staffModel.emailExists(email);
     if (emailExists) {
-      return res.status(409).json({
-        success: false,
-        message: 'Email already registered'
-      });
+      return ApiResponseHelper.error(res, 'Email already registered', 409);
     }
 
     // Check if employee ID already exists (if provided)
     if (employeeId) {
       const employeeIdExists = await staffModel.employeeIdExists(employeeId);
       if (employeeIdExists) {
-        return res.status(409).json({
-          success: false,
-          message: 'Employee ID already exists'
-        });
+        return ApiResponseHelper.error(res, 'Employee ID already exists', 409);
       }
     }
 
@@ -594,26 +546,25 @@ router.post("/invite", authenticateStaffToken, [
       }
     });
 
-    return res.status(201).json({
-      success: true,
-      message: 'Staff invitation sent successfully',
-      emailSent,
-      invitation: {
-        id: invitation.id,
-        email: invitation.email,
-        firstName: invitation.firstName,
-        lastName: invitation.lastName,
-        role: invitation.role,
-        expiresAt: invitation.expiresAt
-      }
-    });
+    return ApiResponseHelper.success(
+      res,
+      {
+        emailSent,
+        invitation: {
+          id: invitation.id,
+          email: invitation.email,
+          firstName: invitation.firstName,
+          lastName: invitation.lastName,
+          role: invitation.role,
+          expiresAt: invitation.expiresAt
+        }
+      },
+      'Staff invitation sent successfully',
+      201
+    );
   } catch (error) {
-    console.error('Staff invitation error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Staff invitation error', error, { email: req.body.email, userId: req.user?.id });
+    return ApiResponseHelper.error(res, 'Internal server error', 500, error);
   }
 });
 
@@ -657,11 +608,13 @@ router.post('/setup-password', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid input data',
-        errors: errors.array()
-      });
+        const errorMap: { [key: string]: string } = {};
+        errors.array().forEach((err: any) => {
+          if (err.param) {
+            errorMap[err.param] = err.msg;
+          }
+        });
+        return ApiResponseHelper.validationError(res, 'Invalid input data', errorMap);
     }
 
     const { token, password, phoneNumber } = req.body;
@@ -669,10 +622,7 @@ router.post('/setup-password', [
     // Get invitation by token
     const invitation = await invitationModel.getInvitationByToken(token);
     if (!invitation) {
-      return res.status(404).json({
-        success: false,
-        message: 'Invalid or expired invitation token'
-      });
+      return ApiResponseHelper.notFound(res, 'Invitation');
     }
 
     // Create staff member
@@ -751,12 +701,8 @@ router.post('/setup-password', [
       }
     });
   } catch (error) {
-    console.error('Setup password error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    logger.error('Setup password error', error, { token: req.body.token });
+    return ApiResponseHelper.error(res, 'Internal server error', 500, error);
   }
 });
 
@@ -850,10 +796,7 @@ router.post('/logout', (req: Request, res: Response) => {
 router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized'
-      });
+      return ApiResponseHelper.unauthorized(res, 'Unauthorized');
     }
 
     const requesterRole = req.user.role;
@@ -924,10 +867,7 @@ router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res
       staffMembers = staff ? [staff] : [];
       total = staffMembers.length;
     } else {
-      return res.status(403).json({
-        success: false,
-        message: 'Insufficient permissions'
-      });
+      return ApiResponseHelper.forbidden(res, 'Insufficient permissions');
     }
 
     // Remove password from response and add edit permission info
@@ -973,13 +913,8 @@ router.get('/all', authenticateStaffToken, async (req: AuthenticatedRequest, res
     
     return res.json(response);
   } catch (error) {
-    console.error('Error fetching all staff:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to fetch staff members',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      data: [] // Return empty array on error
-    });
+    logger.error('Error fetching all staff', error, { requesterId: req.user?.id, requesterRole: req.user?.role });
+    return ApiResponseHelper.error(res, 'Failed to fetch staff members', 500, error);
   }
 });
 
@@ -1042,26 +977,22 @@ router.put('/:id', authenticateStaffToken, [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
+      const errorMap: { [key: string]: string } = {};
+      errors.array().forEach((err: any) => {
+        if (err.param) {
+          errorMap[err.param] = err.msg;
+        }
       });
+      return ApiResponseHelper.validationError(res, 'Validation failed', errorMap);
     }
 
     if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized'
-      });
+      return ApiResponseHelper.unauthorized(res, 'Unauthorized');
     }
 
     const { id } = req.params;
     if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Staff ID is required'
-      });
+      return ApiResponseHelper.validationError(res, 'Staff ID is required');
     }
 
     const requesterRole = req.user.role;
@@ -1070,10 +1001,7 @@ router.put('/:id', authenticateStaffToken, [
     // Check if staff member exists
     const existingStaff = await staffModel.getStaffById(id);
     if (!existingStaff) {
-      return res.status(404).json({
-        success: false,
-        message: 'Staff member not found'
-      });
+        return ApiResponseHelper.notFound(res, 'Staff member');
     }
 
     const isSelf = id === requesterId;
@@ -1089,10 +1017,7 @@ router.put('/:id', authenticateStaffToken, [
       // Owner can edit staff in their store with lower access levels (managers and employees, but not other owners or admins)
       const requesterStaff = await staffModel.getStaffById(requesterId);
       if (!requesterStaff) {
-        return res.status(404).json({
-          success: false,
-          message: 'Requester staff not found'
-        });
+        return ApiResponseHelper.notFound(res, 'Requester staff');
       }
       const requesterStoreId = (requesterStaff as any)?.storeId;
       const targetStoreId = (existingStaff as any)?.storeId;
@@ -1101,19 +1026,13 @@ router.put('/:id', authenticateStaffToken, [
       if (targetStoreId !== requesterStoreId || 
           existingStaff.role === 'owner' || 
           existingStaff.role === 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions to edit this staff member'
-        });
+        return ApiResponseHelper.forbidden(res, 'Insufficient permissions to edit this staff member');
       }
     } else if (requesterRole === 'manager') {
       // Manager can edit employees and managers in same store (but not owner or admin)
       const requesterStaff = await staffModel.getStaffById(requesterId);
       if (!requesterStaff) {
-        return res.status(404).json({
-          success: false,
-          message: 'Requester staff not found'
-        });
+        return ApiResponseHelper.notFound(res, 'Requester staff');
       }
       const requesterStoreId = (requesterStaff as any)?.storeId;
       const targetStoreId = (existingStaff as any)?.storeId;
@@ -1122,17 +1041,11 @@ router.put('/:id', authenticateStaffToken, [
       if (targetStoreId !== requesterStoreId ||
           existingStaff.role === 'owner' || 
           existingStaff.role === 'admin') {
-        return res.status(403).json({
-          success: false,
-          message: 'Insufficient permissions to edit this staff member'
-        });
+        return ApiResponseHelper.forbidden(res, 'Insufficient permissions to edit this staff member');
       }
     } else {
       // Employee can only edit themselves
-      return res.status(403).json({
-        success: false,
-        message: 'Insufficient permissions'
-      });
+      return ApiResponseHelper.forbidden(res, 'Insufficient permissions');
     }
 
     // Prepare update data
@@ -1153,78 +1066,51 @@ router.put('/:id', authenticateStaffToken, [
         } else if (requesterRole === 'owner') {
           // Owner can only change roles to manager or employee (cannot assign owner/admin)
           if (req.body.role === 'owner' || req.body.role === 'admin') {
-            return res.status(403).json({
-              success: false,
-              message: 'Owner can only assign manager or employee roles'
-            });
+            return ApiResponseHelper.forbidden(res, 'Owner can only assign manager or employee roles');
           }
           // Owner cannot change role of another owner
           if (existingStaff.role === 'owner') {
-            return res.status(403).json({
-              success: false,
-              message: 'Cannot change role of owner'
-            });
+            return ApiResponseHelper.forbidden(res, 'Cannot change role of owner');
           }
           updateData.role = req.body.role;
         } else if (requesterRole === 'manager') {
           // Manager can only change roles between manager and employee (cannot assign owner/admin)
           if (req.body.role === 'owner' || req.body.role === 'admin') {
-            return res.status(403).json({
-              success: false,
-              message: 'Cannot assign owner or admin role'
-            });
+            return ApiResponseHelper.forbidden(res, 'Cannot assign owner or admin role');
           }
           // Manager can change employee/manager roles
           if (existingStaff.role === 'employee' || existingStaff.role === 'manager') {
             updateData.role = req.body.role;
           } else {
-            return res.status(403).json({
-              success: false,
-              message: 'Cannot change role of this staff member'
-            });
+            return ApiResponseHelper.forbidden(res, 'Cannot change role of this staff member');
           }
         } else {
           // Employees cannot change roles
-          return res.status(403).json({
-            success: false,
-            message: 'Insufficient permissions to change role'
-          });
+          return ApiResponseHelper.forbidden(res, 'Insufficient permissions to change role');
         }
       }
     }
     if (req.body.department !== undefined) updateData.department = req.body.department;
     if (req.body.employeeId !== undefined) {
       // Employee ID cannot be changed once assigned
-      return res.status(403).json({
-        success: false,
-        message: 'Employee ID cannot be changed'
-      });
+      return ApiResponseHelper.forbidden(res, 'Employee ID cannot be changed');
     }
     if (req.body.isActive !== undefined) {
       if (isSelf) {
         // Users cannot change their own active status
-        return res.status(403).json({
-          success: false,
-          message: 'Cannot change your own active status'
-        });
+        return ApiResponseHelper.forbidden(res, 'Cannot change your own active status');
       }
       if (requesterRole === 'admin') {
         updateData.isActive = req.body.isActive;
       } else {
-        return res.status(403).json({
-          success: false,
-          message: 'Only admin can change active status'
-        });
+        return ApiResponseHelper.forbidden(res, 'Only admin can change active status');
       }
     }
 
     // Update staff member
     const updatedStaff = await staffModel.updateStaff(id, updateData);
     if (!updatedStaff) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to update staff member'
-      });
+      return ApiResponseHelper.error(res, 'Failed to update staff member', 500);
     }
 
     // Log activity
@@ -1245,17 +1131,10 @@ router.put('/:id', authenticateStaffToken, [
     // Remove password from response
     const { password, ...staffWithoutPassword } = updatedStaff;
 
-    return res.json({
-      success: true,
-      data: staffWithoutPassword,
-      message: 'Staff member updated successfully'
-    });
+    return ApiResponseHelper.success(res, staffWithoutPassword, 'Staff member updated successfully');
   } catch (error: any) {
-    console.error('Error updating staff member:', error);
-    return res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to update staff member'
-    });
+    logger.error('Error updating staff member', error, { staffId: req.params.id, userId: req.user?.id });
+    return ApiResponseHelper.error(res, error.message || 'Failed to update staff member', 500, error);
   }
 });
 

@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { pool } from "../config/database";
 import { authenticateAnyToken } from "../middleware/auth";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -55,19 +57,13 @@ router.get(
       const { productId, date } = req.query;
 
       if (!productId || !date) {
-        return res.status(400).json({
-          success: false,
-          message: "productId and date are required",
-        });
+        return ApiResponseHelper.validationError(res, "productId and date are required");
       }
 
       // Validate date format (YYYY-MM-DD)
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(date as string)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid date format. Expected YYYY-MM-DD",
-        });
+        return ApiResponseHelper.validationError(res, "Invalid date format. Expected YYYY-MM-DD");
       }
 
       // Check if date is in the past
@@ -77,10 +73,7 @@ router.get(
       selectedDate.setHours(0, 0, 0, 0);
 
       if (selectedDate < today) {
-        return res.status(400).json({
-          success: false,
-          message: "Cannot book reservations for past dates",
-        });
+        return ApiResponseHelper.validationError(res, "Cannot book reservations for past dates");
       }
 
       // Generate all possible time slots (9:00 AM to 6:00 PM)
@@ -110,20 +103,13 @@ router.get(
         (slot) => !bookedTimeSlots.includes(slot)
       );
 
-      return res.json({
-        success: true,
-        data: {
-          availableTimeSlots,
-          bookedTimeSlots,
-        },
+      return ApiResponseHelper.success(res, {
+        availableTimeSlots,
+        bookedTimeSlots,
       });
     } catch (error) {
-      console.error("Error fetching available time slots:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to fetch available time slots",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("Error fetching available time slots", error, { productId: req.query.productId, date: req.query.date });
+      return ApiResponseHelper.error(res, "Failed to fetch available time slots", 500, error);
     }
   }
 );
