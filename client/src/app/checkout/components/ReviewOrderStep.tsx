@@ -16,8 +16,6 @@ interface ReviewOrderStepProps {
     zipCode: string;
     country: string;
   } | undefined;
-  guestEmail?: string;
-  guestFullName?: string;
   isAuthenticated: boolean;
   onPlaceOrder: () => void;
   onBack: () => void;
@@ -28,8 +26,6 @@ interface ReviewOrderStepProps {
 export default function ReviewOrderStep({
   items,
   shippingAddress,
-  guestEmail,
-  guestFullName,
   isAuthenticated,
   onPlaceOrder,
   isProcessing,
@@ -58,7 +54,7 @@ export default function ReviewOrderStep({
         {shippingAddress && (
           <div className="text-sm text-gray-600">
             <p className="font-medium text-gray-900">
-              {isAuthenticated ? shippingAddress.fullName : guestFullName || shippingAddress.fullName}
+              {shippingAddress.fullName}
             </p>
             <p>{shippingAddress.streetAddress}</p>
             {shippingAddress.aptNumber && <p>{shippingAddress.aptNumber}</p>}
@@ -66,9 +62,6 @@ export default function ReviewOrderStep({
               {shippingAddress.city}, {shippingAddress.stateProvince} {shippingAddress.zipCode}
             </p>
             <p>{shippingAddress.country}</p>
-            {!isAuthenticated && guestEmail && (
-              <p className="mt-2 text-gray-500">Email: {guestEmail}</p>
-            )}
           </div>
         )}
       </div>
@@ -86,7 +79,8 @@ export default function ReviewOrderStep({
             </button>
           )}
         </div>
-        <p className="text-sm text-gray-600">Pay with Stripe</p>
+        <p className="text-sm text-gray-600">Credit or Debit Card</p>
+        <p className="text-xs text-gray-500 mt-1">Payment already processed</p>
       </div>
 
       {/* Items Review */}

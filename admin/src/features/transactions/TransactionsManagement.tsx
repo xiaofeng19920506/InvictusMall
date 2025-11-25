@@ -28,6 +28,7 @@ const TransactionsManagement: React.FC = () => {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<TransactionViewMode>('stripe');
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date>(new Date());
   const [filters, setFilters] = useState<TransactionFilters>({
     limit: 50,
     offset: 0,
@@ -37,13 +38,13 @@ const TransactionsManagement: React.FC = () => {
     type?: 'charge' | 'balance_transaction' | 'payment_intent';
     starting_after?: string;
   }>({
-    limit: 50,
-    type: 'charge',
+    limit: 100, // Increased limit to get more transactions
+    type: 'payment_intent', // Default to payment_intent since we're using Payment Intents now
   });
   const [selectedStore, setSelectedStore] = useState<string>("");
   const [selectedType, setSelectedType] = useState<string>("");
   const [selectedStatus, setSelectedStatus] = useState<string>("");
-  const [stripeType, setStripeType] = useState<'charge' | 'balance_transaction' | 'payment_intent'>('charge');
+  const [stripeType, setStripeType] = useState<'charge' | 'balance_transaction' | 'payment_intent'>('payment_intent');
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -125,6 +126,9 @@ const TransactionsManagement: React.FC = () => {
         // If no promises, still wait a bit to show loading state
         await new Promise(resolve => setTimeout(resolve, 100));
       }
+      
+      // Update last refresh time
+      setLastRefreshTime(new Date());
     } catch (error) {
       console.error("Error loading transactions:", error);
     } finally {
@@ -455,16 +459,23 @@ const TransactionsManagement: React.FC = () => {
               <option value="both">{t("transactions.allTransactions") || "All Transactions"}</option>
             </select>
           </div>
-          <button
-            className={styles.refreshButton}
-            onClick={loadAllTransactions}
-            disabled={loading}
-          >
-            <RefreshCw
-              className={`${styles.refreshIcon} ${loading ? styles.spinning : ""}`}
-            />
-            {t("transactions.refresh") || "Refresh"}
-          </button>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            {lastRefreshTime && (
+              <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                {t("transactions.lastRefresh") || "Last refresh:"} {lastRefreshTime.toLocaleTimeString()}
+              </span>
+            )}
+            <button
+              className={styles.refreshButton}
+              onClick={loadAllTransactions}
+              disabled={loading}
+            >
+              <RefreshCw
+                className={`${styles.refreshIcon} ${loading ? styles.spinning : ""}`}
+              />
+              {t("transactions.refresh") || "Refresh"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -583,15 +594,15 @@ const TransactionsManagement: React.FC = () => {
                 value={stripeType}
                 onChange={(e) => {
                   setStripeType(e.target.value as any);
-                  setStripeFilters({ ...stripeFilters, type: e.target.value as any });
+                  setStripeFilters({ ...stripeFilters, type: e.target.value as any, starting_after: undefined }); // Reset pagination when changing type
                 }}
               >
+                <option value="payment_intent">
+                  {t("transactions.stripeTypes.paymentIntent") || "Payment Intents"}
+                </option>
                 <option value="charge">{t("transactions.stripeTypes.charge") || "Charges"}</option>
                 <option value="balance_transaction">
                   {t("transactions.stripeTypes.balanceTransaction") || "Balance Transactions"}
-                </option>
-                <option value="payment_intent">
-                  {t("transactions.stripeTypes.paymentIntent") || "Payment Intents"}
                 </option>
               </select>
             </div>

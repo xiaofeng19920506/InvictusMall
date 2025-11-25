@@ -16,15 +16,13 @@ export class CategoryModel {
   }
 
   /**
-   * Generate slug from name
+   * Generate slug from name (preserves Chinese characters and other Unicode characters)
    */
   private generateSlug(name: string): string {
     return name
-      .toLowerCase()
       .trim()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/[\s_-]+/g, '-')  // Replace spaces, underscores, and multiple dashes with single dash
+      .replace(/^-+|-+$/g, '');  // Remove leading/trailing dashes
   }
 
   /**
@@ -63,10 +61,12 @@ export class CategoryModel {
       const slugInput = data.slug || this.generateSlug(data.name);
       
       // Parse multiple slugs (space-separated)
+      // Keep each identifier as-is, preserving Chinese and Unicode characters
       const slugs = slugInput.trim().split(/\s+/).map(s => {
         const trimmed = s.trim();
-        return trimmed ? this.generateSlug(trimmed) : null;
-      }).filter(s => s !== null) as string[];
+        // Only clean up spaces/underscores within the identifier, but preserve the identifier itself
+        return trimmed ? trimmed.replace(/[\s_]+/g, '-').replace(/^-+|-+$/g, '') : null;
+      }).filter(s => s !== null && s.length > 0) as string[];
       
       if (slugs.length === 0) {
         throw new Error('At least one slug is required');
@@ -74,7 +74,7 @@ export class CategoryModel {
       
       const slug = slugs.join(' '); // Store as space-separated string
 
-      // Check if any of the slugs already exists
+      // Check if any of the slugs already exists (case-insensitive for ASCII, exact for Unicode)
       for (const singleSlug of slugs) {
         const existing = await this.findBySlug(singleSlug);
         if (existing) {
@@ -158,11 +158,13 @@ export class CategoryModel {
         }
       } else if (data.slug) {
         // Parse multiple slugs (space-separated)
+        // Keep each identifier as-is, preserving Chinese and Unicode characters
         const slugInput = data.slug.trim();
         const slugs = slugInput.split(/\s+/).map(s => {
           const trimmed = s.trim();
-          return trimmed ? this.generateSlug(trimmed) : null;
-        }).filter(s => s !== null) as string[];
+          // Only clean up spaces/underscores within the identifier, but preserve the identifier itself
+          return trimmed ? trimmed.replace(/[\s_]+/g, '-').replace(/^-+|-+$/g, '') : null;
+        }).filter(s => s !== null && s.length > 0) as string[];
         
         if (slugs.length === 0) {
           throw new Error('At least one slug is required');
@@ -171,10 +173,26 @@ export class CategoryModel {
         slug = slugs.join(' '); // Store as space-separated string
         
         // Check if any of the new slugs conflict with other categories
+        // Get existing slugs for this category to exclude from conflict check
+        const existingSlugs = existing.slug.split(/\s+/).map((s: string) => s.trim());
+        
         for (const singleSlug of slugs) {
-          const existingWithSlug = await this.findBySlug(singleSlug);
-          if (existingWithSlug && existingWithSlug.id !== id) {
-            throw new Error(`Category slug "${singleSlug}" already exists`);
+          // Only check conflict if this slug is not already in the existing category
+          // Use exact match for Unicode (like Chinese), case-insensitive for ASCII
+          const isExistingSlug = existingSlugs.some(existingSlug => {
+            // For ASCII, do case-insensitive comparison
+            if (/^[\x00-\x7F]*$/.test(existingSlug) && /^[\x00-\x7F]*$/.test(singleSlug)) {
+              return existingSlug.toLowerCase() === singleSlug.toLowerCase();
+            }
+            // For Unicode (like Chinese), do exact match
+            return existingSlug === singleSlug;
+          });
+          
+          if (!isExistingSlug) {
+            const existingWithSlug = await this.findBySlug(singleSlug);
+            if (existingWithSlug && existingWithSlug.id !== id) {
+              throw new Error(`Category slug "${singleSlug}" already exists`);
+            }
           }
         }
       }
@@ -280,10 +298,12 @@ export class CategoryModel {
 
   /**
    * Find category by slug (checks all slugs in space-separated slug field)
+   * Supports both ASCII (case-insensitive) and Unicode (exact match)
    */
   async findBySlug(slug: string): Promise<Category | null> {
-    // Normalize the search slug
-    const normalizedSlug = slug.trim().toLowerCase();
+    const searchSlug = slug.trim();
+    const isASCII = /^[\x00-\x7F]*$/.test(searchSlug);
+    const normalizedSlug = isASCII ? searchSlug.toLowerCase() : searchSlug;
     
     // Get all categories and check if any contains the slug
     // Since slug can contain multiple space-separated values, we need to check each one
@@ -297,19 +317,29 @@ export class CategoryModel {
     `;
 
     // Search for categories that might contain this slug
-    const searchPattern = `%${normalizedSlug}%`;
-    const [rows] = await this.pool.execute(query, [searchPattern, normalizedSlug]);
+    const searchPattern = `%${searchSlug}%`;
+    const [rows] = await this.pool.execute(query, [searchPattern, searchSlug]);
     const categories = rows as any[];
 
     if (categories.length === 0) {
       return null;
     }
 
-    // Check if any of the slugs in the category match exactly
+    // Check if any of the slugs in the category match
     for (const row of categories) {
-      const categorySlugs = row.slug.split(/\s+/).map((s: string) => s.trim().toLowerCase());
-      if (categorySlugs.includes(normalizedSlug)) {
-        return this.mapRowToCategory(row);
+      const categorySlugs = row.slug.split(/\s+/).map((s: string) => s.trim());
+      for (const categorySlug of categorySlugs) {
+        // For ASCII, do case-insensitive comparison
+        if (isASCII && /^[\x00-\x7F]*$/.test(categorySlug)) {
+          if (categorySlug.toLowerCase() === normalizedSlug) {
+            return this.mapRowToCategory(row);
+          }
+        } else {
+          // For Unicode (like Chinese), do exact match
+          if (categorySlug === searchSlug) {
+            return this.mapRowToCategory(row);
+          }
+        }
       }
     }
 

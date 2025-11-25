@@ -1,5 +1,6 @@
 import { Order } from "@/lib/server-api";
 import Link from "next/link";
+import { getImageUrl } from "@/utils/imageUtils";
 import {
   getOrderStatusBadgeStyle,
   getOrderStatusLabel,
@@ -75,12 +76,21 @@ export default function OrderDetailInfo({ order }: OrderDetailInfoProps) {
               className="flex items-center justify-between border-b border-gray-200 pb-4 last:border-0 last:pb-0"
             >
               <div className="flex items-center space-x-4">
-                {item.productImage && (
+                {item.productImage ? (
                   <img
-                    src={item.productImage}
+                    src={getImageUrl(item.productImage)}
                     alt={item.productName}
                     className="w-20 h-20 object-cover rounded"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = "/placeholder/product.png";
+                    }}
                   />
+                ) : (
+                  <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
+                    <span className="text-gray-400 text-xs">No Image</span>
+                  </div>
                 )}
                 <div>
                   <p className="font-medium text-gray-900">
@@ -92,6 +102,30 @@ export default function OrderDetailInfo({ order }: OrderDetailInfoProps) {
                   <p className="text-sm text-gray-600">
                     ${item.price.toFixed(2)} each
                   </p>
+                  {(item as any).isReservation && (item as any).reservationDate && (item as any).reservationTime && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      <p>
+                        📅 {new Date((item as any).reservationDate).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
+                      <p>
+                        🕐 {new Date(`2000-01-01T${(item as any).reservationTime}`).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          hour12: true
+                        })}
+                      </p>
+                      {(item as any).reservationNotes && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          Notes: {(item as any).reservationNotes}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <p className="text-lg font-semibold text-gray-900">

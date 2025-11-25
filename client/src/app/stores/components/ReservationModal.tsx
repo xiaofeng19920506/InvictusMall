@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, FormEvent, useMemo } from "react";
+import { useState, FormEvent, useEffect, useRef } from "react";
 import { Product } from "@/services/product";
 import { Store } from "@/services/api";
 import { useCart } from "@/contexts/CartContext";
+import apiService from "@/services/api";
 
 interface ReservationModalProps {
   service: Product;
@@ -12,16 +13,6 @@ interface ReservationModalProps {
   onClose: () => void;
   onReservationComplete?: () => void;
 }
-
-// Generate time slots from 9 AM to 6 PM in hourly intervals
-const generateTimeSlots = (): string[] => {
-  const slots: string[] = [];
-  for (let hour = 9; hour <= 18; hour++) {
-    const timeString = `${hour.toString().padStart(2, "0")}:00`;
-    slots.push(timeString);
-  }
-  return slots;
-};
 
 export default function ReservationModal({
   service,
@@ -39,8 +30,78 @@ export default function ReservationModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [added, setAdded] = useState(false);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
+  const [loadingTimeSlots, setLoadingTimeSlots] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
 
-  const timeSlots = useMemo(() => generateTimeSlots(), []);
+  // Handle outside click to close modal
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isOpen &&
+        backdropRef.current &&
+        event.target === backdropRef.current &&
+        !modalRef.current?.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, onClose]);
+
+  // Fetch available time slots when date changes
+  useEffect(() => {
+    const fetchAvailableTimeSlots = async () => {
+      if (!formData.date || !service.id) {
+        setAvailableTimeSlots([]);
+        setFormData((prev) => ({ ...prev, timeSlot: "" }));
+        return;
+      }
+
+      setLoadingTimeSlots(true);
+      setError("");
+
+      try {
+        const response = await apiService.getAvailableTimeSlots(
+          service.id,
+          formData.date
+        );
+
+        if (response.success && response.data) {
+          setAvailableTimeSlots(response.data.availableTimeSlots);
+          // Reset time slot selection if the selected slot is no longer available
+          if (
+            formData.timeSlot &&
+            !response.data.availableTimeSlots.includes(formData.timeSlot)
+          ) {
+            setFormData((prev) => ({ ...prev, timeSlot: "" }));
+          }
+        } else {
+          setError(response.message || "Failed to load available time slots");
+          setAvailableTimeSlots([]);
+        }
+      } catch (err: any) {
+        console.error("Error fetching available time slots:", err);
+        setError("Failed to load available time slots. Please try again.");
+        setAvailableTimeSlots([]);
+      } finally {
+        setLoadingTimeSlots(false);
+      }
+    };
+
+    fetchAvailableTimeSlots();
+  }, [formData.date, service.id]);
 
   if (!isOpen) return null;
 
@@ -109,8 +170,20 @@ export default function ReservationModal({
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div 
+      ref={backdropRef}
+      className="absolute inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4"
+      onClick={(e) => {
+        if (e.target === backdropRef.current) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        ref={modalRef}
+        className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">Make Reservation</h2>
           <button
@@ -175,10 +248,19 @@ export default function ReservationModal({
                   required
                   value={formData.timeSlot}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  disabled={!formData.date || loadingTimeSlots || availableTimeSlots.length === 0}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <option value="">Select a time slot</option>
-                  {timeSlots.map((slot) => (
+                  <option value="">
+                    {!formData.date
+                      ? "Please select a date first"
+                      : loadingTimeSlots
+                      ? "Loading available slots..."
+                      : availableTimeSlots.length === 0
+                      ? "No available time slots for this date"
+                      : "Select a time slot"}
+                  </option>
+                  {availableTimeSlots.map((slot) => (
                     <option key={slot} value={slot}>
                       {new Date(`2000-01-01T${slot}`).toLocaleTimeString([], {
                         hour: "2-digit",
@@ -187,6 +269,11 @@ export default function ReservationModal({
                     </option>
                   ))}
                 </select>
+                {formData.date && availableTimeSlots.length === 0 && !loadingTimeSlots && (
+                  <p className="mt-1 text-sm text-amber-600">
+                    All time slots are booked for this date. Please select another date.
+                  </p>
+                )}
               </div>
 
               <div>

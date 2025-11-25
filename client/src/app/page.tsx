@@ -1,4 +1,5 @@
 import HomeContent from "./components/HomeContent";
+import Footer from "./components/Footer";
 import { fetchStoresServer, Store } from "@/lib/server-api";
 import type { Metadata } from "next";
 
@@ -48,11 +49,14 @@ export default async function Home({ searchParams }: HomeProps) {
   }
 
   return (
+    <>
       <HomeContent 
         initialStores={initialStores}
         initialSearch={params.search || ''}
         initialCategory={params.category || 'All'}
         initialSearchType={params.searchType || 'All'}
       />
+      <Footer />
+    </>
   );
 }

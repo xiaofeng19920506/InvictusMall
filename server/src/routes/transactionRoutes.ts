@@ -576,14 +576,21 @@ async function getStoreIdFromCharge(charge: Stripe.Charge): Promise<string | nul
         : charge.payment_intent.id;
       
       try {
+        // First, try to find orders directly by payment_intent_id
+        const orders = await orderModel.getOrdersByPaymentIntentId(paymentIntentId);
+        if (orders.length > 0 && orders[0]) {
+          return orders[0].storeId;
+        }
+        
+        // Fallback: try to get from payment intent metadata
         const paymentIntent = await stripeClient!.paymentIntents.retrieve(paymentIntentId);
         
-        // Check payment intent metadata for storeId or session ID
+        // Check payment intent metadata for storeId
         if (paymentIntent.metadata?.storeId) {
           return paymentIntent.metadata.storeId;
         }
         
-        // Try to get session ID from payment intent metadata
+        // Fallback: try to get session ID from payment intent metadata (for backward compatibility)
         let sessionId = paymentIntent.metadata?.sessionId || paymentIntent.metadata?.checkout_session_id;
         
         // If no session ID in metadata, try to find it by listing checkout sessions with this payment intent
@@ -602,10 +609,10 @@ async function getStoreIdFromCharge(charge: Stripe.Charge): Promise<string | nul
         }
         
         if (sessionId) {
-          const orders = await orderModel.getOrdersByStripeSession(sessionId);
-          if (orders.length > 0 && orders[0]) {
+          const sessionOrders = await orderModel.getOrdersByStripeSession(sessionId);
+          if (sessionOrders.length > 0 && sessionOrders[0]) {
             // Return the first order's storeId (if multiple orders, they should have same storeId)
-            return orders[0].storeId;
+            return sessionOrders[0].storeId;
           }
         }
       } catch (piError) {
@@ -791,36 +798,43 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
             chargeIds.push(typeof pi.latest_charge === 'string' ? pi.latest_charge : pi.latest_charge.id);
           }
 
-          // Get storeId from payment intent metadata or by looking up orders via session
+          // Get storeId from payment intent metadata or by looking up orders via payment_intent_id
           let storeId: string | null = null;
           if (pi.metadata?.storeId) {
             storeId = pi.metadata.storeId;
           } else {
-            let sessionId = pi.metadata?.sessionId || pi.metadata?.checkout_session_id;
-            
-            // If no session ID in metadata, try to find it by listing checkout sessions with this payment intent
-            if (!sessionId && stripeClient) {
-              try {
-                const sessions = await stripeClient.checkout.sessions.list({
-                  payment_intent: pi.id,
-                  limit: 1,
-                });
-                if (sessions.data.length > 0 && sessions.data[0]) {
-                  sessionId = sessions.data[0].id;
-                }
-              } catch (sessionError) {
-                console.error('Error looking up checkout session for payment intent:', sessionError);
+            // Try to find orders by payment_intent_id directly
+            try {
+              const orders = await orderModel.getOrdersByPaymentIntentId(pi.id);
+              if (orders.length > 0 && orders[0]) {
+                storeId = orders[0].storeId;
               }
-            }
-            
-            if (sessionId) {
-              try {
-                const orders = await orderModel.getOrdersByStripeSession(sessionId);
-                if (orders.length > 0 && orders[0]) {
-                  storeId = orders[0].storeId;
+            } catch (error) {
+              console.error('Error getting orders by payment intent ID:', error);
+              // Fallback: try to find via checkout session (for backward compatibility)
+              let sessionId = pi.metadata?.sessionId || pi.metadata?.checkout_session_id;
+              if (!sessionId && stripeClient) {
+                try {
+                  const sessions = await stripeClient.checkout.sessions.list({
+                    payment_intent: pi.id,
+                    limit: 1,
+                  });
+                  if (sessions.data.length > 0 && sessions.data[0]) {
+                    sessionId = sessions.data[0].id;
+                  }
+                } catch (sessionError) {
+                  console.error('Error looking up checkout session for payment intent:', sessionError);
                 }
-              } catch (error) {
-                console.error('Error getting orders by session:', error);
+              }
+              if (sessionId) {
+                try {
+                  const orders = await orderModel.getOrdersByStripeSession(sessionId);
+                  if (orders.length > 0 && orders[0]) {
+                    storeId = orders[0].storeId;
+                  }
+                } catch (sessionError) {
+                  console.error('Error getting orders by session:', sessionError);
+                }
               }
             }
           }
@@ -830,15 +844,36 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
             return null;
           }
 
+          // Map Stripe Payment Intent status to our transaction status
+          // Stripe Payment Intent statuses: requires_payment_method, requires_confirmation, requires_action, 
+          // requires_capture, processing, succeeded, canceled
+          let transactionStatus: 'pending' | 'completed' | 'failed' | 'cancelled';
+          if (pi.status === 'succeeded') {
+            transactionStatus = 'completed';
+          } else if (pi.status === 'canceled') {
+            transactionStatus = 'cancelled';
+          } else if (
+            pi.status === 'processing' || 
+            pi.status === 'requires_confirmation' || 
+            pi.status === 'requires_payment_method' || 
+            pi.status === 'requires_action' || 
+            pi.status === 'requires_capture'
+          ) {
+            // All intermediate states should be marked as pending, not failed
+            transactionStatus = 'pending';
+          } else {
+            // For unknown states, default to pending to avoid false negatives
+            // Only explicitly failed states should be marked as failed
+            transactionStatus = 'pending';
+          }
+
           return {
             id: pi.id,
             stripeType: 'payment_intent',
             storeId: storeId || null, // Add storeId to the transaction
             amount: pi.amount / 100, // Convert from cents to dollars
             currency: pi.currency.toUpperCase(),
-            status: pi.status === 'succeeded' ? 'completed' : 
-                    pi.status === 'processing' || pi.status === 'requires_confirmation' ? 'pending' : 
-                    pi.status === 'canceled' ? 'cancelled' : 'failed',
+            status: transactionStatus,
             description: pi.description || `Payment intent: ${pi.id}`,
             customerId: pi.customer || undefined,
             paymentMethod: pi.payment_method_types[0] || 'unknown',
@@ -847,6 +882,7 @@ router.get('/stripe/list', authenticateStaffToken, async (req: AuthenticatedRequ
               stripePaymentIntentId: pi.id,
               clientSecret: pi.client_secret,
               charges: chargeIds,
+              originalStatus: pi.status, // Include original Stripe status for debugging
             },
             createdAt: new Date(pi.created * 1000).toISOString(),
             updatedAt: new Date(pi.created * 1000).toISOString(), // Use created since updated may not exist

@@ -4,7 +4,7 @@ import {
   fetchShippingAddressesServer,
   ShippingAddress,
 } from "@/lib/server-api";
-import { createStripeCheckoutSessionAction, createGuestCheckoutSessionAction } from "./actions";
+import { createStripeCheckoutSessionAction } from "./actions";
 
 export default async function CartPage() {
   const cookieStore = await cookies();
@@ -38,7 +38,6 @@ export default async function CartPage() {
         addresses={addresses}
         defaultAddressId={addresses.find((address) => address.isDefault)?.id}
         beginCheckout={createStripeCheckoutSessionAction}
-        beginGuestCheckout={createGuestCheckoutSessionAction}
       />
     </div>
   );

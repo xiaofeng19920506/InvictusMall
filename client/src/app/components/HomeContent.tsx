@@ -6,7 +6,6 @@ import Header from "@/components/common/Header";
 import StoreGrid from "../stores/components/StoreGrid";
 import { useRealTimeStores } from "@/hooks/useRealTimeStores";
 import { Store } from "@/services/api";
-import Footer from "./Footer";
 
 interface HomeContentProps {
   initialStores: Store[];
@@ -138,8 +137,6 @@ export default function HomeContent({
           loading={isLoading}
         />
       </main>
-
-      <Footer />
     </div>
   );
 }
