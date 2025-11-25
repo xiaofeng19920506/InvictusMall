@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { ActivityLogModel, ActivityLog } from '../models/ActivityLogModel';
+import { ApiResponseHelper } from '../utils/apiResponse';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -26,17 +28,10 @@ router.get('/', async (req: Request, res: Response) => {
     const limit = limitParam && !isNaN(parseInt(limitParam)) ? parseInt(limitParam) : 20;
     const logs = await ActivityLogModel.getRecentLogs(limit);
     
-    res.json({
-      success: true,
-      data: logs,
-      count: logs.length
-    });
+    return ApiResponseHelper.successWithCount(res, logs, logs.length);
   } catch (error) {
-    console.error('Error fetching activity logs:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch activity logs'
-    });
+    logger.error('Error fetching activity logs', error);
+    return ApiResponseHelper.error(res, 'Failed to fetch activity logs', 500, error);
   }
 });
 
@@ -67,26 +62,15 @@ router.get('/store/:storeId', async (req: Request, res: Response) => {
   try {
     const { storeId } = req.params;
     if (!storeId) {
-      res.status(400).json({
-        success: false,
-        message: 'Store ID is required'
-      });
-      return;
+      return ApiResponseHelper.validationError(res, 'Store ID is required');
     }
     const limit = parseInt(req.query.limit as string) || 10;
     const logs = await ActivityLogModel.getLogsByStoreId(storeId, limit);
     
-    res.json({
-      success: true,
-      data: logs,
-      count: logs.length
-    });
+    return ApiResponseHelper.successWithCount(res, logs, logs.length);
   } catch (error) {
-    console.error('Error fetching store activity logs:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch store activity logs'
-    });
+    logger.error('Error fetching store activity logs', error, { storeId: req.params.storeId });
+    return ApiResponseHelper.error(res, 'Failed to fetch store activity logs', 500, error);
   }
 });
 
@@ -118,35 +102,20 @@ router.get('/type/:type', async (req: Request, res: Response) => {
   try {
     const { type } = req.params;
     if (!type) {
-      res.status(400).json({
-        success: false,
-        message: 'Activity type is required'
-      });
-      return;
+      return ApiResponseHelper.validationError(res, 'Activity type is required');
     }
     const limit = parseInt(req.query.limit as string) || 10;
     
     if (!['store_created', 'store_updated', 'store_deleted', 'store_verified'].includes(type)) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid activity type'
-      });
-      return;
+      return ApiResponseHelper.validationError(res, 'Invalid activity type');
     }
     
     const logs = await ActivityLogModel.getLogsByType(type as ActivityLog['type'], limit);
     
-    res.json({
-      success: true,
-      data: logs,
-      count: logs.length
-    });
+    return ApiResponseHelper.successWithCount(res, logs, logs.length);
   } catch (error) {
-    console.error('Error fetching activity logs by type:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch activity logs by type'
-    });
+    logger.error('Error fetching activity logs by type', error, { type: req.params.type });
+    return ApiResponseHelper.error(res, 'Failed to fetch activity logs by type', 500, error);
   }
 });
 

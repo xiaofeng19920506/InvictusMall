@@ -4,6 +4,8 @@ import {
   authenticateStaffToken,
   AuthenticatedRequest,
 } from "../middleware/auth";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 
@@ -51,40 +53,37 @@ const router = Router();
 router.get("/status", (req: Request, res: Response) => {
   const memoryUsage = process.memoryUsage();
 
-  res.json({
-    success: true,
-    data: {
-      apps: [
-        {
-          name: "Backend API",
-          url: process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`,
-          status: "online",
-          description: "Express.js API Server",
-        },
-        {
-          name: "Frontend Store",
-          url: "http://localhost:3000",
-          status: "external",
-          description: "Next.js Customer Interface",
-        },
-        {
-          name: "Admin Dashboard",
-          url: "http://localhost:3003",
-          status: "external",
-          description: "React Admin Panel",
-        },
-      ],
-      server: {
-        uptime: process.uptime(),
-        memory: {
-          used: Math.round(memoryUsage.heapUsed / 1024 / 1024),
-          total: Math.round(memoryUsage.heapTotal / 1024 / 1024),
-          external: Math.round(memoryUsage.external / 1024 / 1024),
-        },
-        timestamp: new Date().toISOString(),
-        nodeVersion: process.version,
-        platform: process.platform,
+  return ApiResponseHelper.success(res, {
+    apps: [
+      {
+        name: "Backend API",
+        url: process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`,
+        status: "online",
+        description: "Express.js API Server",
       },
+      {
+        name: "Frontend Store",
+        url: "http://localhost:3000",
+        status: "external",
+        description: "Next.js Customer Interface",
+      },
+      {
+        name: "Admin Dashboard",
+        url: "http://localhost:3003",
+        status: "external",
+        description: "React Admin Panel",
+      },
+    ],
+    server: {
+      uptime: process.uptime(),
+      memory: {
+        used: Math.round(memoryUsage.heapUsed / 1024 / 1024),
+        total: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+        external: Math.round(memoryUsage.external / 1024 / 1024),
+      },
+      timestamp: new Date().toISOString(),
+      nodeVersion: process.version,
+      platform: process.platform,
     },
   });
 });
@@ -100,38 +99,35 @@ router.get("/status", (req: Request, res: Response) => {
  *         description: Apps information retrieved successfully
  */
 router.get("/apps", (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    data: [
-        {
-          name: "Invictus Mall API",
-          type: "backend",
-          url: process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`,
-          endpoints: {
-          health: "/health",
-          stores: "/api/stores",
-          docs: "/api-docs",
-        },
-        status: "online",
+  return ApiResponseHelper.success(res, [
+    {
+      name: "Invictus Mall API",
+      type: "backend",
+      url: process.env.API_URL || `http://localhost:${process.env.PORT || 3001}`,
+      endpoints: {
+        health: "/health",
+        stores: "/api/stores",
+        docs: "/api-docs",
       },
-      {
-        name: "Invictus Mall Store",
-        type: "frontend",
-        url: "http://localhost:3000",
-        description: "Customer shopping interface",
-        features: ["Store browsing", "Search", "Categories"],
-        status: "external",
-      },
-      {
-        name: "Invictus Mall Admin",
-        type: "admin",
-        url: "http://localhost:3003",
-        description: "Store management dashboard",
-        features: ["Store CRUD", "Analytics", "System monitoring"],
-        status: "external",
-      },
-    ],
-  });
+      status: "online",
+    },
+    {
+      name: "Invictus Mall Store",
+      type: "frontend",
+      url: "http://localhost:3000",
+      description: "Customer shopping interface",
+      features: ["Store browsing", "Search", "Categories"],
+      status: "external",
+    },
+    {
+      name: "Invictus Mall Admin",
+      type: "admin",
+      url: "http://localhost:3003",
+      description: "Store management dashboard",
+      features: ["Store CRUD", "Analytics", "System monitoring"],
+      status: "external",
+    },
+  ]);
 });
 
 /**
@@ -167,10 +163,7 @@ router.get(
   authenticateStaffToken,
   (req: AuthenticatedRequest, res: Response) => {
     const status = accountCleanupService.getStatus();
-    res.json({
-      success: true,
-      data: status,
-    });
+    return ApiResponseHelper.success(res, status);
   }
 );
 
@@ -210,17 +203,14 @@ router.post(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const stats = await accountCleanupService.cleanupUnactivatedAccounts();
-      res.json({
-        success: true,
-        data: stats,
-        message: `Cleanup completed: ${stats.deletedCount} account(s) deleted`,
-      });
+      return ApiResponseHelper.success(
+        res,
+        stats,
+        `Cleanup completed: ${stats.deletedCount} account(s) deleted`
+      );
     } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to run cleanup",
-        error: error.message,
-      });
+      logger.error("Failed to run cleanup", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to run cleanup", 500, error);
     }
   }
 );

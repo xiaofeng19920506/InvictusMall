@@ -5,6 +5,8 @@ import {
   AuthenticatedRequest,
 } from '../middleware/auth';
 import { handleETagValidation } from '../utils/cacheUtils';
+import { ApiResponseHelper } from '../utils/apiResponse';
+import { logger } from '../utils/logger';
 
 const router = Router();
 const categoryModel = new CategoryModel();
@@ -61,28 +63,19 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
       const categories = await categoryModel.buildTree({
         includeInactive: includeInactive === 'true',
       });
-      return res.json({
-        success: true,
-        data: categories,
-      });
+      return ApiResponseHelper.success(res, categories);
     }
 
     if (level) {
       // Filter by level
       const categories = await categoryModel.findByLevel(parseInt(level as string));
-      return res.json({
-        success: true,
-        data: categories,
-      });
+      return ApiResponseHelper.success(res, categories);
     }
 
     if (parentId) {
       // Filter by parent
       const categories = await categoryModel.findByParentId(parentId as string);
-      return res.json({
-        success: true,
-        data: categories,
-      });
+      return ApiResponseHelper.success(res, categories);
     }
 
     // Return all categories (flat list) - with optional pagination
@@ -92,29 +85,16 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
         limit: parseInt(limit as string) || undefined,
         offset: offset !== undefined ? parseInt(offset as string) : undefined,
       });
-      return res.json({
-        success: true,
-        data: categories,
-        count: categories.length,
-        total,
-      });
+      return ApiResponseHelper.successWithPagination(res, categories, total);
     }
 
     const categories = await categoryModel.findAll({
       includeInactive: includeInactive === 'true',
     });
-    return res.json({
-      success: true,
-      data: categories,
-      count: categories.length,
-    });
+    return ApiResponseHelper.successWithCount(res, categories, categories.length);
   } catch (error) {
-    console.error('Get categories error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve categories',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    logger.error('Get categories error', error);
+    return ApiResponseHelper.error(res, 'Failed to retrieve categories', 500, error);
   }
 });
 
@@ -142,10 +122,7 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: 'Category ID is required',
-      });
+      return ApiResponseHelper.validationError(res, 'Category ID is required');
     }
 
     // Generate ETag based on last modified timestamp
@@ -160,23 +137,13 @@ router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
     const category = await categoryModel.findById(id);
 
     if (!category) {
-      return res.status(404).json({
-        success: false,
-        message: 'Category not found',
-      });
+      return ApiResponseHelper.notFound(res, 'Category');
     }
 
-    return res.json({
-      success: true,
-      data: category,
-    });
+    return ApiResponseHelper.success(res, category);
   } catch (error) {
-    console.error('Get category error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve category',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    logger.error('Get category error', error, { categoryId: req.params.id });
+    return ApiResponseHelper.error(res, 'Failed to retrieve category', 500, error);
   }
 });
 
@@ -380,38 +347,22 @@ router.delete(
     try {
       const { id } = req.params;
       if (!id) {
-        return res.status(400).json({
-          success: false,
-          message: 'Category ID is required',
-        });
+        return ApiResponseHelper.validationError(res, 'Category ID is required');
       }
       await categoryModel.delete(id);
 
-      return res.json({
-        success: true,
-        message: 'Category deleted successfully',
-      });
+      return ApiResponseHelper.success(res, null, 'Category deleted successfully');
     } catch (error) {
       if (error instanceof Error && error.message === 'Category not found') {
-        return res.status(404).json({
-          success: false,
-          message: 'Category not found',
-        });
+        return ApiResponseHelper.notFound(res, 'Category');
       }
 
       if (error instanceof Error && error.message.includes('children')) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
+        return ApiResponseHelper.error(res, error.message, 400);
       }
 
-      console.error('Delete category error:', error);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to delete category',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
+      logger.error('Delete category error', error, { categoryId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, 'Failed to delete category', 500, error);
     }
   }
 );

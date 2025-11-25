@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { BrowseHistoryModel } from "../models/BrowseHistoryModel";
 import { authenticateUserToken, AuthenticatedRequest } from "../middleware/auth";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 const historyModel = new BrowseHistoryModel();
@@ -29,14 +31,10 @@ const historyModel = new BrowseHistoryModel();
 router.get(
   "/",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       const { limit, offset } = req.query;
@@ -46,18 +44,10 @@ router.get(
         offset: offset ? parseInt(offset as string) : undefined,
       });
 
-      res.json({
-        success: true,
-        data: result.history,
-        total: result.total,
-      });
+      return ApiResponseHelper.successWithPagination(res, result.history, result.total);
     } catch (error: any) {
-      console.error("Error fetching browse history:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to fetch browse history",
-        error: error.message,
-      });
+      logger.error("Error fetching browse history", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to fetch browse history", 500, error);
     }
   }
 );
@@ -88,39 +78,24 @@ router.get(
 router.post(
   "/",
   authenticateUserToken,
-  async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.user?.id) {
-        res.status(401).json({
-          success: false,
-          message: "User authentication required",
-        });
-        return;
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
       const { productId } = req.body;
 
       if (!productId || typeof productId !== 'string') {
-        res.status(400).json({
-          success: false,
-          message: "Product ID is required",
-        });
-        return;
+        return ApiResponseHelper.validationError(res, "Product ID is required");
       }
 
       await historyModel.recordView(req.user.id, productId);
 
-      res.json({
-        success: true,
-        message: "View recorded successfully",
-      });
+      return ApiResponseHelper.success(res, null, "View recorded successfully");
     } catch (error: any) {
-      console.error("Error recording view:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to record view",
-        error: error.message,
-      });
+      logger.error("Error recording view", error, { userId: req.user?.id, productId: req.body.productId });
+      return ApiResponseHelper.error(res, "Failed to record view", 500, error);
     }
   }
 );

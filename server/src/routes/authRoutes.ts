@@ -472,47 +472,29 @@ router.post(
           dbError.code === "ENOTFOUND" ||
           dbError.code === "ETIMEDOUT"
         ) {
-          console.error(
-            "Database connection error during password setup:",
-            dbError.message
-          );
-          return res.status(503).json({
-            success: false,
-            message: "Service temporarily unavailable. Please try again later.",
-          });
+          logger.error("Database connection error during password setup", dbError, { token: req.body.token });
+          return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
         }
         throw dbError;
       }
 
       if (!verificationToken) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid verification token",
-        });
+        return ApiResponseHelper.unauthorized(res, "Invalid verification token");
       }
 
       // Check if token is expired
       if (verificationToken.expiresAt < new Date()) {
-        return res.status(401).json({
-          success: false,
-          message: "Verification token has expired",
-        });
+        return ApiResponseHelper.unauthorized(res, "Verification token has expired");
       }
 
       // Check if token is already used
       if (verificationToken.used) {
-        return res.status(401).json({
-          success: false,
-          message: "Verification token has already been used",
-        });
+        return ApiResponseHelper.unauthorized(res, "Verification token has already been used");
       }
 
       // Check if token is for email verification
       if (verificationToken.type !== "email_verification") {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid token type",
-        });
+        return ApiResponseHelper.validationError(res, "Invalid token type");
       }
 
       // Get user
@@ -527,14 +509,8 @@ router.post(
           dbError.code === "ENOTFOUND" ||
           dbError.code === "ETIMEDOUT"
         ) {
-          console.error(
-            "Database connection error during password setup:",
-            dbError.message
-          );
-          return res.status(503).json({
-            success: false,
-            message: "Service temporarily unavailable. Please try again later.",
-          });
+          logger.error("Database connection error during password setup", dbError, { token: req.body.token });
+          return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
         }
         throw dbError;
       }
@@ -550,14 +526,8 @@ router.post(
           dbError.code === "ENOTFOUND" ||
           dbError.code === "ETIMEDOUT"
         ) {
-          console.error(
-            "Database connection error during password setup:",
-            dbError.message
-          );
-          return res.status(503).json({
-            success: false,
-            message: "Service temporarily unavailable. Please try again later.",
-          });
+          logger.error("Database connection error during password setup", dbError, { token: req.body.token });
+          return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
         }
         throw dbError;
       }
@@ -597,7 +567,7 @@ router.post(
           },
         });
       } catch (logError) {
-        console.error("Failed to log password setup:", logError);
+        logger.warn("Failed to log password setup", { error: logError, userId: updatedUser.id });
         // Continue even if logging fails
       }
 
@@ -613,18 +583,14 @@ router.post(
       // Return user data without password (no token in response body)
       const { password: _, ...userWithoutPassword } = updatedUser;
 
-      return res.status(200).json({
-        success: true,
-        message: "Password setup successful! Your account is now active.",
-        user: userWithoutPassword,
-      });
+      return ApiResponseHelper.success(
+        res,
+        userWithoutPassword,
+        "Password setup successful! Your account is now active."
+      );
     } catch (error) {
-      console.error("Password setup error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to setup password",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("Password setup error", error, { token: req.body.token });
+      return ApiResponseHelper.error(res, "Failed to setup password", 500, error);
     }
   }
 );
@@ -693,14 +659,8 @@ router.get(
           dbError.code === "ENOTFOUND" ||
           dbError.code === "ETIMEDOUT"
         ) {
-          console.error(
-            "Database connection error during /me:",
-            dbError.message
-          );
-          return res.status(503).json({
-            success: false,
-            message: "Service temporarily unavailable. Please try again later.",
-          });
+          logger.error("Database connection error during /me", dbError, { userId: req.user?.id });
+          return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
         }
         throw dbError;
       }
@@ -713,12 +673,8 @@ router.get(
         user: userWithoutPassword,
       });
     } catch (error) {
-      console.error("Get profile error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to get user profile",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("Get profile error", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to get user profile", 500, error);
     }
   }
 );
@@ -780,10 +736,7 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
+      return ApiResponseHelper.validationError(res, "Email is required");
     }
 
     // Check if user exists
@@ -798,14 +751,8 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
         dbError.code === "ENOTFOUND" ||
         dbError.code === "ETIMEDOUT"
       ) {
-        console.error(
-          "Database connection error during forgot password:",
-          dbError.message
-        );
-        return res.status(503).json({
-          success: false,
-          message: "Service temporarily unavailable. Please try again later.",
-        });
+        logger.error("Database connection error during forgot password", dbError, { email: req.body.email });
+        return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
       }
       throw dbError;
     }
@@ -837,10 +784,7 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
     );
 
     if (!emailSent) {
-      return res.status(500).json({
-        success: false,
-        message: "Failed to send password reset email",
-      });
+      return ApiResponseHelper.error(res, "Failed to send password reset email", 500);
     }
 
     // Log the activity
@@ -858,21 +802,17 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
         },
       });
     } catch (logError) {
-      console.error("Failed to log password reset request:", logError);
+      logger.warn("Failed to log password reset request", { error: logError, email });
     }
 
-    return res.json({
-      success: true,
-      message:
-        "If an account with that email exists, a password reset link has been sent",
-    });
+    return ApiResponseHelper.success(
+      res,
+      null,
+      "If an account with that email exists, a password reset link has been sent"
+    );
   } catch (error) {
-    console.error("Forgot password error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to process password reset request",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    logger.error("Forgot password error", error, { email: req.body.email });
+    return ApiResponseHelper.error(res, "Failed to process password reset request", 500, error);
   }
 });
 
@@ -937,17 +877,11 @@ router.post("/reset-password", async (req: Request, res: Response) => {
     const { token, password } = req.body;
 
     if (!token || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Token and password are required",
-      });
+      return ApiResponseHelper.validationError(res, "Token and password are required");
     }
 
     if (password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 6 characters long",
-      });
+      return ApiResponseHelper.validationError(res, "Password must be at least 6 characters long");
     }
 
     // Find reset token
@@ -962,47 +896,29 @@ router.post("/reset-password", async (req: Request, res: Response) => {
         dbError.code === "ENOTFOUND" ||
         dbError.code === "ETIMEDOUT"
       ) {
-        console.error(
-          "Database connection error during password reset:",
-          dbError.message
-        );
-        return res.status(503).json({
-          success: false,
-          message: "Service temporarily unavailable. Please try again later.",
-        });
+        logger.error("Database connection error during password reset", dbError, { token });
+        return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
       }
       throw dbError;
     }
 
     if (!resetToken) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid reset token",
-      });
+      return ApiResponseHelper.unauthorized(res, "Invalid reset token");
     }
 
     // Check if token is expired
     if (resetToken.expiresAt < new Date()) {
-      return res.status(401).json({
-        success: false,
-        message: "Reset token has expired",
-      });
+      return ApiResponseHelper.unauthorized(res, "Reset token has expired");
     }
 
     // Check if token is already used
     if (resetToken.used) {
-      return res.status(401).json({
-        success: false,
-        message: "Reset token has already been used",
-      });
+      return ApiResponseHelper.unauthorized(res, "Reset token has already been used");
     }
 
     // Check if token is for password reset
     if (resetToken.type !== "password_reset") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid token type",
-      });
+      return ApiResponseHelper.validationError(res, "Invalid token type");
     }
 
     // Get user
@@ -1017,14 +933,8 @@ router.post("/reset-password", async (req: Request, res: Response) => {
         dbError.code === "ENOTFOUND" ||
         dbError.code === "ETIMEDOUT"
       ) {
-        console.error(
-          "Database connection error during password reset:",
-          dbError.message
-        );
-        return res.status(503).json({
-          success: false,
-          message: "Service temporarily unavailable. Please try again later.",
-        });
+        logger.error("Database connection error during password reset", dbError, { token });
+        return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
       }
       throw dbError;
     }
@@ -1040,14 +950,8 @@ router.post("/reset-password", async (req: Request, res: Response) => {
         dbError.code === "ENOTFOUND" ||
         dbError.code === "ETIMEDOUT"
       ) {
-        console.error(
-          "Database connection error during password reset:",
-          dbError.message
-        );
-        return res.status(503).json({
-          success: false,
-          message: "Service temporarily unavailable. Please try again later.",
-        });
+        logger.error("Database connection error during password reset", dbError, { token });
+        return ApiResponseHelper.error(res, "Service temporarily unavailable. Please try again later.", 503);
       }
       throw dbError;
     }
@@ -1069,20 +973,13 @@ router.post("/reset-password", async (req: Request, res: Response) => {
         },
       });
     } catch (logError) {
-      console.error("Failed to log password reset completion:", logError);
+      logger.warn("Failed to log password reset completion", { error: logError, userId: user.id });
     }
 
-    return res.json({
-      success: true,
-      message: "Password reset successful",
-    });
+    return ApiResponseHelper.success(res, null, "Password reset successful");
   } catch (error) {
-    console.error("Reset password error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to reset password",
-      error: error instanceof Error ? error.message : "Unknown error",
-    });
+    logger.error("Reset password error", error, { token: req.body.token });
+    return ApiResponseHelper.error(res, "Failed to reset password", 500, error);
   }
 });
 
@@ -1188,23 +1085,15 @@ router.put(
           },
         });
       } catch (logError) {
-        console.error("Failed to log profile update:", logError);
+        logger.warn("Failed to log profile update", { error: logError, userId: updatedUser.id });
       }
 
       const { password: _, ...userWithoutPassword } = updatedUser;
 
-      return res.json({
-        success: true,
-        message: "Profile updated successfully",
-        user: userWithoutPassword,
-      });
+      return ApiResponseHelper.success(res, userWithoutPassword, "Profile updated successfully");
     } catch (error) {
-      console.error("Update profile error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to update profile",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("Update profile error", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to update profile", 500, error);
     }
   }
 );
@@ -1268,10 +1157,7 @@ router.post(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "No file uploaded",
-        });
+        return ApiResponseHelper.validationError(res, "No file uploaded");
       }
 
       // Perform binary validation on the uploaded file
@@ -1282,10 +1168,7 @@ router.post(
       );
 
       if (!validation.valid) {
-        return res.status(400).json({
-          success: false,
-          message: validation.error || "Invalid image file",
-        });
+        return ApiResponseHelper.validationError(res, validation.error || "Invalid image file");
       }
 
       const userId = req.user!.id;
@@ -1315,7 +1198,7 @@ router.post(
             const baseUrl = externalUploadUrl.replace("/api/files/upload", "");
             const deleteUrl = `${baseUrl}/api/files/delete?fileName=${encodeURIComponent(imagePath)}`;
             
-            console.log(`Attempting to delete previous avatar: ${imagePath}`);
+            logger.debug(`Attempting to delete previous avatar: ${imagePath}`, { userId: currentUser.id });
             
             // Call delete API on MinIO storage service
             const deleteResponse = await fetch(deleteUrl, {
@@ -1323,24 +1206,26 @@ router.post(
             });
             
             if (deleteResponse.ok) {
-              console.log(`Successfully deleted previous avatar: ${imagePath}`);
+              logger.debug(`Successfully deleted previous avatar: ${imagePath}`, { userId: currentUser.id });
             } else {
               const errorText = await deleteResponse.text();
-              console.warn(`Failed to delete previous avatar (continuing with new upload):`, {
+              logger.warn("Failed to delete previous avatar (continuing with new upload)", {
                 path: imagePath,
                 status: deleteResponse.status,
                 error: errorText,
+                userId: currentUser.id,
               });
               // Don't fail the upload if deletion fails - just log it
             }
           } else {
-            console.log(`Skipping deletion - avatar path is not in MinIO storage: ${imagePath}`);
+            logger.debug(`Skipping deletion - avatar path is not in MinIO storage: ${imagePath}`, { userId: currentUser.id });
           }
         } catch (deleteError: any) {
           // Log error but don't fail the upload
-          console.error("Error deleting previous avatar (continuing with new upload):", {
-            error: deleteError.message,
+          logger.warn("Error deleting previous avatar (continuing with new upload)", {
+            error: deleteError,
             avatar: currentUser.avatar,
+            userId: currentUser.id,
           });
         }
       }
@@ -1359,8 +1244,12 @@ router.post(
           contentType: req.file.mimetype,
         });
 
-        console.log(`Attempting to upload file to: ${externalUploadUrl}`);
-        console.log(`File details: ${req.file.originalname}, size: ${req.file.size} bytes, type: ${req.file.mimetype}`);
+        logger.debug(`Attempting to upload file to: ${externalUploadUrl}`, {
+          fileName: req.file.originalname,
+          size: req.file.size,
+          mimeType: req.file.mimetype,
+          userId,
+        });
 
         // Forward the file to external API
         const uploadResponse = await fetch(externalUploadUrl, {
@@ -1371,42 +1260,36 @@ router.post(
 
         if (!uploadResponse.ok) {
           const errorText = await uploadResponse.text();
-          console.error("External upload API error:", {
+          logger.error("External upload API error", {
             status: uploadResponse.status,
             statusText: uploadResponse.statusText,
             error: errorText,
+            userId,
           });
-          return res.status(uploadResponse.status || 500).json({
-            success: false,
-            message: "Failed to upload file to storage",
-            error: errorText || `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`,
-          });
+          return ApiResponseHelper.error(
+            res,
+            "Failed to upload file to storage",
+            uploadResponse.status || 500,
+            errorText || `HTTP ${uploadResponse.status}: ${uploadResponse.statusText}`
+          );
         }
 
         // Parse the response to get the image URL
         uploadResult = await uploadResponse.json();
-        console.log("Upload response received:", uploadResult);
+        logger.debug("Upload response received", { uploadResult, userId });
         
         // Extract the image URL from the response
         // Response format: { "data": "/images/...", "status": 200 }
         avatarUrl = uploadResult.data;
         
         if (!avatarUrl) {
-          console.error("Upload response missing data field:", uploadResult);
-          return res.status(500).json({
-            success: false,
-            message: "Failed to get image URL from upload service",
-            error: "Response did not contain image URL in data field",
-            response: uploadResult,
-          });
+          logger.error("Upload response missing data field", { uploadResult, userId });
+          return ApiResponseHelper.error(res, "Failed to get image URL from upload service", 500);
         }
       } catch (fetchError: any) {
-        console.error("Error connecting to external upload API:", {
+        logger.error("Error connecting to external upload API", fetchError, {
           url: externalUploadUrl,
-          error: fetchError.message,
-          code: fetchError.code,
-          errno: fetchError.errno,
-          type: fetchError.type,
+          userId,
         });
         
         // Provide more specific error messages
@@ -1419,13 +1302,7 @@ router.post(
           errorMessage = `Host not found. Cannot resolve the address for ${externalUploadUrl}.`;
         }
         
-        return res.status(503).json({
-          success: false,
-          message: errorMessage,
-          error: fetchError.message,
-          code: fetchError.code,
-          url: externalUploadUrl,
-        });
+        return ApiResponseHelper.error(res, errorMessage, 503, fetchError);
       }
 
       // Save the image URL to the database
@@ -1446,23 +1323,15 @@ router.post(
           },
         });
       } catch (logError) {
-        console.error("Failed to log avatar upload:", logError);
+        logger.warn("Failed to log avatar upload", { error: logError, userId: updatedUser.id });
       }
 
       const { password: _, ...userWithoutPassword } = updatedUser;
 
-      return res.json({
-        success: true,
-        message: "Avatar uploaded successfully",
-        user: userWithoutPassword,
-      });
+      return ApiResponseHelper.success(res, userWithoutPassword, "Avatar uploaded successfully");
     } catch (error) {
-      console.error("Upload avatar error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to upload avatar",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("Upload avatar error", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to upload avatar", 500, error);
     }
   }
 );
@@ -1536,35 +1405,28 @@ router.post(
       const { currentPassword, newPassword } = req.body;
 
       if (!currentPassword || !newPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "Current password and new password are required",
-        });
+        return ApiResponseHelper.validationError(
+          res,
+          "Current password and new password are required"
+        );
       }
 
       if (newPassword.length < 6) {
-        return res.status(400).json({
-          success: false,
-          message: "New password must be at least 6 characters long",
-        });
+        return ApiResponseHelper.validationError(res, "New password must be at least 6 characters long");
       }
 
       if (currentPassword === newPassword) {
-        return res.status(400).json({
-          success: false,
-          message: "New password must be different from current password",
-        });
+        return ApiResponseHelper.validationError(res, "New password must be different from current password");
       }
 
       // Get user with password
       const user = await userModel.getUserById(userId);
 
       if (!user.password) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Password has not been set yet. Please use reset password flow.",
-        });
+        return ApiResponseHelper.validationError(
+          res,
+          "Password has not been set yet. Please use reset password flow."
+        );
       }
 
       // Verify current password
@@ -1573,10 +1435,7 @@ router.post(
         user.password
       );
       if (!isCurrentPasswordValid) {
-        return res.status(401).json({
-          success: false,
-          message: "Current password is incorrect",
-        });
+        return ApiResponseHelper.unauthorized(res, "Current password is incorrect");
       }
 
       // Update password
@@ -1596,20 +1455,13 @@ router.post(
           },
         });
       } catch (logError) {
-        console.error("Failed to log password change:", logError);
+        logger.warn("Failed to log password change", { error: logError, userId: user.id });
       }
 
-      return res.json({
-        success: true,
-        message: "Password changed successfully",
-      });
+      return ApiResponseHelper.success(res, null, "Password changed successfully");
     } catch (error) {
-      console.error("Change password error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to change password",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("Change password error", error, { userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to change password", 500, error);
     }
   }
 );
@@ -1622,10 +1474,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
     const token = staffToken || userToken;
 
     if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "Access token required",
-      });
+      return ApiResponseHelper.unauthorized(res, "Access token required");
     }
 
     let decoded: jwt.JwtPayload & {
@@ -1641,11 +1490,8 @@ router.post("/refresh", async (req: Request, res: Response) => {
         ignoreExpiration: true,
       }) as typeof decoded;
     } catch (error) {
-      console.error("Token refresh verification failed:", error);
-      return res.status(401).json({
-        success: false,
-        message: "Invalid token",
-      });
+      logger.error("Token refresh verification failed", error);
+      return ApiResponseHelper.unauthorized(res, "Invalid token");
     }
 
     const nowInSeconds = Math.floor(Date.now() / 1000);
@@ -1657,26 +1503,17 @@ router.post("/refresh", async (req: Request, res: Response) => {
       const staffId = decoded.staffId;
 
       if (!staffId) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid staff token",
-        });
+        return ApiResponseHelper.unauthorized(res, "Invalid staff token");
       }
 
       const staff = await staffModel.getStaffById(staffId);
 
       if (!staff || !staff.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid or expired token",
-        });
+        return ApiResponseHelper.unauthorized(res, "Invalid or expired token");
       }
 
       if (!tokenIsExpired) {
-        return res.json({
-          success: true,
-          message: "Token still valid",
-        });
+        return ApiResponseHelper.success(res, null, "Token still valid");
       }
 
       const refreshedToken = jwt.sign(
@@ -1702,38 +1539,24 @@ router.post("/refresh", async (req: Request, res: Response) => {
 
       const { password: _, ...staffWithoutPassword } = staff;
 
-      return res.json({
-        success: true,
-        message: "Token refreshed successfully",
-        user: staffWithoutPassword,
-      });
+      return ApiResponseHelper.success(res, staffWithoutPassword, "Token refreshed successfully");
     }
 
     const userId = decoded.userId;
 
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid token",
-      });
+      return ApiResponseHelper.unauthorized(res, "Invalid token");
     }
 
     const user = await userModel.getActiveUserById(userId);
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid or expired token",
-      });
+      return ApiResponseHelper.unauthorized(res, "Invalid or expired token");
     }
 
     if (!tokenIsExpired) {
       const { password: _, ...userWithoutPassword } = user;
-      return res.json({
-        success: true,
-        message: "Token still valid",
-        user: userWithoutPassword,
-      });
+      return ApiResponseHelper.success(res, userWithoutPassword, "Token still valid");
     }
 
     const refreshedToken = jwt.sign(
@@ -1756,17 +1579,10 @@ router.post("/refresh", async (req: Request, res: Response) => {
 
     const { password: _, ...userWithoutPassword } = user;
 
-    return res.json({
-      success: true,
-      message: "Token refreshed successfully",
-      user: userWithoutPassword,
-    });
+    return ApiResponseHelper.success(res, userWithoutPassword, "Token refreshed successfully");
   } catch (error) {
-    console.error("Token refresh error:", error);
-    return res.status(401).json({
-      success: false,
-      message: "Failed to refresh token",
-    });
+    logger.error("Token refresh error", error);
+    return ApiResponseHelper.unauthorized(res, "Failed to refresh token");
   }
 });
 
@@ -1820,20 +1636,14 @@ router.post(
       const { email, phoneNumber } = req.body;
 
       if (!email && !phoneNumber) {
-        return res.status(400).json({
-          success: false,
-          message: "Email or phone number is required",
-        });
+        return ApiResponseHelper.validationError(res, "Email or phone number is required");
       }
 
       // Validate email format if provided
       if (email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-          return res.status(400).json({
-            success: false,
-            message: "Invalid email format",
-          });
+          return ApiResponseHelper.validationError(res, "Invalid email format");
         }
       }
 
@@ -1842,17 +1652,10 @@ router.post(
         phoneNumber
       );
 
-      return res.json({
-        success: true,
-        ...result,
-      });
+      return ApiResponseHelper.success(res, result);
     } catch (error) {
-      console.error("Check account error:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to check account",
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
+      logger.error("Check account error", error, { email: req.body.email, phoneNumber: req.body.phoneNumber });
+      return ApiResponseHelper.error(res, "Failed to check account", 500, error);
     }
   }
 );
