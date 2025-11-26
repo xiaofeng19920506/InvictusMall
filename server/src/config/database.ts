@@ -1015,6 +1015,12 @@ const createTables = async (): Promise<void> => {
     const orderModel = new OrderModel();
     await orderModel.createOrdersTable();
 
+    // Initialize StockOperationModel tables
+    const { StockOperationModel } = await import("../models/StockOperationModel");
+    const stockOperationModel = new StockOperationModel();
+    await stockOperationModel.initializeTable();
+
+
     // Create products table
     // First check the stores.id column definition to match it exactly
     try {

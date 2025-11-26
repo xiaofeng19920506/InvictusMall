@@ -27,6 +27,7 @@ import wishlistRoutes from "./routes/wishlistRoutes";
 import browseHistoryRoutes from "./routes/browseHistoryRoutes";
 import taxRoutes from "./routes/taxRoutes";
 import reservationRoutes from "./routes/reservationRoutes";
+import stockOperationRoutes from "./routes/stockOperationRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
@@ -77,6 +78,7 @@ app.use(cookieParser());
 
 // Static file serving for uploaded avatars
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 
 // Proxy route for images from external storage service
 app.get("/images/*", async (req, res) => {
@@ -187,6 +189,7 @@ app.use("/api/wishlists", wishlistRoutes);
 app.use("/api/browse-history", browseHistoryRoutes);
 app.use("/api/tax", taxRoutes);
 app.use("/api/reservations", reservationRoutes);
+app.use("/api/stock-operations", stockOperationRoutes);
 
 /**
  * @swagger

@@ -7,9 +7,13 @@ import {
   Edit,
   Save,
   X,
+  History,
+  Eye,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { productApi, storeApi } from "../../services/api";
+import { productApi, storeApi, stockOperationApi, type StockOperation } from "../../services/api";
 import type { Product, Store } from "../../services/api";
 // import { useAuth } from "../../contexts/AuthContext"; // Unused for now
 import { useNotification } from "../../contexts/NotificationContext";
@@ -34,6 +38,16 @@ const InventoryManagement: React.FC = () => {
   const [savingStock, setSavingStock] = useState<string | null>(null);
   const { showError, showSuccess } = useNotification();
   const { setHeaderActions } = useAdminHeader();
+  
+  // Stock operations history
+  const [activeTab, setActiveTab] = useState<'products' | 'history'>('products');
+  const [stockOperations, setStockOperations] = useState<StockOperation[]>([]);
+  const [loadingOperations, setLoadingOperations] = useState(false);
+  const [operationsPage, setOperationsPage] = useState(1);
+  const [operationsItemsPerPage, setOperationsItemsPerPage] = useState(20);
+  const [totalOperations, setTotalOperations] = useState(0);
+  const [operationsTypeFilter, setOperationsTypeFilter] = useState<string>('');
+  const [selectedProductForHistory, setSelectedProductForHistory] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStores();
@@ -47,6 +61,12 @@ const InventoryManagement: React.FC = () => {
       setTotalItems(0);
     }
   }, [selectedStoreId, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      fetchStockOperations();
+    }
+  }, [activeTab, operationsPage, operationsItemsPerPage, operationsTypeFilter, selectedProductForHistory]);
 
   const fetchStores = async () => {
     try {
@@ -127,6 +147,11 @@ const InventoryManagement: React.FC = () => {
       // Clear editing state
       handleCancelEdit(productId);
       showSuccess(t("inventory.actions.updateSuccess"));
+      
+      // Refresh operations history if on that tab
+      if (activeTab === 'history') {
+        fetchStockOperations();
+      }
     } catch (error: any) {
       console.error("Error updating stock:", error);
       showError(
@@ -134,6 +159,36 @@ const InventoryManagement: React.FC = () => {
       );
     } finally {
       setSavingStock(null);
+    }
+  };
+
+  const fetchStockOperations = async () => {
+    setLoadingOperations(true);
+    try {
+      const offset = (operationsPage - 1) * operationsItemsPerPage;
+      const params: any = {
+        limit: operationsItemsPerPage,
+        offset,
+      };
+      
+      if (operationsTypeFilter) {
+        params.type = operationsTypeFilter as 'in' | 'out';
+      }
+      
+      if (selectedProductForHistory) {
+        params.productId = selectedProductForHistory;
+      }
+
+      const response = await stockOperationApi.getStockOperations(params);
+      if (response.success && response.data) {
+        setStockOperations(response.data.operations);
+        setTotalOperations(response.data.total);
+      }
+    } catch (error: any) {
+      console.error("Error loading stock operations:", error);
+      showError(error.response?.data?.message || "Failed to load stock operations");
+    } finally {
+      setLoadingOperations(false);
     }
   };
 
@@ -190,8 +245,37 @@ const InventoryManagement: React.FC = () => {
     );
   }
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  };
+
   return (
     <div className={styles.container}>
+      {/* Tabs */}
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${activeTab === 'products' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('products')}
+        >
+          <Package className="w-4 h-4 mr-2" />
+          {t("inventory.tabs.products") || "Products"}
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'history' ? styles.activeTab : ''}`}
+          onClick={() => setActiveTab('history')}
+        >
+          <History className="w-4 h-4 mr-2" />
+          {t("inventory.tabs.history") || "Stock Operations History"}
+        </button>
+      </div>
+
       {/* Store Selector and Filters */}
       <div className={`card ${styles.storeSelector}`}>
         <div className={styles.filters}>
@@ -225,6 +309,162 @@ const InventoryManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* Stock Operations History Tab */}
+      {activeTab === 'history' && (
+        <div className={`card ${styles.fullHeightCard}`}>
+          <div className="card-header">
+            <div className={styles.historyHeader}>
+              <h3 className="card-title">
+                {t("inventory.history.title") || "Stock Operations History"}
+              </h3>
+              <div className={styles.historyFilters}>
+                {selectedStoreId && (
+                  <select
+                    value={selectedProductForHistory || ''}
+                    onChange={(e) => {
+                      setSelectedProductForHistory(e.target.value || null);
+                      setOperationsPage(1);
+                    }}
+                    className="form-input form-select"
+                    style={{ minWidth: '200px' }}
+                  >
+                    <option value="">{t("inventory.history.allProducts") || "All Products"}</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <select
+                  value={operationsTypeFilter}
+                  onChange={(e) => {
+                    setOperationsTypeFilter(e.target.value);
+                    setOperationsPage(1);
+                  }}
+                  className="form-input form-select"
+                >
+                  <option value="">{t("inventory.history.allTypes") || "All Types"}</option>
+                  <option value="in">{t("inventory.history.typeIn") || "Stock In"}</option>
+                  <option value="out">{t("inventory.history.typeOut") || "Stock Out"}</option>
+                </select>
+                <button
+                  onClick={fetchStockOperations}
+                  className="btn btn-secondary btn-sm"
+                  disabled={loadingOperations}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loadingOperations ? "animate-spin" : ""}`} />
+                  {t("inventory.refresh")}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {loadingOperations && stockOperations.length === 0 ? (
+            <div className={styles.loading}>
+              <div className="loading" />
+              <span>{t("inventory.loading")}</span>
+            </div>
+          ) : stockOperations.length === 0 ? (
+            <div className={styles.emptyState}>
+              <History className={styles.emptyIcon} />
+              <p>{t("inventory.history.empty") || "No stock operations found"}</p>
+            </div>
+          ) : (
+            <>
+              <div className={styles.tableWrapper}>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>{t("inventory.history.table.date") || "Date"}</th>
+                      <th>{t("inventory.history.table.product") || "Product"}</th>
+                      <th>{t("inventory.history.table.type") || "Type"}</th>
+                      <th>{t("inventory.history.table.quantity") || "Quantity"}</th>
+                      <th>{t("inventory.history.table.before") || "Before"}</th>
+                      <th>{t("inventory.history.table.after") || "After"}</th>
+                      <th>{t("inventory.history.table.reason") || "Reason"}</th>
+                      <th>{t("inventory.history.table.order") || "Order"}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stockOperations.map((operation) => (
+                      <tr key={operation.id}>
+                        <td>{formatDate(operation.performedAt)}</td>
+                        <td>
+                          <div className={styles.productCell}>
+                            {operation.product?.imageUrl && (
+                              <img
+                                src={getImageUrl(operation.product.imageUrl)}
+                                alt={operation.product.name}
+                                className={styles.productImageSmall}
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = "/images/default-product.png";
+                                }}
+                              />
+                            )}
+                            <span>{operation.product?.name || operation.productId}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge ${operation.type === 'in' ? 'badge-success' : 'badge-danger'}`}>
+                            {operation.type === 'in' ? (
+                              <>
+                                <ArrowUp className="w-3 h-3 mr-1" />
+                                {t("inventory.history.typeIn") || "In"}
+                              </>
+                            ) : (
+                              <>
+                                <ArrowDown className="w-3 h-3 mr-1" />
+                                {t("inventory.history.typeOut") || "Out"}
+                              </>
+                            )}
+                          </span>
+                        </td>
+                        <td>{operation.quantity}</td>
+                        <td>{operation.previousQuantity}</td>
+                        <td>
+                          <strong>{operation.newQuantity}</strong>
+                        </td>
+                        <td>{operation.reason || '-'}</td>
+                        <td>
+                          {operation.orderId ? (
+                            <button
+                              onClick={() => {
+                                window.open(`/admin/orders/${operation.orderId}`, '_blank');
+                              }}
+                              className="btn btn-sm btn-link"
+                            >
+                              {operation.orderId.substring(0, 8)}...
+                            </button>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <Pagination
+                currentPage={operationsPage}
+                totalPages={Math.ceil(totalOperations / operationsItemsPerPage)}
+                totalItems={totalOperations}
+                itemsPerPage={operationsItemsPerPage}
+                onPageChange={setOperationsPage}
+                onItemsPerPageChange={(items) => {
+                  setOperationsItemsPerPage(items);
+                  setOperationsPage(1);
+                }}
+              />
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Products Tab */}
+      {activeTab === 'products' && (
+        <>
       {/* Low Stock Alert */}
       {selectedStoreId && lowStockProducts.length > 0 && (
         <div className={`card ${styles.alertCard}`}>
@@ -435,6 +675,8 @@ const InventoryManagement: React.FC = () => {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 };

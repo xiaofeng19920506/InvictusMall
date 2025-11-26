@@ -6,6 +6,7 @@
       "products": "Products",
       "categories": "Categories",
       "orders": "Orders",
+      "shipments": "Shipments",
       "inventory": "Inventory Management",
       "users": "Users",
       "settings": "Settings",
@@ -51,6 +52,7 @@
       "products": "Products",
       "categories": "Categories",
       "orders": "Orders",
+      "shipments": "Shipments",
       "inventory": "Inventory Management",
       "users": "Users",
       "settings": "Settings",
@@ -772,6 +774,144 @@
       "saveFailed": "Failed to save category"
     }
   },
+  "shipments": {
+    "searchPlaceholder": "Search by tracking number, order ID, or carrier...",
+    "filters": {
+      "allStatuses": "All Statuses",
+      "allCarriers": "All Carriers"
+    },
+    "status": {
+      "pending": "Pending",
+      "label_created": "Label Created",
+      "in_transit": "In Transit",
+      "out_for_delivery": "Out for Delivery",
+      "delivered": "Delivered",
+      "exception": "Exception",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
+    "carriers": {
+      "usps": "USPS",
+      "ups": "UPS",
+      "fedex": "FedEx",
+      "dhl": "DHL",
+      "other": "Other"
+    },
+    "table": {
+      "trackingNumber": "Tracking Number",
+      "orderId": "Order ID",
+      "carrier": "Carrier",
+      "status": "Status",
+      "shippedAt": "Shipped At",
+      "estimatedDelivery": "Estimated Delivery",
+      "actions": "Actions"
+    },
+    "empty": "No shipments found",
+    "actions": {
+      "create": "Create Shipment",
+      "view": "View Details",
+      "edit": "Edit",
+      "downloadLabel": "Download Label",
+      "printLabel": "Print Label",
+      "generateLabel": "Generate Label",
+      "generating": "Generating..."
+    },
+    "success": {
+      "created": "Shipment created successfully",
+      "updated": "Shipment updated successfully",
+      "labelGenerated": "Shipping label generated successfully"
+    },
+    "error": {
+      "loadFailed": "Failed to load shipments",
+      "createFailed": "Failed to create shipment",
+      "updateFailed": "Failed to update shipment",
+      "labelGenerationFailed": "Failed to generate shipping label"
+    },
+    "modal": {
+      "details": "Shipment Details",
+      "createTitle": "Create New Shipment",
+      "updateTitle": "Update Shipment",
+      "shipmentInfo": "Shipment Information",
+      "trackingHistory": "Tracking History",
+      "dates": "Important Dates",
+      "shippingLabel": "Shipping Label",
+      "notes": "Notes",
+      "shippingMethod": "Shipping Method",
+      "weight": "Weight",
+      "shippingCost": "Shipping Cost",
+      "actualDelivery": "Actual Delivery"
+    },
+    "form": {
+      "orderId": "Order ID",
+      "carrier": "Carrier",
+      "carrierName": "Carrier Name",
+      "shippingMethod": "Shipping Method",
+      "weight": "Weight (kg)",
+      "shippingCost": "Shipping Cost ($)",
+      "notes": "Notes"
+    }
+  },
+  "fulfillmentCenters": {
+    "table": {
+      "name": "Name",
+      "code": "Code",
+      "address": "Address",
+      "status": "Status",
+      "capacity": "Capacity",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": "No fulfillment centers found",
+    "error": {
+      "loadFailed": "Failed to load fulfillment centers",
+      "createFailed": "Failed to create fulfillment center",
+      "updateFailed": "Failed to update fulfillment center",
+      "deleteFailed": "Failed to delete fulfillment center"
+    },
+    "success": {
+      "created": "Fulfillment center created successfully",
+      "updated": "Fulfillment center updated successfully",
+      "deleted": "Fulfillment center deleted successfully"
+    },
+    "actions": {
+      "create": "Create Fulfillment Center",
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "modal": {
+      "details": "Fulfillment Center Details",
+      "createTitle": "Create Fulfillment Center",
+      "updateTitle": "Update Fulfillment Center",
+      "deleteTitle": "Delete Fulfillment Center",
+      "deleteMessage": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "basicInfo": "Basic Information",
+      "address": "Address",
+      "contactInfo": "Contact Information",
+      "operatingHours": "Operating Hours",
+      "capacity": "Capacity",
+      "maxOrdersPerDay": "Max Orders Per Day",
+      "currentOrders": "Current Orders"
+    },
+    "form": {
+      "name": "Name",
+      "code": "Code",
+      "address": "Address",
+      "streetAddress": "Street Address",
+      "city": "City",
+      "stateProvince": "State/Province",
+      "zipCode": "Zip Code",
+      "country": "Country",
+      "contactInfo": "Contact Information",
+      "phone": "Phone",
+      "email": "Email",
+      "maxOrdersPerDay": "Max Orders Per Day",
+      "isActive": "Active"
+    }
+  },
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
@@ -783,6 +923,11 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
+    "refresh": "Refresh",
+    "create": "Create",
+    "update": "Update",
+    "creating": "Creating...",
+    "updating": "Updating...",
     "pagination": {
       "showing": "Showing",
       "to": "to",
@@ -1022,6 +1167,28 @@
       "productNotFound": "Product not found",
       "loadError": "Failed to load inventory",
       "loadStoresError": "Failed to load stores"
+    },
+    "tabs": {
+      "products": "Products",
+      "history": "Stock Operations History"
+    },
+    "history": {
+      "title": "Stock Operations History",
+      "allProducts": "All Products",
+      "allTypes": "All Types",
+      "typeIn": "Stock In",
+      "typeOut": "Stock Out",
+      "empty": "No stock operations found",
+      "table": {
+        "date": "Date",
+        "product": "Product",
+        "type": "Type",
+        "quantity": "Quantity",
+        "before": "Before",
+        "after": "After",
+        "reason": "Reason",
+        "order": "Order"
+      }
     }
   }
 }
