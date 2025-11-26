@@ -234,7 +234,7 @@ router.post(
           shippingAddress: resolvedAddress,
           paymentMethod: `stripe_payment_intent:${paymentIntent.id}`,
           paymentIntentId: paymentIntent.id,
-          status: "pending_payment",
+          status: "pending",
         });
 
         orderIds.push(order.id);

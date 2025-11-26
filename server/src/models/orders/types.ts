@@ -1,5 +1,4 @@
 export type OrderStatus =
-  | 'pending_payment'
   | 'pending'
   | 'processing'
   | 'shipped'

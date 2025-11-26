@@ -66,7 +66,7 @@ export async function finalizeStripeCheckoutSession(
     for (const order of existingOrders) {
       await orderModel.updateOrderAfterPayment(order.id, {
         status:
-          order.status === "pending_payment" ? "pending" : order.status,
+          order.status,
         paymentMethod: `stripe_checkout:${session.id}`,
         stripeSessionId: session.id,
         orderDate: now,

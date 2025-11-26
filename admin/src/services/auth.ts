@@ -48,7 +48,6 @@ export const ROLE_PERMISSIONS = {
     'stores',
     'users',
     'settings',
-    'analytics',
     'system_logs',
     'user_management',
     'store_management',
@@ -59,7 +58,6 @@ export const ROLE_PERMISSIONS = {
     'stores',
     'users',
     'settings',
-    'analytics',
     'user_management',
     'store_management'
   ],
@@ -67,7 +65,6 @@ export const ROLE_PERMISSIONS = {
     'dashboard',
     'stores',
     'users',
-    'analytics',
     'store_management'
   ],
   employee: [

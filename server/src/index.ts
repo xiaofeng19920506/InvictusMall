@@ -32,6 +32,9 @@ import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
 import { accountCleanupService } from "./services/accountCleanupService";
+import { orderCleanupService } from "./services/orderCleanupService";
+import { tokenCleanupService } from "./services/tokenCleanupService";
+import { lowStockAlertService } from "./services/lowStockAlertService";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -262,16 +265,36 @@ const startServer = async () => {
         `📡 Accessible at http://localhost:${PORT} or http://[your-ip]:${PORT}`
       );
 
-      // Start account cleanup service (runs daily)
-      // Only start if database is connected
+      // Start automated services (only if database is connected)
       if (isConnected) {
+        // Start account cleanup service (runs daily)
         const cleanupIntervalHours = parseInt(
           process.env.ACCOUNT_CLEANUP_INTERVAL_HOURS || "24"
         );
         accountCleanupService.start(cleanupIntervalHours);
+
+        // Start order cleanup service (runs every 6 hours)
+        const orderCleanupIntervalHours = parseInt(
+          process.env.ORDER_CLEANUP_INTERVAL_HOURS || "6"
+        );
+        orderCleanupService.start(orderCleanupIntervalHours);
+
+        // Start token cleanup service (runs daily)
+        const tokenCleanupIntervalHours = parseInt(
+          process.env.TOKEN_CLEANUP_INTERVAL_HOURS || "24"
+        );
+        tokenCleanupService.start(tokenCleanupIntervalHours);
+
+        // Start low stock alert service (runs every 12 hours)
+        const lowStockAlertIntervalHours = parseInt(
+          process.env.LOW_STOCK_ALERT_INTERVAL_HOURS || "12"
+        );
+        lowStockAlertService.start(lowStockAlertIntervalHours);
+
+        console.log("✅ All automated services started successfully");
       } else {
         console.log(
-          "⚠️ Account cleanup service disabled (database not connected)"
+          "⚠️ Automated services disabled (database not connected)"
         );
       }
     });
@@ -282,21 +305,18 @@ const startServer = async () => {
 };
 
 // Graceful shutdown
-process.on("SIGTERM", () => {
-  console.log(
-    "SIGTERM signal received: closing HTTP server and cleanup scheduler"
-  );
+const gracefulShutdown = () => {
+  console.log("🛑 Shutdown signal received, stopping automated services...");
   accountCleanupService.stop();
+  orderCleanupService.stop();
+  tokenCleanupService.stop();
+  lowStockAlertService.stop();
+  console.log("✅ All automated services stopped");
   process.exit(0);
-});
+};
 
-process.on("SIGINT", () => {
-  console.log(
-    "SIGINT signal received: closing HTTP server and cleanup scheduler"
-  );
-  accountCleanupService.stop();
-  process.exit(0);
-});
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
 
 startServer();
 

@@ -37,7 +37,7 @@ const stripeClient = stripeSecretKey
  *         name: status
  *         schema:
  *           type: string
- *           enum: [pending_payment, pending, processing, shipped, delivered, cancelled]
+ *           enum: [pending, processing, shipped, delivered, cancelled]
  *         description: Filter orders by status
  *       - in: query
  *         name: storeId
@@ -172,7 +172,7 @@ router.get(
  *             properties:
  *               status:
  *                 type: string
- *                 enum: [pending_payment, pending, processing, shipped, delivered, cancelled]
+ *                 enum: [pending, processing, shipped, delivered, cancelled]
  *               trackingNumber:
  *                 type: string
  *                 description: Optional tracking number (for shipped status)
@@ -208,7 +208,6 @@ router.put(
       }
 
       const validStatuses: OrderStatus[] = [
-        'pending_payment',
         'pending',
         'processing',
         'shipped',

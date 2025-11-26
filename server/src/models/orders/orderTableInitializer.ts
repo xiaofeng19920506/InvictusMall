@@ -14,7 +14,7 @@ export class OrderTableInitializer {
           store_id VARCHAR(36) NOT NULL,
           store_name VARCHAR(255) NOT NULL,
           total_amount DECIMAL(10, 2) NOT NULL,
-          status ENUM('pending_payment', 'pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
+          status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending',
           shipping_street_address VARCHAR(255) NOT NULL,
           shipping_apt_number VARCHAR(50) NULL,
           shipping_city VARCHAR(100) NOT NULL,
@@ -41,7 +41,7 @@ export class OrderTableInitializer {
 
       try {
         await connection.execute(
-          `ALTER TABLE orders MODIFY COLUMN status ENUM('pending_payment', 'pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending'`
+          `ALTER TABLE orders MODIFY COLUMN status ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled') DEFAULT 'pending'`
         );
       } catch (error: any) {
         // Ignore if status column already updated
