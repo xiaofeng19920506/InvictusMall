@@ -464,19 +464,32 @@ const WarehouseScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Store Selector - Only show if multiple stores */}
-      {stores.length > 1 && (
+      {/* Store Selector - Show if multiple stores or when loading */}
+      {(stores.length > 1 || (stores.length === 0 && user)) && (
         <View style={styles.storeSelectorContainer}>
           <TouchableOpacity
             style={styles.storeSelector}
-            onPress={() => setShowStorePicker(true)}
+            onPress={() => stores.length > 1 && setShowStorePicker(true)}
+            disabled={stores.length <= 1}
           >
             <MaterialIcons name="store" size={20} color="#007AFF" />
             <Text style={styles.storeSelectorText}>
-              {selectedStore?.name || "Select Store"}
+              {selectedStore?.name || (stores.length === 0 ? "Loading stores..." : "Select Store")}
             </Text>
-            <MaterialIcons name="arrow-drop-down" size={20} color="#8E8E93" />
+            {stores.length > 1 && (
+              <MaterialIcons name="arrow-drop-down" size={20} color="#8E8E93" />
+            )}
           </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Show error if no store available */}
+      {stores.length === 0 && !user?.storeId && user && (
+        <View style={styles.errorContainer}>
+          <MaterialIcons name="error-outline" size={24} color="#FF3B30" />
+          <Text style={styles.errorText}>
+            No stores available. Please contact your administrator.
+          </Text>
         </View>
       )}
 
@@ -832,6 +845,92 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  // Store Selector styles
+  storeSelectorContainer: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  storeSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+  },
+  storeSelectorText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#000",
+  },
+  // Store Picker Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  storePickerModal: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "80%",
+    paddingBottom: 20,
+  },
+  storePickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  storePickerTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#000",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  storeOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
+    gap: 12,
+  },
+  selectedStoreOption: {
+    backgroundColor: "#E3F2FD",
+  },
+  storeOptionText: {
+    flex: 1,
+    fontSize: 16,
+    color: "#000",
+  },
+  selectedStoreOptionText: {
+    fontWeight: "600",
+    color: "#007AFF",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFE5E5",
+    padding: 16,
+    margin: 16,
+    borderRadius: 8,
+    gap: 12,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 14,
+    color: "#FF3B30",
+    fontWeight: "500",
   },
   tabContainer: {
     flexDirection: "row",

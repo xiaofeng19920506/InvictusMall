@@ -82,19 +82,24 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({children}) => {
         await AsyncStorage.setItem(STORES_KEY, JSON.stringify(fetchedStores));
 
         // If no store is selected yet, select the first one (or user's storeId if exists)
-        if (!selectedStore && fetchedStores.length > 0) {
-          let storeToSelect = fetchedStores[0];
-          
-          // If user has a storeId, try to match it
-          if (user?.storeId) {
-            const matchedStore = fetchedStores.find((s) => s.id === user.storeId);
-            if (matchedStore) {
-              storeToSelect = matchedStore;
+        setSelectedStore((currentSelectedStore) => {
+          if (!currentSelectedStore && fetchedStores.length > 0) {
+            let storeToSelect = fetchedStores[0];
+            
+            // If user has a storeId, try to match it
+            if (user?.storeId) {
+              const matchedStore = fetchedStores.find((s) => s.id === user.storeId);
+              if (matchedStore) {
+                storeToSelect = matchedStore;
+              }
             }
-          }
 
-          selectStore(storeToSelect);
-        }
+            // Save to storage
+            AsyncStorage.setItem(SELECTED_STORE_KEY, JSON.stringify(storeToSelect));
+            return storeToSelect;
+          }
+          return currentSelectedStore;
+        });
       }
     } catch (error) {
       console.error('Error refreshing stores:', error);
