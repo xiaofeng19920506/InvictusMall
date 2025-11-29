@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
-  StatusBar,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
@@ -90,9 +90,11 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
   };
 
   return (
-    <Modal visible={true} animationType="slide" transparent={false}>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <StatusBar barStyle="dark-content" />
+    <Modal 
+      visible={true} 
+      animationType="slide" 
+      transparent={false}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>

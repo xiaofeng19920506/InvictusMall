@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,54 +9,55 @@ import {
   Modal,
   Image,
   ActivityIndicator,
-} from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import BarcodeScanner from '../../components/BarcodeScanner';
-import PhotoCapture from '../../components/PhotoCapture';
-import apiService from '../../services/api';
-import authService from '../../services/auth';
-import {useNotification} from '../../contexts/NotificationContext';
-import type {BarcodeScanResult, Product} from '../../types';
+} from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import BarcodeScanner from "../../components/BarcodeScanner";
+import PhotoCapture from "../../components/PhotoCapture";
+import apiService from "../../services/api";
+import authService from "../../services/auth";
+import { useNotification } from "../../contexts/NotificationContext";
+import type { BarcodeScanResult, Product } from "../../types";
 
-type TabType = 'operations' | 'inventory';
+type TabType = "operations" | "inventory";
 
 const WarehouseScreen: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('operations');
-  
+  const [activeTab, setActiveTab] = useState<TabType>("operations");
+
   // Operation states
   const [showScanner, setShowScanner] = useState(false);
   const [showPhotoCapture, setShowPhotoCapture] = useState(false);
-  const [operationType, setOperationType] = useState<'in' | 'out' | null>(null);
+  const [operationType, setOperationType] = useState<"in" | "out" | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [quantity, setQuantity] = useState('');
-  const [reason, setReason] = useState('');
+  const [quantity, setQuantity] = useState("");
+  const [reason, setReason] = useState("");
+  const [serialNumber, setSerialNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
-  
+
   // Inventory check states
   const [showInventoryScanner, setShowInventoryScanner] = useState(false);
   const [checkedProduct, setCheckedProduct] = useState<Product | null>(null);
   const [scanHistory, setScanHistory] = useState<Product[]>([]);
-  
-  const {showSuccess, showError} = useNotification();
+
+  const { showSuccess, showError } = useNotification();
 
   // Create product modal state
   const [showCreateProductModal, setShowCreateProductModal] = useState(false);
-  const [createProductBarcode, setCreateProductBarcode] = useState('');
-  const [createProductName, setCreateProductName] = useState('');
-  const [createProductPrice, setCreateProductPrice] = useState('');
+  const [createProductBarcode, setCreateProductBarcode] = useState("");
+  const [createProductName, setCreateProductName] = useState("");
+  const [createProductPrice, setCreateProductPrice] = useState("");
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
 
   // Handle create product
   const handleCreateProduct = async () => {
     if (!createProductName.trim() || !createProductPrice.trim()) {
-      showError('Please fill in all required fields');
+      showError("Please fill in all required fields");
       return;
     }
 
     const price = parseFloat(createProductPrice);
     if (isNaN(price) || price <= 0) {
-      showError('Please enter a valid price');
+      showError("Please enter a valid price");
       return;
     }
 
@@ -66,27 +67,29 @@ const WarehouseScreen: React.FC = () => {
       // Get current user to get storeId
       const currentUser = await authService.getCurrentUser();
       if (!currentUser || !currentUser.storeId) {
-        showError('Unable to get store information. Please try logging in again.');
+        showError(
+          "Unable to get store information. Please try logging in again."
+        );
         return;
       }
 
       const productData = {
         storeId: currentUser.storeId,
         name: createProductName.trim(),
-        description: '',
+        description: "",
         price: price,
         barcode: createProductBarcode,
         stockQuantity: 0,
-        category: '',
+        category: "",
         isActive: true,
       };
 
       const response = await apiService.createProduct(productData);
 
       if (response.success && response.data) {
-        showSuccess('Product created successfully!');
+        showSuccess("Product created successfully!");
         const newProduct = response.data;
-        
+
         // If we were in operation mode, set as selected product
         if (operationType) {
           setSelectedProduct(newProduct);
@@ -94,25 +97,25 @@ const WarehouseScreen: React.FC = () => {
           // If we were in inventory check mode, set as checked product
           setCheckedProduct(newProduct);
           // Add to scan history
-          setScanHistory(prev => {
-            const exists = prev.some(p => p.id === newProduct.id);
+          setScanHistory((prev) => {
+            const exists = prev.some((p) => p.id === newProduct.id);
             if (!exists) {
               return [newProduct, ...prev].slice(0, 10);
             }
             return prev;
           });
         }
-        
+
         setShowCreateProductModal(false);
-        setCreateProductName('');
-        setCreateProductPrice('');
-        setCreateProductBarcode('');
+        setCreateProductName("");
+        setCreateProductPrice("");
+        setCreateProductBarcode("");
       } else {
-        showError(response.message || 'Failed to create product');
+        showError(response.message || "Failed to create product");
       }
     } catch (error: any) {
-      console.error('Error creating product:', error);
-      showError(error.message || 'Failed to create product');
+      console.error("Error creating product:", error);
+      showError(error.message || "Failed to create product");
     } finally {
       setIsCreatingProduct(false);
     }
@@ -124,54 +127,88 @@ const WarehouseScreen: React.FC = () => {
     setIsProcessingOCR(true);
 
     try {
-      console.log('[WarehouseScreen] 📷 Photo taken, starting OCR...');
-      
+      console.log("[WarehouseScreen] 📷 Photo taken, starting OCR...");
+
       // Extract text from image using OCR
       const ocrResponse = await apiService.extractTextFromImage(imageUri);
-      
+
       if (!ocrResponse.success || !ocrResponse.data) {
-        showError('Failed to extract text from image');
+        showError("Failed to extract text from image");
         setIsProcessingOCR(false);
         return;
       }
 
       const { text, parsed } = ocrResponse.data;
-      console.log('[WarehouseScreen] 📝 OCR result:', {
+      console.log("[WarehouseScreen] 📝 OCR result:", {
         text: text.substring(0, 100),
         parsed,
       });
 
       // Try to find product by barcode first
       let product: Product | null = null;
-      
+
       if (parsed.barcode) {
-        console.log('[WarehouseScreen] 🔍 Searching product by barcode:', parsed.barcode);
+        console.log(
+          "[WarehouseScreen] 🔍 Searching product by barcode:",
+          parsed.barcode
+        );
         try {
-          const barcodeResponse = await apiService.getProductByBarcode(parsed.barcode);
+          const barcodeResponse = await apiService.getProductByBarcode(
+            parsed.barcode
+          );
           if (barcodeResponse.success && barcodeResponse.data) {
             product = barcodeResponse.data;
-            console.log('[WarehouseScreen] ✅ Product found by barcode:', product.name);
+            console.log(
+              "[WarehouseScreen] ✅ Product found by barcode:",
+              product.name
+            );
           }
         } catch (error) {
-          console.log('[WarehouseScreen] ⚠️ Product not found by barcode');
+          console.log("[WarehouseScreen] ⚠️ Product not found by barcode");
         }
       }
 
-      // If product found, set it and continue with stock operation
+      // Always show form for user to input information
+      // If product found, display product info and allow user to input S/N and quantity
       if (product) {
         setSelectedProduct(product);
-        showSuccess(`Product found: ${product.name}`);
+        // Set serial number from OCR if available
+        if (parsed.serialNumber) {
+          setSerialNumber(parsed.serialNumber);
+        }
+        showSuccess(`Product found: ${product.name}. Please enter quantity and S/N to stock in.`);
       } else {
         // Product not found, open create product modal with OCR data
-        console.log('[WarehouseScreen] 📝 Product not found, opening create modal');
-        setCreateProductBarcode(parsed.barcode || '');
-        setCreateProductName(parsed.name || '');
-        setCreateProductPrice(parsed.price ? parsed.price.toString() : '');
+        console.log(
+          "[WarehouseScreen] 📝 Product not found, opening create modal"
+        );
+        // Extract first meaningful line from OCR text as product name
+        let productName = parsed.name;
+        if (!productName || productName.length < 3) {
+          const textLines = text
+            .split("\n")
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+          productName =
+            textLines.find(
+              (line) =>
+                line.length >= 3 &&
+                /[a-zA-Z\u4e00-\u9fa5]/.test(line) &&
+                !/^(S\/N|SN|S\/N:|SN:)/i.test(line) &&
+                !/^(LR|MNK|Part|Model|Code|SKU|MNK:)/i.test(line)
+            ) ||
+            textLines[0] ||
+            text.substring(0, 100);
+        }
+
+        setCreateProductBarcode(parsed.barcode || "");
+        setCreateProductName(productName ? productName.trim() : "");
+        setCreateProductPrice(parsed.price ? parsed.price.toString() : "");
         setShowCreateProductModal(true);
       }
     } catch (error: any) {
-      console.error('[WarehouseScreen] ❌ OCR processing error:', error);
-      showError(error.message || 'Failed to process image');
+      console.error("[WarehouseScreen] ❌ OCR processing error:", error);
+      showError(error.message || "Failed to process image");
     } finally {
       setIsProcessingOCR(false);
     }
@@ -179,90 +216,127 @@ const WarehouseScreen: React.FC = () => {
 
   // Handle scan for operations
   const handleOperationScan = async (result: BarcodeScanResult) => {
-    console.log('[WarehouseScreen] 📦 Operation scan result received:', {
+    console.log("[WarehouseScreen] 📦 Operation scan result received:", {
       type: result.type,
       value: result.value,
       hasData: !!result.data,
-      productId: result.type === 'product' ? (result.data as Product)?.id : undefined,
-      productName: result.type === 'product' ? (result.data as Product)?.name : undefined,
+      productId:
+        result.type === "product" ? (result.data as Product)?.id : undefined,
+      productName:
+        result.type === "product" ? (result.data as Product)?.name : undefined,
     });
 
     setShowScanner(false);
-    
-    if (result.type === 'product' && result.data) {
+
+    if (result.type === "product" && result.data) {
       const product = result.data as Product;
-      console.log('[WarehouseScreen] ✅ Product found for operation:', product.name);
+      console.log(
+        "[WarehouseScreen] ✅ Product found for operation:",
+        product.name
+      );
       setSelectedProduct(product);
-    } else if (result.type === 'product_not_found') {
-      console.log('[WarehouseScreen] 📝 Product not found, opening create modal:', result.value);
+    } else if (result.type === "product_not_found") {
+      console.log(
+        "[WarehouseScreen] 📝 Product not found, opening create modal:",
+        result.value
+      );
       // Open create product modal with pre-filled barcode
       setCreateProductBarcode(result.value);
-      setCreateProductName('');
-      setCreateProductPrice('');
+      setCreateProductName("");
+      setCreateProductPrice("");
       setShowCreateProductModal(true);
-    } else if (result.type === 'unknown') {
-      console.log('[WarehouseScreen] ❓ Unknown barcode scanned:', result.value);
-      showError(`Barcode "${result.value}" is not recognized. Please scan a valid product barcode.`);
+    } else if (result.type === "unknown") {
+      console.log(
+        "[WarehouseScreen] ❓ Unknown barcode scanned:",
+        result.value
+      );
+      showError(
+        `Barcode "${result.value}" is not recognized. Please scan a valid product barcode.`
+      );
     } else {
-      console.warn('[WarehouseScreen] ⚠️ Invalid scan result for operation:', result.type);
-      showError('Please scan a product barcode');
+      console.warn(
+        "[WarehouseScreen] ⚠️ Invalid scan result for operation:",
+        result.type
+      );
+      showError("Please scan a product barcode");
     }
   };
 
   // Handle scan for inventory check
   const handleInventoryScan = async (result: BarcodeScanResult) => {
-    console.log('[WarehouseScreen] 🔍 Inventory scan result received:', {
+    console.log("[WarehouseScreen] 🔍 Inventory scan result received:", {
       type: result.type,
       value: result.value,
       hasData: !!result.data,
-      productId: result.type === 'product' ? (result.data as Product)?.id : undefined,
-      productName: result.type === 'product' ? (result.data as Product)?.name : undefined,
+      productId:
+        result.type === "product" ? (result.data as Product)?.id : undefined,
+      productName:
+        result.type === "product" ? (result.data as Product)?.name : undefined,
     });
 
     setShowInventoryScanner(false);
-    
-    if (result.type === 'product' && result.data) {
+
+    if (result.type === "product" && result.data) {
       const product = result.data as Product;
-      console.log('[WarehouseScreen] ✅ Product found for inventory check:', product.name);
+      console.log(
+        "[WarehouseScreen] ✅ Product found for inventory check:",
+        product.name
+      );
       setCheckedProduct(product);
-      
+
       // Add to scan history if not already present
-      setScanHistory(prev => {
-        const exists = prev.some(p => p.id === product.id);
+      setScanHistory((prev) => {
+        const exists = prev.some((p) => p.id === product.id);
         if (!exists) {
           const newHistory = [product, ...prev].slice(0, 10); // Keep last 10 scans
-          console.log('[WarehouseScreen] 📝 Added to scan history, total items:', newHistory.length);
+          console.log(
+            "[WarehouseScreen] 📝 Added to scan history, total items:",
+            newHistory.length
+          );
           return newHistory;
         } else {
-          console.log('[WarehouseScreen] ℹ️ Product already in scan history, skipping');
+          console.log(
+            "[WarehouseScreen] ℹ️ Product already in scan history, skipping"
+          );
           return prev;
         }
       });
-    } else if (result.type === 'product_not_found') {
-      console.log('[WarehouseScreen] 📝 Product not found in inventory check, opening create modal:', result.value);
+    } else if (result.type === "product_not_found") {
+      console.log(
+        "[WarehouseScreen] 📝 Product not found in inventory check, opening create modal:",
+        result.value
+      );
       // Open create product modal with pre-filled barcode
       setCreateProductBarcode(result.value);
-      setCreateProductName('');
-      setCreateProductPrice('');
+      setCreateProductName("");
+      setCreateProductPrice("");
       setShowCreateProductModal(true);
-    } else if (result.type === 'unknown') {
-      console.log('[WarehouseScreen] ❓ Unknown barcode scanned:', result.value);
-      showError(`Barcode "${result.value}" is not recognized. Please scan a valid product barcode.`);
+    } else if (result.type === "unknown") {
+      console.log(
+        "[WarehouseScreen] ❓ Unknown barcode scanned:",
+        result.value
+      );
+      showError(
+        `Barcode "${result.value}" is not recognized. Please scan a valid product barcode.`
+      );
     } else {
-      console.warn('[WarehouseScreen] ⚠️ Invalid scan result for inventory check:', result.type);
-      showError('Please scan a product barcode');
+      console.warn(
+        "[WarehouseScreen] ⚠️ Invalid scan result for inventory check:",
+        result.type
+      );
+      showError("Please scan a product barcode");
     }
   };
 
   const handleOperation = async () => {
     if (!selectedProduct || !operationType || !quantity) {
-      showError('Please fill in all required fields');
+      showError("Please fill in all required fields");
       return;
     }
 
     const qty = parseInt(quantity);
     if (isNaN(qty) || qty <= 0) {
-      showError('Please enter a valid quantity');
+      showError("Please enter a valid quantity");
       return;
     }
 
@@ -276,23 +350,26 @@ const WarehouseScreen: React.FC = () => {
       });
 
       if (result.success && result.data) {
-        let message = `Stock ${operationType === 'in' ? 'In' : 'Out'} operation completed`;
-        
+        let message = `Stock ${
+          operationType === "in" ? "In" : "Out"
+        } operation completed`;
+
         // If order was updated, show additional info
         if (result.data.orderUpdated && result.data.orderStatus) {
           message += `. Order status updated to ${result.data.orderStatus}`;
         }
-        
+
         showSuccess(message);
         setSelectedProduct(null);
-        setQuantity('');
-        setReason('');
+        setQuantity("");
+        setReason("");
         setOperationType(null);
       } else {
-        showError(result.error || 'Operation failed');
+        showError(result.error || "Operation failed");
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Operation failed';
+      const errorMessage =
+        error.response?.data?.message || error.message || "Operation failed";
       showError(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -313,11 +390,11 @@ const WarehouseScreen: React.FC = () => {
 
   const getStockStatus = (stock: number) => {
     if (stock === 0) {
-      return {text: 'Out of Stock', color: '#FF3B30'};
+      return { text: "Out of Stock", color: "#FF3B30" };
     } else if (stock <= 10) {
-      return {text: 'Low Stock', color: '#FF9500'};
+      return { text: "Low Stock", color: "#FF9500" };
     } else {
-      return {text: 'In Stock', color: '#34C759'};
+      return { text: "In Stock", color: "#34C759" };
     }
   };
 
@@ -326,35 +403,39 @@ const WarehouseScreen: React.FC = () => {
       {/* Tab Switcher */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'operations' && styles.activeTab]}
-          onPress={() => setActiveTab('operations')}>
+          style={[styles.tab, activeTab === "operations" && styles.activeTab]}
+          onPress={() => setActiveTab("operations")}
+        >
           <MaterialIcons
             name="inventory"
             size={20}
-            color={activeTab === 'operations' ? '#007AFF' : '#8E8E93'}
+            color={activeTab === "operations" ? "#007AFF" : "#8E8E93"}
           />
           <Text
             style={[
               styles.tabText,
-              activeTab === 'operations' && styles.activeTabText,
-            ]}>
+              activeTab === "operations" && styles.activeTabText,
+            ]}
+          >
             Operations
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'inventory' && styles.activeTab]}
-          onPress={() => setActiveTab('inventory')}>
+          style={[styles.tab, activeTab === "inventory" && styles.activeTab]}
+          onPress={() => setActiveTab("inventory")}
+        >
           <MaterialIcons
             name="search"
             size={20}
-            color={activeTab === 'inventory' ? '#007AFF' : '#8E8E93'}
+            color={activeTab === "inventory" ? "#007AFF" : "#8E8E93"}
           />
           <Text
             style={[
               styles.tabText,
-              activeTab === 'inventory' && styles.activeTabText,
-            ]}>
+              activeTab === "inventory" && styles.activeTabText,
+            ]}
+          >
             Check Inventory
           </Text>
         </TouchableOpacity>
@@ -362,26 +443,30 @@ const WarehouseScreen: React.FC = () => {
 
       <ScrollView style={styles.content}>
         {/* Operations Tab */}
-        {activeTab === 'operations' && (
+        {activeTab === "operations" && (
           <>
             <View style={styles.operationButtons}>
               <TouchableOpacity
                 style={[styles.operationButton, styles.inButton]}
                 onPress={() => {
-                  setOperationType('in');
+                  setOperationType("in");
                   setShowPhotoCapture(true);
-                }}>
+                }}
+              >
                 <MaterialIcons name="add" size={32} color="#fff" />
                 <Text style={styles.operationButtonText}>Stock In</Text>
-                <Text style={styles.operationButtonSubtext}>入库 (拍照识别)</Text>
+                <Text style={styles.operationButtonSubtext}>
+                  入库 (拍照识别)
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.operationButton, styles.outButton]}
                 onPress={() => {
-                  setOperationType('out');
+                  setOperationType("out");
                   setShowScanner(true);
-                }}>
+                }}
+              >
                 <MaterialIcons name="remove" size={32} color="#fff" />
                 <Text style={styles.operationButtonText}>Stock Out</Text>
                 <Text style={styles.operationButtonSubtext}>出库</Text>
@@ -404,7 +489,7 @@ const WarehouseScreen: React.FC = () => {
 
                 <View style={styles.form}>
                   <Text style={styles.label}>
-                    Quantity {operationType === 'in' ? '(In)' : '(Out)'} *
+                    Quantity {operationType === "in" ? "(In)" : "(Out)"} *
                   </Text>
                   <TextInput
                     style={styles.input}
@@ -425,11 +510,15 @@ const WarehouseScreen: React.FC = () => {
                   />
 
                   <TouchableOpacity
-                    style={[styles.submitButton, isProcessing && styles.submitButtonDisabled]}
+                    style={[
+                      styles.submitButton,
+                      isProcessing && styles.submitButtonDisabled,
+                    ]}
                     onPress={handleOperation}
-                    disabled={isProcessing}>
+                    disabled={isProcessing}
+                  >
                     <Text style={styles.submitButtonText}>
-                      {isProcessing ? 'Processing...' : 'Confirm Operation'}
+                      {isProcessing ? "Processing..." : "Confirm Operation"}
                     </Text>
                   </TouchableOpacity>
 
@@ -437,10 +526,11 @@ const WarehouseScreen: React.FC = () => {
                     style={styles.cancelButton}
                     onPress={() => {
                       setSelectedProduct(null);
-                      setQuantity('');
-                      setReason('');
+                      setQuantity("");
+                      setReason("");
                       setOperationType(null);
-                    }}>
+                    }}
+                  >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
                 </View>
@@ -450,11 +540,12 @@ const WarehouseScreen: React.FC = () => {
         )}
 
         {/* Inventory Check Tab */}
-        {activeTab === 'inventory' && (
+        {activeTab === "inventory" && (
           <>
             <TouchableOpacity
               style={styles.scanButton}
-              onPress={() => setShowInventoryScanner(true)}>
+              onPress={() => setShowInventoryScanner(true)}
+            >
               <MaterialIcons name="qr-code-scanner" size={32} color="#fff" />
               <Text style={styles.scanButtonText}>Scan Product Barcode</Text>
               <Text style={styles.scanButtonSubtext}>扫描商品条码</Text>
@@ -470,15 +561,16 @@ const WarehouseScreen: React.FC = () => {
                 </View>
 
                 <View style={styles.productInfo}>
-                  {((checkedProduct as any).imageUrls && 
-                    Array.isArray((checkedProduct as any).imageUrls) && 
-                    (checkedProduct as any).imageUrls.length > 0) || checkedProduct.imageUrl ? (
+                  {((checkedProduct as any).imageUrls &&
+                    Array.isArray((checkedProduct as any).imageUrls) &&
+                    (checkedProduct as any).imageUrls.length > 0) ||
+                  checkedProduct.imageUrl ? (
                     <Image
                       source={{
                         uri:
-                          ((checkedProduct as any).imageUrls &&
-                            Array.isArray((checkedProduct as any).imageUrls) &&
-                            (checkedProduct as any).imageUrls.length > 0)
+                          (checkedProduct as any).imageUrls &&
+                          Array.isArray((checkedProduct as any).imageUrls) &&
+                          (checkedProduct as any).imageUrls.length > 0
                             ? (checkedProduct as any).imageUrls[0]
                             : checkedProduct.imageUrl,
                       }}
@@ -486,16 +578,18 @@ const WarehouseScreen: React.FC = () => {
                       resizeMode="cover"
                     />
                   ) : null}
-                  
+
                   <Text style={styles.productName}>{checkedProduct.name}</Text>
-                  
+
                   {checkedProduct.barcode && (
                     <View style={styles.infoRow}>
                       <Text style={styles.infoLabel}>Barcode:</Text>
-                      <Text style={styles.infoValue}>{checkedProduct.barcode}</Text>
+                      <Text style={styles.infoValue}>
+                        {checkedProduct.barcode}
+                      </Text>
                     </View>
                   )}
-                  
+
                   {checkedProduct.price !== undefined && (
                     <View style={styles.infoRow}>
                       <Text style={styles.infoLabel}>Price:</Text>
@@ -504,7 +598,7 @@ const WarehouseScreen: React.FC = () => {
                       </Text>
                     </View>
                   )}
-                  
+
                   <View style={styles.stockContainer}>
                     <Text style={styles.stockLabel}>Current Stock:</Text>
                     <View style={styles.stockValueContainer}>
@@ -516,17 +610,21 @@ const WarehouseScreen: React.FC = () => {
                           styles.stockStatusBadge,
                           {
                             backgroundColor: getStockStatus(
-                              checkedProduct.stockQuantity || 0,
+                              checkedProduct.stockQuantity || 0
                             ).color,
                           },
-                        ]}>
+                        ]}
+                      >
                         <Text style={styles.stockStatusText}>
-                          {getStockStatus(checkedProduct.stockQuantity || 0).text}
+                          {
+                            getStockStatus(checkedProduct.stockQuantity || 0)
+                              .text
+                          }
                         </Text>
                       </View>
                     </View>
                   </View>
-                  
+
                   {checkedProduct.description && (
                     <View style={styles.descriptionContainer}>
                       <Text style={styles.descriptionLabel}>Description:</Text>
@@ -547,12 +645,13 @@ const WarehouseScreen: React.FC = () => {
                     <Text style={styles.clearHistoryText}>Clear</Text>
                   </TouchableOpacity>
                 </View>
-                
-                {scanHistory.map(product => (
+
+                {scanHistory.map((product) => (
                   <TouchableOpacity
                     key={product.id}
                     style={styles.historyItem}
-                    onPress={() => selectFromHistory(product)}>
+                    onPress={() => selectFromHistory(product)}
+                  >
                     <View style={styles.historyItemContent}>
                       <Text style={styles.historyItemName}>{product.name}</Text>
                       <View style={styles.historyItemStock}>
@@ -560,14 +659,20 @@ const WarehouseScreen: React.FC = () => {
                           style={[
                             styles.historyItemStockText,
                             {
-                              color: getStockStatus(product.stockQuantity || 0).color,
+                              color: getStockStatus(product.stockQuantity || 0)
+                                .color,
                             },
-                          ]}>
+                          ]}
+                        >
                           Stock: {product.stockQuantity || 0}
                         </Text>
                       </View>
                     </View>
-                    <MaterialIcons name="chevron-right" size={24} color="#8E8E93" />
+                    <MaterialIcons
+                      name="chevron-right"
+                      size={24}
+                      color="#8E8E93"
+                    />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -576,7 +681,9 @@ const WarehouseScreen: React.FC = () => {
             {!checkedProduct && scanHistory.length === 0 && (
               <View style={styles.emptyState}>
                 <MaterialIcons name="inventory" size={64} color="#C7C7CC" />
-                <Text style={styles.emptyStateText}>No products scanned yet</Text>
+                <Text style={styles.emptyStateText}>
+                  No products scanned yet
+                </Text>
                 <Text style={styles.emptyStateSubtext}>
                   Tap the button above to scan a product barcode
                 </Text>
@@ -590,11 +697,14 @@ const WarehouseScreen: React.FC = () => {
       <Modal
         visible={showScanner}
         animationType="slide"
-        onRequestClose={() => setShowScanner(false)}>
+        onRequestClose={() => setShowScanner(false)}
+      >
         <BarcodeScanner
           onScan={handleOperationScan}
           onClose={() => setShowScanner(false)}
-          title={`Scan Product for Stock ${operationType === 'in' ? 'In' : 'Out'}`}
+          title={`Scan Product for Stock ${
+            operationType === "in" ? "In" : "Out"
+          }`}
           description="Point the camera at a product barcode"
         />
       </Modal>
@@ -603,7 +713,8 @@ const WarehouseScreen: React.FC = () => {
       <Modal
         visible={showInventoryScanner}
         animationType="slide"
-        onRequestClose={() => setShowInventoryScanner(false)}>
+        onRequestClose={() => setShowInventoryScanner(false)}
+      >
         <BarcodeScanner
           onScan={handleInventoryScan}
           onClose={() => setShowInventoryScanner(false)}
@@ -632,7 +743,9 @@ const WarehouseScreen: React.FC = () => {
             <View style={styles.processingContainer}>
               <ActivityIndicator size="large" color="#007AFF" />
               <Text style={styles.processingText}>Processing image...</Text>
-              <Text style={styles.processingSubtext}>Extracting product information</Text>
+              <Text style={styles.processingSubtext}>
+                Extracting product information
+              </Text>
             </View>
           </View>
         </Modal>
@@ -646,11 +759,12 @@ const WarehouseScreen: React.FC = () => {
         onRequestClose={() => {
           if (!isCreatingProduct) {
             setShowCreateProductModal(false);
-            setCreateProductName('');
-            setCreateProductPrice('');
-            setCreateProductBarcode('');
+            setCreateProductName("");
+            setCreateProductPrice("");
+            setCreateProductBarcode("");
           }
-        }}>
+        }}
+      >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Create New Product</Text>
@@ -658,19 +772,21 @@ const WarehouseScreen: React.FC = () => {
               onPress={() => {
                 if (!isCreatingProduct) {
                   setShowCreateProductModal(false);
-                  setCreateProductName('');
-                  setCreateProductPrice('');
-                  setCreateProductBarcode('');
+                  setCreateProductName("");
+                  setCreateProductPrice("");
+                  setCreateProductBarcode("");
                 }
               }}
-              disabled={isCreatingProduct}>
+              disabled={isCreatingProduct}
+            >
               <MaterialIcons name="close" size={28} color="#000" />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.modalContent}>
             <Text style={styles.modalDescription}>
-              Product with barcode "{createProductBarcode}" was not found. Please fill in the details to create a new product.
+              Product with barcode "{createProductBarcode}" was not found.
+              Please fill in the details to create a new product.
             </Text>
 
             <View style={styles.modalForm}>
@@ -708,9 +824,14 @@ const WarehouseScreen: React.FC = () => {
                   isCreatingProduct && styles.submitButtonDisabled,
                 ]}
                 onPress={handleCreateProduct}
-                disabled={isCreatingProduct || !createProductName.trim() || !createProductPrice.trim()}>
+                disabled={
+                  isCreatingProduct ||
+                  !createProductName.trim() ||
+                  !createProductPrice.trim()
+                }
+              >
                 <Text style={styles.submitButtonText}>
-                  {isCreatingProduct ? 'Creating...' : 'Create Product'}
+                  {isCreatingProduct ? "Creating..." : "Create Product"}
                 </Text>
               </TouchableOpacity>
 
@@ -719,12 +840,13 @@ const WarehouseScreen: React.FC = () => {
                 onPress={() => {
                   if (!isCreatingProduct) {
                     setShowCreateProductModal(false);
-                    setCreateProductName('');
-                    setCreateProductPrice('');
-                    setCreateProductBarcode('');
+                    setCreateProductName("");
+                    setCreateProductPrice("");
+                    setCreateProductBarcode("");
                   }
                 }}
-                disabled={isCreatingProduct}>
+                disabled={isCreatingProduct}
+              >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -738,44 +860,44 @@ const WarehouseScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
+    flexDirection: "row",
+    backgroundColor: "#fff",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: "#E5E5EA",
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
     gap: 6,
   },
   activeTab: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: "#E3F2FD",
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#8E8E93',
+    fontWeight: "500",
+    color: "#8E8E93",
   },
   activeTabText: {
-    color: '#007AFF',
-    fontWeight: '600',
+    color: "#007AFF",
+    fontWeight: "600",
   },
   content: {
     flex: 1,
     padding: 16,
   },
   operationButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
     marginBottom: 20,
   },
@@ -783,122 +905,122 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minHeight: 120,
   },
   inButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: "#34C759",
   },
   outButton: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: "#FF3B30",
   },
   operationButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 8,
   },
   operationButtonSubtext: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
     opacity: 0.9,
     marginTop: 4,
   },
   formContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginTop: 20,
   },
   productInfo: {
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: "#E5E5EA",
     paddingBottom: 16,
     marginBottom: 16,
   },
   productName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: "600",
+    color: "#000",
     marginBottom: 8,
   },
   productBarcode: {
     fontSize: 14,
-    color: '#8E8E93',
-    fontFamily: 'monospace',
+    color: "#8E8E93",
+    fontFamily: "monospace",
     marginBottom: 4,
   },
   productStock: {
     fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: "#007AFF",
+    fontWeight: "600",
   },
   form: {
     marginTop: 8,
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: "600",
+    color: "#000",
     marginBottom: 8,
     marginTop: 12,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: "#E5E5EA",
   },
   textArea: {
     height: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   submitButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     borderRadius: 8,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   cancelButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderRadius: 8,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
   },
   cancelButtonText: {
-    color: '#8E8E93',
+    color: "#8E8E93",
     fontSize: 16,
   },
   // Create Product Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: "#E5E5EA",
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: "600",
+    color: "#000",
   },
   modalContent: {
     flex: 1,
@@ -906,7 +1028,7 @@ const styles = StyleSheet.create({
   },
   modalDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginBottom: 20,
     lineHeight: 20,
   },
@@ -914,43 +1036,43 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   disabledInput: {
-    backgroundColor: '#F5F5F5',
-    color: '#8E8E93',
+    backgroundColor: "#F5F5F5",
+    color: "#8E8E93",
   },
   // OCR Processing styles
   processingOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   processingContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 32,
-    alignItems: 'center',
+    alignItems: "center",
     minWidth: 200,
   },
   processingText: {
     marginTop: 16,
     fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: "600",
+    color: "#000",
   },
   processingSubtext: {
     marginTop: 8,
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   // Inventory check styles
   scanButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     borderRadius: 12,
     padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -960,23 +1082,23 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   scanButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: 8,
   },
   scanButtonSubtext: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
     opacity: 0.9,
     marginTop: 4,
   },
   productCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -986,66 +1108,66 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: "#E5E5EA",
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: "600",
+    color: "#000",
   },
   productImage: {
-    width: '100%',
+    width: "100%",
     height: 200,
     borderRadius: 8,
     marginBottom: 12,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: "#f5f5f5",
   },
   infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    borderBottomColor: "#F2F2F7",
   },
   infoLabel: {
     fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '500',
+    color: "#8E8E93",
+    fontWeight: "500",
   },
   infoValue: {
     fontSize: 14,
-    color: '#000',
-    fontWeight: '600',
-    fontFamily: 'monospace',
+    color: "#000",
+    fontWeight: "600",
+    fontFamily: "monospace",
   },
   stockContainer: {
     marginTop: 8,
     padding: 16,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: "#F2F2F7",
     borderRadius: 8,
   },
   stockLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   stockValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   stockValue: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: "bold",
+    color: "#000",
   },
   stockStatusBadge: {
     paddingHorizontal: 12,
@@ -1053,33 +1175,33 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   stockStatusText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   descriptionContainer: {
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
+    borderTopColor: "#E5E5EA",
   },
   descriptionLabel: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   descriptionText: {
     fontSize: 14,
-    color: '#000',
+    color: "#000",
     lineHeight: 20,
   },
   historySection: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -1089,65 +1211,65 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: "#E5E5EA",
   },
   historyTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    fontWeight: "600",
+    color: "#000",
   },
   clearHistoryText: {
     fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '500',
+    color: "#007AFF",
+    fontWeight: "500",
   },
   historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
+    borderBottomColor: "#F2F2F7",
   },
   historyItemContent: {
     flex: 1,
   },
   historyItemName: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
+    fontWeight: "500",
+    color: "#000",
     marginBottom: 4,
   },
   historyItemStock: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   historyItemStockText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
   },
   emptyStateText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#8E8E93',
+    fontWeight: "600",
+    color: "#8E8E93",
     marginTop: 16,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#C7C7CC',
+    color: "#C7C7CC",
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
     paddingHorizontal: 32,
   },
 });

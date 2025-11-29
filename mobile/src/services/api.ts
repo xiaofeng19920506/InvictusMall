@@ -323,6 +323,7 @@ class ApiService {
       words?: string[];
       parsed: {
         name?: string;
+        serialNumber?: string;
         barcode?: string;
         price?: number;
         otherInfo?: string[];
