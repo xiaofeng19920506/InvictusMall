@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Modal,
   Image,
   ActivityIndicator,
+  FlatList,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import BarcodeScanner from "../../components/BarcodeScanner";
@@ -62,7 +63,7 @@ import {
 const WarehouseScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotification();
-  const { user } = useAuth();
+  const { user, stores, selectedStore, selectStore } = useAuth();
 
   // Redux state
   const activeTab = useAppSelector((state) => state.warehouse.activeTab);
@@ -121,16 +122,16 @@ const WarehouseScreen: React.FC = () => {
       return;
     }
 
-    if (!user || !user.storeId) {
+    if (!selectedStore) {
       showError(
-        "Unable to get store information. Please try logging in again."
+        "No store selected. Please select a store first."
       );
       return;
     }
 
     try {
       const productData = {
-        storeId: user.storeId,
+        storeId: selectedStore.id,
         name: createProductName.trim(),
         description: "",
         price: price,
@@ -459,8 +460,82 @@ const WarehouseScreen: React.FC = () => {
     dispatch(setCheckedProduct(product));
   };
 
+  const [showStorePicker, setShowStorePicker] = useState(false);
+
   return (
     <View style={styles.container}>
+      {/* Store Selector - Only show if multiple stores */}
+      {stores.length > 1 && (
+        <View style={styles.storeSelectorContainer}>
+          <TouchableOpacity
+            style={styles.storeSelector}
+            onPress={() => setShowStorePicker(true)}
+          >
+            <MaterialIcons name="store" size={20} color="#007AFF" />
+            <Text style={styles.storeSelectorText}>
+              {selectedStore?.name || "Select Store"}
+            </Text>
+            <MaterialIcons name="arrow-drop-down" size={20} color="#8E8E93" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Store Picker Modal */}
+      <Modal
+        visible={showStorePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowStorePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.storePickerModal}>
+            <View style={styles.storePickerHeader}>
+              <Text style={styles.storePickerTitle}>Select Store</Text>
+              <TouchableOpacity
+                onPress={() => setShowStorePicker(false)}
+                style={styles.closeButton}
+              >
+                <MaterialIcons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={stores}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.storeOption,
+                    selectedStore?.id === item.id && styles.selectedStoreOption,
+                  ]}
+                  onPress={() => {
+                    selectStore(item);
+                    setShowStorePicker(false);
+                  }}
+                >
+                  <MaterialIcons
+                    name="store"
+                    size={20}
+                    color={selectedStore?.id === item.id ? "#007AFF" : "#8E8E93"}
+                  />
+                  <Text
+                    style={[
+                      styles.storeOptionText,
+                      selectedStore?.id === item.id &&
+                        styles.selectedStoreOptionText,
+                    ]}
+                  >
+                    {item.name}
+                  </Text>
+                  {selectedStore?.id === item.id && (
+                    <MaterialIcons name="check" size={20} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
       {/* Tab Switcher */}
       <View style={styles.tabContainer}>
         <TouchableOpacity

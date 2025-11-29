@@ -8,6 +8,7 @@ import type {
   Product,
   Order,
   StockOperation,
+  Store,
 } from "../types";
 
 // Determine API URL based on device type
@@ -354,6 +355,16 @@ class ApiService {
       return response.data;
     } catch (error: any) {
       throw this.handleError(error, "Failed to extract text from image");
+    }
+  }
+
+  // Get stores associated with the current staff member
+  async getMyStores(): Promise<ApiResponse<Store[]>> {
+    try {
+      const response = await this.api.get("/api/staff/my-stores");
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error, "Failed to fetch stores");
     }
   }
 }

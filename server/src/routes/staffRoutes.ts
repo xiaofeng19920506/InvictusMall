@@ -8,6 +8,7 @@ import {
 } from "../middleware/auth";
 import { handleValidationErrors } from "../middleware/validation";
 import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 import { handleStaffLogin } from "../services/staff/staffLoginService";
 import { handleGetStaffProfile } from "../services/staff/staffProfileService";
 import { handleStaffRegister } from "../services/staff/staffRegistrationService";
@@ -15,6 +16,7 @@ import { handleStaffInvite } from "../services/staff/staffInvitationService";
 import { handleStaffSetupPassword } from "../services/staff/staffPasswordService";
 import { handleGetAllStaff } from "../services/staff/staffListService";
 import { handleUpdateStaff } from "../services/staff/staffUpdateService";
+import { staffController } from "../controllers/staff/StaffController";
 
 const router = Router();
 const staffModel = new StaffModel();
@@ -510,6 +512,28 @@ router.put(
       ApiResponseHelper.error(res, error.message || "Failed to update staff member", 500, error);
     }
   }
+);
+
+/**
+ * @swagger
+ * /api/staff/my-stores:
+ *   get:
+ *     summary: Get all stores associated with the current staff member
+ *     tags: [Staff Authentication]
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: List of stores retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  "/my-stores",
+  authenticateStaffToken,
+  staffController.getMyStores
 );
 
 export default router;

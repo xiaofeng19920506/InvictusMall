@@ -134,3 +134,9 @@ export interface BarcodeScanResult {
   message?: string; // Additional message for user feedback
 }
 
+export interface Store {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+}
