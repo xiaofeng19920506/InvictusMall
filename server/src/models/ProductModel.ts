@@ -1,7 +1,9 @@
 import { pool } from '../config/database';
-import { Product, CreateProductRequest, UpdateProductRequest } from '../types/product';
+import { Product, CreateProductRequest, UpdateProductRequest, StoreProductInventory } from '../types/product';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
+import { ProductSerialNumberModel } from './ProductSerialNumberModel';
+import { StoreProductInventoryModel } from './StoreProductInventoryModel';
 
 export class ProductModel {
   // Map database row to Product object
@@ -141,11 +143,54 @@ export class ProductModel {
     }
   }
 
+  /**
+   * Load serial numbers and store inventories for a product
+   */
+  private static async enrichProductWithDetails(product: Product): Promise<Product> {
+    try {
+      const serialNumberModel = new ProductSerialNumberModel();
+      const inventoryModel = new StoreProductInventoryModel();
+
+      // Load serial numbers for the product's store
+      const serialNumbers = await serialNumberModel.getSerialNumbersByProductAndStore(
+        product.id,
+        product.storeId
+      );
+      product.serialNumbers = serialNumbers.map(sn => sn.serialNumber);
+
+      // Load all store inventories for this product
+      const storeInventories = await inventoryModel.getInventoryByProduct(product.id);
+      product.storeInventories = await Promise.all(
+        storeInventories.map(async (inventory) => {
+          // Load serial numbers for each store
+          const storeSerialNumbers = await serialNumberModel.getSerialNumbersByProductAndStore(
+            product.id,
+            inventory.storeId
+          );
+          return {
+            storeId: inventory.storeId,
+            quantity: inventory.quantity,
+            serialNumbers: storeSerialNumbers.map(sn => sn.serialNumber),
+          } as StoreProductInventory;
+        })
+      );
+
+      return product;
+    } catch (error: any) {
+      logger.error('[ProductModel] Error enriching product with details', {
+        productId: product.id,
+        error: error.message,
+      });
+      // Return product without enrichment if there's an error
+      return product;
+    }
+  }
+
   // Get product by ID
-  static async findById(id: string): Promise<Product | null> {
+  static async findById(id: string, includeDetails: boolean = false): Promise<Product | null> {
     let connection;
     try {
-      logger.debug('[ProductModel] Finding product by ID', { productId: id });
+      logger.debug('[ProductModel] Finding product by ID', { productId: id, includeDetails });
       connection = await pool.getConnection();
       const [rows] = await connection.execute(
         `SELECT * FROM products WHERE id = ?`,
@@ -158,7 +203,7 @@ export class ProductModel {
         return null;
       }
       
-      const product = this.mapRowToProduct(products[0]);
+      let product = this.mapRowToProduct(products[0]);
       logger.debug('[ProductModel] Product found', {
         productId: product.id,
         name: product.name,
@@ -166,6 +211,12 @@ export class ProductModel {
         rawStockQuantity: products[0].stock_quantity,
         storeId: product.storeId,
       });
+
+      // Optionally enrich with serial numbers and store inventories
+      if (includeDetails) {
+        product = await this.enrichProductWithDetails(product);
+      }
+
       return product;
     } catch (error: any) {
       logger.error('[ProductModel] Database error in findById', {
@@ -284,8 +335,90 @@ export class ProductModel {
         affectedRows: updateAffectedRows,
       });
 
+      // Handle serial numbers if provided
+      if (productData.serialNumbers && productData.serialNumbers.length > 0) {
+        const serialNumberModel = new ProductSerialNumberModel();
+        await serialNumberModel.addSerialNumbers(
+          productData.serialNumbers.map(sn => ({
+            productId,
+            storeId: productData.storeId,
+            serialNumber: sn,
+          }))
+        );
+        logger.debug('[ProductModel] Serial numbers added', {
+          productId,
+          count: productData.serialNumbers.length,
+        });
+      }
+
+      // Handle store inventory if quantity is provided
+      if (stockQuantity > 0) {
+        const inventoryModel = new StoreProductInventoryModel();
+        await inventoryModel.upsertInventory({
+          productId,
+          storeId: productData.storeId,
+          quantity: stockQuantity,
+        });
+        logger.debug('[ProductModel] Store inventory created', {
+          productId,
+          storeId: productData.storeId,
+          quantity: stockQuantity,
+        });
+      }
+
+      // Handle serial numbers if provided (outside transaction for now)
+      // Note: This will be handled in a separate transaction after product creation
+      
       await connection.commit();
       logger.info('[ProductModel] Transaction committed successfully', { productId });
+
+      // Handle serial numbers and inventory after product is created
+      // (These use their own transactions)
+      if (productData.serialNumbers && productData.serialNumbers.length > 0) {
+        try {
+          const serialNumberModel = new ProductSerialNumberModel();
+          await serialNumberModel.addSerialNumbers(
+            productData.serialNumbers.map(sn => ({
+              productId,
+              storeId: productData.storeId,
+              serialNumber: sn,
+            }))
+          );
+          logger.debug('[ProductModel] Serial numbers added', {
+            productId,
+            count: productData.serialNumbers.length,
+          });
+        } catch (error: any) {
+          logger.error('[ProductModel] Error adding serial numbers', {
+            productId,
+            error: error.message,
+          });
+          // Don't fail product creation if serial numbers fail
+        }
+      }
+
+      // Handle store inventory
+      if (stockQuantity > 0) {
+        try {
+          const inventoryModel = new StoreProductInventoryModel();
+          await inventoryModel.upsertInventory({
+            productId,
+            storeId: productData.storeId,
+            quantity: stockQuantity,
+          });
+          logger.debug('[ProductModel] Store inventory created', {
+            productId,
+            storeId: productData.storeId,
+            quantity: stockQuantity,
+          });
+        } catch (error: any) {
+          logger.error('[ProductModel] Error creating store inventory', {
+            productId,
+            error: error.message,
+          });
+          // Don't fail product creation if inventory fails
+        }
+      }
 
       const createdProduct = await this.findById(productId);
       if (!createdProduct) {

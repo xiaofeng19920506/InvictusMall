@@ -1231,6 +1231,107 @@ const createTables = async (): Promise<void> => {
 
     }
 
+    // Create product_serial_numbers table to store multiple serial numbers per product
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS product_serial_numbers (
+        id VARCHAR(36) PRIMARY KEY,
+        product_id VARCHAR(36) NOT NULL,
+        store_id VARCHAR(36) NOT NULL,
+        serial_number VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_product_id (product_id),
+        INDEX idx_store_id (store_id),
+        INDEX idx_serial_number (serial_number),
+        UNIQUE KEY unique_product_store_serial (product_id, store_id, serial_number)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Try to add foreign key constraints for product_serial_numbers
+    try {
+      await connection.execute(`
+        ALTER TABLE product_serial_numbers
+        ADD CONSTRAINT fk_product_serial_numbers_product
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (
+        error?.code !== "ER_DUP_KEY" &&
+        error?.code !== "ER_FK_DUP_NAME" &&
+        error?.errno !== 1142 &&
+        error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.warn("Could not add foreign key to product_serial_numbers:", error.message);
+      }
+    }
+
+    try {
+      await connection.execute(`
+        ALTER TABLE product_serial_numbers
+        ADD CONSTRAINT fk_product_serial_numbers_store
+        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (
+        error?.code !== "ER_DUP_KEY" &&
+        error?.code !== "ER_FK_DUP_NAME" &&
+        error?.errno !== 1142 &&
+        error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.warn("Could not add foreign key to product_serial_numbers for store:", error.message);
+      }
+    }
+
+    // Create store_product_inventory table to track product quantity per store
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS store_product_inventory (
+        id VARCHAR(36) PRIMARY KEY,
+        product_id VARCHAR(36) NOT NULL,
+        store_id VARCHAR(36) NOT NULL,
+        quantity INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_product_id (product_id),
+        INDEX idx_store_id (store_id),
+        UNIQUE KEY unique_product_store (product_id, store_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Try to add foreign key constraints for store_product_inventory
+    try {
+      await connection.execute(`
+        ALTER TABLE store_product_inventory
+        ADD CONSTRAINT fk_store_product_inventory_product
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (
+        error?.code !== "ER_DUP_KEY" &&
+        error?.code !== "ER_FK_DUP_NAME" &&
+        error?.errno !== 1142 &&
+        error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.warn("Could not add foreign key to store_product_inventory:", error.message);
+      }
+    }
+
+    try {
+      await connection.execute(`
+        ALTER TABLE store_product_inventory
+        ADD CONSTRAINT fk_store_product_inventory_store
+        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (
+        error?.code !== "ER_DUP_KEY" &&
+        error?.code !== "ER_FK_DUP_NAME" &&
+        error?.errno !== 1142 &&
+        error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.warn("Could not add foreign key to store_product_inventory for store:", error.message);
+      }
+    }
+
     // Create categories table for hierarchical categories (3 levels)
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS categories (

@@ -29,6 +29,8 @@ import taxRoutes from "./routes/taxRoutes";
 import reservationRoutes from "./routes/reservationRoutes";
 import stockOperationRoutes from "./routes/stockOperationRoutes";
 import ocrRoutes from "./routes/ocrRoutes";
+import productSerialNumberRoutes from "./routes/productSerialNumberRoutes";
+import storeProductInventoryRoutes from "./routes/storeProductInventoryRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
@@ -195,6 +197,8 @@ app.use("/api/tax", taxRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/stock-operations", stockOperationRoutes);
 app.use("/api/ocr", ocrRoutes);
+app.use("/api/product-serial-numbers", productSerialNumberRoutes);
+app.use("/api/store-product-inventory", storeProductInventoryRoutes);
 
 /**
  * @swagger

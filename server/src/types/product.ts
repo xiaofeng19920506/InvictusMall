@@ -9,10 +9,18 @@ export interface Product {
   stockQuantity: number;
   category?: string;
   barcode?: string; // Product barcode for scanning
-  serialNumber?: string; // Serial number (S/N) for tracking individual products
+  serialNumber?: string; // Deprecated: Single serial number for backward compatibility
+  serialNumbers?: string[]; // Array of serial numbers for tracking individual products
+  storeInventories?: StoreProductInventory[]; // Inventory quantities per store
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface StoreProductInventory {
+  storeId: string;
+  quantity: number;
+  serialNumbers?: string[]; // Serial numbers for this product in this store
 }
 
 export interface CreateProductRequest {
@@ -25,7 +33,8 @@ export interface CreateProductRequest {
   stockQuantity?: number;
   category?: string;
   barcode?: string; // Product barcode for scanning
-  serialNumber?: string; // Serial number (S/N) for tracking individual products
+  serialNumber?: string; // Deprecated: Single serial number for backward compatibility
+  serialNumbers?: string[]; // Array of serial numbers for tracking individual products
   isActive?: boolean;
 }
 
@@ -38,7 +47,8 @@ export interface UpdateProductRequest {
   stockQuantity?: number;
   category?: string;
   barcode?: string; // Product barcode (EAN, UPC, etc.)
-  serialNumber?: string; // Serial number (S/N) for tracking individual products
+  serialNumber?: string; // Deprecated: Single serial number for backward compatibility
+  serialNumbers?: string[]; // Array of serial numbers for tracking individual products
   isActive?: boolean;
 }
 
