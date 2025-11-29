@@ -313,6 +313,48 @@ class ApiService {
       throw this.handleError(error, "Failed to fetch stock operations");
     }
   }
+
+  // OCR APIs
+  async extractTextFromImage(imageUri: string): Promise<
+    ApiResponse<{
+      text: string;
+      confidence: number;
+      lines?: string[];
+      words?: string[];
+      parsed: {
+        name?: string;
+        barcode?: string;
+        price?: number;
+        otherInfo?: string[];
+      };
+    }>
+  > {
+    try {
+      // Create form data
+      const formData = new FormData();
+
+      // Get file name from URI
+      const filename = imageUri.split("/").pop() || "image.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : "image/jpeg";
+
+      formData.append("image", {
+        uri: imageUri,
+        name: filename,
+        type: type,
+      } as any);
+
+      const response = await this.api.post("/api/ocr/extract", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error, "Failed to extract text from image");
+    }
+  }
 }
 
 export const apiService = new ApiService();

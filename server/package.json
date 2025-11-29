@@ -35,9 +35,10 @@
     "mysql2": "^3.15.3",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.10",
+    "stripe": "^17.4.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "stripe": "^17.4.0",
+    "tesseract.js": "^6.0.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

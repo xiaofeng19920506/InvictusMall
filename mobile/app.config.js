@@ -1,5 +1,14 @@
 import { execSync } from "child_process";
 import os from "os";
+// Load environment variables from .env file
+// Expo automatically loads .env files, but we can also use dotenv for explicit loading
+if (process.env.NODE_ENV !== "production") {
+  try {
+    require("dotenv").config();
+  } catch (e) {
+    // dotenv is optional, expo loads .env automatically
+  }
+}
 
 /**
  * Get the local network IP address automatically
@@ -8,10 +17,11 @@ import os from "os";
  */
 function getLocalNetworkIP() {
   try {
-    // Priority 1: Use environment variable if set
+    // Priority 1: Use environment variable from .env file or system env
+    // Expo automatically loads .env files, so this should work
     if (process.env.DEVICE_API_IP) {
       console.log(
-        "📱 Using DEVICE_API_IP from environment:",
+        "📱 Using DEVICE_API_IP from .env file or environment:",
         process.env.DEVICE_API_IP
       );
       return process.env.DEVICE_API_IP;
@@ -75,26 +85,36 @@ function getLocalNetworkIP() {
     console.warn("⚠️ Failed to detect local network IP:", error.message);
   }
 
-  // Default fallback - you can change this to your common IP
+  // Default fallback - use the IP from .env file if available
+  // This will be used if auto-detection fails
+  const envIP = process.env.DEVICE_API_IP;
+  if (envIP) {
+    console.log("📱 Using DEVICE_API_IP from .env file:", envIP);
+    return envIP;
+  }
+  
   console.warn("⚠️ Using default fallback IP: 10.1.10.9");
   return "10.1.10.9";
 }
 
-// Get the local network IP
-const localNetworkIP = getLocalNetworkIP();
+// Get the device API IP (prioritize .env file, then auto-detection)
+const deviceAPIIP = process.env.DEVICE_API_IP || getLocalNetworkIP();
 const API_PORT = process.env.API_PORT || "3001";
 
 // Build API URLs
+// For physical devices: use the IP from .env or detected IP
 const DEVICE_API_URL =
-  process.env.DEVICE_API_URL || `http://${localNetworkIP}:${API_PORT}`;
+  process.env.DEVICE_API_URL || `http://${deviceAPIIP}:${API_PORT}`;
+// For simulators: always use localhost
 const SIMULATOR_API_URL =
   process.env.SIMULATOR_API_URL || "http://localhost:3001";
-const API_BASE_URL = process.env.API_BASE_URL; // Override all if set
+// Override all if set
+const API_BASE_URL = process.env.API_BASE_URL;
 
 console.log("\n🔧 Expo API Configuration:");
-console.log("   Device API URL:", DEVICE_API_URL);
+console.log("   Device API URL (physical devices):", DEVICE_API_URL);
 console.log("   Simulator API URL:", SIMULATOR_API_URL);
-console.log("   Detected Local IP:", localNetworkIP);
+console.log("   Device API IP:", deviceAPIIP);
 console.log("");
 
 export default {
@@ -148,7 +168,7 @@ export default {
       deviceApiUrl: DEVICE_API_URL,
       simulatorApiUrl: SIMULATOR_API_URL,
       // Debug info
-      detectedLocalIP: localNetworkIP,
+      detectedLocalIP: deviceAPIIP,
     },
   },
 };

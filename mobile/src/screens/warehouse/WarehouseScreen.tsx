@@ -8,9 +8,11 @@ import {
   TextInput,
   Modal,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import BarcodeScanner from '../../components/BarcodeScanner';
+import PhotoCapture from '../../components/PhotoCapture';
 import apiService from '../../services/api';
 import authService from '../../services/auth';
 import {useNotification} from '../../contexts/NotificationContext';
@@ -23,11 +25,13 @@ const WarehouseScreen: React.FC = () => {
   
   // Operation states
   const [showScanner, setShowScanner] = useState(false);
+  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
   const [operationType, setOperationType] = useState<'in' | 'out' | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState('');
   const [reason, setReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   
   // Inventory check states
   const [showInventoryScanner, setShowInventoryScanner] = useState(false);
@@ -111,6 +115,65 @@ const WarehouseScreen: React.FC = () => {
       showError(error.message || 'Failed to create product');
     } finally {
       setIsCreatingProduct(false);
+    }
+  };
+
+  // Handle photo capture for stock in
+  const handlePhotoTaken = async (imageUri: string) => {
+    setShowPhotoCapture(false);
+    setIsProcessingOCR(true);
+
+    try {
+      console.log('[WarehouseScreen] 📷 Photo taken, starting OCR...');
+      
+      // Extract text from image using OCR
+      const ocrResponse = await apiService.extractTextFromImage(imageUri);
+      
+      if (!ocrResponse.success || !ocrResponse.data) {
+        showError('Failed to extract text from image');
+        setIsProcessingOCR(false);
+        return;
+      }
+
+      const { text, parsed } = ocrResponse.data;
+      console.log('[WarehouseScreen] 📝 OCR result:', {
+        text: text.substring(0, 100),
+        parsed,
+      });
+
+      // Try to find product by barcode first
+      let product: Product | null = null;
+      
+      if (parsed.barcode) {
+        console.log('[WarehouseScreen] 🔍 Searching product by barcode:', parsed.barcode);
+        try {
+          const barcodeResponse = await apiService.getProductByBarcode(parsed.barcode);
+          if (barcodeResponse.success && barcodeResponse.data) {
+            product = barcodeResponse.data;
+            console.log('[WarehouseScreen] ✅ Product found by barcode:', product.name);
+          }
+        } catch (error) {
+          console.log('[WarehouseScreen] ⚠️ Product not found by barcode');
+        }
+      }
+
+      // If product found, set it and continue with stock operation
+      if (product) {
+        setSelectedProduct(product);
+        showSuccess(`Product found: ${product.name}`);
+      } else {
+        // Product not found, open create product modal with OCR data
+        console.log('[WarehouseScreen] 📝 Product not found, opening create modal');
+        setCreateProductBarcode(parsed.barcode || '');
+        setCreateProductName(parsed.name || '');
+        setCreateProductPrice(parsed.price ? parsed.price.toString() : '');
+        setShowCreateProductModal(true);
+      }
+    } catch (error: any) {
+      console.error('[WarehouseScreen] ❌ OCR processing error:', error);
+      showError(error.message || 'Failed to process image');
+    } finally {
+      setIsProcessingOCR(false);
     }
   };
 
@@ -306,11 +369,11 @@ const WarehouseScreen: React.FC = () => {
                 style={[styles.operationButton, styles.inButton]}
                 onPress={() => {
                   setOperationType('in');
-                  setShowScanner(true);
+                  setShowPhotoCapture(true);
                 }}>
                 <MaterialIcons name="add" size={32} color="#fff" />
                 <Text style={styles.operationButtonText}>Stock In</Text>
-                <Text style={styles.operationButtonSubtext}>入库</Text>
+                <Text style={styles.operationButtonSubtext}>入库 (拍照识别)</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -548,6 +611,32 @@ const WarehouseScreen: React.FC = () => {
           description="Point the camera at a product barcode"
         />
       </Modal>
+
+      {/* Photo Capture Modal */}
+      {showPhotoCapture && (
+        <PhotoCapture
+          onPhotoTaken={handlePhotoTaken}
+          onClose={() => {
+            setShowPhotoCapture(false);
+            setOperationType(null);
+          }}
+          title="Take Product Photo"
+          description="Take a photo of the product label or packaging to extract product information"
+        />
+      )}
+
+      {/* OCR Processing Indicator */}
+      {isProcessingOCR && (
+        <Modal visible={true} transparent={true} animationType="fade">
+          <View style={styles.processingOverlay}>
+            <View style={styles.processingContainer}>
+              <ActivityIndicator size="large" color="#007AFF" />
+              <Text style={styles.processingText}>Processing image...</Text>
+              <Text style={styles.processingSubtext}>Extracting product information</Text>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Create Product Modal */}
       <Modal
@@ -826,6 +915,31 @@ const styles = StyleSheet.create({
   },
   disabledInput: {
     backgroundColor: '#F5F5F5',
+    color: '#8E8E93',
+  },
+  // OCR Processing styles
+  processingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  processingContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 32,
+    alignItems: 'center',
+    minWidth: 200,
+  },
+  processingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  processingSubtext: {
+    marginTop: 8,
+    fontSize: 14,
     color: '#8E8E93',
   },
   // Inventory check styles
