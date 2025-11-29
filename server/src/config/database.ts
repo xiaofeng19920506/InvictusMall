@@ -1110,6 +1110,19 @@ const createTables = async (): Promise<void> => {
         }
       }
 
+      // Add serial_number column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN serial_number VARCHAR(255) NULL AFTER barcode
+        `);
+        console.log("✅ Added serial_number column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add serial_number column:", error.message);
+        }
+      }
+
       // Try to add foreign key separately (may fail if user lacks REFERENCES permission)
       try {
         await connection.execute(`
@@ -1200,6 +1213,19 @@ const createTables = async (): Promise<void> => {
       } catch (error: any) {
         if (error.code !== "ER_DUP_KEYNAME") {
           console.warn("Could not add barcode index:", error.message);
+        }
+      }
+
+      // Add serial_number column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN serial_number VARCHAR(255) NULL AFTER barcode
+        `);
+        console.log("✅ Added serial_number column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add serial_number column:", error.message);
         }
       }
 

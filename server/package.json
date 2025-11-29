@@ -9,7 +9,8 @@
     "build": "tsc",
     "test": "jest",
     "create-admin": "ts-node scripts/createAdmin.ts",
-    "seed-categories": "ts-node src/scripts/seedCategories.ts"
+    "seed-categories": "ts-node src/scripts/seedCategories.ts",
+    "migrate:add-serial-number": "ts-node src/scripts/addSerialNumberColumn.ts"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
