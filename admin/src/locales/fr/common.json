@@ -121,7 +121,11 @@
       "discount": "Promotion",
       "discountPlaceholder": "Ex. : -20%",
       "verified": "Boutique vérifiée",
-      "active": "Boutique active"
+      "active": "Boutique active",
+      "owner": "Propriétaire/Administrateur",
+      "selectOwner": "-- Sélectionner propriétaire/administrateur --",
+      "loadingOwners": "Chargement des propriétaires/administrateurs...",
+      "noOwnersAvailable": "Aucun propriétaire ou administrateur disponible. Veuillez d'abord créer un compte propriétaire ou administrateur."
     },
     "actions": {
       "invalidImageType": "Veuillez sélectionner un fichier image.",

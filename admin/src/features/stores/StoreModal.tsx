@@ -167,9 +167,9 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       try {
         const response = await staffApi.getAllStaff();
         if (response.success && response.data) {
-          // Filter to only show staff with 'owner' role
+          // Filter to show staff with 'owner' or 'admin' role
           const owners = response.data.filter(
-            (staff) => staff.role === "owner" && staff.isActive
+            (staff) => (staff.role === "owner" || staff.role === "admin") && staff.isActive
           );
           setAvailableOwners(owners);
         }

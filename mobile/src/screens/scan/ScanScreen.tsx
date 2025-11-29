@@ -40,7 +40,7 @@ const ScanScreen: React.FC = () => {
           </Text>
           <TouchableOpacity style={styles.scanButton} onPress={() => setShowScanner(true)}>
             <MaterialIcons name="qr-code-scanner" size={24} color="#fff" />
-            <Text style={styles.scanButtonText}>Scan Barcode</Text>
+            <Text style={styles.scanButtonText}>Scan Product Barcode</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -84,8 +84,8 @@ const ScanScreen: React.FC = () => {
         <BarcodeScanner
           onScan={handleScan}
           onClose={handleCloseScanner}
-          title="Scan Barcode"
-          description="Point the camera at a barcode to scan"
+          title="Scan Product Barcode"
+          description="Point the camera at a product barcode"
         />
       </Modal>
     </View>

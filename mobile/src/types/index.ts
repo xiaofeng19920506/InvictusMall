@@ -67,7 +67,7 @@ export interface Product {
 
 export interface Order {
   id: string;
-  userId: string;
+  userId: string | null;
   storeId: string;
   storeName: string;
   status: OrderStatus;
@@ -75,6 +75,10 @@ export interface Order {
   items: OrderItem[];
   orderDate: string;
   shippingAddress?: ShippingAddress;
+  trackingNumber?: string;
+  shippedDate?: string;
+  deliveredDate?: string;
+  paymentMethod?: string;
 }
 
 export type OrderStatus =
@@ -94,9 +98,12 @@ export interface OrderItem {
 }
 
 export interface ShippingAddress {
-  street: string;
+  streetAddress?: string;
+  street?: string; // Legacy support
+  aptNumber?: string;
   city: string;
-  state: string;
+  stateProvince?: string;
+  state?: string; // Legacy support
   zipCode: string;
   country: string;
 }
@@ -121,8 +128,9 @@ export interface ApiResponse<T> {
 }
 
 export interface BarcodeScanResult {
-  type: 'product' | 'order' | 'tracking' | 'unknown';
+  type: 'product' | 'order' | 'tracking' | 'unknown' | 'product_not_found';
   value: string;
   data?: any;
+  message?: string; // Additional message for user feedback
 }
 

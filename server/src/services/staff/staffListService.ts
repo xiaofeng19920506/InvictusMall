@@ -27,17 +27,20 @@ export async function handleGetAllStaff(
 
     // Role-based data filtering
     if (requesterRole === "admin") {
-      // Admin can see all staff members - use pagination if limit is provided
-      if (limit !== undefined) {
-        const { staff, total: totalCount } = await staffModel.getAllStaffWithPagination({
-          limit: parseInt(limit as string) || undefined,
-          offset: offset !== undefined ? parseInt(offset as string) : undefined,
-        });
-        staffMembers = staff;
-        total = totalCount;
-      } else {
-        staffMembers = await staffModel.getAllStaff();
+      // Admin can see all staff in their own store only
+      if (requesterStoreId) {
+        const allStaff = await staffModel.getAllStaff();
+        staffMembers = allStaff.filter((staff: any) => staff.storeId === requesterStoreId);
         total = staffMembers.length;
+        // Apply pagination manually if limit is provided
+        if (limit !== undefined) {
+          const limitValue = parseInt(limit as string) || 0;
+          const offsetValue = offset !== undefined ? parseInt(offset as string) : 0;
+          staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
+        }
+      } else {
+        staffMembers = [];
+        total = 0;
       }
     } else if (requesterRole === "owner") {
       // Store owner can see all staff in the same store

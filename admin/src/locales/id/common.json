@@ -118,10 +118,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
+      "owner": "Pemilik Toko/Administrator",
+      "selectOwner": "-- Pilih pemilik/administrator --",
+      "loadingOwners": "Memuat pemilik/administrator...",
+      "noOwnersAvailable": "Tidak ada pemilik atau administrator yang tersedia. Silakan buat akun pemilik atau administrator terlebih dahulu."
     },
     "actions": {
       "invalidImageType": "Please select an image file.",

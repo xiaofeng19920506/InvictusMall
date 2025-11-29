@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Store } from "@/services/api";
 import { productService, Product } from "@/services/product";
 import { useCart } from "@/contexts/CartContext";
@@ -23,7 +23,9 @@ function AddToCartButton({
     addItem({
       productId: product.id,
       productName: product.name,
-      productImage: product.imageUrl,
+      productImage: (product.imageUrls && product.imageUrls.length > 0) 
+        ? product.imageUrls[0] 
+        : product.imageUrl,
       price: product.price,
       quantity: 1,
       storeId: store.id,
@@ -53,6 +55,7 @@ interface StoreTabsContentProps {
 
 export default function StoreTabsContent({ store }: StoreTabsContentProps) {
   const params = useParams();
+  const router = useRouter();
   const storeId = params.id as string;
 
   const [allItems, setAllItems] = useState<Product[]>([]);
@@ -159,11 +162,16 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                     {products.map((product) => (
                       <div
                         key={product.id}
-                        className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                        className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                        onClick={() => router.push(`/products/${product.id}`)}
                       >
-                        {product.imageUrl && (
+                        {((product.imageUrls && product.imageUrls.length > 0) || product.imageUrl) ? (
                           <img
-                            src={getImageUrl(product.imageUrl) || "/placeholder/product.png"}
+                            src={getImageUrl(
+                              product.imageUrls && product.imageUrls.length > 0
+                                ? product.imageUrls[0]
+                                : product.imageUrl
+                            ) || "/placeholder/product.png"}
                             alt={product.name}
                             className="w-full h-48 object-cover"
                             onError={(e) => {
@@ -172,8 +180,7 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                               target.src = "/placeholder/product.png";
                             }}
                           />
-                        )}
-                        {!product.imageUrl && (
+                        ) : (
                           <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
                             <span className="text-gray-400">No Image</span>
                           </div>
@@ -226,9 +233,13 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                         key={service.id}
                         className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
                       >
-                        {service.imageUrl && (
+                        {((service.imageUrls && service.imageUrls.length > 0) || service.imageUrl) ? (
                           <img
-                            src={getImageUrl(service.imageUrl) || "/placeholder/service.png"}
+                            src={getImageUrl(
+                              service.imageUrls && service.imageUrls.length > 0
+                                ? service.imageUrls[0]
+                                : service.imageUrl
+                            ) || "/placeholder/service.png"}
                             alt={service.name}
                             className="w-full h-48 object-cover"
                             onError={(e) => {
@@ -237,8 +248,7 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                               target.src = "/placeholder/service.png";
                             }}
                           />
-                        )}
-                        {!service.imageUrl && (
+                        ) : (
                           <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
                             <span className="text-gray-400">No Image</span>
                           </div>

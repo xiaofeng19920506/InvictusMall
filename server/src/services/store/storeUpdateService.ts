@@ -39,9 +39,9 @@ export async function handleUpdateStore(
         if (ownerId) {
           const newOwner = await staffModel.getStaffById(ownerId);
           if (newOwner) {
-            // Verify the new owner has the 'owner' role
-            if (newOwner.role !== "owner") {
-              logger.warn(`Staff member ${ownerId} is not an owner, skipping store assignment`, {
+            // Verify the new owner has the 'owner' or 'admin' role
+            if (newOwner.role !== "owner" && newOwner.role !== "admin") {
+              logger.warn(`Staff member ${ownerId} is not an owner or admin, skipping store assignment`, {
                 ownerId,
                 storeId: id,
               });

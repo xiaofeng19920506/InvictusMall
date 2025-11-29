@@ -7,7 +7,8 @@ export interface ServerProduct {
   name: string;
   description?: string;
   price: number;
-  imageUrl?: string;
+  imageUrl?: string; // Deprecated: kept for backward compatibility
+  imageUrls?: string[]; // Array of image URLs
   stockQuantity: number;
   category?: string;
   isActive: boolean;
@@ -22,7 +23,8 @@ export interface Product {
   name: string;
   description?: string;
   price: number;
-  imageUrl?: string;
+  imageUrl?: string; // Deprecated: kept for backward compatibility
+  imageUrls?: string[]; // Array of image URLs
   stockQuantity: number;
   category?: string;
   isActive: boolean;
@@ -53,7 +55,8 @@ class ProductService {
       name: serverProduct.name,
       description: serverProduct.description,
       price: serverProduct.price,
-      imageUrl: serverProduct.imageUrl,
+      imageUrl: serverProduct.imageUrl, // Backward compatibility
+      imageUrls: serverProduct.imageUrls, // New multi-image support
       stockQuantity: serverProduct.stockQuantity,
       category: serverProduct.category,
       isActive: serverProduct.isActive,

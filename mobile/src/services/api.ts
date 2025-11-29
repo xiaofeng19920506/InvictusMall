@@ -1,16 +1,117 @@
-import axios, {AxiosInstance, AxiosError} from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios, { AxiosInstance, AxiosError } from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // Using environment variable from expo-constants instead of react-native-config
-import Constants from 'expo-constants';
+import Constants from "expo-constants";
 import type {
   ApiResponse,
   Shipment,
   Product,
   Order,
   StockOperation,
-} from '../types';
+} from "../types";
 
-const API_BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3001';
+// Determine API URL based on device type
+// Simulator/emulator should use localhost, real devices should use network IP
+const getApiBaseUrl = (): string => {
+  // Check if running on simulator/emulator
+  // Constants.isDevice can be undefined in some cases, so we need to handle that
+  const isDevice = Constants.isDevice;
+  const deviceId = Constants.deviceId || "";
+  const isSimulator =
+    deviceId.includes("Simulator") || deviceId.includes("Emulator");
+
+  // Helper to detect if likely running on simulator
+  // Simulators typically have "Simulator" in deviceId, or isDevice is explicitly false
+  const isLikelySimulator =
+    isSimulator || (isDevice !== undefined && !isDevice);
+
+  const deviceApiUrl = Constants.expoConfig?.extra?.deviceApiUrl;
+  const simulatorApiUrl = Constants.expoConfig?.extra?.simulatorApiUrl;
+  const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+
+  console.log("[ApiService] 🔍 Device detection:", {
+    isDevice,
+    deviceId,
+    isSimulator,
+    isLikelySimulator,
+    hasDeviceApiUrl: !!deviceApiUrl,
+    hasSimulatorApiUrl: !!simulatorApiUrl,
+    hasApiUrl: !!apiUrl,
+    detectedLocalIP: Constants.expoConfig?.extra?.detectedLocalIP,
+  });
+
+  // Priority 1: If API_BASE_URL is explicitly set, use it (overrides everything)
+  if (
+    apiUrl &&
+    !apiUrl.includes("localhost") &&
+    !apiUrl.includes("127.0.0.1")
+  ) {
+    console.log("[ApiService] 🔧 Using explicitly configured apiUrl:", apiUrl);
+    return apiUrl;
+  }
+
+  // Priority 2: For simulators/emulators, use simulatorApiUrl or localhost
+  if (isLikelySimulator) {
+    const url = simulatorApiUrl || "http://localhost:3001";
+    console.log("[ApiService] 🖥️ Detected simulator/emulator, using:", url);
+    return url;
+  }
+
+  // Priority 3: For real devices OR if device detection is unclear, prefer deviceApiUrl
+  // This ensures that if deviceApiUrl is configured, it will be used (safer for real devices)
+  if (deviceApiUrl) {
+    console.log(
+      "[ApiService] 📱 Using deviceApiUrl (configured for physical devices):",
+      deviceApiUrl
+    );
+    return deviceApiUrl;
+  }
+
+  // Priority 3: If isDevice is true (explicitly a real device), try to use deviceApiUrl
+  // But if not set, check if apiUrl is set and warn
+  if (isDevice === true) {
+    // Real device but no deviceApiUrl - try apiUrl as fallback
+    if (Constants.expoConfig?.extra?.apiUrl) {
+      const configUrl = Constants.expoConfig.extra.apiUrl;
+      console.warn(
+        "[ApiService] ⚠️ Real device detected but using apiUrl (consider setting deviceApiUrl):",
+        configUrl
+      );
+      return configUrl;
+    }
+    console.warn(
+      "[ApiService] ⚠️ WARNING: Real device detected but no deviceApiUrl configured!",
+      "Please set deviceApiUrl in app.config.js. Using localhost (will likely fail)."
+    );
+    return "http://localhost:3001";
+  }
+
+  // Priority 4: If isDevice is undefined (unknown state), check apiUrl as fallback
+  // If apiUrl is set and not localhost, use it (likely network IP)
+  if (apiUrl) {
+    // If apiUrl is not localhost, use it (likely network IP for real device)
+    if (!apiUrl.includes("localhost") && !apiUrl.includes("127.0.0.1")) {
+      console.log(
+        "[ApiService] 🔧 Device detection unclear, but apiUrl looks like network IP:",
+        apiUrl
+      );
+      return apiUrl;
+    }
+  }
+
+  // Last resort: Default to localhost (will work for simulators, not for real devices)
+  console.warn(
+    "[ApiService] ⚠️ Device detection unclear and no deviceApiUrl configured.",
+    "Defaulting to localhost. If on real device, this will fail.",
+    "Please set deviceApiUrl in app.config.js"
+  );
+  return "http://localhost:3001";
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+console.log("[ApiService] 🌐 API Base URL:", API_BASE_URL);
+console.log("[ApiService] 📱 Is Device:", Constants.isDevice);
 
 class ApiService {
   private api: AxiosInstance;
@@ -18,21 +119,22 @@ class ApiService {
   constructor() {
     this.api = axios.create({
       baseURL: API_BASE_URL,
+      timeout: 15000, // 15 second timeout for all requests
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
     });
 
     // Add request interceptor to attach auth token
     this.api.interceptors.request.use(
       async (config) => {
-        const token = await AsyncStorage.getItem('staff_auth_token');
+        const token = await AsyncStorage.getItem("staff_auth_token");
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
       },
-      (error) => Promise.reject(error),
+      (error) => Promise.reject(error)
     );
 
     // Add response interceptor for error handling
@@ -41,11 +143,11 @@ class ApiService {
       async (error: AxiosError) => {
         if (error.response?.status === 401) {
           // Unauthorized - clear token and redirect to login
-          await AsyncStorage.removeItem('staff_auth_token');
-          await AsyncStorage.removeItem('staff_user');
+          await AsyncStorage.removeItem("staff_auth_token");
+          await AsyncStorage.removeItem("staff_user");
         }
         return Promise.reject(error);
-      },
+      }
     );
   }
 
@@ -65,8 +167,8 @@ class ApiService {
     status?: string;
     limit?: number;
     offset?: number;
-  }): Promise<ApiResponse<{shipments: Shipment[]; total: number}>> {
-    const response = await this.api.get('/api/admin/shipments', {params});
+  }): Promise<ApiResponse<{ shipments: Shipment[]; total: number }>> {
+    const response = await this.api.get("/api/admin/shipments", { params });
     return response.data;
   }
 
@@ -75,8 +177,12 @@ class ApiService {
     return response.data;
   }
 
-  async getShipmentsByOrderId(orderId: string): Promise<ApiResponse<Shipment[]>> {
-    const response = await this.api.get(`/api/admin/shipments/order/${orderId}`);
+  async getShipmentsByOrderId(
+    orderId: string
+  ): Promise<ApiResponse<Shipment[]>> {
+    const response = await this.api.get(
+      `/api/admin/shipments/order/${orderId}`
+    );
     return response.data;
   }
 
@@ -91,13 +197,13 @@ class ApiService {
     shippingCost?: number;
     notes?: string;
   }): Promise<ApiResponse<Shipment>> {
-    const response = await this.api.post('/api/admin/shipments', data);
+    const response = await this.api.post("/api/admin/shipments", data);
     return response.data;
   }
 
   async updateShipment(
     id: string,
-    data: Partial<Shipment>,
+    data: Partial<Shipment>
   ): Promise<ApiResponse<Shipment>> {
     const response = await this.api.put(`/api/admin/shipments/${id}`, data);
     return response.data;
@@ -106,19 +212,52 @@ class ApiService {
   async updateShipmentStatus(
     id: string,
     status: string,
-    description?: string,
+    description?: string
   ): Promise<ApiResponse<Shipment>> {
-    const response = await this.api.post(`/api/admin/shipments/${id}/tracking`, {
-      status,
-      description,
-    });
+    const response = await this.api.post(
+      `/api/admin/shipments/${id}/tracking`,
+      {
+        status,
+        description,
+      }
+    );
     return response.data;
   }
 
   // Product APIs
   async getProductByBarcode(barcode: string): Promise<ApiResponse<Product>> {
-    const response = await this.api.get(`/api/products/barcode/${barcode}`);
-    return response.data;
+    try {
+      const response = await this.api.get(`/api/products/barcode/${barcode}`);
+      return response.data;
+    } catch (error: any) {
+      // If 404, product doesn't exist - return a structured response
+      if (error.response?.status === 404) {
+        return {
+          success: false,
+          message: "Product not found",
+        };
+      }
+      // Re-throw other errors
+      throw this.handleError(error, "Failed to fetch product by barcode");
+    }
+  }
+
+  async createProduct(data: {
+    storeId: string;
+    name: string;
+    description?: string;
+    price: number;
+    barcode?: string;
+    stockQuantity?: number;
+    category?: string;
+    isActive?: boolean;
+  }): Promise<ApiResponse<Product>> {
+    try {
+      const response = await this.api.post("/api/products", data);
+      return response.data;
+    } catch (error: any) {
+      throw this.handleError(error, "Failed to create product");
+    }
   }
 
   async getProductById(id: string): Promise<ApiResponse<Product>> {
@@ -138,54 +277,43 @@ class ApiService {
   }
 
   // Stock Operations
-  async createStockOperation(
-    data: {
-      productId: string;
-      type: 'in' | 'out';
-      quantity: number;
-      reason?: string;
-      orderId?: string;
-    },
-  ): Promise<ApiResponse<{
-    operation: StockOperation;
-    orderUpdated?: boolean;
-    orderStatus?: string;
-  }>> {
+  async createStockOperation(data: {
+    productId: string;
+    type: "in" | "out";
+    quantity: number;
+    reason?: string;
+    orderId?: string;
+  }): Promise<
+    ApiResponse<{
+      operation: StockOperation;
+      orderUpdated?: boolean;
+      orderStatus?: string;
+    }>
+  > {
     try {
-      const response = await this.api.post('/api/stock-operations', data);
+      const response = await this.api.post("/api/stock-operations", data);
       return response.data;
     } catch (error: any) {
-      throw this.handleError(error, 'Failed to create stock operation');
+      throw this.handleError(error, "Failed to create stock operation");
     }
   }
 
   async getStockOperations(params?: {
     productId?: string;
-    type?: 'in' | 'out';
+    type?: "in" | "out";
     limit?: number;
     offset?: number;
-  }): Promise<ApiResponse<{operations: StockOperation[]; total: number}>> {
-    const response = await this.api.post('/api/admin/inventory/operations', data);
-    return response.data;
-  }
-
-  async getStockOperations(params?: {
-    productId?: string;
-    type?: 'in' | 'out';
-    limit?: number;
-    offset?: number;
-  }): Promise<ApiResponse<{operations: StockOperation[]; total: number}>> {
+  }): Promise<ApiResponse<{ operations: StockOperation[]; total: number }>> {
     try {
-      const response = await this.api.get('/api/stock-operations', {
+      const response = await this.api.get("/api/stock-operations", {
         params,
       });
       return response.data;
     } catch (error: any) {
-      throw this.handleError(error, 'Failed to fetch stock operations');
+      throw this.handleError(error, "Failed to fetch stock operations");
     }
   }
 }
 
 export const apiService = new ApiService();
 export default apiService;
-

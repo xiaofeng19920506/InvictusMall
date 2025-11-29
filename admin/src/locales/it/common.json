@@ -118,10 +118,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
+      "owner": "Proprietario/Amministratore",
+      "selectOwner": "-- Seleziona proprietario/amministratore --",
+      "loadingOwners": "Caricamento proprietari/amministratori...",
+      "noOwnersAvailable": "Nessun proprietario o amministratore disponibile. Si prega di creare prima un account proprietario o amministratore."
     },
     "actions": {
       "invalidImageType": "Please select an image file.",

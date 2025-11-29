@@ -30,8 +30,8 @@ export async function handleCreateStore(
       return;
     }
 
-    if (owner.role !== "owner") {
-      ApiResponseHelper.validationError(res, "Selected staff member must have the 'owner' role");
+    if (owner.role !== "owner" && owner.role !== "admin") {
+      ApiResponseHelper.validationError(res, "Selected staff member must have the 'owner' or 'admin' role");
       return;
     }
 

@@ -279,7 +279,11 @@ const ProductsManagement: React.FC = () => {
                     <tr key={product.id}>
                       <td>
                         <img
-                          src={getImageUrl(product.imageUrl) || '/images/default-product.png'}
+                          src={getImageUrl(
+                            product.imageUrls && product.imageUrls.length > 0
+                              ? product.imageUrls[0]
+                              : product.imageUrl
+                          ) || '/images/default-product.png'}
                           alt={product.name}
                           className={styles.productImage}
                           onError={(e) => {

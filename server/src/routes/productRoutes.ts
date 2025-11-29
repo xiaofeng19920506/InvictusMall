@@ -41,6 +41,16 @@ const uploadProductImage = multer({
   },
 });
 
+// For multiple images
+const uploadMultipleProductImages = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: productImageFilter,
+  limits: {
+    fileSize: 15 * 1024 * 1024, // 15 MB per file
+    files: 10, // Max 10 images
+  },
+});
+
 /**
  * Get all products for a store (Public endpoint)
  */
@@ -98,6 +108,36 @@ router.get("/store/:storeId", async (req: Request, res: Response) => {
   } catch (error) {
     logger.error("Failed to fetch products", error, { storeId: req.params.storeId });
     return ApiResponseHelper.error(res, "Failed to fetch products", 500, error);
+  }
+});
+
+/**
+ * Get product by barcode (Public endpoint)
+ * IMPORTANT: This route must be before /:id route to avoid path conflicts
+ */
+router.get("/barcode/:barcode", async (req: Request, res: Response) => {
+  try {
+    const { barcode } = req.params;
+
+    if (!barcode) {
+      return ApiResponseHelper.validationError(res, "Barcode is required");
+    }
+
+    console.log(`[ProductRoutes] 🔍 Searching for product with barcode: ${barcode}`);
+
+    const product = await ProductModel.findByBarcode(barcode);
+
+    if (!product) {
+      console.log(`[ProductRoutes] ❌ Product not found with barcode: ${barcode}`);
+      return ApiResponseHelper.notFound(res, "Product");
+    }
+
+    console.log(`[ProductRoutes] ✅ Product found: ${product.name} (ID: ${product.id})`);
+
+    return ApiResponseHelper.success(res, product);
+  } catch (error) {
+    logger.error("Error fetching product by barcode", error, { barcode: req.params.barcode });
+    return ApiResponseHelper.error(res, "Failed to fetch product", 500, error);
   }
 });
 
@@ -476,12 +516,16 @@ router.post(
         let updatedProduct = undefined;
         if (productId && typeof productId === "string") {
           try {
+            const currentProduct = await ProductModel.findById(productId);
+            const existingImageUrls = currentProduct?.imageUrls || (currentProduct?.imageUrl ? [currentProduct.imageUrl] : []);
+            const newImageUrls = [...existingImageUrls, imageUrl];
+            
             updatedProduct = await ProductModel.update(productId, {
-              imageUrl,
+              imageUrls: newImageUrls,
             });
           } catch (updateError) {
             console.error(
-              "[Product Upload] Failed to update product imageUrl:",
+              "[Product Upload] Failed to update product imageUrls:",
               updateError
             );
           }
@@ -491,6 +535,7 @@ router.post(
           success: true,
           data: {
             imageUrl,
+            imageUrls: productId ? (await ProductModel.findById(productId))?.imageUrls : [imageUrl],
             metadata,
             product: updatedProduct,
           },
@@ -516,6 +561,109 @@ router.post(
       return res.status(500).json({
         success: false,
         message: "Failed to upload image",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+);
+
+/**
+ * Upload multiple product images
+ */
+router.post(
+  "/upload-images",
+  uploadMultipleProductImages.array("files", 10),
+  async (req: Request, res: Response) => {
+    try {
+      const uploadedFiles = (req as any).files as Express.Multer.File[] | undefined;
+      const { productId } = req.body || {};
+
+      if (!uploadedFiles || uploadedFiles.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No image files uploaded",
+        });
+      }
+
+      const externalUploadUrl = process.env.FILE_UPLOAD_API_URL || "";
+      const uploadedImageUrls: string[] = [];
+
+      // Upload all files
+      for (const uploadedFile of uploadedFiles) {
+        const validation = validateImageFile(
+          uploadedFile.buffer,
+          uploadedFile.mimetype,
+          uploadedFile.size
+        );
+
+        if (!validation.valid) {
+          return res.status(400).json({
+            success: false,
+            message: validation.error || `Invalid image file: ${uploadedFile.originalname}`,
+          });
+        }
+
+        try {
+          const formData = new FormData();
+          formData.append("file", uploadedFile.buffer, {
+            filename: uploadedFile.originalname,
+            contentType: uploadedFile.mimetype,
+            knownLength: uploadedFile.size,
+          });
+
+          const uploadResponse = await fetch(externalUploadUrl, {
+            method: "POST",
+            body: formData,
+            headers: formData.getHeaders(),
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload ${uploadedFile.originalname}`);
+          }
+
+          const uploadResult: any = await uploadResponse.json();
+          if (uploadResult.data) {
+            uploadedImageUrls.push(uploadResult.data);
+          }
+        } catch (uploadError: any) {
+          logger.error(`Failed to upload ${uploadedFile.originalname}:`, uploadError);
+          return res.status(500).json({
+            success: false,
+            message: `Failed to upload ${uploadedFile.originalname}`,
+            error: uploadError.message,
+          });
+        }
+      }
+
+      // Update product with all image URLs if productId is provided
+      let updatedProduct = undefined;
+      if (productId && typeof productId === "string" && uploadedImageUrls.length > 0) {
+        try {
+          const currentProduct = await ProductModel.findById(productId);
+          const existingImageUrls = currentProduct?.imageUrls || (currentProduct?.imageUrl ? [currentProduct.imageUrl] : []);
+          const newImageUrls = [...existingImageUrls, ...uploadedImageUrls];
+          
+          updatedProduct = await ProductModel.update(productId, {
+            imageUrls: newImageUrls,
+          });
+        } catch (updateError) {
+          logger.error("[Product Upload] Failed to update product imageUrls:", updateError);
+        }
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          imageUrls: uploadedImageUrls,
+          product: updatedProduct,
+        },
+        message: `${uploadedImageUrls.length} image(s) uploaded successfully`,
+      });
+    } catch (error) {
+      logger.error("[Product Upload] Unexpected error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to upload images",
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }

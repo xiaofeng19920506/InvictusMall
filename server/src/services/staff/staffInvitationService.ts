@@ -30,9 +30,9 @@ export async function handleStaffInvite(
 
     // Role-based restrictions
     if (requesterRole === "admin") {
-      // Admin can only invite owner role
-      if (role !== "owner") {
-        ApiResponseHelper.forbidden(res, "Admin can only invite staff with owner role");
+      // Admin can invite owner and admin roles
+      if (role !== "owner" && role !== "admin") {
+        ApiResponseHelper.forbidden(res, "Admin can only invite staff with owner or admin role");
         return;
       }
     } else if (requesterRole === "owner") {

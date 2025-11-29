@@ -37,12 +37,23 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({children}) => {
 
   const login = async (email: string, password: string) => {
     try {
+      console.log('[AuthContext] 🔐 Login attempt started');
       const result = await authService.login(email, password);
+      console.log('[AuthContext] 📦 Login result:', {
+        success: result.success,
+        hasUser: !!result.user,
+        message: result.message,
+      });
+      
       if (result.success && result.user) {
+        console.log('[AuthContext] ✅ Setting user in context:', result.user.email);
         setUser(result.user);
+      } else {
+        console.error('[AuthContext] ❌ Login failed:', result.message);
       }
       return result;
     } catch (error: any) {
+      console.error('[AuthContext] ❌ Login exception:', error);
       return {
         success: false,
         message: error.message || 'Login failed',

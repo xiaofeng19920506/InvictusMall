@@ -121,7 +121,9 @@ export default function ReservationModal({
       addItem({
         productId: service.id,
         productName: service.name,
-        productImage: service.imageUrl,
+        productImage: (service.imageUrls && service.imageUrls.length > 0) 
+          ? service.imageUrls[0] 
+          : service.imageUrl,
         price: service.price,
         quantity: 1,
         storeId: store.id,

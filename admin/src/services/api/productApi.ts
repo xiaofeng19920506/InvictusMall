@@ -8,7 +8,8 @@ export interface Product {
   name: string;
   description?: string;
   price: number;
-  imageUrl?: string;
+  imageUrl?: string; // Deprecated: kept for backward compatibility
+  imageUrls?: string[]; // Array of image URLs
   stockQuantity: number;
   category?: string;
   isActive: boolean;
@@ -21,7 +22,8 @@ export interface CreateProductRequest {
   name: string;
   description?: string;
   price: number;
-  imageUrl?: string;
+  imageUrl?: string; // Deprecated: kept for backward compatibility
+  imageUrls?: string[]; // Array of image URLs
   stockQuantity?: number;
   category?: string;
   isActive?: boolean;
@@ -31,7 +33,8 @@ export interface UpdateProductRequest {
   name?: string;
   description?: string;
   price?: number;
-  imageUrl?: string;
+  imageUrl?: string; // Deprecated: kept for backward compatibility
+  imageUrls?: string[]; // Array of image URLs
   stockQuantity?: number;
   category?: string;
   isActive?: boolean;
@@ -99,13 +102,14 @@ export const productApi = {
     return response.data;
   },
 
-  // Upload product image
+  // Upload product image (single)
   uploadProductImage: async (
     file: File,
     productId?: string
   ): Promise<
     ApiResponse<{
       imageUrl: string;
+      imageUrls?: string[];
       metadata?: { originalName: string; mimeType: string; size: number };
     }>
   > => {
@@ -146,6 +150,50 @@ export const productApi = {
       return data;
     } catch (error) {
       console.error("Product image upload failed:", error);
+      throw error;
+    }
+  },
+
+  // Upload multiple product images
+  uploadProductImages: async (
+    files: File[],
+    productId?: string
+  ): Promise<
+    ApiResponse<{
+      imageUrls: string[];
+    }>
+  > => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append("files", file, file.name);
+    });
+
+    if (productId) {
+      formData.append("productId", productId);
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/products/upload-images`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to upload images (status ${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // ignore parse errors, use default message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = (await response.json()) as ApiResponse<{ imageUrls: string[] }>;
+      return data;
+    } catch (error) {
+      console.error("Product images upload failed:", error);
       throw error;
     }
   },

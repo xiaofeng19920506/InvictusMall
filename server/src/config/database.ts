@@ -71,6 +71,9 @@ export const initializeDatabase = async (): Promise<void> => {
 
     // Create tables
     await createTables();
+
+    // Assign orphaned stores to admin
+    await assignOrphanedStoresToAdmin();
   } catch (error) {
     console.error("❌ Database initialization failed:", error);
     throw error;
@@ -1055,6 +1058,7 @@ const createTables = async (): Promise<void> => {
           description TEXT,
           price DECIMAL(10,2) NOT NULL,
           image_url VARCHAR(500),
+          image_urls JSON,
           stock_quantity INT NOT NULL DEFAULT 0,
           category VARCHAR(100),
           is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -1066,6 +1070,45 @@ const createTables = async (): Promise<void> => {
           INDEX idx_name (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
+      
+      // Add image_urls column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN image_urls JSON NULL AFTER image_url
+        `);
+        console.log("✅ Added image_urls column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add image_urls column:", error.message);
+        }
+      }
+
+      // Add barcode column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN barcode VARCHAR(255) NULL AFTER name
+        `);
+        console.log("✅ Added barcode column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add barcode column:", error.message);
+        }
+      }
+
+      // Add barcode index if it doesn't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD INDEX idx_barcode (barcode)
+        `);
+        console.log("✅ Added barcode index to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_KEYNAME") {
+          console.warn("Could not add barcode index:", error.message);
+        }
+      }
 
       // Try to add foreign key separately (may fail if user lacks REFERENCES permission)
       try {
@@ -1108,6 +1151,7 @@ const createTables = async (): Promise<void> => {
           description TEXT,
           price DECIMAL(10,2) NOT NULL,
           image_url VARCHAR(500),
+          image_urls JSON,
           stock_quantity INT NOT NULL DEFAULT 0,
           category VARCHAR(100),
           is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -1119,6 +1163,46 @@ const createTables = async (): Promise<void> => {
           INDEX idx_name (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
+      
+      // Add image_urls column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN image_urls JSON NULL AFTER image_url
+        `);
+        console.log("✅ Added image_urls column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add image_urls column:", error.message);
+        }
+      }
+
+      // Add barcode column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN barcode VARCHAR(255) NULL AFTER name
+        `);
+        console.log("✅ Added barcode column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add barcode column:", error.message);
+        }
+      }
+
+      // Add barcode index if it doesn't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD INDEX idx_barcode (barcode)
+        `);
+        console.log("✅ Added barcode index to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_KEYNAME") {
+          console.warn("Could not add barcode index:", error.message);
+        }
+      }
+
     }
 
     // Create categories table for hierarchical categories (3 levels)
@@ -1500,6 +1584,71 @@ const createTables = async (): Promise<void> => {
     }
 
     console.log("✅ Created all Amazon-style feature tables");
+  } finally {
+    connection.release();
+  }
+};
+
+/**
+ * Assign orphaned stores to admin users
+ * This function finds stores without any owner/admin and assigns them to the first admin found
+ */
+export const assignOrphanedStoresToAdmin = async (): Promise<void> => {
+  const connection = await pool.getConnection();
+
+  try {
+    console.log("🔍 Checking for orphaned stores (stores without owner/admin)...");
+
+    // Find stores that don't have any associated owner or admin
+    const [orphanedStores] = await connection.execute(`
+      SELECT s.id, s.name
+      FROM stores s
+      LEFT JOIN staff st ON s.id = st.store_id AND st.role IN ('owner', 'admin') AND st.is_active = true
+      WHERE st.id IS NULL
+    `);
+
+    const stores = orphanedStores as any[];
+    console.log(`📊 Found ${stores.length} orphaned stores`);
+
+    if (stores.length === 0) {
+      console.log("✅ No orphaned stores found");
+      return;
+    }
+
+    // Find the first admin user
+    const [adminUsers] = await connection.execute(`
+      SELECT id, email, first_name, last_name
+      FROM staff
+      WHERE role = 'admin' AND is_active = true
+      ORDER BY created_at ASC
+      LIMIT 1
+    `);
+
+    const admins = adminUsers as any[];
+    if (admins.length === 0) {
+      console.warn("⚠️ No admin users found to assign orphaned stores to");
+      return;
+    }
+
+    const admin = admins[0];
+    console.log(`👤 Assigning orphaned stores to admin: ${admin.email} (${admin.id})`);
+
+    // Assign each orphaned store to the admin
+    for (const store of stores) {
+      console.log(`🏪 Assigning store "${store.name}" (${store.id}) to admin ${admin.email}`);
+
+      // Update the admin's store_id to this store
+      await connection.execute(
+        `UPDATE staff SET store_id = ? WHERE id = ?`,
+        [store.id, admin.id]
+      );
+
+      console.log(`✅ Successfully assigned store "${store.name}" to admin ${admin.email}`);
+    }
+
+    console.log(`✅ Assigned ${stores.length} orphaned stores to admin ${admin.email}`);
+  } catch (error: any) {
+    console.error("❌ Error assigning orphaned stores to admin:", error);
   } finally {
     connection.release();
   }

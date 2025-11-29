@@ -391,7 +391,7 @@ export const requireOwnerOrManager = (
 
 /**
  * Helper function to verify that the authenticated user owns the store
- * Admin can access any store, owners can only access their own store
+ * Admin and owner can only access their own store, managers and employees can only access their assigned store
  * Returns true if authorized, false otherwise
  */
 export const checkStoreOwnership = async (
@@ -399,25 +399,30 @@ export const checkStoreOwnership = async (
   storeId: string
 ): Promise<{ authorized: boolean; error?: string }> => {
   try {
-    // Admin can access any store
-    if (req.user?.role === "admin" || req.staff?.role === "admin") {
-      return { authorized: true };
-    }
-
     if (!storeId) {
       return { authorized: false, error: "Store ID is required" };
     }
 
     // For staff authentication, check if staff member owns the store
     if (req.staff) {
-      if (req.staff.role === "owner" && req.staff.id) {
+      if ((req.staff.role === "owner" || req.staff.role === "admin") && req.staff.id) {
         // Get staff member's store_id
         const staffMember = await staffModel.getStaffById(req.staff.id);
         if (!staffMember) {
           return { authorized: false, error: "Staff member not found" };
         }
 
-        // Owner must have matching store_id, or be admin
+        // Admin and owner must have matching store_id
+        if (staffMember.storeId !== storeId) {
+          return { authorized: false, error: "You do not have permission to access this store" };
+        }
+      } else if (req.staff.role === "manager" || req.staff.role === "employee") {
+        // Managers and employees must be assigned to the store
+        const staffMember = await staffModel.getStaffById(req.staff.id);
+        if (!staffMember) {
+          return { authorized: false, error: "Staff member not found" };
+        }
+
         if (staffMember.storeId !== storeId) {
           return { authorized: false, error: "You do not have permission to access this store" };
         }

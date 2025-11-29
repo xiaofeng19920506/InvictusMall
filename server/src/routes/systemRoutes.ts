@@ -9,6 +9,7 @@ import {
 } from "../middleware/auth";
 import { ApiResponseHelper } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
+import { assignOrphanedStoresToAdmin } from "../config/database";
 
 const router = Router();
 
@@ -320,6 +321,51 @@ router.post(
     } catch (error: any) {
       logger.error("Failed to run low stock check", error, { userId: req.user?.id });
       return ApiResponseHelper.error(res, "Failed to run low stock check", 500, error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/system/assign-orphaned-stores:
+ *   post:
+ *     summary: Assign orphaned stores (without owner/admin) to the first admin user
+ *     tags: [System]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Orphaned stores assigned successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  "/assign-orphaned-stores",
+  authenticateStaffToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      // Only allow admin users to run this
+      if (req.staff?.role !== "admin") {
+        ApiResponseHelper.forbidden(res, "Only admin users can assign orphaned stores");
+        return;
+      }
+
+      logger.info("Starting orphaned stores assignment", { userId: req.staff.id });
+
+      await assignOrphanedStoresToAdmin();
+
+      logger.info("Orphaned stores assignment completed", { userId: req.staff.id });
+
+      ApiResponseHelper.success(
+        res,
+        { message: "Orphaned stores assignment completed successfully" },
+        "Orphaned stores have been assigned to admin users"
+      );
+    } catch (error: any) {
+      logger.error("Failed to assign orphaned stores", error, { userId: req.staff?.id });
+      ApiResponseHelper.error(res, "Failed to assign orphaned stores", 500, error);
     }
   }
 );

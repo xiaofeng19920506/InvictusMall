@@ -118,10 +118,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
+      "owner": "Chủ cửa hàng/Quản trị viên",
+      "selectOwner": "-- Chọn chủ cửa hàng/quản trị viên --",
+      "loadingOwners": "Đang tải chủ cửa hàng/quản trị viên...",
+      "noOwnersAvailable": "Không có chủ cửa hàng hoặc quản trị viên nào khả dụng. Vui lòng tạo tài khoản chủ cửa hàng hoặc quản trị viên trước."
     },
     "actions": {
       "invalidImageType": "Please select an image file.",

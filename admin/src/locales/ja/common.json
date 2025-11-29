@@ -121,7 +121,11 @@
       "discount": "割引",
       "discountPlaceholder": "例：20% OFF",
       "verified": "認証済み店舗",
-      "active": "有効な店舗"
+      "active": "有効な店舗",
+      "owner": "店舗オーナー/管理者",
+      "selectOwner": "-- オーナー/管理者を選択 --",
+      "loadingOwners": "オーナー/管理者を読み込み中...",
+      "noOwnersAvailable": "利用可能なオーナーまたは管理者がいません。まずオーナーまたは管理者アカウントを作成してください。"
     },
     "actions": {
       "invalidImageType": "画像ファイルを選択してください。",

@@ -118,10 +118,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
+      "owner": "Mağaza Sahibi/Yönetici",
+      "selectOwner": "-- Mağaza sahibi/yönetici seçin --",
+      "loadingOwners": "Mağaza sahipleri/yöneticiler yükleniyor...",
+      "noOwnersAvailable": "Kullanılabilir mağaza sahibi veya yönetici yok. Lütfen önce bir mağaza sahibi veya yönetici hesabı oluşturun."
     },
     "actions": {
       "invalidImageType": "Please select an image file.",

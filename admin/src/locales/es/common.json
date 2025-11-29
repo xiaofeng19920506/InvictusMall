@@ -121,7 +121,11 @@
       "discount": "Descuento",
       "discountPlaceholder": "Ej.: 20% OFF",
       "verified": "Tienda verificada",
-      "active": "Tienda activa"
+      "active": "Tienda activa",
+      "owner": "Propietario/Administrador",
+      "selectOwner": "-- Seleccionar propietario/administrador --",
+      "loadingOwners": "Cargando propietarios/administradores...",
+      "noOwnersAvailable": "No hay propietarios o administradores disponibles. Por favor, cree primero una cuenta de propietario o administrador."
     },
     "actions": {
       "invalidImageType": "Seleccione un archivo de imagen.",

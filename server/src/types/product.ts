@@ -4,9 +4,11 @@ export interface Product {
   name: string;
   description?: string;
   price: number;
-  imageUrl?: string;
+  imageUrl?: string; // Deprecated: kept for backward compatibility, use imageUrls instead
+  imageUrls?: string[]; // Array of image URLs
   stockQuantity: number;
   category?: string;
+  barcode?: string; // Product barcode for scanning
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -17,9 +19,11 @@ export interface CreateProductRequest {
   name: string;
   description?: string;
   price: number;
-  imageUrl?: string;
+  imageUrl?: string; // Deprecated: kept for backward compatibility
+  imageUrls?: string[]; // Array of image URLs
   stockQuantity?: number;
   category?: string;
+  barcode?: string; // Product barcode for scanning
   isActive?: boolean;
 }
 
@@ -27,9 +31,11 @@ export interface UpdateProductRequest {
   name?: string;
   description?: string;
   price?: number;
-  imageUrl?: string;
+  imageUrl?: string; // Deprecated: kept for backward compatibility
+  imageUrls?: string[]; // Array of image URLs
   stockQuantity?: number;
   category?: string;
+  barcode?: string; // Product barcode (EAN, UPC, etc.)
   isActive?: boolean;
 }
 

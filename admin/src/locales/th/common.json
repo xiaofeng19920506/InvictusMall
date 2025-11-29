@@ -118,10 +118,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
+      "owner": "เจ้าของร้าน/ผู้ดูแลระบบ",
+      "selectOwner": "-- เลือกเจ้าของร้าน/ผู้ดูแลระบบ --",
+      "loadingOwners": "กำลังโหลดเจ้าของร้าน/ผู้ดูแลระบบ...",
+      "noOwnersAvailable": "ไม่มีเจ้าของร้านหรือผู้ดูแลระบบที่พร้อมใช้งาน กรุณาสร้างบัญชีเจ้าของร้านหรือผู้ดูแลระบบก่อน"
     },
     "actions": {
       "invalidImageType": "Please select an image file.",

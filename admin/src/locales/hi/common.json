@@ -118,10 +118,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
+      "owner": "स्टोर मालिक/व्यवस्थापक",
+      "selectOwner": "-- स्टोर मालिक/व्यवस्थापक चुनें --",
+      "loadingOwners": "स्टोर मालिकों/व्यवस्थापकों को लोड कर रहे हैं...",
+      "noOwnersAvailable": "कोई स्टोर मालिक या व्यवस्थापक उपलब्ध नहीं है। कृपया पहले एक स्टोर मालिक या व्यवस्थापक खाता बनाएं।"
     },
     "actions": {
       "invalidImageType": "Please select an image file.",

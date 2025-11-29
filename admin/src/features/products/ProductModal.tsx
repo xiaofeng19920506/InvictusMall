@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { X } from "lucide-react";
+import { X, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { productApi } from "../../services/api";
 import type {
@@ -29,12 +29,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const { showError, showSuccess } = useNotification();
   const isEditing = Boolean(product);
 
+  // Initialize imageUrls from product, fallback to imageUrl for backward compatibility
+  const initialImageUrls = product?.imageUrls || (product?.imageUrl ? [product.imageUrl] : []);
+
   const [formData, setFormData] = useState<CreateProductRequest>({
     storeId: storeId,
     name: product?.name ?? "",
     description: product?.description ?? "",
     price: product?.price ?? 0,
     imageUrl: product?.imageUrl ?? "",
+    imageUrls: initialImageUrls,
     stockQuantity: product?.stockQuantity ?? 0,
     category: product?.category ?? "",
     isActive: product?.isActive ?? true,
@@ -42,9 +46,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string>(
-    product?.imageUrl || ""
-  );
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [imageUrls, setImageUrls] = useState<string[]>(initialImageUrls);
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -54,14 +57,17 @@ const ProductModal: React.FC<ProductModalProps> = ({
     };
   }, []);
 
-  // Update image preview when formData.imageUrl changes
+  // Sync imageUrls with formData
   useEffect(() => {
-    if (formData.imageUrl) {
-      setImagePreview(formData.imageUrl);
-    }
-  }, [formData.imageUrl]);
+    setFormData((prev) => ({
+      ...prev,
+      imageUrls: imageUrls,
+      imageUrl: imageUrls.length > 0 ? imageUrls[0] : "", // Keep for backward compatibility
+    }));
+  }, [imageUrls]);
 
   const MAX_IMAGE_SIZE = 15 * 1024 * 1024; // 15 MB
+  const MAX_IMAGES = 10;
 
   const handleImageChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -85,16 +91,18 @@ const ProductModal: React.FC<ProductModalProps> = ({
       return;
     }
 
+    if (imageUrls.length >= MAX_IMAGES) {
+      showError(`Maximum ${MAX_IMAGES} images allowed.`);
+      return;
+    }
+
     setUploadingImage(true);
     try {
       const productId = product?.id;
       const response = await productApi.uploadProductImage(file, productId);
       if (response.success && response.data?.imageUrl) {
-        setFormData((prev) => ({
-          ...prev,
-          imageUrl: response.data.imageUrl,
-        }));
-        setImagePreview(response.data.imageUrl);
+        const newImageUrl = response.data.imageUrl;
+        setImageUrls((prev) => [...prev, newImageUrl]);
         showSuccess(
           t("productModal.actions.uploadSuccess") ||
             "Image uploaded successfully."
@@ -113,6 +121,59 @@ const ProductModal: React.FC<ProductModalProps> = ({
       setUploadingImage(false);
       event.target.value = "";
     }
+  };
+
+  const handleMultipleImagesChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    const fileArray = Array.from(files);
+    
+    // Validate all files
+    for (const file of fileArray) {
+      if (!file.type.startsWith("image/")) {
+        showError(`Invalid image file: ${file.name}`);
+        return;
+      }
+      if (file.size > MAX_IMAGE_SIZE) {
+        showError(`Image file too large: ${file.name}`);
+        return;
+      }
+    }
+
+    if (imageUrls.length + fileArray.length > MAX_IMAGES) {
+      showError(`Maximum ${MAX_IMAGES} images allowed. You can add ${MAX_IMAGES - imageUrls.length} more.`);
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const productId = product?.id;
+      const response = await productApi.uploadProductImages(fileArray, productId);
+      if (response.success && response.data?.imageUrls) {
+        setImageUrls((prev) => [...prev, ...response.data.imageUrls]);
+        showSuccess(
+          `${response.data.imageUrls.length} image(s) uploaded successfully.`
+        );
+      } else {
+        throw new Error("Upload response did not include image URLs.");
+      }
+    } catch (error: any) {
+      console.error("Error uploading product images:", error);
+      showError(
+        error.message ||
+          "Failed to upload images. Please try again."
+      );
+    } finally {
+      setUploadingImages(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleChange = (
@@ -142,7 +203,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           name: formData.name,
           description: formData.description || undefined,
           price: formData.price,
-          imageUrl: formData.imageUrl || undefined,
+          imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
           stockQuantity: formData.stockQuantity,
           category: formData.category || undefined,
           isActive: formData.isActive,
@@ -156,6 +217,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         const createData: CreateProductRequest = {
           ...formData,
           storeId: storeId,
+          imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
         };
         const response = await productApi.createProduct(createData);
         if (response.success) {
@@ -289,22 +351,46 @@ const ProductModal: React.FC<ProductModalProps> = ({
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="imageFile" className={styles.label}>
-              {t("productModal.fields.image")}
+            <label className={styles.label}>
+              {t("productModal.fields.images") || "Product Images"}
+              <span className={styles.imageCount}>
+                ({imageUrls.length}/{MAX_IMAGES})
+              </span>
             </label>
             <div className={styles.imageUploadSection}>
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleImageChange}
-                disabled={uploadingImage}
+                multiple
+                onChange={handleMultipleImagesChange}
+                disabled={uploadingImages || imageUrls.length >= MAX_IMAGES}
                 className={styles.fileInput}
-                id="imageFile"
+                id="multipleImageFiles"
               />
-              <label htmlFor="imageFile" className={styles.fileInputLabel}>
+              <label htmlFor="multipleImageFiles" className={styles.fileInputLabel}>
+                {uploadingImages
+                  ? t("productModal.actions.uploading") || "Uploading..."
+                  : t("productModal.actions.uploadImages") || "Upload Images (Multiple)"}
+              </label>
+              {uploadingImages && (
+                <span className={styles.uploadingText}>
+                  {t("productModal.actions.uploading") || "Uploading..."}
+                </span>
+              )}
+            </div>
+            <div className={styles.imageUploadSection}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={uploadingImage || imageUrls.length >= MAX_IMAGES}
+                className={styles.fileInput}
+                id="singleImageFile"
+              />
+              <label htmlFor="singleImageFile" className={styles.fileInputLabel}>
                 {uploadingImage
                   ? t("productModal.actions.uploading") || "Uploading..."
-                  : t("productModal.actions.uploadImage") || "Upload Image"}
+                  : t("productModal.actions.uploadImage") || "Upload Single Image"}
               </label>
               {uploadingImage && (
                 <span className={styles.uploadingText}>
@@ -312,16 +398,33 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 </span>
               )}
             </div>
-            {(imagePreview || formData.imageUrl) && (
-              <img
-                src={getImageUrl(imagePreview || formData.imageUrl)}
-                alt="Product preview"
-                className={styles.imagePreview}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = "none";
-                }}
-              />
+            {imageUrls.length > 0 && (
+              <div className={styles.imageGallery}>
+                {imageUrls.map((url, index) => (
+                  <div key={index} className={styles.imageItem}>
+                    <img
+                      src={getImageUrl(url)}
+                      alt={`Product image ${index + 1}`}
+                      className={styles.imagePreview}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = "none";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(index)}
+                      className={styles.removeImageButton}
+                      aria-label="Remove image"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    {index === 0 && (
+                      <span className={styles.primaryBadge}>Primary</span>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
@@ -350,7 +453,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={saving || uploadingImage}
+              disabled={saving || uploadingImage || uploadingImages}
             >
               {saving
                 ? t("productModal.actions.saving")
