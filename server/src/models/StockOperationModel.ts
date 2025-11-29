@@ -73,9 +73,9 @@ export class StockOperationModel {
     try {
       await connection.beginTransaction();
 
-      // Get current product stock
+      // Get current product stock with FOR UPDATE lock to prevent race conditions
       const [productRows] = await connection.execute(
-        'SELECT stock_quantity FROM products WHERE id = ?',
+        'SELECT stock_quantity FROM products WHERE id = ? FOR UPDATE',
         [data.productId]
       );
       const products = productRows as any[];
@@ -141,22 +141,54 @@ export class StockOperationModel {
         ]
       );
 
-      // Update product stock quantity
-      const [updateResult] = await connection.execute(
-        'UPDATE products SET stock_quantity = ?, updated_at = ? WHERE id = ?',
-        [newQuantity, now, data.productId]
-      );
+      // Update product stock quantity using atomic UPDATE
+      // For stock in: increment atomically
+      // For stock out: decrement atomically with validation
+      let updateQuery: string;
+      let updateParams: any[];
+
+      if (data.type === 'in') {
+        // Atomic increment - no race condition possible
+        updateQuery = 'UPDATE products SET stock_quantity = stock_quantity + ?, updated_at = ? WHERE id = ?';
+        updateParams = [operationQuantity, now, data.productId];
+      } else {
+        // Atomic decrement with validation - prevents negative stock
+        updateQuery = 'UPDATE products SET stock_quantity = stock_quantity - ?, updated_at = ? WHERE id = ? AND stock_quantity >= ?';
+        updateParams = [operationQuantity, now, data.productId, operationQuantity];
+      }
+
+      const [updateResult] = await connection.execute(updateQuery, updateParams);
 
       // Verify the update was successful
       const affectedRows = (updateResult as any).affectedRows;
       if (affectedRows === 0) {
+        if (data.type === 'out') {
+          // Re-read current stock to get accurate error message
+          const [recheckRows] = await connection.execute(
+            'SELECT stock_quantity FROM products WHERE id = ?',
+            [data.productId]
+          );
+          const recheckProducts = recheckRows as any[];
+          const actualStock = recheckProducts[0]?.stock_quantity || 0;
+          throw new Error(`Insufficient stock. Current: ${actualStock}, Requested: ${operationQuantity}`);
+        }
         throw new Error(`Failed to update product stock quantity. Product ${data.productId} may not exist.`);
       }
+
+      // Re-read the actual updated quantity for logging
+      const [finalRows] = await connection.execute(
+        'SELECT stock_quantity FROM products WHERE id = ?',
+        [data.productId]
+      );
+      const finalProducts = finalRows as any[];
+      const finalQuantity = parseInt(finalProducts[0]?.stock_quantity, 10) || 0;
 
       logger.info('Product stock quantity updated', {
         productId: data.productId,
         previousQuantity,
-        newQuantity,
+        operationQuantity,
+        expectedNewQuantity: newQuantity,
+        actualNewQuantity: finalQuantity,
         affectedRows,
       });
 

@@ -7,8 +7,8 @@ export interface PendingStockInItem {
   product: Product;
   quantity: number; // Number of units for this product
   serialNumbers?: string[]; // Array of serial numbers (if multiple)
-  firstScannedAt: Date; // When this product was first scanned
-  lastScannedAt: Date; // When this product was last scanned
+  firstScannedAt: string; // ISO string: When this product was first scanned
+  lastScannedAt: string; // ISO string: When this product was last scanned
 }
 
 export interface StockStatus {

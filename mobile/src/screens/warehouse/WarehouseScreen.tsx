@@ -169,22 +169,49 @@ const WarehouseScreen: React.FC = () => {
 
       showSuccess("Product created successfully!");
 
-      // If we were in operation mode, set as selected product
-      if (operationType) {
-        console.log("[WarehouseScreen] 📦 Setting as selected product for operation");
-        dispatch(setSelectedProduct(newProduct));
-        // Serial number should already be set from OCR parsing
-      } else {
-        console.log("[WarehouseScreen] 🔍 Setting as checked product for inventory check");
-        // If we were in inventory check mode, set as checked product
-        dispatch(setCheckedProduct(newProduct));
-        // Add to scan history
-        dispatch(addToScanHistory(newProduct));
-      }
+      // Handle based on operation type
+      if (operationType === "in") {
+        // For stock in: automatically add to batch list (1 unit)
+        console.log("[WarehouseScreen] 📦 Adding new product to batch stock in list");
+        
+        // Check if product already exists in list (shouldn't, but just in case)
+        const existingItem = pendingStockInItems.find(
+          (item) => item.product.id === newProduct.id
+        );
+        const isNewProduct = !existingItem;
+        const currentQuantity = existingItem ? existingItem.quantity : 0;
 
-      console.log("[WarehouseScreen] 🔄 Resetting create product modal");
-      dispatch(resetCreateProductModal());
-      // Keep serial number if it was set from OCR
+        // Add or update pending item (will auto-increment if same product)
+        dispatch(
+          addPendingItem({
+            product: newProduct,
+            serialNumber: createProductSerialNumber.trim() || undefined,
+          })
+        );
+
+        const newQuantity = currentQuantity + 1;
+        showSuccess(
+          `${newProduct.name} added to stock in list (${newQuantity} unit${newQuantity > 1 ? "s" : ""})`
+        );
+
+        // Re-open photo capture for next scan
+        dispatch(resetCreateProductModal());
+        dispatch(setShowPhotoCapture(true));
+      } else if (operationType === "out") {
+        // For stock out: set as selected product (user needs to enter quantity)
+        console.log("[WarehouseScreen] 📦 Setting as selected product for stock out operation");
+        dispatch(setSelectedProduct(newProduct));
+        if (createProductSerialNumber.trim()) {
+          dispatch(setSerialNumber(createProductSerialNumber.trim()));
+        }
+        dispatch(resetCreateProductModal());
+      } else {
+        // No operation mode - inventory check or other
+        console.log("[WarehouseScreen] 🔍 Setting as checked product for inventory check");
+        dispatch(setCheckedProduct(newProduct));
+        dispatch(addToScanHistory(newProduct));
+        dispatch(resetCreateProductModal());
+      }
     } catch (error: any) {
       console.error("[WarehouseScreen] ❌ Error creating product:", error);
       console.error("[WarehouseScreen] ❌ Error details:", {
@@ -463,41 +490,60 @@ const WarehouseScreen: React.FC = () => {
 
     try {
       // Prepare batch items for RTK Query mutation
-      // Create one operation per unit (to handle serial numbers separately if needed)
-      const batchItems: Array<{
+      // Merge operations by product to avoid race conditions and improve efficiency
+      const productOperationsMap = new Map<string, {
         productId: string;
         quantity: number;
-        reason?: string;
-      }> = [];
+        reasons: string[];
+      }>();
 
       pendingStockInItems.forEach((item) => {
-        // If there are serial numbers, create separate operations for each
+        const existing = productOperationsMap.get(item.product.id);
+        
         if (item.serialNumbers && item.serialNumbers.length > 0) {
-          item.serialNumbers.forEach((serialNumber) => {
-            batchItems.push({
+          // If there are serial numbers, include them in reasons
+          const serialReasons = item.serialNumbers.map(sn => `S/N: ${sn}`);
+          if (existing) {
+            existing.quantity += item.quantity;
+            existing.reasons.push(...serialReasons);
+          } else {
+            productOperationsMap.set(item.product.id, {
               productId: item.product.id,
-              quantity: 1,
-              reason: `S/N: ${serialNumber}`,
-            });
-          });
-          // Add remaining units without serial numbers if quantity > serial numbers count
-          const remainingQty = item.quantity - item.serialNumbers.length;
-          if (remainingQty > 0) {
-            batchItems.push({
-              productId: item.product.id,
-              quantity: remainingQty,
+              quantity: item.quantity,
+              reasons: serialReasons,
             });
           }
         } else {
-          // No serial numbers, create single operation with quantity
-          batchItems.push({
-            productId: item.product.id,
-            quantity: item.quantity,
-          });
+          // No serial numbers, just add quantity
+          if (existing) {
+            existing.quantity += item.quantity;
+          } else {
+            productOperationsMap.set(item.product.id, {
+              productId: item.product.id,
+              quantity: item.quantity,
+              reasons: [],
+            });
+          }
         }
       });
 
-      await batchStockIn(batchItems).unwrap();
+      // Convert map to array and combine reasons if any
+      const batchItems = Array.from(productOperationsMap.values()).map(op => ({
+        productId: op.productId,
+        quantity: op.quantity,
+        reason: op.reasons.length > 0 ? op.reasons.join(' | ') : undefined,
+      }));
+
+      console.log("[WarehouseScreen] 📦 Starting batch stock in with items:", batchItems);
+      console.log("[WarehouseScreen] 📊 Batch items details:", batchItems.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        reason: item.reason,
+      })));
+
+      const result = await batchStockIn(batchItems).unwrap();
+      
+      console.log("[WarehouseScreen] ✅ Batch stock in completed successfully:", result);
       
       // Calculate total units stocked
       const totalUnits = pendingStockInItems.reduce(

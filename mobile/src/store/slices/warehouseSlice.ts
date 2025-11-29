@@ -122,7 +122,7 @@ const warehouseSlice = createSlice({
         // Product already exists, increment quantity
         // Create a new object reference to ensure React re-renders
         existingItem.quantity += 1;
-        existingItem.lastScannedAt = new Date();
+        existingItem.lastScannedAt = new Date().toISOString();
         // Add serial number to array if provided
         if (action.payload.serialNumber) {
           if (!existingItem.serialNumbers) {
@@ -133,13 +133,14 @@ const warehouseSlice = createSlice({
         }
       } else {
         // New product, add new item
+        const now = new Date().toISOString();
         const newItem: PendingStockInItem = {
           id: action.payload.product.id, // Use product ID as unique identifier
           product: action.payload.product,
           quantity: 1,
           serialNumbers: action.payload.serialNumber ? [action.payload.serialNumber] : undefined,
-          firstScannedAt: new Date(),
-          lastScannedAt: new Date(),
+          firstScannedAt: now,
+          lastScannedAt: now,
         };
         state.pendingStockInItems.push(newItem);
       }
