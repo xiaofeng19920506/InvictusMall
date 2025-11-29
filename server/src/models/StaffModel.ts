@@ -202,7 +202,8 @@ export class StaffModel {
         department, employee_id, store_id, is_active, email_verified, 
         created_at, updated_at, last_login_at, created_by
       FROM staff 
-      WHERE store_id = ? AND role = 'owner' AND is_active = true
+      WHERE store_id = ? AND (role = 'owner' OR role = 'admin') AND is_active = true
+      ORDER BY role DESC, created_at ASC
       LIMIT 1
     `;
 

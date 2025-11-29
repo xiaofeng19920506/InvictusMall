@@ -87,6 +87,29 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     ownerId: store?.owner?.id ?? "",
   }));
 
+  // Update formData when store prop changes (e.g., when store data is loaded asynchronously)
+  useEffect(() => {
+    if (store) {
+      setFormData(prev => ({
+        ...prev,
+        name: store.name ?? prev.name,
+        description: store.description ?? prev.description,
+        establishedYear: store.establishedYear ?? prev.establishedYear,
+        location: store.location?.[0] ? { ...store.location[0] } : prev.location,
+        category: store.category ?? prev.category,
+        rating: store.rating ?? prev.rating,
+        reviewCount: store.reviewCount ?? prev.reviewCount,
+        productsCount: store.productsCount ?? prev.productsCount,
+        discount: store.discount ?? prev.discount,
+        isVerified: store.isVerified ?? prev.isVerified,
+        isActive: store.isActive ?? prev.isActive,
+        imageUrl: store.imageUrl ?? prev.imageUrl,
+        imagePreview: store.imageUrl ?? prev.imagePreview,
+        ownerId: store.owner?.id ?? prev.ownerId,
+      }));
+    }
+  }, [store?.id, store?.owner?.id]);
+
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
@@ -201,6 +224,30 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           
           setAvailableOwners(owners);
           console.log("Available owners/admins loaded:", owners.length);
+          
+          // If editing a store with an owner, immediately set the ownerId after loading owners
+          if (isEditing && store?.owner?.id && owners.length > 0) {
+            const currentOwnerId = store.owner.id;
+            // Check if current owner exists in the list (should always be true after our logic above)
+            const ownerExists = owners.some(owner => owner.id === currentOwnerId);
+            if (ownerExists) {
+              // Set ownerId immediately after owners are loaded
+              setFormData(prev => {
+                if (prev.ownerId !== currentOwnerId) {
+                  console.log("Auto-selecting store owner immediately after loading:", {
+                    currentOwnerId,
+                    previousOwnerId: prev.ownerId,
+                    storeOwner: store.owner
+                  });
+                  return {
+                    ...prev,
+                    ownerId: currentOwnerId
+                  };
+                }
+                return prev;
+              });
+            }
+          }
         }
       } catch (error) {
         console.error("Error fetching owners:", error);
@@ -214,19 +261,28 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
   }, [showError, isEditing, canEditOwner, store]);
 
   // Ensure owner is selected when editing a store with an owner
-  // This runs after availableOwners is loaded to ensure the owner dropdown shows the current owner
+  // This is a backup to ensure ownerId is set even if it wasn't set in the fetchOwners callback
   useEffect(() => {
-    if (isEditing && store?.owner && availableOwners.length > 0 && !loadingOwners) {
+    if (isEditing && store?.owner?.id && availableOwners.length > 0 && !loadingOwners) {
       const currentOwnerId = store.owner.id;
       
-      // If ownerId is not set or different from current owner, set it
-      if (formData.ownerId !== currentOwnerId) {
-        setFormData(prev => ({
-          ...prev,
-          ownerId: currentOwnerId
-        }));
-        console.log("Auto-selected store owner:", currentOwnerId);
-      }
+      // Always set the ownerId to match the current store owner
+      // This ensures the dropdown shows the selected value even if it was reset
+      setFormData(prev => {
+        if (prev.ownerId !== currentOwnerId) {
+          console.log("Auto-selecting store owner (backup useEffect):", {
+            currentOwnerId,
+            previousOwnerId: prev.ownerId,
+            storeOwner: store.owner,
+            availableOwnersCount: availableOwners.length
+          });
+          return {
+            ...prev,
+            ownerId: currentOwnerId
+          };
+        }
+        return prev;
+      });
     }
   }, [isEditing, store?.owner?.id, availableOwners.length, loadingOwners]);
 
@@ -355,9 +411,11 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           isActive: formData.isActive,
         };
         
-        // Only include ownerId if user can edit owner and it's different from current
-        if (canEditOwner && formData.ownerId !== store.owner?.id) {
-          updateData.ownerId = formData.ownerId || undefined;
+        // Always include ownerId if user can edit owner
+        // This ensures the owner relationship is preserved and updated correctly on the backend
+        if (canEditOwner) {
+          // Use formData.ownerId if set, otherwise preserve the current owner
+          updateData.ownerId = formData.ownerId || store?.owner?.id || undefined;
         }
         
         await storeApi.updateStore(store.id, updateData);
