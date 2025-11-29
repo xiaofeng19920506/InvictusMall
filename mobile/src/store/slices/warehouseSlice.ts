@@ -109,23 +109,64 @@ const warehouseSlice = createSlice({
     },
     
     // Batch stock in actions
-    addPendingItem: (state, action: PayloadAction<PendingStockInItem>) => {
-      state.pendingStockInItems.push(action.payload);
+    // Add or update pending item - if product exists, increment quantity; otherwise add new item
+    addPendingItem: (
+      state,
+      action: PayloadAction<{ product: Product; serialNumber?: string }>
+    ) => {
+      const existingItem = state.pendingStockInItems.find(
+        (item) => item.product.id === action.payload.product.id
+      );
+
+      if (existingItem) {
+        // Product already exists, increment quantity
+        existingItem.quantity += 1;
+        existingItem.lastScannedAt = new Date();
+        // Add serial number to array if provided
+        if (action.payload.serialNumber) {
+          if (!existingItem.serialNumbers) {
+            existingItem.serialNumbers = [];
+          }
+          existingItem.serialNumbers.push(action.payload.serialNumber);
+        }
+      } else {
+        // New product, add new item
+        const newItem: PendingStockInItem = {
+          id: action.payload.product.id, // Use product ID as unique identifier
+          product: action.payload.product,
+          quantity: 1,
+          serialNumbers: action.payload.serialNumber ? [action.payload.serialNumber] : undefined,
+          firstScannedAt: new Date(),
+          lastScannedAt: new Date(),
+        };
+        state.pendingStockInItems.push(newItem);
+      }
     },
     removePendingItem: (state, action: PayloadAction<string>) => {
       state.pendingStockInItems = state.pendingStockInItems.filter(
         (item) => item.id !== action.payload
       );
     },
-    updatePendingItemSerialNumber: (
+    updatePendingItemQuantity: (
       state,
-      action: PayloadAction<{ id: string; serialNumber: string }>
+      action: PayloadAction<{ id: string; quantity: number }>
+    ) => {
+      const item = state.pendingStockInItems.find(
+        (item) => item.id === action.payload.id
+      );
+      if (item && action.payload.quantity > 0) {
+        item.quantity = action.payload.quantity;
+      }
+    },
+    updatePendingItemSerialNumbers: (
+      state,
+      action: PayloadAction<{ id: string; serialNumbers: string[] }>
     ) => {
       const item = state.pendingStockInItems.find(
         (item) => item.id === action.payload.id
       );
       if (item) {
-        item.serialNumber = action.payload.serialNumber;
+        item.serialNumbers = action.payload.serialNumbers;
       }
     },
     clearPendingItems: (state) => {
@@ -188,7 +229,8 @@ export const {
   resetOperation,
   addPendingItem,
   removePendingItem,
-  updatePendingItemSerialNumber,
+  updatePendingItemQuantity,
+  updatePendingItemSerialNumbers,
   clearPendingItems,
   setCheckedProduct,
   addToScanHistory,

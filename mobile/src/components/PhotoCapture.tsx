@@ -9,8 +9,12 @@ import {
   Modal,
   Alert,
   Platform,
+  StatusBar,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -27,6 +31,7 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
   title = "Take Photo",
   description = "Take a photo of the product",
 }) => {
+  const insets = useSafeAreaInsets();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -90,17 +95,27 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
   };
 
   return (
-    <Modal 
-      visible={true} 
-      animationType="slide" 
-      transparent={false}>
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <MaterialIcons name="close" size={28} color="#000" />
-          </TouchableOpacity>
-        </View>
+    <Modal visible={true} animationType="slide" presentationStyle="fullScreen">
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.container}>
+        <SafeAreaView style={styles.safeAreaTop} edges={["top"]}>
+          <View
+            style={[
+              styles.header,
+              {
+                paddingTop: Math.max(
+                  insets.top || 0,
+                  Platform.OS === "ios" ? 12 : 16
+                ),
+              },
+            ]}
+          >
+            <Text style={styles.title}>{title}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <MaterialIcons name="close" size={28} color="#000" />
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
 
         <View style={styles.content}>
           {!imageUri ? (
@@ -110,7 +125,8 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
                 <TouchableOpacity
                   style={[styles.button, styles.cameraButton]}
                   onPress={handleTakePhoto}
-                  disabled={isProcessing}>
+                  disabled={isProcessing}
+                >
                   <MaterialIcons name="camera-alt" size={32} color="#fff" />
                   <Text style={styles.buttonText}>Take Photo</Text>
                 </TouchableOpacity>
@@ -118,7 +134,8 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
                 <TouchableOpacity
                   style={[styles.button, styles.libraryButton]}
                   onPress={handleSelectFromLibrary}
-                  disabled={isProcessing}>
+                  disabled={isProcessing}
+                >
                   <MaterialIcons name="photo-library" size={32} color="#fff" />
                   <Text style={styles.buttonText}>Choose from Library</Text>
                 </TouchableOpacity>
@@ -130,14 +147,16 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
               <View style={styles.previewActions}>
                 <TouchableOpacity
                   style={[styles.button, styles.retakeButton]}
-                  onPress={handleRetake}>
+                  onPress={handleRetake}
+                >
                   <MaterialIcons name="refresh" size={24} color="#fff" />
                   <Text style={styles.buttonText}>Retake</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.button, styles.confirmButton]}
                   onPress={handleConfirm}
-                  disabled={isProcessing}>
+                  disabled={isProcessing}
+                >
                   {isProcessing ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
@@ -151,7 +170,8 @@ const PhotoCapture: React.FC<PhotoCaptureProps> = ({
             </>
           )}
         </View>
-      </SafeAreaView>
+        <SafeAreaView edges={["bottom"]} />
+      </View>
     </Modal>
   );
 };
@@ -161,12 +181,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
   },
+  safeAreaTop: {
+    backgroundColor: "#fff",
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
     backgroundColor: "#fff",
@@ -235,4 +258,3 @@ const styles = StyleSheet.create({
 });
 
 export default PhotoCapture;
-

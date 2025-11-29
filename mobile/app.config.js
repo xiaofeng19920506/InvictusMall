@@ -111,12 +111,6 @@ const SIMULATOR_API_URL =
 // Override all if set
 const API_BASE_URL = process.env.API_BASE_URL;
 
-console.log("\n🔧 Expo API Configuration:");
-console.log("   Device API URL (physical devices):", DEVICE_API_URL);
-console.log("   Simulator API URL:", SIMULATOR_API_URL);
-console.log("   Device API IP:", deviceAPIIP);
-console.log("");
-
 export default {
   expo: {
     name: "Invictus Logistics",

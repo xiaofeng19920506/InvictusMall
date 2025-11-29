@@ -1,5 +1,6 @@
 import { pool } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger';
 
 export type StockOperationType = 'in' | 'out';
 
@@ -82,19 +83,38 @@ export class StockOperationModel {
         throw new Error('Product not found');
       }
 
-      const currentQuantity = products[0].stock_quantity;
+      // Ensure stock_quantity is a number (database may return string)
+      const currentQuantity = parseInt(products[0].stock_quantity, 10) || 0;
       const previousQuantity = currentQuantity;
+      const operationQuantity = parseInt(String(data.quantity), 10);
+
+      // Validate operation quantity
+      if (isNaN(operationQuantity) || operationQuantity <= 0) {
+        throw new Error('Invalid quantity: must be a positive integer');
+      }
 
       // Calculate new quantity based on operation type
       let newQuantity: number;
       if (data.type === 'in') {
-        newQuantity = currentQuantity + data.quantity;
+        newQuantity = currentQuantity + operationQuantity;
+        logger.info('Stock-in operation', {
+          productId: data.productId,
+          currentQuantity,
+          operationQuantity,
+          newQuantity,
+        });
       } else {
         // Stock out
-        if (currentQuantity < data.quantity) {
-          throw new Error(`Insufficient stock. Current: ${currentQuantity}, Requested: ${data.quantity}`);
+        if (currentQuantity < operationQuantity) {
+          throw new Error(`Insufficient stock. Current: ${currentQuantity}, Requested: ${operationQuantity}`);
         }
-        newQuantity = currentQuantity - data.quantity;
+        newQuantity = currentQuantity - operationQuantity;
+        logger.info('Stock-out operation', {
+          productId: data.productId,
+          currentQuantity,
+          operationQuantity,
+          newQuantity,
+        });
       }
 
       // Create stock operation record
@@ -110,7 +130,7 @@ export class StockOperationModel {
           operationId,
           data.productId,
           data.type,
-          data.quantity,
+          operationQuantity,
           data.reason || null,
           performedBy,
           now,
@@ -122,10 +142,23 @@ export class StockOperationModel {
       );
 
       // Update product stock quantity
-      await connection.execute(
+      const [updateResult] = await connection.execute(
         'UPDATE products SET stock_quantity = ?, updated_at = ? WHERE id = ?',
         [newQuantity, now, data.productId]
       );
+
+      // Verify the update was successful
+      const affectedRows = (updateResult as any).affectedRows;
+      if (affectedRows === 0) {
+        throw new Error(`Failed to update product stock quantity. Product ${data.productId} may not exist.`);
+      }
+
+      logger.info('Product stock quantity updated', {
+        productId: data.productId,
+        previousQuantity,
+        newQuantity,
+        affectedRows,
+      });
 
       await connection.commit();
 

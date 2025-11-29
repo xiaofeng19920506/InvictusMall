@@ -30,41 +30,23 @@ const getApiBaseUrl = (): string => {
   const simulatorApiUrl = Constants.expoConfig?.extra?.simulatorApiUrl;
   const apiUrl = Constants.expoConfig?.extra?.apiUrl;
 
-  console.log("[ApiService] 🔍 Device detection:", {
-    isDevice,
-    deviceId,
-    isSimulator,
-    isLikelySimulator,
-    hasDeviceApiUrl: !!deviceApiUrl,
-    hasSimulatorApiUrl: !!simulatorApiUrl,
-    hasApiUrl: !!apiUrl,
-    detectedLocalIP: Constants.expoConfig?.extra?.detectedLocalIP,
-  });
-
   // Priority 1: If API_BASE_URL is explicitly set, use it (overrides everything)
   if (
     apiUrl &&
     !apiUrl.includes("localhost") &&
     !apiUrl.includes("127.0.0.1")
   ) {
-    console.log("[ApiService] 🔧 Using explicitly configured apiUrl:", apiUrl);
     return apiUrl;
   }
 
   // Priority 2: For simulators/emulators, use simulatorApiUrl or localhost
   if (isLikelySimulator) {
-    const url = simulatorApiUrl || "http://localhost:3001";
-    console.log("[ApiService] 🖥️ Detected simulator/emulator, using:", url);
-    return url;
+    return simulatorApiUrl || "http://localhost:3001";
   }
 
   // Priority 3: For real devices OR if device detection is unclear, prefer deviceApiUrl
   // This ensures that if deviceApiUrl is configured, it will be used (safer for real devices)
   if (deviceApiUrl) {
-    console.log(
-      "[ApiService] 📱 Using deviceApiUrl (configured for physical devices):",
-      deviceApiUrl
-    );
     return deviceApiUrl;
   }
 
@@ -73,17 +55,8 @@ const getApiBaseUrl = (): string => {
   if (isDevice === true) {
     // Real device but no deviceApiUrl - try apiUrl as fallback
     if (Constants.expoConfig?.extra?.apiUrl) {
-      const configUrl = Constants.expoConfig.extra.apiUrl;
-      console.warn(
-        "[ApiService] ⚠️ Real device detected but using apiUrl (consider setting deviceApiUrl):",
-        configUrl
-      );
-      return configUrl;
+      return Constants.expoConfig.extra.apiUrl;
     }
-    console.warn(
-      "[ApiService] ⚠️ WARNING: Real device detected but no deviceApiUrl configured!",
-      "Please set deviceApiUrl in app.config.js. Using localhost (will likely fail)."
-    );
     return "http://localhost:3001";
   }
 
@@ -92,27 +65,15 @@ const getApiBaseUrl = (): string => {
   if (apiUrl) {
     // If apiUrl is not localhost, use it (likely network IP for real device)
     if (!apiUrl.includes("localhost") && !apiUrl.includes("127.0.0.1")) {
-      console.log(
-        "[ApiService] 🔧 Device detection unclear, but apiUrl looks like network IP:",
-        apiUrl
-      );
       return apiUrl;
     }
   }
 
   // Last resort: Default to localhost (will work for simulators, not for real devices)
-  console.warn(
-    "[ApiService] ⚠️ Device detection unclear and no deviceApiUrl configured.",
-    "Defaulting to localhost. If on real device, this will fail.",
-    "Please set deviceApiUrl in app.config.js"
-  );
   return "http://localhost:3001";
 };
 
 const API_BASE_URL = getApiBaseUrl();
-
-console.log("[ApiService] 🌐 API Base URL:", API_BASE_URL);
-console.log("[ApiService] 📱 Is Device:", Constants.isDevice);
 
 class ApiService {
   private api: AxiosInstance;

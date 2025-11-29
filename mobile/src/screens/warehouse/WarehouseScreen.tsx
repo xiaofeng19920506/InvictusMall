@@ -42,7 +42,8 @@ import {
   resetOperation,
   addPendingItem,
   removePendingItem,
-  updatePendingItemSerialNumber,
+  updatePendingItemQuantity,
+  updatePendingItemSerialNumbers,
   clearPendingItems,
   setCheckedProduct,
   addToScanHistory,
@@ -235,23 +236,29 @@ const WarehouseScreen: React.FC = () => {
         }
       }
 
-      // For stock in: add to batch list (1 unit per scan)
+      // For stock in: add to batch list (1 unit per scan, auto-increment if same product)
       // For stock out: use old single product flow
       if (product) {
         if (operationType === "in") {
-          // Add to pending stock in list (1 unit per scan)
-          const newItem: PendingStockInItem = {
-            id: `${product.id}-${Date.now()}-${Math.random()}`,
-            product: product,
-            serialNumber: parsed.serialNumber || undefined,
-            scannedAt: new Date(),
-          };
+          // Check if product already exists in list
+          const existingItem = pendingStockInItems.find(
+            (item) => item.product.id === product.id
+          );
+          const isNewProduct = !existingItem;
+          const currentQuantity = existingItem ? existingItem.quantity : 0;
+          const newQuantity = currentQuantity + 1;
 
-          dispatch(addPendingItem(newItem));
+          // Add or update pending item (will auto-increment if same product)
+          dispatch(
+            addPendingItem({
+              product: product,
+              serialNumber: parsed.serialNumber || undefined,
+            })
+          );
+
+          // Show success message with quantity info
           showSuccess(
-            `${product.name} added (${pendingStockInItems.length + 1} item${
-              pendingStockInItems.length > 0 ? "s" : ""
-            } in list)`
+            `${product.name} ${isNewProduct ? "added" : "quantity updated"} (${newQuantity} unit${newQuantity > 1 ? "s" : ""})`
           );
 
           // Re-open photo capture for next scan
@@ -327,7 +334,38 @@ const WarehouseScreen: React.FC = () => {
         "[WarehouseScreen] ✅ Product found for operation:",
         product.name
       );
-      dispatch(setSelectedProduct(product));
+
+      // For stock in operations, automatically add to batch list
+      if (operationType === "in") {
+        // Check if product already exists in list
+        const existingItem = pendingStockInItems.find(
+          (item) => item.product.id === product.id
+        );
+        const isNewProduct = !existingItem;
+        const currentQuantity = existingItem ? existingItem.quantity : 0;
+        const newQuantity = currentQuantity + 1;
+
+        // Add or update pending item (will auto-increment if same product)
+        dispatch(
+          addPendingItem({
+            product: product,
+            serialNumber: undefined, // Barcode scan doesn't provide serial number
+          })
+        );
+
+        // Show success message with quantity info
+        showSuccess(
+          `${product.name} ${isNewProduct ? "added" : "quantity updated"} (${newQuantity} unit${newQuantity > 1 ? "s" : ""})`
+        );
+
+        // Re-open scanner for next scan
+        setTimeout(() => {
+          dispatch(setShowScanner(true));
+        }, 500);
+      } else {
+        // For stock out, use old single product flow
+        dispatch(setSelectedProduct(product));
+      }
     } else if (result.type === "product_not_found") {
       console.log(
         "[WarehouseScreen] 📝 Product not found, opening create modal:",
@@ -415,15 +453,50 @@ const WarehouseScreen: React.FC = () => {
 
     try {
       // Prepare batch items for RTK Query mutation
-      const batchItems = pendingStockInItems.map((item) => ({
-        productId: item.product.id,
-        quantity: 1, // Always 1 unit per scan
-        reason: item.serialNumber ? `S/N: ${item.serialNumber}` : undefined,
-      }));
+      // Create one operation per unit (to handle serial numbers separately if needed)
+      const batchItems: Array<{
+        productId: string;
+        quantity: number;
+        reason?: string;
+      }> = [];
+
+      pendingStockInItems.forEach((item) => {
+        // If there are serial numbers, create separate operations for each
+        if (item.serialNumbers && item.serialNumbers.length > 0) {
+          item.serialNumbers.forEach((serialNumber) => {
+            batchItems.push({
+              productId: item.product.id,
+              quantity: 1,
+              reason: `S/N: ${serialNumber}`,
+            });
+          });
+          // Add remaining units without serial numbers if quantity > serial numbers count
+          const remainingQty = item.quantity - item.serialNumbers.length;
+          if (remainingQty > 0) {
+            batchItems.push({
+              productId: item.product.id,
+              quantity: remainingQty,
+            });
+          }
+        } else {
+          // No serial numbers, create single operation with quantity
+          batchItems.push({
+            productId: item.product.id,
+            quantity: item.quantity,
+          });
+        }
+      });
 
       await batchStockIn(batchItems).unwrap();
+      
+      // Calculate total units stocked
+      const totalUnits = pendingStockInItems.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      );
+      
       showSuccess(
-        `Successfully stocked in ${pendingStockInItems.length} items`
+        `Successfully stocked in ${totalUnits} unit${totalUnits > 1 ? "s" : ""} across ${pendingStockInItems.length} product${pendingStockInItems.length > 1 ? "s" : ""}`
       );
       dispatch(clearPendingItems());
       dispatch(setOperationType(null));
@@ -658,8 +731,11 @@ const WarehouseScreen: React.FC = () => {
               <BatchStockInList
                 items={pendingStockInItems}
                 isProcessing={isProcessing}
-                onUpdateSerialNumber={(itemId, serialNumber) => {
-                  dispatch(updatePendingItemSerialNumber({ id: itemId, serialNumber }));
+                onUpdateQuantity={(itemId, quantity) => {
+                  dispatch(updatePendingItemQuantity({ id: itemId, quantity }));
+                }}
+                onUpdateSerialNumbers={(itemId, serialNumbers) => {
+                  dispatch(updatePendingItemSerialNumbers({ id: itemId, serialNumbers }));
                 }}
                 onRemoveItem={(itemId) => {
                   dispatch(removePendingItem(itemId));
