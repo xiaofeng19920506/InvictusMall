@@ -12,6 +12,8 @@ export interface Product {
   imageUrls?: string[]; // Array of image URLs
   stockQuantity: number;
   category?: string;
+  barcode?: string;
+  serialNumber?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -26,6 +28,8 @@ export interface CreateProductRequest {
   imageUrls?: string[]; // Array of image URLs
   stockQuantity?: number;
   category?: string;
+  barcode?: string;
+  serialNumber?: string;
   isActive?: boolean;
 }
 
@@ -37,6 +41,8 @@ export interface UpdateProductRequest {
   imageUrls?: string[]; // Array of image URLs
   stockQuantity?: number;
   category?: string;
+  barcode?: string;
+  serialNumber?: string;
   isActive?: boolean;
 }
 

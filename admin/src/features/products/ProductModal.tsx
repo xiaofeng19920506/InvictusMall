@@ -41,6 +41,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
     imageUrls: initialImageUrls,
     stockQuantity: product?.stockQuantity ?? 0,
     category: product?.category ?? "",
+    barcode: product?.barcode ?? "",
+    serialNumber: product?.serialNumber ?? "",
     isActive: product?.isActive ?? true,
   });
 
@@ -206,6 +208,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
           imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
           stockQuantity: formData.stockQuantity,
           category: formData.category || undefined,
+          barcode: formData.barcode || undefined,
+          serialNumber: formData.serialNumber || undefined,
           isActive: formData.isActive,
         };
         const response = await productApi.updateProduct(product.id, updateData);
@@ -348,6 +352,38 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 {t("productModal.fields.categoryOptions.product")}
               </option>
             </select>
+          </div>
+
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label htmlFor="barcode" className={styles.label}>
+                {t("productModal.fields.barcode") || "Barcode"}
+              </label>
+              <input
+                id="barcode"
+                name="barcode"
+                type="text"
+                value={formData.barcode || ""}
+                onChange={handleChange}
+                placeholder={t("productModal.fields.barcodePlaceholder") || "Product barcode (optional)"}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label htmlFor="serialNumber" className={styles.label}>
+                {t("productModal.fields.serialNumber") || "Serial Number (S/N)"}
+              </label>
+              <input
+                id="serialNumber"
+                name="serialNumber"
+                type="text"
+                value={formData.serialNumber || ""}
+                onChange={handleChange}
+                placeholder={t("productModal.fields.serialNumberPlaceholder") || "Serial number (optional)"}
+                className={styles.input}
+              />
+            </div>
           </div>
 
           <div className={styles.formGroup}>

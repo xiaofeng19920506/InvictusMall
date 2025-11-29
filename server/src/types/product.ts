@@ -9,6 +9,7 @@ export interface Product {
   stockQuantity: number;
   category?: string;
   barcode?: string; // Product barcode for scanning
+  serialNumber?: string; // Serial number (S/N) for tracking individual products
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -24,6 +25,7 @@ export interface CreateProductRequest {
   stockQuantity?: number;
   category?: string;
   barcode?: string; // Product barcode for scanning
+  serialNumber?: string; // Serial number (S/N) for tracking individual products
   isActive?: boolean;
 }
 
@@ -36,6 +38,7 @@ export interface UpdateProductRequest {
   stockQuantity?: number;
   category?: string;
   barcode?: string; // Product barcode (EAN, UPC, etc.)
+  serialNumber?: string; // Serial number (S/N) for tracking individual products
   isActive?: boolean;
 }
 

@@ -47,6 +47,7 @@ import {
   setCreateProductBarcode,
   setCreateProductName,
   setCreateProductPrice,
+  setCreateProductSerialNumber,
   setIsCreatingProduct,
   resetCreateProductModal,
 } from "../../store/slices/warehouseSlice";
@@ -82,6 +83,7 @@ const WarehouseScreen: React.FC = () => {
   const createProductBarcode = useAppSelector((state) => state.warehouse.createProductBarcode);
   const createProductName = useAppSelector((state) => state.warehouse.createProductName);
   const createProductPrice = useAppSelector((state) => state.warehouse.createProductPrice);
+  const createProductSerialNumber = useAppSelector((state) => state.warehouse.createProductSerialNumber);
   const isCreatingProduct = useAppSelector((state) => state.warehouse.isCreatingProduct);
 
   // RTK Query hooks
@@ -136,7 +138,7 @@ const WarehouseScreen: React.FC = () => {
         stockQuantity: 0,
         category: "",
         isActive: true,
-        serialNumber: serialNumber || undefined,
+        serialNumber: createProductSerialNumber.trim() || undefined,
       };
 
       const newProduct = await createProduct(productData).unwrap();
@@ -258,10 +260,12 @@ const WarehouseScreen: React.FC = () => {
 
         dispatch(setCreateProductBarcode(parsed.barcode || ""));
         dispatch(setCreateProductName(productName ? productName.trim() : ""));
-        dispatch(setCreateProductPrice(parsed.price ? parsed.price.toString() : ""));
+        dispatch(setCreateProductPrice("")); // Don't pre-fill price, let user decide
         // Set serial number if available
         if (parsed.serialNumber) {
-          dispatch(setSerialNumber(parsed.serialNumber));
+          dispatch(setCreateProductSerialNumber(parsed.serialNumber));
+        } else {
+          dispatch(setCreateProductSerialNumber(""));
         }
         dispatch(setShowCreateProductModal(true));
       }
@@ -301,6 +305,7 @@ const WarehouseScreen: React.FC = () => {
       dispatch(setCreateProductBarcode(result.value));
       dispatch(setCreateProductName(""));
       dispatch(setCreateProductPrice(""));
+      dispatch(setCreateProductSerialNumber(""));
       dispatch(setShowCreateProductModal(true));
     } else if (result.type === "unknown") {
       console.log(
@@ -350,6 +355,7 @@ const WarehouseScreen: React.FC = () => {
       dispatch(setCreateProductBarcode(result.value));
       dispatch(setCreateProductName(""));
       dispatch(setCreateProductPrice(""));
+      dispatch(setCreateProductSerialNumber(""));
       dispatch(setShowCreateProductModal(true));
     } else if (result.type === "unknown") {
       console.log(
@@ -698,6 +704,16 @@ const WarehouseScreen: React.FC = () => {
                 onChangeText={(text) => dispatch(setCreateProductPrice(text))}
                 placeholder="Enter price (e.g., 19.99)"
                 keyboardType="decimal-pad"
+                editable={!isCreatingProduct}
+              />
+
+              <Text style={styles.label}>Serial Number (S/N)</Text>
+              <TextInput
+                style={styles.input}
+                value={createProductSerialNumber}
+                onChangeText={(text) => dispatch(setCreateProductSerialNumber(text))}
+                placeholder="Enter serial number (optional)"
+                autoCapitalize="characters"
                 editable={!isCreatingProduct}
               />
 

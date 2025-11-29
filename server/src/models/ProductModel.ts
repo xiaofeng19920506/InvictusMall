@@ -41,6 +41,7 @@ export class ProductModel {
       stockQuantity: parseInt(row.stock_quantity, 10),
       category: row.category || undefined,
       barcode: row.barcode || undefined,
+      serialNumber: row.serial_number || undefined,
       isActive: Boolean(row.is_active),
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
@@ -218,8 +219,8 @@ export class ProductModel {
       await connection.execute(
         `INSERT INTO products (
           id, store_id, name, description, price, image_url, image_urls,
-          stock_quantity, category, barcode, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          stock_quantity, category, barcode, serial_number, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           productId,
           productData.storeId,
@@ -231,6 +232,7 @@ export class ProductModel {
           stockQuantity,
           productData.category || null,
           productData.barcode || null,
+          productData.serialNumber || null,
           isActive,
           now,
           now,
@@ -302,6 +304,14 @@ export class ProductModel {
       if (productData.category !== undefined) {
         updates.push('category = ?');
         params.push(productData.category || null);
+      }
+      if (productData.barcode !== undefined) {
+        updates.push('barcode = ?');
+        params.push(productData.barcode || null);
+      }
+      if (productData.serialNumber !== undefined) {
+        updates.push('serial_number = ?');
+        params.push(productData.serialNumber || null);
       }
       if (productData.isActive !== undefined) {
         updates.push('is_active = ?');

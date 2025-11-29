@@ -30,6 +30,7 @@ interface WarehouseState {
   createProductBarcode: string;
   createProductName: string;
   createProductPrice: string;
+  createProductSerialNumber: string;
   isCreatingProduct: boolean;
 }
 
@@ -52,6 +53,7 @@ const initialState: WarehouseState = {
   createProductBarcode: '',
   createProductName: '',
   createProductPrice: '',
+  createProductSerialNumber: '',
   isCreatingProduct: false,
 };
 
@@ -154,6 +156,9 @@ const warehouseSlice = createSlice({
     setCreateProductPrice: (state, action: PayloadAction<string>) => {
       state.createProductPrice = action.payload;
     },
+    setCreateProductSerialNumber: (state, action: PayloadAction<string>) => {
+      state.createProductSerialNumber = action.payload;
+    },
     setIsCreatingProduct: (state, action: PayloadAction<boolean>) => {
       state.isCreatingProduct = action.payload;
     },
@@ -161,6 +166,7 @@ const warehouseSlice = createSlice({
       state.createProductBarcode = '';
       state.createProductName = '';
       state.createProductPrice = '';
+      state.createProductSerialNumber = '';
       state.showCreateProductModal = false;
     },
   },
@@ -190,6 +196,7 @@ export const {
   setCreateProductBarcode,
   setCreateProductName,
   setCreateProductPrice,
+  setCreateProductSerialNumber,
   setIsCreatingProduct,
   resetCreateProductModal,
 } = warehouseSlice.actions;
