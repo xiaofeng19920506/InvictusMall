@@ -17,8 +17,12 @@ import apiService from "../../services/api";
 import authService from "../../services/auth";
 import { useNotification } from "../../contexts/NotificationContext";
 import type { BarcodeScanResult, Product } from "../../types";
-
-type TabType = "operations" | "inventory";
+import type { TabType, PendingStockInItem } from "./types";
+import { getStockStatus } from "./utils";
+import BatchStockInList from "./components/BatchStockInList";
+import StockOperationForm from "./components/StockOperationForm";
+import InventoryCheckTab from "./components/InventoryCheckTab";
+import CreateProductModal from "./components/CreateProductModal";
 
 const WarehouseScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("operations");
@@ -33,6 +37,11 @@ const WarehouseScreen: React.FC = () => {
   const [serialNumber, setSerialNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
+
+  // Batch scan states for stock in
+  const [pendingStockInItems, setPendingStockInItems] = useState<
+    PendingStockInItem[]
+  >([]);
 
   // Inventory check states
   const [showInventoryScanner, setShowInventoryScanner] = useState(false);
@@ -170,17 +179,40 @@ const WarehouseScreen: React.FC = () => {
         }
       }
 
-      // Always show form for user to input information
-      // If product found, display product info and allow user to input S/N and quantity
+      // For stock in: add to batch list (1 unit per scan)
+      // For stock out: use old single product flow
       if (product) {
-        setSelectedProduct(product);
-        // Set serial number from OCR if available
-        if (parsed.serialNumber) {
-          setSerialNumber(parsed.serialNumber);
+        if (operationType === "in") {
+          // Add to pending stock in list (1 unit per scan)
+          const newItem: PendingStockInItem = {
+            id: `${product.id}-${Date.now()}-${Math.random()}`,
+            product: product,
+            serialNumber: parsed.serialNumber || undefined,
+            scannedAt: new Date(),
+          };
+
+          setPendingStockInItems((prev) => {
+            const updated = [...prev, newItem];
+            showSuccess(
+              `${product.name} added (${updated.length} item${
+                updated.length > 1 ? "s" : ""
+              } in list)`
+            );
+            return updated;
+          });
+
+          // Re-open photo capture for next scan
+          setShowPhotoCapture(true);
+        } else {
+          // Stock out: use old single product flow
+          setSelectedProduct(product);
+          if (parsed.serialNumber) {
+            setSerialNumber(parsed.serialNumber);
+          }
+          showSuccess(
+            `Product found: ${product.name}. Please enter quantity and S/N to stock out.`
+          );
         }
-        showSuccess(
-          `Product found: ${product.name}. Please enter quantity and S/N to stock in.`
-        );
       } else {
         // Product not found, open create product modal with OCR data
         console.log(
@@ -336,6 +368,47 @@ const WarehouseScreen: React.FC = () => {
     }
   };
 
+  // Handle batch stock in for multiple scanned products
+  const handleBatchStockIn = async () => {
+    if (pendingStockInItems.length === 0) {
+      showError("No items to stock in");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Create stock operations for each item (1 unit each)
+      const operations = pendingStockInItems.map((item) => {
+        const reason = item.serialNumber ? `S/N: ${item.serialNumber}` : "";
+        return apiService.createStockOperation({
+          productId: item.product.id,
+          type: "in",
+          quantity: 1, // Always 1 unit per scan
+          reason: reason || undefined,
+        });
+      });
+
+      // Execute all operations in parallel
+      const results = await Promise.all(operations);
+      const failed = results.filter((r) => !r.success);
+
+      if (failed.length === 0) {
+        showSuccess(
+          `Successfully stocked in ${pendingStockInItems.length} items`
+        );
+        setPendingStockInItems([]);
+        setOperationType(null);
+        setShowPhotoCapture(false);
+      } else {
+        showError(`${failed.length} operations failed. Please try again.`);
+      }
+    } catch (error: any) {
+      showError(error.message || "Batch stock in failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleOperation = async () => {
     if (!selectedProduct || !operationType || !quantity) {
       showError("Please fill in all required fields");
@@ -403,16 +476,6 @@ const WarehouseScreen: React.FC = () => {
 
   const selectFromHistory = (product: Product) => {
     setCheckedProduct(product);
-  };
-
-  const getStockStatus = (stock: number) => {
-    if (stock === 0) {
-      return { text: "Out of Stock", color: "#FF3B30" };
-    } else if (stock <= 10) {
-      return { text: "Low Stock", color: "#FF9500" };
-    } else {
-      return { text: "In Stock", color: "#34C759" };
-    }
   };
 
   return (
@@ -490,238 +553,67 @@ const WarehouseScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
+            {/* Batch Stock In List */}
+            {operationType === "in" && (
+              <BatchStockInList
+                items={pendingStockInItems}
+                isProcessing={isProcessing}
+                onUpdateSerialNumber={(itemId, serialNumber) => {
+                  setPendingStockInItems((prev) =>
+                    prev.map((p) =>
+                      p.id === itemId ? { ...p, serialNumber } : p
+                    )
+                  );
+                }}
+                onRemoveItem={(itemId) => {
+                  setPendingStockInItems((prev) =>
+                    prev.filter((p) => p.id !== itemId)
+                  );
+                }}
+                onStockInAll={handleBatchStockIn}
+                onContinueScan={() => setShowPhotoCapture(true)}
+                onClear={() => {
+                  setPendingStockInItems([]);
+                  setShowPhotoCapture(false);
+                  setOperationType(null);
+                }}
+              />
+            )}
+
             {selectedProduct && operationType && (
-              <View style={styles.formContainer}>
-                <View style={styles.productInfo}>
-                  <Text style={styles.productName}>{selectedProduct.name}</Text>
-                  {selectedProduct.barcode && (
-                    <Text style={styles.productBarcode}>
-                      Barcode: {selectedProduct.barcode}
-                    </Text>
-                  )}
-                  <Text style={styles.productStock}>
-                    Current Stock: {selectedProduct.stockQuantity}
-                  </Text>
-                </View>
-
-                <View style={styles.form}>
-                  {operationType === "in" && (
-                    <>
-                      <Text style={styles.label}>
-                        Serial Number (S/N) (Optional)
-                      </Text>
-                      <TextInput
-                        style={styles.input}
-                        value={serialNumber}
-                        onChangeText={setSerialNumber}
-                        placeholder="Enter or scan serial number"
-                      />
-                    </>
-                  )}
-
-                  <Text style={styles.label}>
-                    Quantity {operationType === "in" ? "(In)" : "(Out)"} *
-                  </Text>
-                  <TextInput
-                    style={styles.input}
-                    value={quantity}
-                    onChangeText={setQuantity}
-                    keyboardType="numeric"
-                    placeholder="Enter quantity"
-                  />
-
-                  <Text style={styles.label}>Reason (Optional)</Text>
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    value={reason}
-                    onChangeText={setReason}
-                    placeholder="Enter reason for this operation"
-                    multiline
-                    numberOfLines={3}
-                  />
-
-                  <TouchableOpacity
-                    style={[
-                      styles.submitButton,
-                      isProcessing && styles.submitButtonDisabled,
-                    ]}
-                    onPress={handleOperation}
-                    disabled={isProcessing}
-                  >
-                    <Text style={styles.submitButtonText}>
-                      {isProcessing ? "Processing..." : "Confirm Operation"}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => {
-                      setSelectedProduct(null);
-                      setQuantity("");
-                      setReason("");
-                      setSerialNumber("");
-                      setOperationType(null);
-                    }}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              <StockOperationForm
+                product={selectedProduct}
+                operationType={operationType}
+                quantity={quantity}
+                reason={reason}
+                serialNumber={serialNumber}
+                isProcessing={isProcessing}
+                onQuantityChange={setQuantity}
+                onReasonChange={setReason}
+                onSerialNumberChange={setSerialNumber}
+                onSubmit={handleOperation}
+                onCancel={() => {
+                  setSelectedProduct(null);
+                  setQuantity("");
+                  setReason("");
+                  setSerialNumber("");
+                  setOperationType(null);
+                }}
+              />
             )}
           </>
         )}
 
         {/* Inventory Check Tab */}
         {activeTab === "inventory" && (
-          <>
-            <TouchableOpacity
-              style={styles.scanButton}
-              onPress={() => setShowInventoryScanner(true)}
-            >
-              <MaterialIcons name="qr-code-scanner" size={32} color="#fff" />
-              <Text style={styles.scanButtonText}>Scan Product Barcode</Text>
-              <Text style={styles.scanButtonSubtext}>扫描商品条码</Text>
-            </TouchableOpacity>
-
-            {checkedProduct && (
-              <View style={styles.productCard}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>Product Details</Text>
-                  <TouchableOpacity onPress={clearCheckedProduct}>
-                    <MaterialIcons name="close" size={24} color="#8E8E93" />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.productInfo}>
-                  {((checkedProduct as any).imageUrls &&
-                    Array.isArray((checkedProduct as any).imageUrls) &&
-                    (checkedProduct as any).imageUrls.length > 0) ||
-                  checkedProduct.imageUrl ? (
-                    <Image
-                      source={{
-                        uri:
-                          (checkedProduct as any).imageUrls &&
-                          Array.isArray((checkedProduct as any).imageUrls) &&
-                          (checkedProduct as any).imageUrls.length > 0
-                            ? (checkedProduct as any).imageUrls[0]
-                            : checkedProduct.imageUrl,
-                      }}
-                      style={styles.productImage}
-                      resizeMode="cover"
-                    />
-                  ) : null}
-
-                  <Text style={styles.productName}>{checkedProduct.name}</Text>
-
-                  {checkedProduct.barcode && (
-                    <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>Barcode:</Text>
-                      <Text style={styles.infoValue}>
-                        {checkedProduct.barcode}
-                      </Text>
-                    </View>
-                  )}
-
-                  {checkedProduct.price !== undefined && (
-                    <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>Price:</Text>
-                      <Text style={styles.infoValue}>
-                        ${checkedProduct.price.toFixed(2)}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.stockContainer}>
-                    <Text style={styles.stockLabel}>Current Stock:</Text>
-                    <View style={styles.stockValueContainer}>
-                      <Text style={styles.stockValue}>
-                        {checkedProduct.stockQuantity || 0}
-                      </Text>
-                      <View
-                        style={[
-                          styles.stockStatusBadge,
-                          {
-                            backgroundColor: getStockStatus(
-                              checkedProduct.stockQuantity || 0
-                            ).color,
-                          },
-                        ]}
-                      >
-                        <Text style={styles.stockStatusText}>
-                          {
-                            getStockStatus(checkedProduct.stockQuantity || 0)
-                              .text
-                          }
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-
-                  {checkedProduct.description && (
-                    <View style={styles.descriptionContainer}>
-                      <Text style={styles.descriptionLabel}>Description:</Text>
-                      <Text style={styles.descriptionText}>
-                        {checkedProduct.description}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
-
-            {scanHistory.length > 0 && (
-              <View style={styles.historySection}>
-                <View style={styles.historyHeader}>
-                  <Text style={styles.historyTitle}>Recent Scans</Text>
-                  <TouchableOpacity onPress={clearHistory}>
-                    <Text style={styles.clearHistoryText}>Clear</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {scanHistory.map((product) => (
-                  <TouchableOpacity
-                    key={product.id}
-                    style={styles.historyItem}
-                    onPress={() => selectFromHistory(product)}
-                  >
-                    <View style={styles.historyItemContent}>
-                      <Text style={styles.historyItemName}>{product.name}</Text>
-                      <View style={styles.historyItemStock}>
-                        <Text
-                          style={[
-                            styles.historyItemStockText,
-                            {
-                              color: getStockStatus(product.stockQuantity || 0)
-                                .color,
-                            },
-                          ]}
-                        >
-                          Stock: {product.stockQuantity || 0}
-                        </Text>
-                      </View>
-                    </View>
-                    <MaterialIcons
-                      name="chevron-right"
-                      size={24}
-                      color="#8E8E93"
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-
-            {!checkedProduct && scanHistory.length === 0 && (
-              <View style={styles.emptyState}>
-                <MaterialIcons name="inventory" size={64} color="#C7C7CC" />
-                <Text style={styles.emptyStateText}>
-                  No products scanned yet
-                </Text>
-                <Text style={styles.emptyStateSubtext}>
-                  Tap the button above to scan a product barcode
-                </Text>
-              </View>
-            )}
-          </>
+          <InventoryCheckTab
+            checkedProduct={checkedProduct}
+            scanHistory={scanHistory}
+            onScan={() => setShowInventoryScanner(true)}
+            onClearProduct={clearCheckedProduct}
+            onClearHistory={clearHistory}
+            onSelectFromHistory={selectFromHistory}
+          />
         )}
       </ScrollView>
 
@@ -1303,6 +1195,102 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: "center",
     paddingHorizontal: 32,
+  },
+  // Batch Stock In List styles
+  batchListContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 3,
+  },
+  batchListHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5EA",
+  },
+  batchListTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#000",
+  },
+  clearBatchButton: {
+    padding: 4,
+  },
+  batchListItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
+  },
+  batchListItemContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  batchListItemName: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#000",
+    marginBottom: 4,
+  },
+  batchListItemBarcode: {
+    fontSize: 12,
+    color: "#8E8E93",
+    marginBottom: 8,
+  },
+  batchListItemSN: {
+    backgroundColor: "#F5F5F5",
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 14,
+    color: "#000",
+    borderWidth: 1,
+    borderColor: "#E5E5EA",
+  },
+  removeItemButton: {
+    padding: 8,
+  },
+  batchStockInButton: {
+    backgroundColor: "#007AFF",
+    borderRadius: 8,
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
+  },
+  batchStockInButtonDisabled: {
+    backgroundColor: "#C7C7CC",
+  },
+  batchStockInButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  continueScanButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 12,
+    marginTop: 8,
+    gap: 8,
+  },
+  continueScanButtonText: {
+    color: "#007AFF",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
 

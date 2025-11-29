@@ -174,7 +174,7 @@ export function parseProductInfoFromText(text: string): {
   for (const line of lines) {
     // Look for barcode pattern (8-13 digits, possibly with dashes)
     const barcodeMatch = line.match(/\b(\d{8,13})\b/);
-    if (barcodeMatch && !result.barcode) {
+    if (barcodeMatch && barcodeMatch[1] && !result.barcode) {
       // Don't confuse serial number with barcode
       if (!result.serialNumber || !result.serialNumber.includes(barcodeMatch[1])) {
         result.barcode = barcodeMatch[1];

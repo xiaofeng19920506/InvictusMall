@@ -1,0 +1,260 @@
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import type { Product } from '../../types';
+
+// Helper function to get API base URL (same logic as api.ts)
+const getApiBaseUrl = (): string => {
+  const isDevice = Constants.isDevice;
+  const deviceId = Constants.deviceId || '';
+  const isSimulator = deviceId.includes('Simulator') || deviceId.includes('Emulator');
+  const isLikelySimulator = isSimulator || (isDevice !== undefined && !isDevice);
+  
+  const deviceApiUrl = Constants.expoConfig?.extra?.deviceApiUrl;
+  const simulatorApiUrl = Constants.expoConfig?.extra?.simulatorApiUrl;
+  const apiUrl = Constants.expoConfig?.extra?.apiUrl;
+
+  if (apiUrl && !apiUrl.includes('localhost') && !apiUrl.includes('127.0.0.1')) {
+    return apiUrl;
+  }
+
+  if (isLikelySimulator) {
+    return simulatorApiUrl || 'http://localhost:3001';
+  }
+
+  if (deviceApiUrl) {
+    return deviceApiUrl;
+  }
+
+  if (apiUrl && !apiUrl.includes('localhost')) {
+    return apiUrl;
+  }
+
+  return 'http://localhost:3001';
+};
+
+const baseQuery = fetchBaseQuery({
+  baseUrl: getApiBaseUrl(),
+  prepareHeaders: async (headers) => {
+    const token = await AsyncStorage.getItem('staff_auth_token');
+    if (token) {
+      headers.set('authorization', `Bearer ${token}`);
+    }
+    headers.set('Content-Type', 'application/json');
+    return headers;
+  },
+});
+
+// Custom base query with error handling
+const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
+  let result = await baseQuery(args, api, extraOptions);
+  
+  if (result.error && result.error.status === 401) {
+    // Unauthorized - clear token
+    await AsyncStorage.removeItem('staff_auth_token');
+    await AsyncStorage.removeItem('staff_user');
+  }
+  
+  return result;
+};
+
+export const warehouseApi = createApi({
+  reducerPath: 'warehouseApi',
+  baseQuery: baseQueryWithReauth,
+  tagTypes: ['Product', 'StockOperation', 'ProductByBarcode'],
+  keepUnusedDataFor: 60, // Cache unused data for 60 seconds
+  refetchOnMountOrArgChange: 30, // Refetch if data is older than 30 seconds
+  endpoints: (builder) => ({
+    // Get product by barcode
+    getProductByBarcode: builder.query<Product, string>({
+      query: (barcode) => ({
+        url: `/api/products/barcode/${barcode}`,
+        method: 'GET',
+      }),
+      transformResponse: (response: { success: boolean; data?: Product; message?: string }) => {
+        if (response.success && response.data) {
+          return response.data;
+        }
+        throw new Error(response.message || 'Product not found');
+      },
+      transformErrorResponse: (response: any) => {
+        if (response.status === 404) {
+          // Return null-like value that we can check
+          return { status: 404, data: null };
+        }
+        return response;
+      },
+      providesTags: (result, error, barcode) => [
+        { type: 'ProductByBarcode', id: barcode },
+        { type: 'Product', id: result?.id || 'LIST' },
+      ],
+      keepUnusedDataFor: 300, // Cache barcode lookups for 5 minutes
+    }),
+
+    // Create product
+    createProduct: builder.mutation<
+      Product,
+      {
+        storeId: string;
+        name: string;
+        description?: string;
+        price: number;
+        barcode?: string;
+        stockQuantity?: number;
+        category?: string;
+        isActive?: boolean;
+        serialNumber?: string;
+      }
+    >({
+      query: (data) => ({
+        url: '/api/products',
+        method: 'POST',
+        body: data,
+      }),
+      transformResponse: (response: { success: boolean; data: Product }) => response.data,
+      invalidatesTags: (result, error, arg) => [
+        { type: 'Product', id: result?.id || 'LIST' },
+        { type: 'ProductByBarcode', id: arg.barcode || 'LIST' },
+      ],
+    }),
+
+    // Extract text from image (OCR)
+    extractTextFromImage: builder.mutation<
+      {
+        text: string;
+        confidence: number;
+        lines?: string[];
+        words?: string[];
+        parsed: {
+          name?: string;
+          serialNumber?: string;
+          barcode?: string;
+          price?: number;
+          otherInfo?: string[];
+        };
+      },
+      { imageUri: string }
+    >({
+      query: ({ imageUri }) => {
+        const filename = imageUri.split('/').pop() || 'image.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
+
+        const formData = new FormData();
+        formData.append('image', {
+          uri: imageUri,
+          name: filename,
+          type: type,
+        } as any);
+
+        return {
+          url: '/api/ocr/extract',
+          method: 'POST',
+          body: formData,
+          formData: true,
+        };
+      },
+      transformResponse: (response: {
+        success: boolean;
+        data: {
+          text: string;
+          confidence: number;
+          lines?: string[];
+          words?: string[];
+          parsed: any;
+        };
+      }) => response.data,
+      // OCR results are unique per image, don't cache them
+      keepUnusedDataFor: 0,
+    }),
+
+    // Create stock operation
+    createStockOperation: builder.mutation<
+      {
+        operation: any;
+        orderUpdated?: boolean;
+        orderStatus?: string;
+      },
+      {
+        productId: string;
+        type: 'in' | 'out';
+        quantity: number;
+        reason?: string;
+        orderId?: string;
+      }
+    >({
+      query: (data) => ({
+        url: '/api/stock-operations',
+        method: 'POST',
+        body: data,
+      }),
+      transformResponse: (response: {
+        success: boolean;
+        data: {
+          operation: any;
+          orderUpdated?: boolean;
+          orderStatus?: string;
+        };
+      }) => response.data,
+      invalidatesTags: (result, error, arg) => [
+        { type: 'Product', id: arg.productId },
+        { type: 'ProductByBarcode', id: 'LIST' },
+        'StockOperation',
+      ],
+    }),
+
+    // Batch stock operations
+    batchStockIn: builder.mutation<
+      Array<{ operation: any }>,
+      Array<{
+        productId: string;
+        quantity: number;
+        reason?: string;
+      }>
+    >({
+      queryFn: async (items, _api, _extraOptions, baseQuery) => {
+        try {
+          const operations = await Promise.all(
+            items.map((item) =>
+              baseQuery({
+                url: '/api/stock-operations',
+                method: 'POST',
+                body: {
+                  productId: item.productId,
+                  type: 'in' as const,
+                  quantity: item.quantity,
+                  reason: item.reason,
+                },
+              })
+            )
+          );
+
+          const failed = operations.filter((op: any) => !op.data?.success);
+          if (failed.length > 0) {
+            return { error: { status: 'CUSTOM_ERROR', data: `${failed.length} operations failed` } };
+          }
+
+          const results = operations.map((op: any) => op.data?.data || op.data);
+          return { data: results };
+        } catch (error: any) {
+          return { error: { status: 'CUSTOM_ERROR', data: error.message } };
+        }
+      },
+      invalidatesTags: (result, error, items) => [
+        ...items.map((item) => ({ type: 'Product' as const, id: item.productId })),
+        { type: 'ProductByBarcode', id: 'LIST' },
+        'StockOperation',
+      ],
+    }),
+  }),
+});
+
+export const {
+  useGetProductByBarcodeQuery,
+  useLazyGetProductByBarcodeQuery,
+  useCreateProductMutation,
+  useExtractTextFromImageMutation,
+  useCreateStockOperationMutation,
+  useBatchStockInMutation,
+} = warehouseApi;
+
