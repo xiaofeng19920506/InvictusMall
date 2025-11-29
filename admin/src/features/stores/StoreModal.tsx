@@ -175,6 +175,30 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           const owners = response.data.filter(
             (staff) => (staff.role === "owner" || staff.role === "admin") && staff.isActive
           );
+          
+          // If editing a store with an owner, ensure the current owner is in the list
+          if (isEditing && store?.owner) {
+            const currentOwnerId = store.owner.id;
+            const ownerExists = owners.some(owner => owner.id === currentOwnerId);
+            
+            // If current owner is not in the available list, add it
+            if (!ownerExists) {
+              const currentOwner: Staff = {
+                id: store.owner.id,
+                email: store.owner.email,
+                firstName: store.owner.firstName,
+                lastName: store.owner.lastName,
+                phoneNumber: store.owner.phoneNumber || "",
+                role: store.owner.role as 'admin' | 'owner' | 'manager' | 'employee',
+                isActive: true,
+                emailVerified: true,
+                createdAt: "",
+                updatedAt: "",
+              };
+              owners.unshift(currentOwner); // Add current owner at the beginning
+            }
+          }
+          
           setAvailableOwners(owners);
           console.log("Available owners/admins loaded:", owners.length);
         }
@@ -187,7 +211,24 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     };
 
     fetchOwners();
-  }, [showError, isEditing, canEditOwner]);
+  }, [showError, isEditing, canEditOwner, store]);
+
+  // Ensure owner is selected when editing a store with an owner
+  // This runs after availableOwners is loaded to ensure the owner dropdown shows the current owner
+  useEffect(() => {
+    if (isEditing && store?.owner && availableOwners.length > 0 && !loadingOwners) {
+      const currentOwnerId = store.owner.id;
+      
+      // If ownerId is not set or different from current owner, set it
+      if (formData.ownerId !== currentOwnerId) {
+        setFormData(prev => ({
+          ...prev,
+          ownerId: currentOwnerId
+        }));
+        console.log("Auto-selected store owner:", currentOwnerId);
+      }
+    }
+  }, [isEditing, store?.owner?.id, availableOwners.length, loadingOwners]);
 
   const updateLocationField = (field: keyof Location, value: string) => {
     setFormData((prev) => ({
