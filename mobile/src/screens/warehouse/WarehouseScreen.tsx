@@ -93,6 +93,7 @@ const WarehouseScreen: React.FC = () => {
         // If we were in operation mode, set as selected product
         if (operationType) {
           setSelectedProduct(newProduct);
+          // Serial number should already be set from OCR parsing
         } else {
           // If we were in inventory check mode, set as checked product
           setCheckedProduct(newProduct);
@@ -110,6 +111,7 @@ const WarehouseScreen: React.FC = () => {
         setCreateProductName("");
         setCreateProductPrice("");
         setCreateProductBarcode("");
+        // Keep serial number if it was set from OCR
       } else {
         showError(response.message || "Failed to create product");
       }
@@ -176,7 +178,9 @@ const WarehouseScreen: React.FC = () => {
         if (parsed.serialNumber) {
           setSerialNumber(parsed.serialNumber);
         }
-        showSuccess(`Product found: ${product.name}. Please enter quantity and S/N to stock in.`);
+        showSuccess(
+          `Product found: ${product.name}. Please enter quantity and S/N to stock in.`
+        );
       } else {
         // Product not found, open create product modal with OCR data
         console.log(
@@ -204,6 +208,10 @@ const WarehouseScreen: React.FC = () => {
         setCreateProductBarcode(parsed.barcode || "");
         setCreateProductName(productName ? productName.trim() : "");
         setCreateProductPrice(parsed.price ? parsed.price.toString() : "");
+        // Set serial number if available
+        if (parsed.serialNumber) {
+          setSerialNumber(parsed.serialNumber);
+        }
         setShowCreateProductModal(true);
       }
     } catch (error: any) {
@@ -342,11 +350,19 @@ const WarehouseScreen: React.FC = () => {
 
     setIsProcessing(true);
     try {
+      // Include serial number in reason if provided (for stock in operations)
+      let finalReason = reason || "";
+      if (operationType === "in" && serialNumber.trim()) {
+        finalReason = finalReason
+          ? `${finalReason} | S/N: ${serialNumber.trim()}`
+          : `S/N: ${serialNumber.trim()}`;
+      }
+
       const result = await apiService.createStockOperation({
         productId: selectedProduct.id,
         type: operationType,
         quantity: qty,
-        reason: reason || undefined,
+        reason: finalReason || undefined,
       });
 
       if (result.success && result.data) {
@@ -363,6 +379,7 @@ const WarehouseScreen: React.FC = () => {
         setSelectedProduct(null);
         setQuantity("");
         setReason("");
+        setSerialNumber("");
         setOperationType(null);
       } else {
         showError(result.error || "Operation failed");
@@ -488,6 +505,20 @@ const WarehouseScreen: React.FC = () => {
                 </View>
 
                 <View style={styles.form}>
+                  {operationType === "in" && (
+                    <>
+                      <Text style={styles.label}>
+                        Serial Number (S/N) (Optional)
+                      </Text>
+                      <TextInput
+                        style={styles.input}
+                        value={serialNumber}
+                        onChangeText={setSerialNumber}
+                        placeholder="Enter or scan serial number"
+                      />
+                    </>
+                  )}
+
                   <Text style={styles.label}>
                     Quantity {operationType === "in" ? "(In)" : "(Out)"} *
                   </Text>
@@ -528,6 +559,7 @@ const WarehouseScreen: React.FC = () => {
                       setSelectedProduct(null);
                       setQuantity("");
                       setReason("");
+                      setSerialNumber("");
                       setOperationType(null);
                     }}
                   >
