@@ -41,34 +41,68 @@ export class ProductService {
     productData: CreateProductRequest,
     req: AuthenticatedRequest
   ): Promise<Product> {
+    logger.info('[ProductService] Creating new product', {
+      storeId: productData.storeId,
+      name: productData.name,
+      price: productData.price,
+      stockQuantity: productData.stockQuantity,
+      barcode: productData.barcode,
+      serialNumber: productData.serialNumber,
+      requestedBy: req.staff?.id || req.user?.id,
+    });
+
     // Validate required fields
     if (!productData.storeId || !productData.name || productData.price === undefined) {
+      logger.error('[ProductService] Validation failed: Missing required fields', {
+        storeId: productData.storeId,
+        name: productData.name,
+        price: productData.price,
+      });
       throw new Error('Store ID, name, and price are required');
     }
 
     // Verify store exists
     const store = await StoreModel.findById(productData.storeId);
     if (!store) {
+      logger.error('[ProductService] Store not found', { storeId: productData.storeId });
       throw new Error('Store not found');
     }
+    logger.debug('[ProductService] Store verified', { storeId: store.id, storeName: store.name });
 
     // Verify store ownership
     const ownershipCheck = await checkStoreOwnership(req, productData.storeId);
     if (!ownershipCheck.authorized) {
+      logger.error('[ProductService] Ownership check failed', {
+        storeId: productData.storeId,
+        staffId: req.staff?.id,
+        userId: req.user?.id,
+        error: ownershipCheck.error,
+      });
       throw new Error(ownershipCheck.error || 'You do not have permission to access this store');
     }
+    logger.debug('[ProductService] Ownership verified');
 
     // Validate price
     if (productData.price < 0) {
+      logger.error('[ProductService] Invalid price', { price: productData.price });
       throw new Error('Price cannot be negative');
     }
 
     // Validate stock quantity
     if (productData.stockQuantity !== undefined && productData.stockQuantity < 0) {
+      logger.error('[ProductService] Invalid stock quantity', { stockQuantity: productData.stockQuantity });
       throw new Error('Stock quantity cannot be negative');
     }
 
-    return await ProductModel.create(productData);
+    logger.debug('[ProductService] All validations passed, calling ProductModel.create');
+    const createdProduct = await ProductModel.create(productData);
+    logger.info('[ProductService] Product created successfully', {
+      productId: createdProduct.id,
+      name: createdProduct.name,
+      stockQuantity: createdProduct.stockQuantity,
+      storeId: createdProduct.storeId,
+    });
+    return createdProduct;
   }
 
   /**

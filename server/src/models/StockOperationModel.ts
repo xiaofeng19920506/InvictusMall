@@ -73,6 +73,13 @@ export class StockOperationModel {
     try {
       await connection.beginTransaction();
 
+      logger.debug('[StockOperationModel] Acquiring lock on product for stock update', {
+        productId: data.productId,
+        type: data.type,
+        requestedQuantity: data.quantity,
+        performedBy,
+      });
+
       // Get current product stock with FOR UPDATE lock to prevent race conditions
       const [productRows] = await connection.execute(
         'SELECT stock_quantity FROM products WHERE id = ? FOR UPDATE',
@@ -80,6 +87,9 @@ export class StockOperationModel {
       );
       const products = productRows as any[];
       if (!products || products.length === 0) {
+        logger.error('[StockOperationModel] Product not found after lock acquisition', {
+          productId: data.productId,
+        });
         throw new Error('Product not found');
       }
 
@@ -87,6 +97,14 @@ export class StockOperationModel {
       const currentQuantity = parseInt(products[0].stock_quantity, 10) || 0;
       const previousQuantity = currentQuantity;
       const operationQuantity = parseInt(String(data.quantity), 10);
+
+      logger.debug('[StockOperationModel] Product locked and current stock retrieved', {
+        productId: data.productId,
+        currentQuantity,
+        rawStockQuantity: products[0].stock_quantity,
+        operationQuantity,
+        type: typeof products[0].stock_quantity,
+      });
 
       // Validate operation quantity
       if (isNaN(operationQuantity) || operationQuantity <= 0) {
@@ -157,10 +175,25 @@ export class StockOperationModel {
         updateParams = [operationQuantity, now, data.productId, operationQuantity];
       }
 
+      logger.debug('[StockOperationModel] Executing stock quantity update', {
+        query: updateQuery,
+        params: updateParams,
+        productId: data.productId,
+        operationQuantity,
+        operationType: data.type,
+      });
+
       const [updateResult] = await connection.execute(updateQuery, updateParams);
 
       // Verify the update was successful
       const affectedRows = (updateResult as any).affectedRows;
+      logger.debug('[StockOperationModel] Stock quantity update result', {
+        productId: data.productId,
+        affectedRows,
+        operationType: data.type,
+        operationQuantity,
+      });
+
       if (affectedRows === 0) {
         if (data.type === 'out') {
           // Re-read current stock to get accurate error message
@@ -193,9 +226,26 @@ export class StockOperationModel {
       });
 
       await connection.commit();
+      logger.info('[StockOperationModel] Transaction committed successfully', {
+        operationId,
+        productId: data.productId,
+        finalStockQuantity: finalQuantity,
+      });
 
       // Return the created operation
-      return this.getStockOperationById(operationId);
+      const createdOperation = await this.getStockOperationById(operationId);
+      
+      // Verify the operation was created correctly
+      logger.debug('[StockOperationModel] Stock operation record retrieved', {
+        operationId: createdOperation.id,
+        productId: createdOperation.productId,
+        type: createdOperation.type,
+        quantity: createdOperation.quantity,
+        previousQuantity: createdOperation.previousQuantity,
+        newQuantity: createdOperation.newQuantity,
+      });
+      
+      return createdOperation;
     } catch (error) {
       await connection.rollback();
       throw error;

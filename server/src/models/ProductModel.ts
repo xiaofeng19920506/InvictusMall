@@ -1,6 +1,7 @@
 import { pool } from '../config/database';
 import { Product, CreateProductRequest, UpdateProductRequest } from '../types/product';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger';
 
 export class ProductModel {
   // Map database row to Product object
@@ -144,6 +145,7 @@ export class ProductModel {
   static async findById(id: string): Promise<Product | null> {
     let connection;
     try {
+      logger.debug('[ProductModel] Finding product by ID', { productId: id });
       connection = await pool.getConnection();
       const [rows] = await connection.execute(
         `SELECT * FROM products WHERE id = ?`,
@@ -152,12 +154,25 @@ export class ProductModel {
       
       const products = rows as any[];
       if (!products || products.length === 0) {
+        logger.debug('[ProductModel] Product not found', { productId: id });
         return null;
       }
       
-      return this.mapRowToProduct(products[0]);
+      const product = this.mapRowToProduct(products[0]);
+      logger.debug('[ProductModel] Product found', {
+        productId: product.id,
+        name: product.name,
+        stockQuantity: product.stockQuantity,
+        rawStockQuantity: products[0].stock_quantity,
+        storeId: product.storeId,
+      });
+      return product;
     } catch (error: any) {
-      console.error('Database error in findById:', error);
+      logger.error('[ProductModel] Database error in findById', {
+        productId: id,
+        error: error.message,
+        stack: error.stack,
+      });
       throw error;
     } finally {
       if (connection) {
@@ -211,12 +226,21 @@ export class ProductModel {
       const stockQuantity = productData.stockQuantity ?? 0;
       const isActive = productData.isActive ?? true;
 
+      logger.debug('[ProductModel] Creating product in database', {
+        productId,
+        storeId: productData.storeId,
+        name: productData.name,
+        stockQuantity,
+        barcode: productData.barcode,
+        serialNumber: productData.serialNumber,
+      });
+
       // Handle imageUrls: prefer imageUrls over imageUrl
       const imageUrls = productData.imageUrls || (productData.imageUrl ? [productData.imageUrl] : []);
       const imageUrlsJson = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
       const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null; // Keep for backward compatibility
 
-      await connection.execute(
+      const [insertResult] = await connection.execute(
         `INSERT INTO products (
           id, store_id, name, description, price, image_url, image_urls,
           stock_quantity, category, barcode, serial_number, is_active, created_at, updated_at
@@ -239,17 +263,47 @@ export class ProductModel {
         ]
       );
 
+      const insertAffectedRows = (insertResult as any).affectedRows;
+      logger.debug('[ProductModel] Product inserted', {
+        productId,
+        affectedRows: insertAffectedRows,
+        insertedStockQuantity: stockQuantity,
+      });
+
       // Update store's products_count
-      await connection.execute(
+      const [updateResult] = await connection.execute(
         `UPDATE stores 
          SET products_count = products_count + 1 
          WHERE id = ?`,
         [productData.storeId]
       );
 
+      const updateAffectedRows = (updateResult as any).affectedRows;
+      logger.debug('[ProductModel] Store products_count updated', {
+        storeId: productData.storeId,
+        affectedRows: updateAffectedRows,
+      });
+
       await connection.commit();
-      return this.findById(productId) as Promise<Product>;
-    } catch (error) {
+      logger.info('[ProductModel] Transaction committed successfully', { productId });
+
+      const createdProduct = await this.findById(productId) as Promise<Product>;
+      logger.info('[ProductModel] Product retrieved after creation', {
+        productId,
+        name: (createdProduct as any).name,
+        stockQuantity: (createdProduct as any).stockQuantity,
+      });
+      return createdProduct;
+    } catch (error: any) {
+      logger.error('[ProductModel] Error creating product, rolling back transaction', {
+        error: error.message,
+        stack: error.stack,
+        productData: {
+          storeId: productData.storeId,
+          name: productData.name,
+          stockQuantity: productData.stockQuantity,
+        },
+      });
       await connection.rollback();
       throw error;
     } finally {

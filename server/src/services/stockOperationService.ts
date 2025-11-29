@@ -27,18 +27,68 @@ export class StockOperationService {
     data: CreateStockOperationRequest,
     performedBy: string
   ): Promise<StockOperationResult> {
+    logger.info('[StockOperationService] Starting stock operation', {
+      productId: data.productId,
+      type: data.type,
+      quantity: data.quantity,
+      reason: data.reason,
+      orderId: data.orderId,
+      performedBy,
+    });
+
     try {
       // Validate product exists
+      logger.debug('[StockOperationService] Validating product exists', { productId: data.productId });
       const product = await ProductModel.findById(data.productId);
       if (!product) {
+        logger.error('[StockOperationService] Product not found', { productId: data.productId });
         throw new Error('Product not found');
       }
+      logger.debug('[StockOperationService] Product found', {
+        productId: product.id,
+        productName: product.name,
+        currentStockQuantity: product.stockQuantity,
+      });
 
       // Create stock operation (this automatically updates product stock)
+      logger.debug('[StockOperationService] Calling StockOperationModel.createStockOperation');
       const operation = await this.stockOperationModel.createStockOperation(
         data,
         performedBy
       );
+      logger.info('[StockOperationService] Stock operation created', {
+        operationId: operation.id,
+        productId: operation.productId,
+        type: operation.type,
+        quantity: operation.quantity,
+        previousQuantity: operation.previousQuantity,
+        newQuantity: operation.newQuantity,
+      });
+
+      // Verify product stock was updated correctly
+      logger.debug('[StockOperationService] Verifying product stock after operation');
+      const updatedProduct = await ProductModel.findById(data.productId);
+      if (updatedProduct) {
+        logger.info('[StockOperationService] Product stock verified after operation', {
+          productId: updatedProduct.id,
+          productName: updatedProduct.name,
+          actualStockQuantity: updatedProduct.stockQuantity,
+          expectedStockQuantity: operation.newQuantity,
+          match: updatedProduct.stockQuantity === operation.newQuantity,
+        });
+        if (updatedProduct.stockQuantity !== operation.newQuantity) {
+          logger.warn('[StockOperationService] ⚠️ Stock quantity mismatch!', {
+            productId: updatedProduct.id,
+            expected: operation.newQuantity,
+            actual: updatedProduct.stockQuantity,
+            difference: operation.newQuantity - updatedProduct.stockQuantity,
+          });
+        }
+      } else {
+        logger.warn('[StockOperationService] Could not verify product stock - product not found', {
+          productId: data.productId,
+        });
+      }
 
       let orderUpdated = false;
       let orderStatus: OrderStatus | undefined;

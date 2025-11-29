@@ -124,7 +124,23 @@ export class ProductController {
    */
   createProduct = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
+      logger.info('[ProductController] Create product request received', {
+        storeId: req.body.storeId,
+        name: req.body.name,
+        price: req.body.price,
+        stockQuantity: req.body.stockQuantity,
+        requestedBy: req.staff?.id || req.user?.id,
+      });
+
       const product = await this.productService.createProduct(req.body, req);
+      
+      logger.info('[ProductController] Product created successfully', {
+        productId: product.id,
+        name: product.name,
+        stockQuantity: product.stockQuantity,
+        storeId: product.storeId,
+      });
+
       ApiResponseHelper.success(res, product, 'Product created successfully', 201);
     } catch (error: any) {
       logger.error('Failed to create product', error, { 
