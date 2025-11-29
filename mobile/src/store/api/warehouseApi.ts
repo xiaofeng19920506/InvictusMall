@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery, FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import type { Product } from '../../types';
@@ -84,11 +84,16 @@ export const warehouseApi = createApi({
         }
         return response;
       },
-      providesTags: (result, error, barcode) => [
-        { type: 'ProductByBarcode', id: barcode },
-        { type: 'Product', id: result?.id || 'LIST' },
-      ],
-      keepUnusedDataFor: 300, // Cache barcode lookups for 5 minutes
+      providesTags: (result, error, barcode) => {
+        const tags: Array<{ type: 'ProductByBarcode' | 'Product'; id: string }> = [
+          { type: 'ProductByBarcode' as const, id: barcode },
+        ];
+        if (result) {
+          tags.push({ type: 'Product' as const, id: result.id });
+        }
+        return tags;
+      },
+      keepUnusedDataFor: 300, // Cache barcode lookups for 5 minutes (products don't change frequently)
     }),
 
     // Create product
@@ -112,10 +117,19 @@ export const warehouseApi = createApi({
         body: data,
       }),
       transformResponse: (response: { success: boolean; data: Product }) => response.data,
-      invalidatesTags: (result, error, arg) => [
-        { type: 'Product', id: result?.id || 'LIST' },
-        { type: 'ProductByBarcode', id: arg.barcode || 'LIST' },
-      ],
+      invalidatesTags: (result, error, arg) => {
+        const tags: Array<{ type: 'Product' | 'ProductByBarcode'; id?: string }> = [];
+        if (result) {
+          tags.push({ type: 'Product' as const, id: result.id });
+        }
+        if (arg.barcode) {
+          tags.push({ type: 'ProductByBarcode' as const, id: arg.barcode });
+        }
+        // Also invalidate LIST tag to refresh any product lists
+        tags.push({ type: 'Product' as const, id: 'LIST' });
+        tags.push({ type: 'ProductByBarcode' as const, id: 'LIST' });
+        return tags;
+      },
     }),
 
     // Extract text from image (OCR)
@@ -164,8 +178,6 @@ export const warehouseApi = createApi({
           parsed: any;
         };
       }) => response.data,
-      // OCR results are unique per image, don't cache them
-      keepUnusedDataFor: 0,
     }),
 
     // Create stock operation
@@ -197,9 +209,10 @@ export const warehouseApi = createApi({
         };
       }) => response.data,
       invalidatesTags: (result, error, arg) => [
-        { type: 'Product', id: arg.productId },
-        { type: 'ProductByBarcode', id: 'LIST' },
-        'StockOperation',
+        { type: 'Product' as const, id: arg.productId }, // Invalidate specific product
+        { type: 'Product' as const, id: 'LIST' }, // Invalidate product lists
+        { type: 'ProductByBarcode' as const, id: 'LIST' }, // Invalidate all barcode caches
+        { type: 'StockOperation' as const },
       ],
     }),
 
@@ -231,20 +244,41 @@ export const warehouseApi = createApi({
 
           const failed = operations.filter((op: any) => !op.data?.success);
           if (failed.length > 0) {
-            return { error: { status: 'CUSTOM_ERROR', data: `${failed.length} operations failed` } };
+            const errorMessage = `${failed.length} operations failed`;
+            return { 
+              error: { 
+                status: 'CUSTOM_ERROR' as const, 
+                data: errorMessage,
+                error: errorMessage
+              } as FetchBaseQueryError
+            };
           }
 
           const results = operations.map((op: any) => op.data?.data || op.data);
           return { data: results };
         } catch (error: any) {
-          return { error: { status: 'CUSTOM_ERROR', data: error.message } };
+          const errorMessage = error.message || 'Batch stock in failed';
+          return { 
+            error: { 
+              status: 'CUSTOM_ERROR' as const, 
+              data: errorMessage,
+              error: errorMessage
+            } as FetchBaseQueryError
+          };
         }
       },
-      invalidatesTags: (result, error, items) => [
-        ...items.map((item) => ({ type: 'Product' as const, id: item.productId })),
-        { type: 'ProductByBarcode', id: 'LIST' },
-        'StockOperation',
-      ],
+      invalidatesTags: (result, error, items) => {
+        const tags: Array<{ type: 'Product' | 'ProductByBarcode' | 'StockOperation'; id?: string }> = [
+          { type: 'Product' as const, id: 'LIST' },
+          { type: 'ProductByBarcode' as const, id: 'LIST' },
+          { type: 'StockOperation' as const },
+        ];
+        // Invalidate cache for each affected product
+        items.forEach((item) => {
+          tags.push({ type: 'Product' as const, id: item.productId });
+        });
+        return tags;
+      },
     }),
   }),
 });

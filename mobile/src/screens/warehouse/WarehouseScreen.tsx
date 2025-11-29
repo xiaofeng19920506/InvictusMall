@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -13,9 +13,8 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import BarcodeScanner from "../../components/BarcodeScanner";
 import PhotoCapture from "../../components/PhotoCapture";
-import apiService from "../../services/api";
-import authService from "../../services/auth";
 import { useNotification } from "../../contexts/NotificationContext";
+import { useAuth } from "../../contexts/AuthContext";
 import type { BarcodeScanResult, Product } from "../../types";
 import type { TabType, PendingStockInItem } from "./types";
 import { getStockStatus } from "./utils";
@@ -23,39 +22,89 @@ import BatchStockInList from "./components/BatchStockInList";
 import StockOperationForm from "./components/StockOperationForm";
 import InventoryCheckTab from "./components/InventoryCheckTab";
 import CreateProductModal from "./components/CreateProductModal";
+import { useAppSelector, useAppDispatch } from "../../store/hooks";
+import {
+  setActiveTab,
+  setShowScanner,
+  setShowPhotoCapture,
+  setShowInventoryScanner,
+  setShowCreateProductModal,
+  setIsProcessingOCR,
+  setOperationType,
+  setSelectedProduct,
+  setQuantity,
+  setReason,
+  setSerialNumber,
+  setIsProcessing,
+  resetOperation,
+  addPendingItem,
+  removePendingItem,
+  updatePendingItemSerialNumber,
+  clearPendingItems,
+  setCheckedProduct,
+  addToScanHistory,
+  clearScanHistory,
+  setCreateProductBarcode,
+  setCreateProductName,
+  setCreateProductPrice,
+  setIsCreatingProduct,
+  resetCreateProductModal,
+} from "../../store/slices/warehouseSlice";
+import {
+  useLazyGetProductByBarcodeQuery,
+  useCreateProductMutation,
+  useExtractTextFromImageMutation,
+  useCreateStockOperationMutation,
+  useBatchStockInMutation,
+} from "../../store/api/warehouseApi";
 
 const WarehouseScreen: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>("operations");
-
-  // Operation states
-  const [showScanner, setShowScanner] = useState(false);
-  const [showPhotoCapture, setShowPhotoCapture] = useState(false);
-  const [operationType, setOperationType] = useState<"in" | "out" | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [quantity, setQuantity] = useState("");
-  const [reason, setReason] = useState("");
-  const [serialNumber, setSerialNumber] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
-
-  // Batch scan states for stock in
-  const [pendingStockInItems, setPendingStockInItems] = useState<
-    PendingStockInItem[]
-  >([]);
-
-  // Inventory check states
-  const [showInventoryScanner, setShowInventoryScanner] = useState(false);
-  const [checkedProduct, setCheckedProduct] = useState<Product | null>(null);
-  const [scanHistory, setScanHistory] = useState<Product[]>([]);
-
+  const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotification();
+  const { user } = useAuth();
 
-  // Create product modal state
-  const [showCreateProductModal, setShowCreateProductModal] = useState(false);
-  const [createProductBarcode, setCreateProductBarcode] = useState("");
-  const [createProductName, setCreateProductName] = useState("");
-  const [createProductPrice, setCreateProductPrice] = useState("");
-  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+  // Redux state
+  const activeTab = useAppSelector((state) => state.warehouse.activeTab);
+  const showScanner = useAppSelector((state) => state.warehouse.showScanner);
+  const showPhotoCapture = useAppSelector((state) => state.warehouse.showPhotoCapture);
+  const operationType = useAppSelector((state) => state.warehouse.operationType);
+  const selectedProduct = useAppSelector((state) => state.warehouse.selectedProduct);
+  const quantity = useAppSelector((state) => state.warehouse.quantity);
+  const reason = useAppSelector((state) => state.warehouse.reason);
+  const serialNumber = useAppSelector((state) => state.warehouse.serialNumber);
+  const isProcessing = useAppSelector((state) => state.warehouse.isProcessing);
+  const isProcessingOCR = useAppSelector((state) => state.warehouse.isProcessingOCR);
+  const pendingStockInItems = useAppSelector((state) => state.warehouse.pendingStockInItems);
+  const showInventoryScanner = useAppSelector((state) => state.warehouse.showInventoryScanner);
+  const checkedProduct = useAppSelector((state) => state.warehouse.checkedProduct);
+  const scanHistory = useAppSelector((state) => state.warehouse.scanHistory);
+  const showCreateProductModal = useAppSelector((state) => state.warehouse.showCreateProductModal);
+  const createProductBarcode = useAppSelector((state) => state.warehouse.createProductBarcode);
+  const createProductName = useAppSelector((state) => state.warehouse.createProductName);
+  const createProductPrice = useAppSelector((state) => state.warehouse.createProductPrice);
+  const isCreatingProduct = useAppSelector((state) => state.warehouse.isCreatingProduct);
+
+  // RTK Query hooks
+  const [getProductByBarcode, { isLoading: isLoadingProduct }] = useLazyGetProductByBarcodeQuery();
+  const [createProduct, { isLoading: isCreatingProductMutation }] = useCreateProductMutation();
+  const [extractTextFromImage, { isLoading: isExtractingText }] = useExtractTextFromImageMutation();
+  const [createStockOperation, { isLoading: isCreatingStockOperation }] = useCreateStockOperationMutation();
+  const [batchStockIn, { isLoading: isBatchStockInLoading }] = useBatchStockInMutation();
+
+  // Update isProcessing state based on mutation loading states
+  useEffect(() => {
+    dispatch(setIsProcessing(isCreatingStockOperation || isBatchStockInLoading));
+  }, [isCreatingStockOperation, isBatchStockInLoading, dispatch]);
+
+  // Update isCreatingProduct state when mutation loading changes
+  useEffect(() => {
+    dispatch(setIsCreatingProduct(isCreatingProductMutation));
+  }, [isCreatingProductMutation, dispatch]);
+
+  // Update isProcessingOCR state when extraction loading changes
+  useEffect(() => {
+    dispatch(setIsProcessingOCR(isExtractingText));
+  }, [isExtractingText, dispatch]);
 
   // Handle create product
   const handleCreateProduct = async () => {
@@ -70,86 +119,60 @@ const WarehouseScreen: React.FC = () => {
       return;
     }
 
-    setIsCreatingProduct(true);
+    if (!user || !user.storeId) {
+      showError(
+        "Unable to get store information. Please try logging in again."
+      );
+      return;
+    }
 
     try {
-      // Get current user to get storeId
-      const currentUser = await authService.getCurrentUser();
-      if (!currentUser || !currentUser.storeId) {
-        showError(
-          "Unable to get store information. Please try logging in again."
-        );
-        return;
-      }
-
       const productData = {
-        storeId: currentUser.storeId,
+        storeId: user.storeId,
         name: createProductName.trim(),
         description: "",
         price: price,
-        barcode: createProductBarcode,
+        barcode: createProductBarcode || undefined,
         stockQuantity: 0,
         category: "",
         isActive: true,
+        serialNumber: serialNumber || undefined,
       };
 
-      const response = await apiService.createProduct(productData);
+      const newProduct = await createProduct(productData).unwrap();
 
-      if (response.success && response.data) {
-        showSuccess("Product created successfully!");
-        const newProduct = response.data;
+      showSuccess("Product created successfully!");
 
-        // If we were in operation mode, set as selected product
-        if (operationType) {
-          setSelectedProduct(newProduct);
-          // Serial number should already be set from OCR parsing
-        } else {
-          // If we were in inventory check mode, set as checked product
-          setCheckedProduct(newProduct);
-          // Add to scan history
-          setScanHistory((prev) => {
-            const exists = prev.some((p) => p.id === newProduct.id);
-            if (!exists) {
-              return [newProduct, ...prev].slice(0, 10);
-            }
-            return prev;
-          });
-        }
-
-        setShowCreateProductModal(false);
-        setCreateProductName("");
-        setCreateProductPrice("");
-        setCreateProductBarcode("");
-        // Keep serial number if it was set from OCR
+      // If we were in operation mode, set as selected product
+      if (operationType) {
+        dispatch(setSelectedProduct(newProduct));
+        // Serial number should already be set from OCR parsing
       } else {
-        showError(response.message || "Failed to create product");
+        // If we were in inventory check mode, set as checked product
+        dispatch(setCheckedProduct(newProduct));
+        // Add to scan history
+        dispatch(addToScanHistory(newProduct));
       }
+
+      dispatch(resetCreateProductModal());
+      // Keep serial number if it was set from OCR
     } catch (error: any) {
       console.error("Error creating product:", error);
       showError(error.message || "Failed to create product");
-    } finally {
-      setIsCreatingProduct(false);
     }
   };
 
   // Handle photo capture for stock in
   const handlePhotoTaken = async (imageUri: string) => {
-    setShowPhotoCapture(false);
-    setIsProcessingOCR(true);
+    dispatch(setShowPhotoCapture(false));
 
     try {
       console.log("[WarehouseScreen] 📷 Photo taken, starting OCR...");
 
       // Extract text from image using OCR
-      const ocrResponse = await apiService.extractTextFromImage(imageUri);
+      const ocrData = await extractTextFromImage({ imageUri }).unwrap();
+      const { text, parsed } = ocrData;
 
-      if (!ocrResponse.success || !ocrResponse.data) {
-        showError("Failed to extract text from image");
-        setIsProcessingOCR(false);
-        return;
-      }
-
-      const { text, parsed } = ocrResponse.data;
       console.log("[WarehouseScreen] 📝 OCR result:", {
         text: text.substring(0, 100),
         parsed,
@@ -164,17 +187,16 @@ const WarehouseScreen: React.FC = () => {
           parsed.barcode
         );
         try {
-          const barcodeResponse = await apiService.getProductByBarcode(
-            parsed.barcode
+          const productResult = await getProductByBarcode(parsed.barcode).unwrap();
+          product = productResult;
+          console.log(
+            "[WarehouseScreen] ✅ Product found by barcode:",
+            product.name
           );
-          if (barcodeResponse.success && barcodeResponse.data) {
-            product = barcodeResponse.data;
-            console.log(
-              "[WarehouseScreen] ✅ Product found by barcode:",
-              product.name
-            );
+        } catch (error: any) {
+          if (error.status !== 404) {
+            console.error("[WarehouseScreen] Error fetching product:", error);
           }
-        } catch (error) {
           console.log("[WarehouseScreen] ⚠️ Product not found by barcode");
         }
       }
@@ -191,23 +213,20 @@ const WarehouseScreen: React.FC = () => {
             scannedAt: new Date(),
           };
 
-          setPendingStockInItems((prev) => {
-            const updated = [...prev, newItem];
-            showSuccess(
-              `${product.name} added (${updated.length} item${
-                updated.length > 1 ? "s" : ""
-              } in list)`
-            );
-            return updated;
-          });
+          dispatch(addPendingItem(newItem));
+          showSuccess(
+            `${product.name} added (${pendingStockInItems.length + 1} item${
+              pendingStockInItems.length > 0 ? "s" : ""
+            } in list)`
+          );
 
           // Re-open photo capture for next scan
-          setShowPhotoCapture(true);
+          dispatch(setShowPhotoCapture(true));
         } else {
           // Stock out: use old single product flow
-          setSelectedProduct(product);
+          dispatch(setSelectedProduct(product));
           if (parsed.serialNumber) {
-            setSerialNumber(parsed.serialNumber);
+            dispatch(setSerialNumber(parsed.serialNumber));
           }
           showSuccess(
             `Product found: ${product.name}. Please enter quantity and S/N to stock out.`
@@ -237,20 +256,18 @@ const WarehouseScreen: React.FC = () => {
             text.substring(0, 100);
         }
 
-        setCreateProductBarcode(parsed.barcode || "");
-        setCreateProductName(productName ? productName.trim() : "");
-        setCreateProductPrice(parsed.price ? parsed.price.toString() : "");
+        dispatch(setCreateProductBarcode(parsed.barcode || ""));
+        dispatch(setCreateProductName(productName ? productName.trim() : ""));
+        dispatch(setCreateProductPrice(parsed.price ? parsed.price.toString() : ""));
         // Set serial number if available
         if (parsed.serialNumber) {
-          setSerialNumber(parsed.serialNumber);
+          dispatch(setSerialNumber(parsed.serialNumber));
         }
-        setShowCreateProductModal(true);
+        dispatch(setShowCreateProductModal(true));
       }
     } catch (error: any) {
       console.error("[WarehouseScreen] ❌ OCR processing error:", error);
       showError(error.message || "Failed to process image");
-    } finally {
-      setIsProcessingOCR(false);
     }
   };
 
@@ -266,7 +283,7 @@ const WarehouseScreen: React.FC = () => {
         result.type === "product" ? (result.data as Product)?.name : undefined,
     });
 
-    setShowScanner(false);
+    dispatch(setShowScanner(false));
 
     if (result.type === "product" && result.data) {
       const product = result.data as Product;
@@ -274,17 +291,17 @@ const WarehouseScreen: React.FC = () => {
         "[WarehouseScreen] ✅ Product found for operation:",
         product.name
       );
-      setSelectedProduct(product);
+      dispatch(setSelectedProduct(product));
     } else if (result.type === "product_not_found") {
       console.log(
         "[WarehouseScreen] 📝 Product not found, opening create modal:",
         result.value
       );
       // Open create product modal with pre-filled barcode
-      setCreateProductBarcode(result.value);
-      setCreateProductName("");
-      setCreateProductPrice("");
-      setShowCreateProductModal(true);
+      dispatch(setCreateProductBarcode(result.value));
+      dispatch(setCreateProductName(""));
+      dispatch(setCreateProductPrice(""));
+      dispatch(setShowCreateProductModal(true));
     } else if (result.type === "unknown") {
       console.log(
         "[WarehouseScreen] ❓ Unknown barcode scanned:",
@@ -314,7 +331,7 @@ const WarehouseScreen: React.FC = () => {
         result.type === "product" ? (result.data as Product)?.name : undefined,
     });
 
-    setShowInventoryScanner(false);
+    dispatch(setShowInventoryScanner(false));
 
     if (result.type === "product" && result.data) {
       const product = result.data as Product;
@@ -322,35 +339,18 @@ const WarehouseScreen: React.FC = () => {
         "[WarehouseScreen] ✅ Product found for inventory check:",
         product.name
       );
-      setCheckedProduct(product);
-
-      // Add to scan history if not already present
-      setScanHistory((prev) => {
-        const exists = prev.some((p) => p.id === product.id);
-        if (!exists) {
-          const newHistory = [product, ...prev].slice(0, 10); // Keep last 10 scans
-          console.log(
-            "[WarehouseScreen] 📝 Added to scan history, total items:",
-            newHistory.length
-          );
-          return newHistory;
-        } else {
-          console.log(
-            "[WarehouseScreen] ℹ️ Product already in scan history, skipping"
-          );
-          return prev;
-        }
-      });
+      dispatch(setCheckedProduct(product));
+      dispatch(addToScanHistory(product));
     } else if (result.type === "product_not_found") {
       console.log(
         "[WarehouseScreen] 📝 Product not found in inventory check, opening create modal:",
         result.value
       );
       // Open create product modal with pre-filled barcode
-      setCreateProductBarcode(result.value);
-      setCreateProductName("");
-      setCreateProductPrice("");
-      setShowCreateProductModal(true);
+      dispatch(setCreateProductBarcode(result.value));
+      dispatch(setCreateProductName(""));
+      dispatch(setCreateProductPrice(""));
+      dispatch(setShowCreateProductModal(true));
     } else if (result.type === "unknown") {
       console.log(
         "[WarehouseScreen] ❓ Unknown barcode scanned:",
@@ -375,37 +375,23 @@ const WarehouseScreen: React.FC = () => {
       return;
     }
 
-    setIsProcessing(true);
     try {
-      // Create stock operations for each item (1 unit each)
-      const operations = pendingStockInItems.map((item) => {
-        const reason = item.serialNumber ? `S/N: ${item.serialNumber}` : "";
-        return apiService.createStockOperation({
-          productId: item.product.id,
-          type: "in",
-          quantity: 1, // Always 1 unit per scan
-          reason: reason || undefined,
-        });
-      });
+      // Prepare batch items for RTK Query mutation
+      const batchItems = pendingStockInItems.map((item) => ({
+        productId: item.product.id,
+        quantity: 1, // Always 1 unit per scan
+        reason: item.serialNumber ? `S/N: ${item.serialNumber}` : undefined,
+      }));
 
-      // Execute all operations in parallel
-      const results = await Promise.all(operations);
-      const failed = results.filter((r) => !r.success);
-
-      if (failed.length === 0) {
-        showSuccess(
-          `Successfully stocked in ${pendingStockInItems.length} items`
-        );
-        setPendingStockInItems([]);
-        setOperationType(null);
-        setShowPhotoCapture(false);
-      } else {
-        showError(`${failed.length} operations failed. Please try again.`);
-      }
+      await batchStockIn(batchItems).unwrap();
+      showSuccess(
+        `Successfully stocked in ${pendingStockInItems.length} items`
+      );
+      dispatch(clearPendingItems());
+      dispatch(setOperationType(null));
+      dispatch(setShowPhotoCapture(false));
     } catch (error: any) {
       showError(error.message || "Batch stock in failed");
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -421,7 +407,6 @@ const WarehouseScreen: React.FC = () => {
       return;
     }
 
-    setIsProcessing(true);
     try {
       // Include serial number in reason if provided (for stock in operations)
       let finalReason = reason || "";
@@ -431,51 +416,41 @@ const WarehouseScreen: React.FC = () => {
           : `S/N: ${serialNumber.trim()}`;
       }
 
-      const result = await apiService.createStockOperation({
+      const result = await createStockOperation({
         productId: selectedProduct.id,
         type: operationType,
         quantity: qty,
         reason: finalReason || undefined,
-      });
+      }).unwrap();
 
-      if (result.success && result.data) {
-        let message = `Stock ${
-          operationType === "in" ? "In" : "Out"
-        } operation completed`;
+      let message = `Stock ${
+        operationType === "in" ? "In" : "Out"
+      } operation completed`;
 
-        // If order was updated, show additional info
-        if (result.data.orderUpdated && result.data.orderStatus) {
-          message += `. Order status updated to ${result.data.orderStatus}`;
-        }
-
-        showSuccess(message);
-        setSelectedProduct(null);
-        setQuantity("");
-        setReason("");
-        setSerialNumber("");
-        setOperationType(null);
-      } else {
-        showError(result.error || "Operation failed");
+      // If order was updated, show additional info
+      if (result.orderUpdated && result.orderStatus) {
+        message += `. Order status updated to ${result.orderStatus}`;
       }
+
+      showSuccess(message);
+      dispatch(resetOperation());
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message || error.message || "Operation failed";
+        error.data?.message || error.message || "Operation failed";
       showError(errorMessage);
-    } finally {
-      setIsProcessing(false);
     }
   };
 
   const clearCheckedProduct = () => {
-    setCheckedProduct(null);
+    dispatch(setCheckedProduct(null));
   };
 
   const clearHistory = () => {
-    setScanHistory([]);
+    dispatch(clearScanHistory());
   };
 
   const selectFromHistory = (product: Product) => {
-    setCheckedProduct(product);
+    dispatch(setCheckedProduct(product));
   };
 
   return (
@@ -484,7 +459,7 @@ const WarehouseScreen: React.FC = () => {
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === "operations" && styles.activeTab]}
-          onPress={() => setActiveTab("operations")}
+          onPress={() => dispatch(setActiveTab("operations"))}
         >
           <MaterialIcons
             name="inventory"
@@ -503,7 +478,7 @@ const WarehouseScreen: React.FC = () => {
 
         <TouchableOpacity
           style={[styles.tab, activeTab === "inventory" && styles.activeTab]}
-          onPress={() => setActiveTab("inventory")}
+          onPress={() => dispatch(setActiveTab("inventory"))}
         >
           <MaterialIcons
             name="search"
@@ -529,8 +504,8 @@ const WarehouseScreen: React.FC = () => {
               <TouchableOpacity
                 style={[styles.operationButton, styles.inButton]}
                 onPress={() => {
-                  setOperationType("in");
-                  setShowPhotoCapture(true);
+                  dispatch(setOperationType("in"));
+                  dispatch(setShowPhotoCapture(true));
                 }}
               >
                 <MaterialIcons name="add" size={32} color="#fff" />
@@ -543,8 +518,8 @@ const WarehouseScreen: React.FC = () => {
               <TouchableOpacity
                 style={[styles.operationButton, styles.outButton]}
                 onPress={() => {
-                  setOperationType("out");
-                  setShowScanner(true);
+                  dispatch(setOperationType("out"));
+                  dispatch(setShowScanner(true));
                 }}
               >
                 <MaterialIcons name="remove" size={32} color="#fff" />
@@ -559,23 +534,17 @@ const WarehouseScreen: React.FC = () => {
                 items={pendingStockInItems}
                 isProcessing={isProcessing}
                 onUpdateSerialNumber={(itemId, serialNumber) => {
-                  setPendingStockInItems((prev) =>
-                    prev.map((p) =>
-                      p.id === itemId ? { ...p, serialNumber } : p
-                    )
-                  );
+                  dispatch(updatePendingItemSerialNumber({ id: itemId, serialNumber }));
                 }}
                 onRemoveItem={(itemId) => {
-                  setPendingStockInItems((prev) =>
-                    prev.filter((p) => p.id !== itemId)
-                  );
+                  dispatch(removePendingItem(itemId));
                 }}
                 onStockInAll={handleBatchStockIn}
-                onContinueScan={() => setShowPhotoCapture(true)}
+                onContinueScan={() => dispatch(setShowPhotoCapture(true))}
                 onClear={() => {
-                  setPendingStockInItems([]);
-                  setShowPhotoCapture(false);
-                  setOperationType(null);
+                  dispatch(clearPendingItems());
+                  dispatch(setShowPhotoCapture(false));
+                  dispatch(setOperationType(null));
                 }}
               />
             )}
@@ -588,16 +557,12 @@ const WarehouseScreen: React.FC = () => {
                 reason={reason}
                 serialNumber={serialNumber}
                 isProcessing={isProcessing}
-                onQuantityChange={setQuantity}
-                onReasonChange={setReason}
-                onSerialNumberChange={setSerialNumber}
+                onQuantityChange={(value) => dispatch(setQuantity(value))}
+                onReasonChange={(value) => dispatch(setReason(value))}
+                onSerialNumberChange={(value) => dispatch(setSerialNumber(value))}
                 onSubmit={handleOperation}
                 onCancel={() => {
-                  setSelectedProduct(null);
-                  setQuantity("");
-                  setReason("");
-                  setSerialNumber("");
-                  setOperationType(null);
+                  dispatch(resetOperation());
                 }}
               />
             )}
@@ -609,7 +574,7 @@ const WarehouseScreen: React.FC = () => {
           <InventoryCheckTab
             checkedProduct={checkedProduct}
             scanHistory={scanHistory}
-            onScan={() => setShowInventoryScanner(true)}
+            onScan={() => dispatch(setShowInventoryScanner(true))}
             onClearProduct={clearCheckedProduct}
             onClearHistory={clearHistory}
             onSelectFromHistory={selectFromHistory}
@@ -621,11 +586,11 @@ const WarehouseScreen: React.FC = () => {
       <Modal
         visible={showScanner}
         animationType="slide"
-        onRequestClose={() => setShowScanner(false)}
+        onRequestClose={() => dispatch(setShowScanner(false))}
       >
         <BarcodeScanner
           onScan={handleOperationScan}
-          onClose={() => setShowScanner(false)}
+          onClose={() => dispatch(setShowScanner(false))}
           title={`Scan Product for Stock ${
             operationType === "in" ? "In" : "Out"
           }`}
@@ -637,11 +602,11 @@ const WarehouseScreen: React.FC = () => {
       <Modal
         visible={showInventoryScanner}
         animationType="slide"
-        onRequestClose={() => setShowInventoryScanner(false)}
+        onRequestClose={() => dispatch(setShowInventoryScanner(false))}
       >
         <BarcodeScanner
           onScan={handleInventoryScan}
-          onClose={() => setShowInventoryScanner(false)}
+          onClose={() => dispatch(setShowInventoryScanner(false))}
           title="Scan Product to Check Inventory"
           description="Point the camera at a product barcode"
         />
@@ -652,8 +617,8 @@ const WarehouseScreen: React.FC = () => {
         <PhotoCapture
           onPhotoTaken={handlePhotoTaken}
           onClose={() => {
-            setShowPhotoCapture(false);
-            setOperationType(null);
+            dispatch(setShowPhotoCapture(false));
+            dispatch(setOperationType(null));
           }}
           title="Take Product Photo"
           description="Take a photo of the product label or packaging to extract product information"
@@ -682,10 +647,7 @@ const WarehouseScreen: React.FC = () => {
         transparent={false}
         onRequestClose={() => {
           if (!isCreatingProduct) {
-            setShowCreateProductModal(false);
-            setCreateProductName("");
-            setCreateProductPrice("");
-            setCreateProductBarcode("");
+            dispatch(resetCreateProductModal());
           }
         }}
       >
@@ -695,10 +657,7 @@ const WarehouseScreen: React.FC = () => {
             <TouchableOpacity
               onPress={() => {
                 if (!isCreatingProduct) {
-                  setShowCreateProductModal(false);
-                  setCreateProductName("");
-                  setCreateProductPrice("");
-                  setCreateProductBarcode("");
+                  dispatch(resetCreateProductModal());
                 }
               }}
               disabled={isCreatingProduct}
@@ -726,7 +685,7 @@ const WarehouseScreen: React.FC = () => {
               <TextInput
                 style={styles.input}
                 value={createProductName}
-                onChangeText={setCreateProductName}
+                onChangeText={(text) => dispatch(setCreateProductName(text))}
                 placeholder="Enter product name"
                 autoCapitalize="words"
                 editable={!isCreatingProduct}
@@ -736,7 +695,7 @@ const WarehouseScreen: React.FC = () => {
               <TextInput
                 style={styles.input}
                 value={createProductPrice}
-                onChangeText={setCreateProductPrice}
+                onChangeText={(text) => dispatch(setCreateProductPrice(text))}
                 placeholder="Enter price (e.g., 19.99)"
                 keyboardType="decimal-pad"
                 editable={!isCreatingProduct}
@@ -763,10 +722,7 @@ const WarehouseScreen: React.FC = () => {
                 style={styles.cancelButton}
                 onPress={() => {
                   if (!isCreatingProduct) {
-                    setShowCreateProductModal(false);
-                    setCreateProductName("");
-                    setCreateProductPrice("");
-                    setCreateProductBarcode("");
+                    dispatch(resetCreateProductModal());
                   }
                 }}
                 disabled={isCreatingProduct}
