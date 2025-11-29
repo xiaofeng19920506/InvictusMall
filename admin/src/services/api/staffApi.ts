@@ -35,9 +35,15 @@ export const staffApi = {
   getAllStaff: async (params?: {
     limit?: number;
     offset?: number;
+    forStoreCreation?: boolean;
   }): Promise<ApiResponse<Staff[]>> => {
+    const queryParams: any = {};
+    if (params?.limit !== undefined) queryParams.limit = params.limit;
+    if (params?.offset !== undefined) queryParams.offset = params.offset;
+    if (params?.forStoreCreation !== undefined) queryParams.forStoreCreation = params.forStoreCreation;
+    
     const response = await api.get("/api/staff/all", {
-      params,
+      params: queryParams,
       withCredentials: true,
     });
     return response.data;

@@ -16,6 +16,7 @@ interface CreateProductModalProps {
   name: string;
   price: string;
   isCreating: boolean;
+  onBarcodeChange?: (value: string) => void;
   onNameChange: (value: string) => void;
   onPriceChange: (value: string) => void;
   onCreate: () => void;
@@ -28,6 +29,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
   name,
   price,
   isCreating,
+  onBarcodeChange,
   onNameChange,
   onPriceChange,
   onCreate,
@@ -49,17 +51,21 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({
 
         <ScrollView style={styles.content}>
           <Text style={styles.description}>
-            Product with barcode "{barcode}" was not found. Please fill in the
-            details to create a new product.
+            {barcode
+              ? `Product with barcode "${barcode}" was not found. `
+              : ""}
+            Please fill in the details to create a new product.
           </Text>
 
           <View style={styles.form}>
-            <Text style={styles.label}>Barcode *</Text>
+            <Text style={styles.label}>Barcode</Text>
             <TextInput
-              style={[styles.input, styles.disabledInput]}
+              style={styles.input}
               value={barcode}
-              editable={false}
-              placeholder="Scanned barcode"
+              onChangeText={onBarcodeChange}
+              placeholder="Enter barcode (optional)"
+              autoCapitalize="characters"
+              editable={!isCreating && !!onBarcodeChange}
             />
 
             <Text style={styles.label}>Product Name *</Text>
@@ -182,6 +188,12 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#8E8E93',
     fontSize: 16,
+  },
+});
+
+export default CreateProductModal;
+
+
   },
 });
 

@@ -10,14 +10,23 @@ export async function handleGetAllStaff(
   staffModel: StaffModel
 ): Promise<void> {
   try {
-    if (!req.user) {
+    // Check for staff authentication first (staff routes use req.staff)
+    if (!req.staff && !req.user) {
       ApiResponseHelper.unauthorized(res, "Unauthorized");
       return;
     }
 
-    const requesterRole = req.user.role;
-    const requesterId = req.user.id;
-    const { limit, offset } = req.query;
+    // Use staff authentication if available, otherwise fall back to user
+    const requesterRole = req.staff?.role || req.user?.role;
+    const requesterId = req.staff?.id || req.user?.id;
+    
+    // Ensure we have both role and id
+    if (!requesterRole || !requesterId) {
+      ApiResponseHelper.unauthorized(res, "Unauthorized: Missing role or id");
+      return;
+    }
+    
+    const { limit, offset, forStoreCreation } = req.query;
     let staffMembers: any[] = [];
     let total = 0;
 
@@ -25,8 +34,26 @@ export async function handleGetAllStaff(
     const requesterStaff = await staffModel.getStaffById(requesterId);
     const requesterStoreId = (requesterStaff as any)?.storeId || null;
 
+    // Special case: When creating a store, admin should see all available owners and admins
+    // This is used when creating a store to show available store owners
+    if (forStoreCreation === "true" && requesterRole === "admin") {
+      const allStaff = await staffModel.getAllStaff();
+      // Filter for active owners and admins only (they can be store owners)
+      staffMembers = allStaff.filter(
+        (staff: any) => 
+          (staff.role === "owner" || staff.role === "admin") && 
+          staff.isActive
+      );
+      total = staffMembers.length;
+      // Apply pagination manually if limit is provided
+      if (limit !== undefined) {
+        const limitValue = parseInt(limit as string) || 0;
+        const offsetValue = offset !== undefined ? parseInt(offset as string) : 0;
+        staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
+      }
+    }
     // Role-based data filtering
-    if (requesterRole === "admin") {
+    else if (requesterRole === "admin") {
       // Admin can see all staff in their own store only
       if (requesterStoreId) {
         const allStaff = await staffModel.getAllStaff();
@@ -39,8 +66,20 @@ export async function handleGetAllStaff(
           staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
         }
       } else {
-        staffMembers = [];
-        total = 0;
+        // Admin without store can see all admins and owners (for store creation)
+        const allStaff = await staffModel.getAllStaff();
+        staffMembers = allStaff.filter(
+          (staff: any) => 
+            (staff.role === "owner" || staff.role === "admin") && 
+            staff.isActive
+        );
+        total = staffMembers.length;
+        // Apply pagination manually if limit is provided
+        if (limit !== undefined) {
+          const limitValue = parseInt(limit as string) || 0;
+          const offsetValue = offset !== undefined ? parseInt(offset as string) : 0;
+          staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
+        }
       }
     } else if (requesterRole === "owner") {
       // Store owner can see all staff in the same store
@@ -124,8 +163,8 @@ export async function handleGetAllStaff(
     res.json(response);
   } catch (error) {
     logger.error("Error fetching all staff", error, {
-      requesterId: req.user?.id,
-      requesterRole: req.user?.role,
+      requesterId: req.staff?.id || req.user?.id,
+      requesterRole: req.staff?.role || req.user?.role,
     });
     ApiResponseHelper.error(res, "Failed to fetch staff members", 500, error);
   }

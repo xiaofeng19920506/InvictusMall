@@ -10,7 +10,9 @@ import {
   Image,
   ActivityIndicator,
   FlatList,
+  Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import BarcodeScanner from "../../components/BarcodeScanner";
 import PhotoCapture from "../../components/PhotoCapture";
@@ -111,23 +113,39 @@ const WarehouseScreen: React.FC = () => {
 
   // Handle create product
   const handleCreateProduct = async () => {
+    console.log("[WarehouseScreen] 🔵 handleCreateProduct called");
+    console.log("[WarehouseScreen] 📋 Form data:", {
+      createProductName: createProductName,
+      createProductPrice: createProductPrice,
+      createProductBarcode: createProductBarcode,
+      createProductSerialNumber: createProductSerialNumber,
+      selectedStore: selectedStore?.id,
+      isCreatingProduct,
+    });
+
+    // Validation checks
     if (!createProductName.trim() || !createProductPrice.trim()) {
+      console.log("[WarehouseScreen] ❌ Validation failed: Missing required fields");
       showError("Please fill in all required fields");
       return;
     }
 
     const price = parseFloat(createProductPrice);
     if (isNaN(price) || price <= 0) {
+      console.log("[WarehouseScreen] ❌ Validation failed: Invalid price", price);
       showError("Please enter a valid price");
       return;
     }
 
     if (!selectedStore) {
+      console.log("[WarehouseScreen] ❌ Validation failed: No store selected");
       showError(
         "No store selected. Please select a store first."
       );
       return;
     }
+
+    console.log("[WarehouseScreen] ✅ Validation passed, creating product...");
 
     try {
       const productData = {
@@ -142,26 +160,39 @@ const WarehouseScreen: React.FC = () => {
         serialNumber: createProductSerialNumber.trim() || undefined,
       };
 
+      console.log("[WarehouseScreen] 📤 Calling createProduct mutation with data:", productData);
+
       const newProduct = await createProduct(productData).unwrap();
+
+      console.log("[WarehouseScreen] ✅ Product created successfully:", newProduct);
 
       showSuccess("Product created successfully!");
 
       // If we were in operation mode, set as selected product
       if (operationType) {
+        console.log("[WarehouseScreen] 📦 Setting as selected product for operation");
         dispatch(setSelectedProduct(newProduct));
         // Serial number should already be set from OCR parsing
       } else {
+        console.log("[WarehouseScreen] 🔍 Setting as checked product for inventory check");
         // If we were in inventory check mode, set as checked product
         dispatch(setCheckedProduct(newProduct));
         // Add to scan history
         dispatch(addToScanHistory(newProduct));
       }
 
+      console.log("[WarehouseScreen] 🔄 Resetting create product modal");
       dispatch(resetCreateProductModal());
       // Keep serial number if it was set from OCR
     } catch (error: any) {
-      console.error("Error creating product:", error);
-      showError(error.message || "Failed to create product");
+      console.error("[WarehouseScreen] ❌ Error creating product:", error);
+      console.error("[WarehouseScreen] ❌ Error details:", {
+        message: error?.message,
+        data: error?.data,
+        status: error?.status,
+        stack: error?.stack,
+      });
+      showError(error?.data?.message || error?.message || "Failed to create product");
     }
   };
 
@@ -745,11 +776,12 @@ const WarehouseScreen: React.FC = () => {
           }
         }}
       >
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Create New Product</Text>
             <TouchableOpacity
               onPress={() => {
+                console.log("[WarehouseScreen] ❌ Close button pressed");
                 if (!isCreatingProduct) {
                   dispatch(resetCreateProductModal());
                 }
@@ -762,17 +794,21 @@ const WarehouseScreen: React.FC = () => {
 
           <ScrollView style={styles.modalContent}>
             <Text style={styles.modalDescription}>
-              Product with barcode "{createProductBarcode}" was not found.
+              {createProductBarcode
+                ? `Product with barcode "${createProductBarcode}" was not found. `
+                : ""}
               Please fill in the details to create a new product.
             </Text>
 
             <View style={styles.modalForm}>
-              <Text style={styles.label}>Barcode *</Text>
+              <Text style={styles.label}>Barcode</Text>
               <TextInput
-                style={[styles.input, styles.disabledInput]}
+                style={styles.input}
                 value={createProductBarcode}
-                editable={false}
-                placeholder="Scanned barcode"
+                onChangeText={(text) => dispatch(setCreateProductBarcode(text))}
+                placeholder="Enter barcode (optional)"
+                autoCapitalize="characters"
+                editable={!isCreatingProduct}
               />
 
               <Text style={styles.label}>Product Name *</Text>
@@ -810,7 +846,16 @@ const WarehouseScreen: React.FC = () => {
                   styles.submitButton,
                   isCreatingProduct && styles.submitButtonDisabled,
                 ]}
-                onPress={handleCreateProduct}
+                onPress={() => {
+                  console.log("[WarehouseScreen] 👆 Create Product button pressed");
+                  console.log("[WarehouseScreen] 🔍 Button state:", {
+                    isCreatingProduct,
+                    hasName: !!createProductName.trim(),
+                    hasPrice: !!createProductPrice.trim(),
+                    disabled: isCreatingProduct || !createProductName.trim() || !createProductPrice.trim(),
+                  });
+                  handleCreateProduct();
+                }}
                 disabled={
                   isCreatingProduct ||
                   !createProductName.trim() ||
@@ -835,7 +880,7 @@ const WarehouseScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );
@@ -1083,9 +1128,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
+    ...Platform.select({
+      ios: {
+        paddingTop: 8,
+      },
+      android: {
+        paddingTop: 12,
+      },
+    }),
   },
   modalTitle: {
     fontSize: 20,

@@ -112,63 +112,228 @@ export function parseProductInfoFromText(text: string): {
     otherInfo: [],
   };
 
-  // Find the first meaningful line as product name
-  // Usually the first line with substantial text (more than 3 characters and contains letters)
-  let foundFirstMeaningfulLine = false;
-  for (const line of lines) {
+  // Find the best product name line
+  // Strategy: Look for lines that:
+  // 1. Are longer and more substantial (likely product names)
+  // 2. Contain product keywords (GeForce, RTX, GAMING, etc.)
+  // 3. Look more like actual product names vs OCR errors
+  
+  // Filter out invalid lines first - more aggressive filtering of OCR errors
+  const validLines = lines.filter((line) => {
     // Skip empty lines
-    if (line.length < 3) continue;
+    if (line.length < 3) return false;
     
     // Skip lines that are mostly symbols or numbers without letters
     const hasLetters = /[a-zA-Z\u4e00-\u9fa5]/.test(line);
-    if (!hasLetters) continue;
+    if (!hasLetters) return false;
     
     // Skip lines that look like serial numbers or codes
-    if (/^(S\/N|SN|S\/N:|SN:)/i.test(line)) continue;
-    
-    // Skip short codes (all caps/numbers with dashes, less than 20 chars)
-    if (/^[A-Z0-9\-]+$/.test(line) && line.length < 20) continue;
+    if (/^(S\/N|SN|S\/N:|SN:)/i.test(line)) return false;
     
     // Skip lines that are just labels or separators
-    if (/^(LR|MNK|Part|Model|Code|SKU|MNK:)/i.test(line)) continue;
+    if (/^(LR|MNK|Part|Model|Code|SKU|MNK:|EAN|UPC|Part Number)/i.test(line)) return false;
     
-    // Skip lines that contain S/N pattern in the middle
-    if (/S\/N:/i.test(line) && !foundFirstMeaningfulLine) continue;
+    // Skip lines that contain S/N pattern
+    if (/S\/N:/i.test(line)) return false;
     
-    // This looks like a product name - take the first meaningful line we find
-    if (!result.name) {
-      result.name = line;
-      foundFirstMeaningfulLine = true;
+    // Count meaningful words (at least 3 characters)
+    const words = line.split(/\s+/).filter(w => w.length >= 3);
+    const wordCount = words.length;
+    
+    // Aggressively filter out short OCR errors
+    // Lines with very short words (< 5 chars each) and few words are likely OCR errors
+    if (line.length < 20) {
+      const allShortWords = words.every(w => w.length <= 4);
+      if (allShortWords && wordCount <= 3) {
+        // Only keep if it has strong product keywords
+        const hasStrongKeywords = /(GeForce|RTX|GTX|GAMING|Radeon|Ryzen|Intel|AMD)/i.test(line);
+        if (!hasStrongKeywords) return false;
+      }
+    }
+    
+    // Filter out all-caps short random words (common OCR errors like "SHEERS TEL REE")
+    // Pattern: All caps, short length, 3-4 short words, no product keywords
+    if (/^[A-Z\s]{3,20}$/.test(line)) {
+      const shortWordCount = words.filter(w => w.length <= 5).length;
+      const hasProductKeywords = /(GeForce|RTX|GTX|GAMING|PRO|SUPER|Slim|Ti|4090|4080|3090|Radeon|Ryzen)/i.test(line);
+      
+      // If it's all short words with no keywords, it's likely an OCR error
+      if (shortWordCount === wordCount && wordCount >= 3 && !hasProductKeywords) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+  
+  // Score each valid line to find the best product name
+  const scoredLines = validLines.map((line) => {
+    let score = 0;
+    
+    // Longer lines are more likely to be product names (product names are usually detailed)
+    if (line.length >= 40) score += 15;
+    else if (line.length >= 30) score += 10;
+    else if (line.length >= 20) score += 5;
+    else if (line.length >= 15) score += 2;
+    
+    // Product keywords boost score significantly (these are strong indicators)
+    const strongKeywords = [
+      { pattern: /GeForce/i, weight: 25 }, // Very strong indicator
+      { pattern: /RTX|GTX/i, weight: 20 },
+      { pattern: /GAMING/i, weight: 15 },
+      { pattern: /Radeon/i, weight: 20 },
+      { pattern: /Ryzen/i, weight: 20 },
+      { pattern: /Intel|Core/i, weight: 15 },
+      { pattern: /AMD/i, weight: 10 },
+    ];
+    
+    strongKeywords.forEach(({ pattern, weight }) => {
+      if (pattern.test(line)) {
+        score += weight;
+      }
+    });
+    
+    // Model numbers boost score (e.g., 4090, 4080, 3090, RTX 4090)
+    if (/\b(4|3|2)[0-9]{3,4}\b/.test(line)) {
+      score += 12; // Model numbers are strong indicators
+    }
+    
+    // Memory specifications (e.g., 24G, 16GB, 32GB) - often part of product names
+    if (/\b\d{1,3}[GM]B?\b/i.test(line)) {
+      score += 8;
+    }
+    
+    // Product suffixes boost score (SLIM, Ti, X, Lite, PRO, SUPER)
+    if (/\b(SLIM|Ti|X|Lite|PRO|SUPER|GAMING)\b/i.test(line)) {
+      score += 8;
+    }
+    
+    // Mixed case suggests real product names (not OCR errors)
+    if (/[a-z]/.test(line) && /[A-Z]/.test(line)) {
+      score += 5;
+    }
+    
+    // Heavy penalty for lines that look like OCR errors
+    // Pattern: All caps, short length, short words, no keywords
+    if (/^[A-Z\s]{3,20}$/.test(line)) {
+      const words = line.split(/\s+/).filter(w => w.length > 2);
+      const allShortWords = words.every(w => w.length <= 5);
+      const hasStrongKeywords = /(GeForce|RTX|GTX|GAMING|4090|4080)/i.test(line);
+      
+      if (allShortWords && words.length >= 3 && !hasStrongKeywords) {
+        score -= 30; // Heavy penalty - likely OCR error like "SHEERS TEL REE"
+      }
+    }
+    
+    // Additional penalty for very short lines without strong indicators
+    if (line.length < 18 && score < 20) {
+      score -= 10;
+    }
+    
+    return { line, score };
+  });
+  
+  // Sort by score and pick the best one
+  scoredLines.sort((a, b) => b.score - a.score);
+  
+  // Log scoring results for debugging
+  logger.info("OCR product name parsing", {
+    totalLines: lines.length,
+    validLines: validLines.length,
+    topCandidates: scoredLines.slice(0, 5).map(s => ({ 
+      line: s.line, 
+      score: s.score,
+      length: s.line.length 
+    })),
+  });
+  
+  const topScoredLine = scoredLines[0];
+  if (topScoredLine && topScoredLine.score > 0) {
+    result.name = topScoredLine.line.trim();
+    logger.info("Product name selected", { 
+      name: result.name, 
+      score: topScoredLine.score,
+      alternatives: scoredLines.slice(1, 3).map(s => s.line)
+    });
+  } else {
+    // Fallback: use the longest valid line
+    const longestLine = validLines.reduce((longest, current) => 
+      current.length > longest.length ? current : longest, 
+      validLines[0] || ""
+    );
+    if (longestLine && longestLine.length >= 10) {
+      result.name = longestLine.trim();
+      logger.info("Product name selected (longest line fallback)", { name: result.name });
     }
   }
   
-  // If we still don't have a name, use the first non-empty line with letters
+  // Final fallback: use the first non-empty line with letters
   if (!result.name) {
     for (const line of lines) {
-      if (line.length >= 3 && /[a-zA-Z\u4e00-\u9fa5]/.test(line)) {
-        result.name = line;
+      if (line.length >= 10 && /[a-zA-Z\u4e00-\u9fa5]/.test(line)) {
+        result.name = line.trim();
+        logger.info("Product name selected (final fallback)", { name: result.name });
         break;
       }
     }
   }
-  
-  // Fallback: use the full text (cleaned up) if no name found
-  if (!result.name) {
-    const cleanedText = text.trim().split('\n').find(line => line.trim().length > 0);
-    if (cleanedText) {
-      result.name = cleanedText.trim();
-    }
-  }
 
-  // Extract Serial Number (S/N)
+  // Extract Serial Number (S/N) - improved pattern matching
   for (const line of lines) {
-    // Match patterns like "S/N: 602-V510-100SB2309001595" or "SN: 12345"
-    const serialMatch = line.match(/(?:S\/N|SN)[:\s]+([A-Z0-9\-]+)/i);
+    // Try multiple patterns for S/N extraction
+    // Pattern 1: "S/N: 602-V510-100SB2309001595" or "SN: 12345"
+    let serialMatch = line.match(/(?:S\/N|SN)[:\s]+([A-Z0-9\-]+)/i);
+    
+    // Pattern 2: "S/N602-V510-100SB2309001595" (no space or colon)
+    if (!serialMatch) {
+      serialMatch = line.match(/(?:S\/N|SN)([A-Z0-9\-]+)/i);
+    }
+    
+    // Pattern 3: Look for pattern like "602-V510-100SB2309001595" after S/N markers
+    if (!serialMatch) {
+      // Extract text after "S/N" or "SN"
+      const snMarker = line.match(/(?:S\/N|SN)[:\s]*/i);
+      if (snMarker) {
+        const afterMarker = line.substring(snMarker.index! + snMarker[0].length);
+        // Match alphanumeric-dash pattern (common S/N format)
+        const snPattern = afterMarker.match(/([A-Z0-9\-]{10,})/i);
+        if (snPattern && snPattern[1]) {
+          // Create a match array compatible with RegExpMatchArray format
+          serialMatch = snPattern;
+        }
+      }
+    }
+    
     if (serialMatch && serialMatch[1]) {
       result.serialNumber = serialMatch[1].trim();
+      logger.debug("S/N extracted", { line, serialNumber: result.serialNumber });
       break;
     }
   }
+  
+  // If S/N not found in explicit patterns, try to find it in lines containing "S/N"
+  if (!result.serialNumber) {
+    for (const line of lines) {
+      if (/S\/N/i.test(line)) {
+        // Extract alphanumeric-dash pattern from the line (more lenient)
+        // Look for patterns like "602-V510-100SB2309001595"
+        const snPattern = line.match(/([A-Z0-9\-]{10,})/i);
+        if (snPattern && snPattern[1] && snPattern[1].length >= 10) {
+          result.serialNumber = snPattern[1].trim();
+          logger.info("S/N extracted (fallback pattern)", { line, serialNumber: result.serialNumber });
+          break;
+        }
+      }
+    }
+  }
+  
+  // Log final result
+  logger.info("OCR parsing complete", {
+    productName: result.name,
+    serialNumber: result.serialNumber,
+    hasName: !!result.name,
+    hasSerialNumber: !!result.serialNumber,
+  });
 
   // Extract barcode (if present as standalone)
   for (const line of lines) {

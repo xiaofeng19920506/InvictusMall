@@ -165,13 +165,18 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     const fetchOwners = async () => {
       setLoadingOwners(true);
       try {
-        const response = await staffApi.getAllStaff();
+        // Pass forStoreCreation=true to get all available owners and admins for store creation
+        // For editing, only pass it if user can edit the owner
+        const response = await staffApi.getAllStaff({ 
+          forStoreCreation: !isEditing || (isEditing && canEditOwner)
+        });
         if (response.success && response.data) {
           // Filter to show staff with 'owner' or 'admin' role
           const owners = response.data.filter(
             (staff) => (staff.role === "owner" || staff.role === "admin") && staff.isActive
           );
           setAvailableOwners(owners);
+          console.log("Available owners/admins loaded:", owners.length);
         }
       } catch (error) {
         console.error("Error fetching owners:", error);
@@ -182,7 +187,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     };
 
     fetchOwners();
-  }, [showError]);
+  }, [showError, isEditing, canEditOwner]);
 
   const updateLocationField = (field: keyof Location, value: string) => {
     setFormData((prev) => ({
