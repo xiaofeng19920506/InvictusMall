@@ -829,8 +829,8 @@ const WarehouseScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Batch Stock In List */}
-            {operationType === "in" && (
+            {/* Batch Stock In List - Show if there are pending items */}
+            {pendingStockInItems.length > 0 && (
               <BatchStockInList
                 items={pendingStockInItems}
                 isProcessing={isProcessing}
@@ -844,7 +844,11 @@ const WarehouseScreen: React.FC = () => {
                   dispatch(removePendingItem(itemId));
                 }}
                 onStockInAll={handleBatchStockIn}
-                onContinueScan={() => dispatch(setShowPhotoCapture(true))}
+                onContinueScan={() => {
+                  // Ensure operation type is set to "in" when continuing scan
+                  dispatch(setOperationType("in"));
+                  dispatch(setShowPhotoCapture(true));
+                }}
                 onClear={() => {
                   dispatch(clearPendingItems());
                   dispatch(setShowPhotoCapture(false));
