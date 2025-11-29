@@ -287,11 +287,16 @@ export class ProductModel {
       await connection.commit();
       logger.info('[ProductModel] Transaction committed successfully', { productId });
 
-      const createdProduct = await this.findById(productId) as Promise<Product>;
+      const createdProduct = await this.findById(productId);
+      if (!createdProduct) {
+        logger.error('[ProductModel] Product not found after creation', { productId });
+        throw new Error(`Failed to retrieve created product with ID: ${productId}`);
+      }
+      
       logger.info('[ProductModel] Product retrieved after creation', {
-        productId,
-        name: (createdProduct as any).name,
-        stockQuantity: (createdProduct as any).stockQuantity,
+        productId: createdProduct.id,
+        name: createdProduct.name,
+        stockQuantity: createdProduct.stockQuantity,
       });
       return createdProduct;
     } catch (error: any) {
