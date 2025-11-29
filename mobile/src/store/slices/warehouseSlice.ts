@@ -120,6 +120,7 @@ const warehouseSlice = createSlice({
 
       if (existingItem) {
         // Product already exists, increment quantity
+        // Create a new object reference to ensure React re-renders
         existingItem.quantity += 1;
         existingItem.lastScannedAt = new Date();
         // Add serial number to array if provided
@@ -127,7 +128,8 @@ const warehouseSlice = createSlice({
           if (!existingItem.serialNumbers) {
             existingItem.serialNumbers = [];
           }
-          existingItem.serialNumbers.push(action.payload.serialNumber);
+          // Create new array reference
+          existingItem.serialNumbers = [...existingItem.serialNumbers, action.payload.serialNumber];
         }
       } else {
         // New product, add new item

@@ -203,6 +203,8 @@ const WarehouseScreen: React.FC = () => {
 
     try {
       console.log("[WarehouseScreen] 📷 Photo taken, starting OCR...");
+      console.log("[WarehouseScreen] 🔍 Current operationType:", operationType);
+      console.log("[WarehouseScreen] 🔍 Current pendingStockInItems count:", pendingStockInItems.length);
 
       // Extract text from image using OCR
       const ocrData = await extractTextFromImage({ imageUri }).unwrap();
@@ -226,7 +228,9 @@ const WarehouseScreen: React.FC = () => {
           product = productResult;
           console.log(
             "[WarehouseScreen] ✅ Product found by barcode:",
-            product.name
+            product.name,
+            "ID:",
+            product.id
           );
         } catch (error: any) {
           if (error.status !== 404) {
@@ -240,13 +244,15 @@ const WarehouseScreen: React.FC = () => {
       // For stock out: use old single product flow
       if (product) {
         if (operationType === "in") {
-          // Check if product already exists in list
+          console.log("[WarehouseScreen] 📦 Processing stock in for product:", product.name);
+          // Check if product already exists in list BEFORE dispatching
           const existingItem = pendingStockInItems.find(
             (item) => item.product.id === product.id
           );
           const isNewProduct = !existingItem;
           const currentQuantity = existingItem ? existingItem.quantity : 0;
-          const newQuantity = currentQuantity + 1;
+
+          console.log("[WarehouseScreen] 📊 Before dispatch - Existing item:", existingItem ? { quantity: existingItem.quantity } : null);
 
           // Add or update pending item (will auto-increment if same product)
           dispatch(
@@ -256,10 +262,14 @@ const WarehouseScreen: React.FC = () => {
             })
           );
 
-          // Show success message with quantity info
+          // Show success message with updated quantity
+          const newQuantity = currentQuantity + 1;
           showSuccess(
             `${product.name} ${isNewProduct ? "added" : "quantity updated"} (${newQuantity} unit${newQuantity > 1 ? "s" : ""})`
           );
+
+          console.log("[WarehouseScreen] ✅ Item dispatched. Expected new quantity:", newQuantity);
+          console.log("[WarehouseScreen] 📊 After dispatch - Will check Redux state in next render");
 
           // Re-open photo capture for next scan
           dispatch(setShowPhotoCapture(true));
@@ -750,7 +760,8 @@ const WarehouseScreen: React.FC = () => {
               />
             )}
 
-            {selectedProduct && operationType && (
+            {/* Only show StockOperationForm for stock out operations */}
+            {selectedProduct && operationType === "out" && (
               <StockOperationForm
                 product={selectedProduct}
                 operationType={operationType}
