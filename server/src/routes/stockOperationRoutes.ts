@@ -76,10 +76,26 @@ router.post(
         return;
       }
 
+      logger.info('Creating stock operation', {
+        productId: req.body.productId,
+        type: req.body.type,
+        quantity: req.body.quantity,
+        reason: req.body.reason,
+        orderId: req.body.orderId,
+        performedBy: staffId,
+      });
+
       const result = await stockOperationService.createStockOperation(
         req.body,
         staffId
       );
+      
+      logger.info('Stock operation created successfully', {
+        operationId: result.operation.id,
+        productId: result.operation.productId,
+        previousQuantity: result.operation.previousQuantity,
+        newQuantity: result.operation.newQuantity,
+      });
 
       ApiResponseHelper.success(
         res,

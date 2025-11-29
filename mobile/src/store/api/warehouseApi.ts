@@ -227,9 +227,17 @@ export const warehouseApi = createApi({
     >({
       queryFn: async (items, _api, _extraOptions, baseQuery) => {
         try {
+          console.log('[warehouseApi] Starting batch stock in with items:', items);
+          
           const operations = await Promise.all(
-            items.map((item) =>
-              baseQuery({
+            items.map(async (item, index) => {
+              console.log(`[warehouseApi] Processing item ${index + 1}/${items.length}:`, {
+                productId: item.productId,
+                quantity: item.quantity,
+                reason: item.reason,
+              });
+              
+              const result = await baseQuery({
                 url: '/api/stock-operations',
                 method: 'POST',
                 body: {
@@ -238,13 +246,33 @@ export const warehouseApi = createApi({
                   quantity: item.quantity,
                   reason: item.reason,
                 },
-              })
-            )
+              });
+              
+              console.log(`[warehouseApi] Item ${index + 1} result:`, {
+                success: result.data?.success,
+                error: result.error,
+                data: result.data?.data || result.data,
+              });
+              
+              return result;
+            })
           );
 
-          const failed = operations.filter((op: any) => !op.data?.success);
+          const failed = operations.filter((op: any) => {
+            const hasError = op.error !== undefined;
+            const noSuccess = !op.data?.success;
+            return hasError || noSuccess;
+          });
+          
           if (failed.length > 0) {
-            const errorMessage = `${failed.length} operations failed`;
+            console.error('[warehouseApi] Failed operations:', failed);
+            const errorMessages = failed.map((op: any, index: number) => {
+              const item = items[index];
+              const errorMsg = op.error?.data?.message || op.error?.error || op.data?.message || 'Unknown error';
+              return `Product ${item.productId}: ${errorMsg}`;
+            });
+            const errorMessage = `${failed.length} of ${items.length} operations failed:\n${errorMessages.join('\n')}`;
+            
             return { 
               error: { 
                 status: 'CUSTOM_ERROR' as const, 
@@ -254,9 +282,16 @@ export const warehouseApi = createApi({
             };
           }
 
-          const results = operations.map((op: any) => op.data?.data || op.data);
+          const results = operations.map((op: any) => {
+            const data = op.data?.data || op.data;
+            console.log('[warehouseApi] Operation result:', data);
+            return data;
+          });
+          
+          console.log('[warehouseApi] Batch stock in completed successfully:', results);
           return { data: results };
         } catch (error: any) {
+          console.error('[warehouseApi] Batch stock in error:', error);
           const errorMessage = error.message || 'Batch stock in failed';
           return { 
             error: { 

@@ -190,6 +190,13 @@ const WarehouseScreen: React.FC = () => {
         );
 
         const newQuantity = currentQuantity + 1;
+        console.log("[WarehouseScreen] ✅ Product added to pending stock in list:", {
+          productId: newProduct.id,
+          productName: newProduct.name,
+          quantity: newQuantity,
+          serialNumber: createProductSerialNumber.trim() || undefined,
+        });
+        
         showSuccess(
           `${newProduct.name} added to stock in list (${newQuantity} unit${newQuantity > 1 ? "s" : ""})`
         );
@@ -540,10 +547,30 @@ const WarehouseScreen: React.FC = () => {
         quantity: item.quantity,
         reason: item.reason,
       })));
+      
+      // Verify all products exist before proceeding
+      for (const item of batchItems) {
+        if (!item.productId) {
+          throw new Error(`Invalid product ID in batch items: ${JSON.stringify(item)}`);
+        }
+        if (!item.quantity || item.quantity <= 0) {
+          throw new Error(`Invalid quantity for product ${item.productId}: ${item.quantity}`);
+        }
+      }
 
       const result = await batchStockIn(batchItems).unwrap();
       
       console.log("[WarehouseScreen] ✅ Batch stock in completed successfully:", result);
+      console.log("[WarehouseScreen] 📊 Results summary:", {
+        totalOperations: result.length,
+        itemsProcessed: batchItems.length,
+        results: result.map((r: any, index: number) => ({
+          index,
+          productId: batchItems[index].productId,
+          operationId: r?.operation?.id,
+          newQuantity: r?.operation?.newQuantity,
+        })),
+      });
       
       // Calculate total units stocked
       const totalUnits = pendingStockInItems.reduce(
@@ -554,11 +581,31 @@ const WarehouseScreen: React.FC = () => {
       showSuccess(
         `Successfully stocked in ${totalUnits} unit${totalUnits > 1 ? "s" : ""} across ${pendingStockInItems.length} product${pendingStockInItems.length > 1 ? "s" : ""}`
       );
+      
+      // Clear pending items and reset UI
       dispatch(clearPendingItems());
       dispatch(setOperationType(null));
       dispatch(setShowPhotoCapture(false));
     } catch (error: any) {
-      showError(error.message || "Batch stock in failed");
+      console.error("[WarehouseScreen] ❌ Batch stock in error:", error);
+      console.error("[WarehouseScreen] ❌ Error details:", {
+        message: error?.message,
+        data: error?.data,
+        status: error?.status,
+        error: error?.error,
+        stack: error?.stack,
+      });
+      
+      const errorMessage = error?.data?.message || error?.data?.error || error?.message || "Batch stock in failed";
+      showError(errorMessage);
+      
+      // Log the pending items for debugging
+      console.error("[WarehouseScreen] 📋 Pending items that failed:", pendingStockInItems.map(item => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        quantity: item.quantity,
+        serialNumbers: item.serialNumbers,
+      })));
     }
   };
 
