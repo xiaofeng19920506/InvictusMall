@@ -2,6 +2,7 @@ import React from 'react';
 import { FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../../store/hooks';
+import { useGetRecentLogsQuery } from '../../../store/api/activityLogsApi';
 import type { ActivityLog } from '../../../shared/types/store';
 import styles from '../SystemLogs.module.css';
 
@@ -9,7 +10,8 @@ type LogLevel = 'info' | 'warning' | 'error';
 
 const LogTable: React.FC = () => {
   const { t } = useTranslation();
-  const { logs, searchTerm, filterLevel, selectedStoreId } = useAppSelector(
+  const { data: logs = [] } = useGetRecentLogsQuery(100);
+  const { searchTerm, filterLevel, selectedStoreId } = useAppSelector(
     (state) => state.systemLogs
   );
 

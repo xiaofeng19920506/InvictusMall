@@ -15,18 +15,36 @@ import styles from "./SystemLogs.module.css";
 const SystemLogs: React.FC = () => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const { loading, error } = useAppSelector((state) => state.systemLogs);
+  const currentUser = useAppSelector((state) => state.auth.user);
 
-  useEffect(() => {
-    dispatch(fetchAccessibleStores());
-  }, [dispatch]);
+  // RTK Query hooks
+  const {
+    data: logs,
+    isLoading: loading,
+    error: queryError,
+    refetch: refetchLogs,
+  } = useGetRecentLogsQuery(100);
 
+  const { data: myStores } = useGetMyStoresForLogsQuery(undefined, {
+    skip: currentUser?.role === "admin",
+  });
+
+  const { data: allStores } = useGetAllStoresQuery(undefined, {
+    skip: currentUser?.role !== "admin",
+  });
+
+  const error = queryError ? String(queryError) : null;
+
+  // Update accessible stores in Redux
   useEffect(() => {
-    dispatch(fetchLogs(100));
-  }, [dispatch]);
+    const stores = currentUser?.role === "admin" ? allStores || [] : myStores || [];
+    if (stores.length > 0) {
+      dispatch(setAccessibleStores(stores));
+    }
+  }, [dispatch, allStores, myStores, currentUser?.role]);
 
   const handleRefresh = () => {
-    dispatch(fetchLogs(100));
+    refetchLogs();
   };
 
   return (

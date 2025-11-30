@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNotification } from "../../contexts/NotificationContext";
-import { staffApi, type Staff, type UpdateStaffRequest } from "../../services/api";
+import { useUpdateStaffMutation } from "../../store/api/staffApi";
+import type { Staff, UpdateStaffRequest } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import styles from "./EditUserModal.module.css";
 
@@ -16,6 +17,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
   const { t } = useTranslation();
   const { showError, showSuccess } = useNotification();
   const { user: currentUser } = useAuth();
+  const [updateStaff, { isLoading: isUpdating }] = useUpdateStaffMutation();
   const [formData, setFormData] = useState<UpdateStaffRequest>({
     firstName: "",
     lastName: "",
@@ -91,18 +93,15 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
         return;
       }
 
-      const response = await staffApi.updateStaff(user.id, updateData);
-      if (response.success) {
-        showSuccess(t("users.edit.success") || "User updated successfully");
-        onSave();
-        onClose();
-      } else {
-        showError(response.message || t("users.edit.error") || "Failed to update user");
-      }
+      await updateStaff({ id: user.id, data: updateData }).unwrap();
+      showSuccess(t("users.edit.success") || "User updated successfully");
+      onSave();
+      onClose();
     } catch (error: any) {
       console.error("Error updating user:", error);
       showError(
-        error.response?.data?.message ||
+        error?.data?.message ||
+          error?.message ||
           t("users.edit.error") ||
           "Failed to update user"
       );

@@ -9,7 +9,7 @@ import {
   setSubmitting,
 } from "../../../store/slices/usersSlice";
 import { useNotification } from "../../../contexts/NotificationContext";
-import { fetchUsers } from "../../../store/slices/usersSlice";
+import { useInviteStaffMutation, useGetAllStaffQuery } from "../../../store/api/staffApi";
 import styles from "../UsersManagement.module.css";
 
 const RegisterStaffForm: React.FC = () => {
@@ -27,11 +27,18 @@ const RegisterStaffForm: React.FC = () => {
     (state) => state.users.registerSuccess
   );
   const isSubmitting = useAppSelector((state) => state.users.submitting);
-  const loadingStores = useAppSelector((state) => state.users.loadingStores);
   const accessibleStores = useAppSelector(
     (state) => state.users.accessibleStores
   );
   const currentUser = useAppSelector((state) => state.auth.user);
+  const { currentPage, itemsPerPage } = useAppSelector((state) => state.users);
+  
+  // RTK Query hooks
+  const [inviteStaff, { isLoading: isInviting }] = useInviteStaffMutation();
+  const { refetch: refetchUsers } = useGetAllStaffQuery({
+    limit: itemsPerPage,
+    offset: (currentPage - 1) * itemsPerPage,
+  });
 
   const getAvailableRoles = (): Array<
     "admin" | "owner" | "manager" | "employee"
@@ -70,66 +77,43 @@ const RegisterStaffForm: React.FC = () => {
     dispatch(setSubmitting(true));
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
-      const token = localStorage.getItem("staff_auth_token");
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-      };
+      await inviteStaff({
+        email: registerFormData.email,
+        firstName: registerFormData.firstName,
+        lastName: registerFormData.lastName,
+        role: registerFormData.role,
+        department: registerFormData.department || undefined,
+        employeeId: registerFormData.employeeId || undefined,
+        storeId: registerFormData.storeId || undefined,
+      }).unwrap();
 
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${apiUrl}/api/staff/invite`, {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({
-          email: registerFormData.email,
-          firstName: registerFormData.firstName,
-          lastName: registerFormData.lastName,
-          role: registerFormData.role,
-          department: registerFormData.department || undefined,
-          employeeId: registerFormData.employeeId || undefined,
-          storeId: registerFormData.storeId || undefined,
-        }),
+      const successMsg = t("registerStaff.feedback.success", {
+        email: registerFormData.email,
       });
-
-      const data = await response.json();
-
-      if (data.success) {
-        const successMsg = t("registerStaff.feedback.success", {
-          email: registerFormData.email,
-        });
-        dispatch(setRegisterSuccess(successMsg));
-        showSuccess(successMsg);
-        dispatch(fetchUsers({ limit: 20, offset: 0 }));
-        const resetStoreId =
-          currentUser?.role !== "admin" && accessibleStores.length === 1
-            ? accessibleStores[0].id
-            : "";
-        dispatch(
-          setRegisterFormData({
-            email: "",
-            firstName: "",
-            lastName: "",
-            role: getInitialRole(),
-            department: "",
-            employeeId: "",
-            storeId: resetStoreId,
-          })
-        );
-        setTimeout(() => {
-          dispatch(setShowRegisterForm(false));
-          dispatch(setRegisterSuccess(""));
-        }, 2000);
-      } else {
-        const errorMsg = data.message || t("registerStaff.feedback.error");
-        dispatch(setRegisterError(errorMsg));
-        showError(errorMsg);
-      }
+      dispatch(setRegisterSuccess(successMsg));
+      showSuccess(successMsg);
+      refetchUsers();
+      const resetStoreId =
+        currentUser?.role !== "admin" && accessibleStores.length === 1
+          ? accessibleStores[0].id
+          : "";
+      dispatch(
+        setRegisterFormData({
+          email: "",
+          firstName: "",
+          lastName: "",
+          role: getInitialRole(),
+          department: "",
+          employeeId: "",
+          storeId: resetStoreId,
+        })
+      );
+      setTimeout(() => {
+        dispatch(setShowRegisterForm(false));
+        dispatch(setRegisterSuccess(""));
+      }, 2000);
     } catch (err: any) {
-      const errorMsg = err.message || t("registerStaff.feedback.unexpected");
+      const errorMsg = err?.data?.message || err?.message || t("registerStaff.feedback.unexpected");
       dispatch(setRegisterError(errorMsg));
       showError(errorMsg);
     } finally {
@@ -243,15 +227,12 @@ const RegisterStaffForm: React.FC = () => {
                 onChange={handleChange}
                 disabled={
                   isSubmitting ||
-                  loadingStores ||
                   (currentUser?.role !== "admin" &&
                     accessibleStores.length === 1)
                 }
               >
                 <option value="">
-                  {loadingStores
-                    ? t("registerStaff.form.loadingStores")
-                    : t("registerStaff.form.selectStore")}
+                  {t("registerStaff.form.selectStore")}
                 </option>
                 {accessibleStores.map((store) => (
                   <option key={store.id} value={store.id}>

@@ -12,6 +12,7 @@ import {
   useGetAllStaffQuery,
   useGetMyStoresQuery,
 } from "../../store/api/staffApi";
+import { useGetAllStoresQuery } from "../../store/api/storesApi";
 import {
   setShowRegisterForm,
   setEditingUser,
@@ -26,13 +27,8 @@ const UsersManagement: React.FC = () => {
   const dispatch = useAppDispatch();
   const { setHeaderActions } = useAdminHeader();
 
-  const {
-    currentPage,
-    itemsPerPage,
-    showRegisterForm,
-    editingUser,
-    accessibleStores,
-  } = useAppSelector((state) => state.users);
+  const { currentPage, itemsPerPage, showRegisterForm, editingUser } =
+    useAppSelector((state) => state.users);
   const currentUser = useAppSelector((state) => state.auth.user);
 
   // RTK Query hooks
@@ -69,7 +65,8 @@ const UsersManagement: React.FC = () => {
 
   // Update accessible stores in Redux
   useEffect(() => {
-    const stores = currentUser?.role === "admin" ? allStores || [] : myStores || [];
+    const stores =
+      currentUser?.role === "admin" ? allStores || [] : myStores || [];
     if (stores.length > 0) {
       dispatch(setAccessibleStores(stores));
     }

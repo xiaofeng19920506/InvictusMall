@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
-import { orderApi, type Order, type OrderStatus } from "../../services/api";
+import { useUpdateOrderStatusMutation } from "../../store/api/ordersApi";
+import type { Order, OrderStatus } from "../../services/api";
 import { useNotification } from "../../contexts/NotificationContext";
 import styles from "./OrderStatusModal.module.css";
 
@@ -18,11 +19,11 @@ const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { showError, showSuccess } = useNotification();
+  const [updateOrderStatus, { isLoading: saving }] = useUpdateOrderStatusMutation();
   const [status, setStatus] = useState<OrderStatus>(order.status);
   const [trackingNumber, setTrackingNumber] = useState(
     order.trackingNumber || ""
   );
-  const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,26 +33,22 @@ const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
       return;
     }
 
-    setSaving(true);
     try {
-      const response = await orderApi.updateOrderStatus(order.id, {
-        status,
-        trackingNumber: trackingNumber.trim() || undefined,
-      });
+      await updateOrderStatus({
+        orderId: order.id,
+        data: {
+          status,
+          trackingNumber: trackingNumber.trim() || undefined,
+        },
+      }).unwrap();
 
-      if (response.success) {
-        showSuccess(t("orders.success.statusUpdated") || "Order status updated successfully");
-        onUpdate();
-      } else {
-        showError(response.message || t("orders.error.updateFailed") || "Failed to update order status");
-      }
+      showSuccess(t("orders.success.statusUpdated") || "Order status updated successfully");
+      onUpdate();
     } catch (error: any) {
       console.error("Error updating order status:", error);
       const errorMessage =
-        error.response?.data?.message || error.message || t("orders.error.updateFailed") || "Failed to update order status";
+        error?.data?.message || error?.message || t("orders.error.updateFailed") || "Failed to update order status";
       showError(errorMessage);
-    } finally {
-      setSaving(false);
     }
   };
 
