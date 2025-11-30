@@ -7,7 +7,7 @@ import { productService, Product } from "@/services/product";
 import { useCart } from "@/contexts/CartContext";
 import Header from "@/components/common/Header";
 import Link from "next/link";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
 import ReservationModal from "./ReservationModal";
 
 function StarRating({ rating, size = "text-lg" }: { rating: number; size?: string }) {
@@ -226,23 +226,12 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex flex-col md:flex-row gap-6">
             <div className="flex-shrink-0">
-              {store.imageUrl ? (
-                <img
-                  src={getImageUrl(store.imageUrl) || "/placeholder/store.png"}
-                  alt={store.name}
-                  className="w-full md:w-64 h-64 object-cover rounded-lg"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    // Prevent infinite onError loop by removing the handler
-                    target.onerror = null;
-                    target.src = "/placeholder/store.png";
-                  }}
-                />
-              ) : (
-                <div className="w-full md:w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-400">No Image</span>
-                </div>
-              )}
+              <img
+                src={getImageUrl(store.imageUrl) || getPlaceholderImage()}
+                alt={store.name}
+                className="w-full md:w-64 h-64 object-cover rounded-lg bg-gray-200"
+                onError={handleImageError}
+              />
             </div>
 
             <div className="flex-1">

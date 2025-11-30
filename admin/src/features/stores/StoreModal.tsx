@@ -11,7 +11,7 @@ import type {
   UpdateStoreRequest,
   Location,
 } from "../../shared/types/store";
-import { getImageUrl } from "../../shared/utils/imageUtils";
+import { getImageUrl, getPlaceholderImage, handleImageError } from "../../shared/utils/imageUtils";
 import styles from "./StoreModal.module.css";
 
 export interface StoreModalProps {
@@ -638,12 +638,13 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
                   className="form-input"
                   disabled={uploadingImage}
                 />
-                {formData.imagePreview && (
+                {formData.imagePreview ? (
                   <>
                     <div className={styles.imagePreview}>
                       <img
-                        src={getImageUrl(formData.imagePreview)}
+                        src={getImageUrl(formData.imagePreview) || getPlaceholderImage()}
                         alt={t("storeModal.fields.storeImage")}
+                        onError={handleImageError}
                       />
                     </div>
                     {uploadingImage && (
@@ -652,6 +653,14 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
                       </p>
                     )}
                   </>
+                ) : (
+                  <div className={styles.imagePreview}>
+                    <img
+                      src={getPlaceholderImage()}
+                      alt={t("storeModal.fields.storeImage")}
+                      onError={handleImageError}
+                    />
+                  </div>
                 )}
               </div>
             ) : (

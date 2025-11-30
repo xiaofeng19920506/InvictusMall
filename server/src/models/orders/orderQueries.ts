@@ -121,6 +121,52 @@ export class OrderQueries {
     return mapRowToOrder(orders[0]);
   }
 
+  /**
+   * Get order by ID and verify it belongs to the specified user
+   * This is more secure than getOrderById + manual check
+   */
+  async getOrderByIdAndUserId(orderId: string, userId: string): Promise<Order> {
+    const query = `
+      SELECT 
+        o.id, o.user_id, o.store_id, o.store_name, o.total_amount, o.status,
+        o.shipping_street_address, o.shipping_apt_number, o.shipping_city,
+        o.shipping_state_province, o.shipping_zip_code, o.shipping_country,
+        o.payment_method, o.stripe_session_id, o.payment_intent_id, o.order_date, o.shipped_date, o.delivered_date,
+        o.tracking_number, o.created_at, o.updated_at,
+        o.guest_email, o.guest_full_name, o.guest_phone_number,
+        COALESCE(SUM(r.amount), 0) AS total_refunded,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'id', oi.id,
+            'productId', oi.product_id,
+            'productName', oi.product_name,
+            'productImage', oi.product_image,
+            'quantity', oi.quantity,
+            'price', oi.price,
+            'subtotal', oi.subtotal,
+            'reservationDate', oi.reservation_date,
+            'reservationTime', oi.reservation_time,
+            'reservationNotes', oi.reservation_notes,
+            'isReservation', oi.is_reservation
+          )
+        ) as items
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN refunds r ON o.id = r.order_id AND r.status = 'succeeded'
+      WHERE o.id = ? AND o.user_id = ?
+      GROUP BY o.id
+    `;
+
+    const [rows] = await this.pool.execute(query, [orderId, userId]);
+    const orders = rows as any[];
+
+    if (orders.length === 0) {
+      throw new Error('Order not found');
+    }
+
+    return mapRowToOrder(orders[0]);
+  }
+
   async getOrdersByGuestEmail(email: string): Promise<Order[]> {
     const query = `
       SELECT 

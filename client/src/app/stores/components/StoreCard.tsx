@@ -1,5 +1,5 @@
 import { Store } from "@/services/api";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
 import Link from "next/link";
 
 interface StoreCardProps {
@@ -12,11 +12,12 @@ export default function StoreCard({ store }: StoreCardProps) {
       href={`/stores/${store.id}`}
       className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-200 hover:border-orange-500 relative overflow-hidden group block"
     >
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-48 overflow-hidden bg-gray-200">
         <img
-          src={getImageUrl(store.imageUrl)}
+          src={getImageUrl(store.imageUrl) || getPlaceholderImage()}
           alt={store.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={handleImageError}
         />
       </div>
 

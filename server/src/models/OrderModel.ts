@@ -63,6 +63,10 @@ export class OrderModel {
     return this.queries.getOrderById(orderId);
   }
 
+  async getOrderByIdAndUserId(orderId: string, userId: string): Promise<Order> {
+    return this.queries.getOrderByIdAndUserId(orderId, userId);
+  }
+
   async getOrdersByGuestEmail(email: string): Promise<Order[]> {
     return this.queries.getOrdersByGuestEmail(email);
   }

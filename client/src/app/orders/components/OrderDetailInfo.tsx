@@ -1,6 +1,6 @@
 import { Order } from "@/lib/server-api";
 import Link from "next/link";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
 import {
   getOrderStatusBadgeStyle,
   getOrderStatusLabel,
@@ -76,22 +76,12 @@ export default function OrderDetailInfo({ order }: OrderDetailInfoProps) {
               className="flex items-center justify-between border-b border-gray-200 pb-4 last:border-0 last:pb-0"
             >
               <div className="flex items-center space-x-4">
-                {item.productImage ? (
-                  <img
-                    src={getImageUrl(item.productImage)}
-                    alt={item.productName}
-                    className="w-20 h-20 object-cover rounded"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.onerror = null;
-                      target.src = "/placeholder/product.png";
-                    }}
-                  />
-                ) : (
-                  <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">No Image</span>
-                  </div>
-                )}
+                <img
+                  src={getImageUrl(item.productImage) || getPlaceholderImage()}
+                  alt={item.productName}
+                  className="w-20 h-20 object-cover rounded bg-gray-200"
+                  onError={handleImageError}
+                />
                 <div>
                   <p className="font-medium text-gray-900">
                     {item.productName}
