@@ -3,7 +3,9 @@ export type OrderStatus =
   | 'processing'
   | 'shipped'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'return_processing'
+  | 'returned';
 
 export interface OrderItem {
   id: string;

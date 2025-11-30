@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, type ReactNode } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Store,
   BarChart3,
@@ -20,12 +21,12 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import { authService, type Permission } from "../../services/auth";
 import type { AdminPageKey } from "../../app/types";
+import { ROUTE_PATHS } from "../../app/AdminApp";
 import styles from "./AdminLayout.module.css";
 
 interface AdminLayoutProps {
   children: ReactNode;
   currentPage: AdminPageKey;
-  onPageChange: (page: AdminPageKey) => void;
 }
 
 type NavigationItem = {
@@ -93,17 +94,25 @@ const NAV_ITEMS: NavigationItem[] = [
     translationKey: "nav.systemLogs",
     pageTitleKey: "pages.systemLogs",
   },
+  {
+    id: "settings",
+    permission: "settings",
+    icon: Settings,
+    translationKey: "nav.settings",
+    pageTitleKey: "pages.settings",
+  },
 ];
 
 const AdminLayout = ({
   children,
   currentPage,
-  onPageChange,
 }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [headerActions, setHeaderActionsState] = useState<ReactNode>(null);
   const { user, logout } = useAuth();
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   // Provide setHeaderActions function via context-like pattern
   // We'll use a ref to share state between this component and pages
@@ -165,20 +174,32 @@ const AdminLayout = ({
   );
 
   // Memoized current page title
-  const currentPageTitle = useMemo(
-    () =>
-      navigationItems.find((item) => item.id === currentPage)?.pageTitleKey ||
-      "pages.dashboard",
-    [navigationItems, currentPage]
-  );
+  // Include settings in the search even if it's not in navigationItems (it's in sidebar footer)
+  const currentPageTitle = useMemo(() => {
+    // First check navigationItems
+    const navItem = navigationItems.find((item) => item.id === currentPage);
+    if (navItem) {
+      return navItem.pageTitleKey;
+    }
+    // Then check NAV_ITEMS (for settings which is in sidebar footer)
+    const allNavItem = NAV_ITEMS.find((item) => item.id === currentPage);
+    if (allNavItem) {
+      return allNavItem.pageTitleKey;
+    }
+    // Default fallback
+    return "pages.dashboard";
+  }, [navigationItems, currentPage]);
 
   // Memoized navigation handler
   const handleNavigate = useCallback(
     (page: AdminPageKey) => {
-      onPageChange(page);
+      const routePath = ROUTE_PATHS[page];
+      if (routePath) {
+        navigate(routePath);
+      }
       setSidebarOpen(false);
     },
-    [onPageChange]
+    [navigate]
   );
 
   return (
@@ -192,25 +213,25 @@ const AdminLayout = ({
       )}
       <aside className={sidebarClasses} aria-label={t("brand")}>
         <div className={styles.sidebarContent}>
-          <div>
-            <div className={styles.sidebarHeader}>
-              <h2 className={styles.brand}>{t("brand")}</h2>
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(false)}
-                className={styles.sidebarCloseButton}
-                aria-label={t("nav.close")}
-              >
-                <X size={20} />
-              </button>
-            </div>
+          <div className={styles.sidebarHeader}>
+            <h2 className={styles.brand}>{t("brand")}</h2>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className={styles.sidebarCloseButton}
+              aria-label={t("nav.close")}
+            >
+              <X size={20} />
+            </button>
+          </div>
 
-            <nav>
-              <ul className={styles.navList}>
+          <nav className={styles.navContainer}>
+            <ul className={styles.navList}>
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = currentPage === item.id;
-                  const buttonClasses = [
+                  const routePath = ROUTE_PATHS[item.id];
+                  const isActive = location.pathname === routePath || currentPage === item.id;
+                  const linkClasses = [
                     styles.navButton,
                     isActive && styles.navButtonActive,
                   ]
@@ -218,20 +239,19 @@ const AdminLayout = ({
                     .join(" ");
                   return (
                     <li key={item.id} className={styles.navItem}>
-                      <button
-                        type="button"
-                        onClick={() => handleNavigate(item.id)}
-                        className={buttonClasses}
+                      <Link
+                        to={routePath}
+                        onClick={() => setSidebarOpen(false)}
+                        className={linkClasses}
                       >
                         <Icon size={20} />
                         {t(item.translationKey)}
-                      </button>
+                      </Link>
                     </li>
                   );
                 })}
               </ul>
             </nav>
-          </div>
 
           <div className={styles.sidebarFooter}>
             <div className={styles.sidebarUser}>
@@ -255,19 +275,6 @@ const AdminLayout = ({
                     {roleLabel}
                   </span>
                   <div className={styles.sidebarActions}>
-                    {user && authService.hasPermission(user, "settings") && (
-                      <button
-                        type="button"
-                        onClick={() => handleNavigate("settings")}
-                        className={`${styles.settingsButton} ${
-                          currentPage === "settings" ? styles.navButtonActive : ""
-                        }`}
-                        title={t("nav.settings")}
-                        aria-label={t("nav.settings")}
-                      >
-                        <Settings size={20} />
-                      </button>
-                    )}
                     <button
                       type="button"
                       onClick={logout}

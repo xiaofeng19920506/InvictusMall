@@ -23,7 +23,9 @@ export type OrderStatus =
   | "processing"
   | "shipped"
   | "delivered"
-  | "cancelled";
+  | "cancelled"
+  | "return_processing"
+  | "returned";
 
 export interface Order {
   paymentIntentId?: string | null;

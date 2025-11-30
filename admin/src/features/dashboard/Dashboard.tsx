@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Store,
   TrendingUp,
@@ -7,12 +8,8 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { storeApi, healthApi } from "../../services/api";
-import type { AdminPageKey } from "../../app/types";
+import { ROUTE_PATHS } from "../../app/AdminApp";
 import styles from "./Dashboard.module.css";
-
-interface DashboardProps {
-  onNavigate: (page: AdminPageKey) => void;
-}
 
 interface DashboardStats {
   totalStores: number;
@@ -23,7 +20,8 @@ interface DashboardStats {
   serverUptime?: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = () => {
+const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats>({
     totalStores: 0,

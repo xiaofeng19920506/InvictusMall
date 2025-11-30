@@ -111,17 +111,19 @@ function PaymentForm({
         return;
       }
 
-      // Payment must be succeeded to proceed (Amazon-style: payment done before review)
-      if (paymentIntent && paymentIntent.status === "succeeded") {
-        // Payment succeeded, continue to review step
+      // Payment authorization check (Amazon-style: authorize at checkout, capture when delivered)
+      // With manual capture, status will be "requires_capture" after authorization (not "succeeded")
+      if (paymentIntent && (paymentIntent.status === "succeeded" || paymentIntent.status === "requires_capture")) {
+        // Payment authorized (or already captured), continue to review step
         // Order will be finalized in ReviewOrderStep when user clicks "Place your order"
+        // Actual charge will happen when order is delivered
         onContinue(paymentIntentId, clientSecret);
       } else {
         // Payment is still processing or requires action (3D Secure, etc.)
         if (paymentIntent?.status === "requires_action") {
           setError("Additional authentication required. Please complete the verification.");
         } else {
-          setError("Payment was not completed. Please try again.");
+          setError("Payment was not authorized. Please try again.");
         }
         setIsProcessing(false);
       }

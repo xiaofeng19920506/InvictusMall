@@ -973,7 +973,9 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "return_processing": "Return Processing",
+      "returned": "Returned"
     },
     "empty": {
       "noOrders": "No orders found"

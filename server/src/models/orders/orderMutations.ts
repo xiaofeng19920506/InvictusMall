@@ -236,6 +236,8 @@ export class OrderMutations {
       'shipped',
       'delivered',
       'cancelled',
+      'return_processing',
+      'returned',
     ];
 
     if (!validStatuses.includes(status)) {

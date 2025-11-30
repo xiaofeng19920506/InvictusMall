@@ -791,7 +791,9 @@
       "processing": "Procesando",
       "shipped": "Enviado",
       "delivered": "Entregado",
-      "cancelled": "Cancelado"
+      "cancelled": "Cancelado",
+      "return_processing": "Procesando Devolución",
+      "returned": "Devuelto"
     },
     "empty": {
       "noOrders": "No se encontraron pedidos"

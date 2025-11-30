@@ -7,6 +7,8 @@ export const ORDER_STATUS_VALUES = [
   "shipped",
   "delivered",
   "cancelled",
+  "return_processing",
+  "returned",
 ] as const;
 
 export type OrderStatusValue = (typeof ORDER_STATUS_VALUES)[number];
@@ -22,6 +24,8 @@ const ORDER_STATUS_LABELS: OrderStatusLabelMap = {
   shipped: "Shipped",
   delivered: "Delivered",
   cancelled: "Cancelled",
+  return_processing: "Return Processing",
+  returned: "Returned",
 };
 
 const ORDER_STATUS_BADGE_STYLES: OrderStatusStyleMap = {
@@ -31,6 +35,8 @@ const ORDER_STATUS_BADGE_STYLES: OrderStatusStyleMap = {
   shipped: "bg-purple-100 text-purple-800",
   delivered: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
+  return_processing: "bg-orange-100 text-orange-800",
+  returned: "bg-pink-100 text-pink-800",
 };
 
 export const ORDER_STATUS_FILTERS: Array<{

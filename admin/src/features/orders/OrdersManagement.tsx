@@ -189,6 +189,12 @@ const OrdersManagement: React.FC = () => {
             <option value="cancelled">
               {t("orders.status.cancelled") || "Cancelled"}
             </option>
+            <option value="return_processing">
+              {t("orders.status.return_processing") || "Return Processing"}
+            </option>
+            <option value="returned">
+              {t("orders.status.returned") || "Returned"}
+            </option>
           </select>
         </div>
       </div>

@@ -773,7 +773,9 @@
       "processing": "En Traitement",
       "shipped": "Expédié",
       "delivered": "Livré",
-      "cancelled": "Annulé"
+      "cancelled": "Annulé",
+      "return_processing": "Traitement du Retour",
+      "returned": "Retourné"
     },
     "empty": {
       "noOrders": "Aucune commande trouvée"

@@ -212,7 +212,9 @@ router.put(
         'processing',
         'shipped',
         'delivered',
-        'cancelled'
+        'cancelled',
+        'return_processing',
+        'returned'
       ];
 
       if (!validStatuses.includes(status)) {
@@ -221,15 +223,89 @@ router.put(
 
       // Get order before updating status
       const order = await orderModel.getOrderById(orderId);
+      const previousStatus = order.status;
       
       await orderModel.updateOrderStatus(orderId, status, trackingNumber);
+
+      // If order status changes to 'delivered', automatically capture the payment intent
+      // This implements Amazon-style payment: authorize at checkout, capture when delivered
+      if (status === 'delivered' && previousStatus !== 'delivered' && stripeClient && order.paymentIntentId) {
+        try {
+          // Retrieve payment intent
+          const paymentIntent = await stripeClient.paymentIntents.retrieve(order.paymentIntentId);
+          
+          // Only capture if payment intent is in requires_capture status (authorized but not captured)
+          if (paymentIntent.status === 'requires_capture') {
+            try {
+              // Capture the payment intent (this actually charges the customer)
+              const capturedPaymentIntent = await stripeClient.paymentIntents.capture(order.paymentIntentId);
+              
+              logger.info(`Payment captured for delivered order ${orderId}`, {
+                orderId,
+                paymentIntentId: order.paymentIntentId,
+                amount: capturedPaymentIntent.amount,
+                status: capturedPaymentIntent.status,
+              });
+              
+              // Create transaction record for the capture
+              try {
+                await transactionModel.createTransaction({
+                  storeId: order.storeId,
+                  transactionType: 'payment',
+                  amount: order.totalAmount,
+                  currency: 'usd',
+                  description: `Payment captured for delivered order ${order.id}`,
+                  orderId: order.id,
+                  paymentMethod: order.paymentMethod || undefined,
+                  status: capturedPaymentIntent.status === 'succeeded' ? 'completed' : 'pending',
+                  transactionDate: new Date(),
+                  createdBy: req.user!.id,
+                  metadata: {
+                    paymentIntentId: order.paymentIntentId,
+                    captureType: 'automatic',
+                    previousStatus: previousStatus,
+                    newStatus: status,
+                  },
+                });
+              } catch (transactionError) {
+                logger.error("Failed to create transaction record for payment capture", transactionError, { orderId, paymentIntentId: order.paymentIntentId });
+              }
+            } catch (captureError: any) {
+              logger.error(`Failed to capture payment for delivered order ${orderId}`, captureError, {
+                orderId,
+                paymentIntentId: order.paymentIntentId,
+                errorCode: captureError.code,
+                errorType: captureError.type,
+              });
+              // Don't fail the status update if capture fails - just log it
+              // Admin can manually capture later if needed
+            }
+          } else if (paymentIntent.status === 'succeeded') {
+            // Payment already captured, log for reference
+            logger.info(`Payment already captured for order ${orderId}`, {
+              orderId,
+              paymentIntentId: order.paymentIntentId,
+            });
+          } else {
+            logger.warn(`Payment intent ${order.paymentIntentId} is not in requires_capture status (status: ${paymentIntent.status}) when delivering order ${orderId}`, {
+              paymentIntentId: order.paymentIntentId,
+              orderId,
+              status: paymentIntent.status,
+            });
+          }
+        } catch (captureError: any) {
+          logger.error(`Error processing payment capture for delivered order ${orderId}`, captureError, { orderId });
+          // Don't fail the status update if capture fails - just log it
+        }
+      }
 
       // If order is being cancelled, automatically process full refund
       if (status === 'cancelled' && stripeClient) {
         try {
           // Only process refund if order has payment intent and hasn't been fully refunded
           if (order.paymentIntentId) {
-            const totalRefunded = order.totalRefunded || 0;
+            // Recalculate total refunded amount from refunds table to ensure accuracy
+            const totalRefunded = await refundModel.getTotalRefundedAmount(orderId);
             const remainingAmount = order.totalAmount - totalRefunded;
             
             if (remainingAmount > 0.01) {
@@ -270,6 +346,28 @@ router.put(
                       }
                     } catch (listError) {
                       logger.error('Error listing charges for payment intent', listError, { paymentIntentId: order.paymentIntentId });
+                    }
+                  }
+                  
+                  // Also try to find charges by metadata (for test charges or charges created separately)
+                  if (!chargeId) {
+                    try {
+                      const charges = await stripeClient.charges.list({
+                        limit: 100, // Search recent charges
+                      });
+                      
+                      // Look for charges with matching payment intent ID in metadata
+                      const matchingCharge = charges.data.find(c => 
+                        c.metadata?.paymentIntentId === order.paymentIntentId && 
+                        c.status === 'succeeded'
+                      );
+                      
+                      if (matchingCharge) {
+                        chargeId = matchingCharge.id;
+                        logger.info(`Found charge by metadata for payment intent ${order.paymentIntentId}`, { chargeId, orderId });
+                      }
+                    } catch (metadataSearchError) {
+                      logger.warn('Error searching charges by metadata', { paymentIntentId: order.paymentIntentId, error: metadataSearchError });
                     }
                   }
                   
@@ -339,6 +437,148 @@ router.put(
         } catch (autoRefundError) {
           logger.error(`Error processing automatic refund for cancelled order ${orderId}`, autoRefundError, { orderId });
           // Don't fail the cancellation if auto-refund fails
+        }
+      }
+
+      // If order is being marked as returned, automatically process full refund
+      if (status === 'returned' && stripeClient) {
+        try {
+          // Only process refund if order has payment intent and hasn't been fully refunded
+          if (order.paymentIntentId) {
+            // Recalculate total refunded amount from refunds table to ensure accuracy
+            const totalRefunded = await refundModel.getTotalRefundedAmount(orderId);
+            const remainingAmount = order.totalAmount - totalRefunded;
+            
+            if (remainingAmount > 0.01) {
+              try {
+                // Get payment intent
+                const paymentIntent = await stripeClient.paymentIntents.retrieve(order.paymentIntentId);
+                
+                if (paymentIntent.status === 'succeeded') {
+                  // Find successful charge
+                  let chargeId: string | null = null;
+                  
+                  if (paymentIntent.latest_charge) {
+                    const latestChargeId = typeof paymentIntent.latest_charge === 'string' 
+                      ? paymentIntent.latest_charge 
+                      : paymentIntent.latest_charge.id;
+                    
+                    try {
+                      const charge = await stripeClient.charges.retrieve(latestChargeId);
+                      if (charge.status === 'succeeded') {
+                        chargeId = charge.id;
+                      }
+                    } catch (chargeError) {
+                      logger.error(`Error retrieving charge ${latestChargeId}`, chargeError, { chargeId: latestChargeId, orderId });
+                    }
+                  }
+                  
+                  // If no charge found from latest_charge, try to list charges
+                  if (!chargeId) {
+                    try {
+                      const charges = await stripeClient.charges.list({
+                        payment_intent: order.paymentIntentId,
+                        limit: 10,
+                      });
+                      
+                      const succeededCharge = charges.data.find(c => c.status === 'succeeded');
+                      if (succeededCharge) {
+                        chargeId = succeededCharge.id;
+                      }
+                    } catch (listError) {
+                      logger.error('Error listing charges for payment intent', listError, { paymentIntentId: order.paymentIntentId });
+                    }
+                  }
+                  
+                  // Also try to find charges by metadata (for test charges or charges created separately)
+                  if (!chargeId) {
+                    try {
+                      const charges = await stripeClient.charges.list({
+                        limit: 100, // Search recent charges
+                      });
+                      
+                      // Look for charges with matching payment intent ID in metadata
+                      const matchingCharge = charges.data.find(c => 
+                        c.metadata?.paymentIntentId === order.paymentIntentId && 
+                        c.status === 'succeeded'
+                      );
+                      
+                      if (matchingCharge) {
+                        chargeId = matchingCharge.id;
+                        logger.info(`Found charge by metadata for payment intent ${order.paymentIntentId}`, { chargeId, orderId });
+                      }
+                    } catch (metadataSearchError) {
+                      logger.warn('Error searching charges by metadata', { paymentIntentId: order.paymentIntentId, error: metadataSearchError });
+                    }
+                  }
+                  
+                  if (chargeId) {
+                    // Create refund in Stripe
+                    const refund = await stripeClient.refunds.create({
+                      charge: chargeId,
+                      amount: Math.round(remainingAmount * 100),
+                      reason: 'requested_by_customer',
+                      metadata: {
+                        orderId: order.id,
+                        refundedBy: req.user!.id,
+                        autoRefund: 'true',
+                        reason: 'Order returned - automatic full refund',
+                      },
+                    });
+                    
+                    // Save refund record
+                    await refundModel.create({
+                      orderId: order.id,
+                      paymentIntentId: order.paymentIntentId,
+                      refundId: refund.id,
+                      amount: remainingAmount,
+                      currency: "usd",
+                      reason: "Order returned - automatic full refund",
+                      status: refund.status || 'succeeded',
+                      refundedBy: req.user!.id,
+                    });
+                    
+                    // Create transaction record
+                    try {
+                      await transactionModel.createTransaction({
+                        storeId: order.storeId,
+                        transactionType: 'refund',
+                        amount: -remainingAmount,
+                        currency: 'usd',
+                        description: `Automatic full refund for returned order ${order.id}`,
+                        orderId: order.id,
+                        paymentMethod: order.paymentMethod || undefined,
+                        status: refund.status === 'succeeded' ? 'completed' : (refund.status === 'pending' ? 'pending' : 'failed'),
+                        transactionDate: new Date(),
+                        createdBy: req.user!.id,
+                        metadata: {
+                          refundId: refund.id,
+                          paymentIntentId: order.paymentIntentId,
+                          chargeId: chargeId,
+                          autoRefund: true,
+                          returnRefund: true,
+                        },
+                      });
+                    } catch (transactionError) {
+                      logger.error("Failed to create transaction record for auto refund", transactionError, { orderId, refundId: refund.id });
+                    }
+                    
+                    logger.info(`Automatic full refund processed for returned order ${orderId}: $${remainingAmount}`, { orderId, amount: remainingAmount });
+                  } else {
+                    logger.warn(`No successful charge found for payment intent ${order.paymentIntentId} when returning order ${orderId}`, { paymentIntentId: order.paymentIntentId, orderId });
+                  }
+                } else {
+                  logger.warn(`Payment intent ${order.paymentIntentId} is not succeeded (status: ${paymentIntent.status}) when returning order ${orderId}`, { paymentIntentId: order.paymentIntentId, orderId, status: paymentIntent.status });
+                }
+              } catch (refundError: any) {
+                logger.error(`Failed to process automatic refund for returned order ${orderId}`, refundError, { orderId, paymentIntentId: order.paymentIntentId });
+                // Don't fail the return if refund fails - just log it
+              }
+            }
+          }
+        } catch (autoRefundError) {
+          logger.error(`Error processing automatic refund for returned order ${orderId}`, autoRefundError, { orderId });
+          // Don't fail the return if auto-refund fails
         }
       }
 

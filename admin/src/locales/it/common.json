@@ -823,7 +823,9 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "return_processing": "Elaborazione Reso",
+      "returned": "Reso"
     },
     "empty": {
       "noOrders": "No orders found"
