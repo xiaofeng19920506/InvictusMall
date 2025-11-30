@@ -204,6 +204,36 @@ class ApiService {
     }
   }
 
+  /**
+   * Lookup product information from external barcode databases
+   * Tries multiple sources: UPCItemDB, Open Food Facts, Google Search, etc.
+   */
+  async lookupBarcodeFromExternal(barcode: string): Promise<ApiResponse<{
+    name: string;
+    description?: string;
+    barcode: string;
+    brand?: string;
+    category?: string;
+    imageUrl?: string;
+    price?: number;
+    source: string;
+    additionalInfo?: Record<string, any>;
+  }>> {
+    try {
+      const response = await this.api.get(`/api/barcode-lookup/${encodeURIComponent(barcode)}`);
+      return response.data;
+    } catch (error: any) {
+      // If 404, product not found - this is expected, not an error
+      if (error.response?.status === 404) {
+        return {
+          success: false,
+          message: "Product not found in external databases",
+        };
+      }
+      throw this.handleError(error, "Failed to lookup barcode from external sources");
+    }
+  }
+
   async createProduct(data: {
     storeId: string;
     name: string;

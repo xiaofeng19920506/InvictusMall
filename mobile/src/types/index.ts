@@ -132,6 +132,16 @@ export interface BarcodeScanResult {
   value: string;
   data?: any;
   message?: string; // Additional message for user feedback
+  externalProductInfo?: {
+    name: string;
+    description?: string;
+    brand?: string;
+    category?: string;
+    imageUrl?: string;
+    price?: number;
+    source: string;
+    additionalInfo?: Record<string, any>;
+  };
 }
 
 export interface Store {

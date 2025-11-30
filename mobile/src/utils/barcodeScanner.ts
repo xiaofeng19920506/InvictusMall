@@ -58,9 +58,47 @@ export async function analyzeBarcode(
         code: error?.code,
       });
 
-      // If it's a 404, product doesn't exist - return product_not_found type
+      // If it's a 404, product doesn't exist in our database
+      // Try external barcode lookup services before returning product_not_found
       if (error?.response?.status === 404) {
-        console.log('[analyzeBarcode] 📝 Product not found (404), returning product_not_found type for creation');
+        console.log('[analyzeBarcode] 📝 Product not found in database, trying external barcode lookup...');
+        
+        try {
+          // Try external barcode lookup services
+          const externalLookupResponse = await apiService.lookupBarcodeFromExternal(trimmedBarcode);
+          
+          if (externalLookupResponse.success && externalLookupResponse.data) {
+            console.log('[analyzeBarcode] ✅ Product found in external database:', {
+              source: externalLookupResponse.data.source,
+              productName: externalLookupResponse.data.name,
+            });
+            
+            // Return product_not_found but with external product info for pre-filling form
+            return {
+              type: 'product_not_found',
+              value: trimmedBarcode,
+              message: `Product with barcode "${trimmedBarcode}" not found in your database, but found in ${externalLookupResponse.data.source}. You can create a new product with pre-filled information.`,
+              externalProductInfo: {
+                name: externalLookupResponse.data.name,
+                description: externalLookupResponse.data.description,
+                brand: externalLookupResponse.data.brand,
+                category: externalLookupResponse.data.category,
+                imageUrl: externalLookupResponse.data.imageUrl,
+                price: externalLookupResponse.data.price,
+                source: externalLookupResponse.data.source,
+                additionalInfo: externalLookupResponse.data.additionalInfo,
+              },
+            };
+          } else {
+            console.log('[analyzeBarcode] ❌ Product not found in external databases either');
+          }
+        } catch (externalError: any) {
+          console.warn('[analyzeBarcode] ⚠️ External barcode lookup failed:', externalError.message);
+          // Continue to return product_not_found without external info
+        }
+        
+        // Return product_not_found (will use OCR as fallback if needed)
+        console.log('[analyzeBarcode] 📝 Returning product_not_found type for creation (no external data found)');
         return {
           type: 'product_not_found',
           value: trimmedBarcode,

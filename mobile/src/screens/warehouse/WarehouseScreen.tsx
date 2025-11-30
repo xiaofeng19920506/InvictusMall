@@ -305,8 +305,8 @@ const WarehouseScreen: React.FC = () => {
           console.log("[WarehouseScreen] ✅ Item dispatched. Expected new quantity:", newQuantity);
           console.log("[WarehouseScreen] 📊 After dispatch - Will check Redux state in next render");
 
-          // Re-open photo capture for next scan
-          dispatch(setShowPhotoCapture(true));
+          // Close photo capture - user can click "Scan Another" button to scan more
+          // Photo capture will be reopened when user clicks "Scan Another" button in review page
         } else {
           // Stock out: use old single product flow
           dispatch(setSelectedProduct(product));
@@ -370,6 +370,7 @@ const WarehouseScreen: React.FC = () => {
         result.type === "product" ? (result.data as Product)?.name : undefined,
     });
 
+    // Close scanner after scan - user can click "Scan Another" to open again
     dispatch(setShowScanner(false));
 
     if (result.type === "product" && result.data) {
@@ -402,10 +403,7 @@ const WarehouseScreen: React.FC = () => {
           `${product.name} ${isNewProduct ? "added" : "quantity updated"} (${newQuantity} unit${newQuantity > 1 ? "s" : ""})`
         );
 
-        // Re-open scanner for next scan
-        setTimeout(() => {
-          dispatch(setShowScanner(true));
-        }, 500);
+        // Scanner is now closed - user can click "Scan Another" button to scan more
       } else {
         // For stock out, use old single product flow
         dispatch(setSelectedProduct(product));
@@ -415,11 +413,31 @@ const WarehouseScreen: React.FC = () => {
         "[WarehouseScreen] 📝 Product not found, opening create modal:",
         result.value
       );
-      // Open create product modal with pre-filled barcode
-      dispatch(setCreateProductBarcode(result.value));
-      dispatch(setCreateProductName(""));
-      dispatch(setCreateProductPrice(""));
-      dispatch(setCreateProductSerialNumber(""));
+      
+      // Pre-fill form with external product info if available
+      if (result.externalProductInfo) {
+        console.log(
+          "[WarehouseScreen] ✅ Using external product info from",
+          result.externalProductInfo.source,
+          "to pre-fill form"
+        );
+        dispatch(setCreateProductBarcode(result.value));
+        dispatch(setCreateProductName(result.externalProductInfo.name || ""));
+        dispatch(setCreateProductPrice("")); // Don't pre-fill price, let user decide
+        dispatch(setCreateProductSerialNumber(""));
+        
+        // Show success message with source info
+        showSuccess(
+          `Product info found from ${result.externalProductInfo.source}. Please review and create product.`
+        );
+      } else {
+        // No external info, just pre-fill barcode
+        dispatch(setCreateProductBarcode(result.value));
+        dispatch(setCreateProductName(""));
+        dispatch(setCreateProductPrice(""));
+        dispatch(setCreateProductSerialNumber(""));
+      }
+      
       dispatch(setShowCreateProductModal(true));
     } else if (result.type === "unknown") {
       console.log(
@@ -465,11 +483,31 @@ const WarehouseScreen: React.FC = () => {
         "[WarehouseScreen] 📝 Product not found in inventory check, opening create modal:",
         result.value
       );
-      // Open create product modal with pre-filled barcode
-      dispatch(setCreateProductBarcode(result.value));
-      dispatch(setCreateProductName(""));
-      dispatch(setCreateProductPrice(""));
-      dispatch(setCreateProductSerialNumber(""));
+      
+      // Pre-fill form with external product info if available
+      if (result.externalProductInfo) {
+        console.log(
+          "[WarehouseScreen] ✅ Using external product info from",
+          result.externalProductInfo.source,
+          "to pre-fill form"
+        );
+        dispatch(setCreateProductBarcode(result.value));
+        dispatch(setCreateProductName(result.externalProductInfo.name || ""));
+        dispatch(setCreateProductPrice("")); // Don't pre-fill price, let user decide
+        dispatch(setCreateProductSerialNumber(""));
+        
+        // Show success message with source info
+        showSuccess(
+          `Product info found from ${result.externalProductInfo.source}. Please review and create product.`
+        );
+      } else {
+        // No external info, just pre-fill barcode
+        dispatch(setCreateProductBarcode(result.value));
+        dispatch(setCreateProductName(""));
+        dispatch(setCreateProductPrice(""));
+        dispatch(setCreateProductSerialNumber(""));
+      }
+      
       dispatch(setShowCreateProductModal(true));
     } else if (result.type === "unknown") {
       console.log(
@@ -490,12 +528,23 @@ const WarehouseScreen: React.FC = () => {
 
   // Handle batch stock in for multiple scanned products
   const handleBatchStockIn = async () => {
+    console.log("[WarehouseScreen] 🔘 Stock In All button clicked");
+    console.log("[WarehouseScreen] 📊 Pending items count:", pendingStockInItems.length);
+    
     if (pendingStockInItems.length === 0) {
+      console.warn("[WarehouseScreen] ⚠️ No items to stock in");
       showError("No items to stock in");
       return;
     }
 
     try {
+      console.log("[WarehouseScreen] 🚀 Starting batch stock in process...");
+      console.log("[WarehouseScreen] 📋 Pending items:", pendingStockInItems.map(item => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        quantity: item.quantity,
+        serialNumbers: item.serialNumbers,
+      })));
       // Prepare batch items for RTK Query mutation
       // Merge operations by product to avoid race conditions and improve efficiency
       const productOperationsMap = new Map<string, {
