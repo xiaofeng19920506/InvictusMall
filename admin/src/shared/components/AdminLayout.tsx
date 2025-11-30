@@ -15,7 +15,6 @@ import {
   FolderTree,
   ShoppingBag,
   Warehouse,
-  Truck,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
@@ -93,13 +92,6 @@ const NAV_ITEMS: NavigationItem[] = [
     icon: FileText,
     translationKey: "nav.systemLogs",
     pageTitleKey: "pages.systemLogs",
-  },
-  {
-    id: "settings",
-    permission: "settings",
-    icon: Settings,
-    translationKey: "nav.settings",
-    pageTitleKey: "pages.settings",
   },
 ];
 
@@ -218,16 +210,18 @@ const AdminLayout = ({
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = currentPage === item.id;
+                  const buttonClasses = [
+                    styles.navButton,
+                    isActive && styles.navButtonActive,
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
                   return (
                     <li key={item.id} className={styles.navItem}>
                       <button
                         type="button"
                         onClick={() => handleNavigate(item.id)}
-                        className={
-                          isActive
-                            ? `${styles.navButton} ${styles.navButtonActive}`
-                            : styles.navButton
-                        }
+                        className={buttonClasses}
                       >
                         <Icon size={20} />
                         {t(item.translationKey)}
@@ -260,15 +254,30 @@ const AdminLayout = ({
                     {user?.role === "employee" && <Store size={12} />}
                     {roleLabel}
                   </span>
-                  <button
-                    type="button"
-                    onClick={logout}
-                    className={styles.logoutButton}
-                    title={t("header.logout")}
-                    aria-label={t("header.logout")}
-                  >
-                    <LogOut size={20} />
-                  </button>
+                  <div className={styles.sidebarActions}>
+                    {user && authService.hasPermission(user, "settings") && (
+                      <button
+                        type="button"
+                        onClick={() => handleNavigate("settings")}
+                        className={`${styles.settingsButton} ${
+                          currentPage === "settings" ? styles.navButtonActive : ""
+                        }`}
+                        title={t("nav.settings")}
+                        aria-label={t("nav.settings")}
+                      >
+                        <Settings size={20} />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className={styles.logoutButton}
+                      title={t("header.logout")}
+                      aria-label={t("header.logout")}
+                    >
+                      <LogOut size={20} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

@@ -47,6 +47,11 @@
   border-left: 4px solid #f59e0b;
 }
 
+:root.dark .alertCard {
+  background-color: var(--bg-primary);
+  border-color: var(--border-color);
+}
+
 .alertContent {
   display: flex;
   align-items: center;

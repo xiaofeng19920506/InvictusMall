@@ -223,22 +223,6 @@ const Dashboard: React.FC<DashboardProps> = () => {
             </div>
           </div>
         </div>
-
-        <div className={styles.chartsGrid}>
-          <div className={styles.chartCard}>
-            <h3 className={styles.chartTitle}>{t("analytics.charts.revenue") || "Revenue Trend"}</h3>
-            <div className={styles.chartPlaceholder}>
-              {t("analytics.charts.revenuePlaceholder") || "Chart visualization coming soon"}
-            </div>
-          </div>
-
-          <div className={styles.chartCard}>
-            <h3 className={styles.chartTitle}>{t("analytics.charts.stores") || "Store Growth"}</h3>
-            <div className={styles.chartPlaceholder}>
-              {t("analytics.charts.storesPlaceholder") || "Chart visualization coming soon"}
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
