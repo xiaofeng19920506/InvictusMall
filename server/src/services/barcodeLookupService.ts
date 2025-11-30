@@ -2,7 +2,7 @@ import { logger } from '../utils/logger';
 
 export interface BarcodeLookupResult {
   success: boolean;
-  source: 'upcitemdb' | 'openfoodfacts' | 'google' | 'amazon' | 'ocr' | null;
+  source: 'upcdatabase' | 'openfoodfacts' | 'amazon' | 'ocr' | null;
   product?: {
     name: string;
     description?: string;
@@ -17,18 +17,12 @@ export interface BarcodeLookupResult {
 }
 
 export class BarcodeLookupService {
-  private upcitemdbApiKey: string | null;
-  private googleApiKey: string | null;
-  private googleSearchEngineId: string | null;
+  private upcdatabaseApiKey: string | null;
 
   constructor() {
-    // UPCItemDB is free, no API key needed for basic usage
-    // But they offer 100 free calls/day without key, unlimited with key
-    this.upcitemdbApiKey = process.env.UPCITEMDB_API_KEY || null;
-    
-    // Optional: Google Custom Search API (requires API key and Search Engine ID)
-    this.googleApiKey = process.env.GOOGLE_API_KEY || null;
-    this.googleSearchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID || null;
+    // UPC Database API key (from https://upcdatabase.org/)
+    // Register at https://upcdatabase.org/ to get your API key
+    this.upcdatabaseApiKey = process.env.UPCDATABASE_API_KEY || null;
   }
 
   /**
@@ -37,19 +31,19 @@ export class BarcodeLookupService {
   async lookupBarcode(barcode: string): Promise<BarcodeLookupResult> {
     logger.info('[BarcodeLookupService] Starting barcode lookup', { barcode });
 
-    // Step 1: Try UPCItemDB first (best general coverage, 100 free calls/day)
-    logger.debug('[BarcodeLookupService] Trying UPCItemDB...');
+    // Step 1: Try UPC Database first (https://upcdatabase.org/)
+    logger.debug('[BarcodeLookupService] Trying UPC Database...');
     try {
-      const upcResult = await this.lookupUPCItemDB(barcode);
-      if (upcResult.success && upcResult.product) {
-        logger.info('[BarcodeLookupService] Product found via UPCItemDB', {
+      const upcDbResult = await this.lookupUPCDatabase(barcode);
+      if (upcDbResult.success && upcDbResult.product) {
+        logger.info('[BarcodeLookupService] Product found via UPC Database', {
           barcode,
-          productName: upcResult.product.name,
+          productName: upcDbResult.product.name,
         });
-        return upcResult;
+        return upcDbResult;
       }
     } catch (error: any) {
-      logger.warn('[BarcodeLookupService] UPCItemDB lookup failed', {
+      logger.warn('[BarcodeLookupService] UPC Database lookup failed', {
         barcode,
         error: error.message,
       });
@@ -73,29 +67,7 @@ export class BarcodeLookupService {
       });
     }
 
-    // Step 3: Try Google Search API (if configured)
-    if (this.googleApiKey && this.googleSearchEngineId) {
-      logger.debug('[BarcodeLookupService] Trying Google Search API...');
-      try {
-        const googleResult = await this.lookupGoogleSearch(barcode);
-        if (googleResult.success && googleResult.product) {
-          logger.info('[BarcodeLookupService] Product found via Google Search', {
-            barcode,
-            productName: googleResult.product.name,
-          });
-          return googleResult;
-        }
-      } catch (error: any) {
-        logger.warn('[BarcodeLookupService] Google Search lookup failed', {
-          barcode,
-          error: error.message,
-        });
-      }
-    } else {
-      logger.debug('[BarcodeLookupService] Google Search API not configured, skipping');
-    }
-
-    // Step 4: Try Amazon ASIN lookup (if barcode might be ASIN)
+    // Step 3: Try Amazon ASIN lookup (if barcode might be ASIN)
     logger.debug('[BarcodeLookupService] Trying Amazon ASIN lookup...');
     try {
       const amazonResult = await this.lookupAmazonASIN(barcode);
@@ -126,19 +98,22 @@ export class BarcodeLookupService {
   }
 
   /**
-   * Lookup product in UPCItemDB
-   * Free: 100 calls/day without API key
-   * Unlimited with API key
+   * Lookup product in UPC Database (https://upcdatabase.org/)
+   * Requires API key - register at https://upcdatabase.org/ to get API key
+   * API endpoint: https://api.upcdatabase.org/product/{UPC}?apikey={API_KEY}
    */
-  private async lookupUPCItemDB(barcode: string): Promise<BarcodeLookupResult> {
+  private async lookupUPCDatabase(barcode: string): Promise<BarcodeLookupResult> {
+    if (!this.upcdatabaseApiKey) {
+      logger.debug('[BarcodeLookupService] UPC Database API key not configured');
+      return {
+        success: false,
+        source: 'upcdatabase',
+        error: 'UPC Database API key not configured. Please set UPCDATABASE_API_KEY in environment variables.',
+      };
+    }
+
     try {
-      // UPCItemDB API - use trial endpoint
-      // Without API key: 100 free calls/day
-      // With API key: Add &key= parameter for unlimited calls
-      const apiKey = this.upcitemdbApiKey;
-      const url = apiKey
-        ? `https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}&key=${apiKey}`
-        : `https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`;
+      const url = `https://api.upcdatabase.org/product/${barcode}?apikey=${this.upcdatabaseApiKey}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -148,32 +123,36 @@ export class BarcodeLookupService {
       });
 
       if (!response.ok) {
-        throw new Error(`UPCItemDB API error: ${response.status} ${response.statusText}`);
+        if (response.status === 401) {
+          throw new Error('Invalid UPC Database API key');
+        }
+        throw new Error(`UPC Database API error: ${response.status} ${response.statusText}`);
       }
 
       const data: any = await response.json();
 
-      if (data.code === 'OK' && data.items && data.items.length > 0) {
-        const item = data.items[0];
-        
+      // UPC Database API response format
+      // Check for successful response - may vary based on API version
+      if (data.success === true || (data.title && data.title !== 'Product Not Found')) {
         return {
           success: true,
-          source: 'upcitemdb',
+          source: 'upcdatabase',
           product: {
-            name: item.title || item.description || 'Unknown Product',
-            description: item.description || item.title,
+            name: data.title || data.name || 'Unknown Product',
+            description: data.description,
             barcode: barcode,
-            brand: item.brand || item.manufacturer,
-            category: item.category,
-            imageUrl: item.images && item.images.length > 0 ? item.images[0] : undefined,
+            brand: data.brand || data.manufacturer,
+            category: data.category,
+            imageUrl: data.image || data.image_url,
+            price: data.price ? parseFloat(String(data.price)) : undefined,
             additionalInfo: {
-              upc: item.upc,
-              ean: item.ean,
-              model: item.model,
-              color: item.color,
-              size: item.size,
-              dimension: item.dimension,
-              weight: item.weight,
+              alias: data.alias,
+              color: data.color,
+              size: data.size,
+              model: data.model,
+              weight: data.weight,
+              dimension: data.dimension,
+              manufacturer: data.manufacturer,
             },
           },
         };
@@ -181,11 +160,11 @@ export class BarcodeLookupService {
 
       return {
         success: false,
-        source: 'upcitemdb',
-        error: data.message || 'Product not found in UPCItemDB',
+        source: 'upcdatabase',
+        error: data.message || 'Product not found in UPC Database',
       };
     } catch (error: any) {
-      logger.error('[BarcodeLookupService] UPCItemDB lookup error', {
+      logger.error('[BarcodeLookupService] UPC Database lookup error', {
         barcode,
         error: error.message,
       });
@@ -262,70 +241,6 @@ export class BarcodeLookupService {
   }
 
   /**
-   * Lookup product via Google Custom Search API
-   * Requires API key and Search Engine ID
-   */
-  private async lookupGoogleSearch(barcode: string): Promise<BarcodeLookupResult> {
-    if (!this.googleApiKey || !this.googleSearchEngineId) {
-      throw new Error('Google API key and Search Engine ID are required');
-    }
-
-    try {
-      const searchQuery = `barcode ${barcode} product`;
-      const url = `https://www.googleapis.com/customsearch/v1?key=${this.googleApiKey}&cx=${this.googleSearchEngineId}&q=${encodeURIComponent(searchQuery)}&num=1`;
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Google Search API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data: any = await response.json();
-
-      if (data.items && data.items.length > 0) {
-        const item = data.items[0];
-        
-        // Extract product name from title (usually format: "Product Name - Brand")
-        const titleParts = item.title.split(' - ');
-        const productName = titleParts[0] || item.title;
-
-        return {
-          success: true,
-          source: 'google',
-          product: {
-            name: productName,
-            description: item.snippet,
-            barcode: barcode,
-            imageUrl: item.pagemap?.cse_image?.[0]?.src || item.pagemap?.metatags?.[0]?.['og:image'],
-            additionalInfo: {
-              link: item.link,
-              displayLink: item.displayLink,
-              snippet: item.snippet,
-            },
-          },
-        };
-      }
-
-      return {
-        success: false,
-        source: 'google',
-        error: 'Product not found via Google Search',
-      };
-    } catch (error: any) {
-      logger.error('[BarcodeLookupService] Google Search lookup error', {
-        barcode,
-        error: error.message,
-      });
-      throw error;
-    }
-  }
-
-  /**
    * Lookup product via Amazon ASIN
    * Note: Amazon doesn't have a public API, so this is a basic web scrape simulation
    * For production, consider using Amazon Product Advertising API
@@ -365,4 +280,3 @@ export class BarcodeLookupService {
     }
   }
 }
-
