@@ -284,12 +284,20 @@
       "error": "Failed to save settings."
     },
     "profile": {
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "title": "Информация профиля",
+      "firstName": "Имя",
+      "lastName": "Фамилия",
+      "phoneNumber": "Номер телефона",
+      "email": "Электронная почта",
+      "role": "Роль",
+      "note": "Информация профиля может быть обновлена через настройки вашей учетной записи.",
+      "actions": {
+        "save": "Сохранить",
+        "saving": "Сохранение...",
+        "cancel": "Отмена"
+      },
+      "updateSuccess": "Профиль успешно обновлен",
+      "updateError": "Не удалось обновить профиль"
     },
     "notifications": {
       "title": "Notifications",

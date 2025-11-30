@@ -39,8 +39,8 @@ export class CategoryModel {
     }
 
     const level = parent.level + 1;
-    if (level > 3) {
-      throw new Error('Maximum category level (3) exceeded');
+    if (level > 4) {
+      throw new Error('Maximum category level (4) exceeded');
     }
 
     return level;

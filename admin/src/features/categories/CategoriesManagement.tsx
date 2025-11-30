@@ -162,6 +162,8 @@ const CategoriesManagement: React.FC = () => {
         return styles.level2;
       case 3:
         return styles.level3;
+      case 4:
+        return styles.level4;
       default:
         return "";
     }
@@ -192,6 +194,7 @@ const CategoriesManagement: React.FC = () => {
               <option value="1">{t("categories.filter.level1") || "Level 1 (Top Level)"}</option>
               <option value="2">{t("categories.filter.level2") || "Level 2 (Subcategory)"}</option>
               <option value="3">{t("categories.filter.level3") || "Level 3 (Sub-subcategory)"}</option>
+              <option value="4">{t("categories.filter.level4") || "Level 4 (Sub-sub-subcategory)"}</option>
             </select>
           </div>
         </div>
@@ -239,7 +242,7 @@ const CategoriesManagement: React.FC = () => {
                   <td>
                     <div className={styles.nameCell}>
                       <span className={styles.levelIndicator}>
-                        {category.level === 1 ? "•" : category.level === 2 ? "  ••" : "    •••"}
+                        {category.level === 1 ? "•" : category.level === 2 ? "  ••" : category.level === 3 ? "    •••" : "      ••••"}
                       </span>
                       {category.name}
                     </div>

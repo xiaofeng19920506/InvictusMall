@@ -1,4 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
+import { Provider } from "react-redux";
+import { store } from "../store";
 import AdminLayout from "../shared/components/AdminLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { authService } from "../services/auth";
@@ -32,6 +34,11 @@ const AdminApp = () => {
     if (currentPage === "inventory" && !authService.hasPermission(user, "stores")) {
       setCurrentPage("dashboard");
     }
+    
+    // Check users page access - only admin, owner, or manager can access
+    if (currentPage === "users" && user.role === "employee") {
+      setCurrentPage("dashboard");
+    }
   }, [currentPage, user]);
 
   // Memoized page renderer to avoid unnecessary re-renders
@@ -52,7 +59,11 @@ const AdminApp = () => {
       case "orders":
         return <LazyOrdersManagement />;
       case "users":
-        return <LazyUsersManagement />;
+        // Only allow admin, owner, or manager access
+        if (user && (user.role === "admin" || user.role === "owner" || user.role === "manager")) {
+          return <LazyUsersManagement />;
+        }
+        return <LazyDashboard onNavigate={setCurrentPage} />;
       case "system_logs":
         return <LazySystemLogs />;
       case "settings":
@@ -69,9 +80,11 @@ const AdminApp = () => {
   }, [currentPage, user]);
 
   return (
-    <AdminLayout currentPage={currentPage} onPageChange={setCurrentPage}>
-      {renderPage}
-    </AdminLayout>
+    <Provider store={store}>
+      <AdminLayout currentPage={currentPage} onPageChange={setCurrentPage}>
+        {renderPage}
+      </AdminLayout>
+    </Provider>
   );
 };
 

@@ -289,9 +289,17 @@
       "title": "Profile Information",
       "firstName": "First Name",
       "lastName": "Last Name",
+      "phoneNumber": "Phone Number",
       "email": "Email",
       "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "note": "Profile information can be updated through your account settings.",
+      "actions": {
+        "save": "Save",
+        "saving": "Saving...",
+        "cancel": "Cancel"
+      },
+      "updateSuccess": "Profile updated successfully",
+      "updateError": "Failed to update profile"
     },
     "notifications": {
       "title": "Notifications",
@@ -695,7 +703,8 @@
       "allLevels": "All Levels",
       "level1": "Level 1 (Top Level)",
       "level2": "Level 2 (Subcategory)",
-      "level3": "Level 3 (Sub-subcategory)"
+      "level3": "Level 3 (Sub-subcategory)",
+      "level4": "Level 4 (Sub-sub-subcategory)"
     },
     "table": {
       "name": "Name",
@@ -754,7 +763,7 @@
       "activeHelp": "Inactive categories won't appear in selection dropdowns"
     },
     "warning": {
-      "maxLevel": "Maximum level (3) reached - cannot have children"
+      "maxLevel": "Maximum level (4) reached - cannot have children"
     },
     "actions": {
       "create": "Create Category",

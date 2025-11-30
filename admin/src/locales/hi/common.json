@@ -284,12 +284,20 @@
       "error": "Failed to save settings."
     },
     "profile": {
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "title": "प्रोफ़ाइल जानकारी",
+      "firstName": "पहला नाम",
+      "lastName": "अंतिम नाम",
+      "phoneNumber": "फ़ोन नंबर",
+      "email": "ईमेल",
+      "role": "भूमिका",
+      "note": "प्रोफ़ाइल जानकारी आपकी खाता सेटिंग्स के माध्यम से अपडेट की जा सकती है।",
+      "actions": {
+        "save": "सहेजें",
+        "saving": "सहेजा जा रहा है...",
+        "cancel": "रद्द करें"
+      },
+      "updateSuccess": "प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई",
+      "updateError": "प्रोफ़ाइल अपडेट करने में विफल"
     },
     "notifications": {
       "title": "Notifications",

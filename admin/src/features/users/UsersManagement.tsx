@@ -274,6 +274,10 @@ const UsersManagement: React.FC = () => {
   };
 
   const filteredUsers = users.filter((user) => {
+    // Exclude current user from the list
+    if (user.id === currentUser?.id) {
+      return false;
+    }
     const matchesSearch =
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       `${user.firstName} ${user.lastName}`
@@ -671,16 +675,15 @@ const UsersManagement: React.FC = () => {
                         onClick={() => setEditingUser(user)}
                         className="btn btn-secondary btn-sm"
                         title={t("users.actions.editTitle")}
-                        disabled={!user.canEdit && user.id !== currentUser?.id}
+                        disabled={!user.canEdit}
                         style={{ 
-                          opacity: (user.canEdit || user.id === currentUser?.id) ? 1 : 0.5, 
-                          cursor: (user.canEdit || user.id === currentUser?.id) ? 'pointer' : 'not-allowed' 
+                          opacity: user.canEdit ? 1 : 0.5, 
+                          cursor: user.canEdit ? 'pointer' : 'not-allowed' 
                         }}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      {user.canEdit && currentUser?.role === "admin" &&
-                        user.id !== currentUser.id && (
+                      {user.canEdit && currentUser?.role === "admin" && (
                         <button
                           onClick={() => {
                             showInfo(t("users.actions.toggleSoon"));

@@ -1350,9 +1350,63 @@ const createTables = async (): Promise<void> => {
         INDEX idx_slug (slug),
         INDEX idx_is_active (is_active),
         INDEX idx_display_order (display_order),
-        CONSTRAINT chk_max_level CHECK (level <= 3)
+        CONSTRAINT chk_max_level CHECK (level <= 4)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Update existing constraint if table already exists
+    try {
+      // Check if constraint exists and update it
+      const [constraints]: any = await connection.execute(`
+        SELECT CONSTRAINT_NAME
+        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'categories'
+        AND CONSTRAINT_NAME = 'chk_max_level'
+        AND CONSTRAINT_TYPE = 'CHECK'
+      `);
+      
+      if (constraints.length > 0) {
+        // Drop old constraint
+        await connection.execute(`
+          ALTER TABLE categories
+          DROP CHECK chk_max_level
+        `);
+        
+        // Add new constraint with level <= 4
+        await connection.execute(`
+          ALTER TABLE categories
+          ADD CONSTRAINT chk_max_level CHECK (level <= 4)
+        `);
+        
+        console.info('✅ Updated categories table constraint: max level increased to 4');
+      }
+    } catch (error: any) {
+      // MySQL version might not support CHECK constraints or ALTER TABLE DROP CHECK
+      // Try alternative approach: drop and recreate constraint
+      try {
+        await connection.execute(`
+          ALTER TABLE categories
+          DROP CHECK chk_max_level
+        `);
+      } catch (dropError: any) {
+        // Constraint might not exist or MySQL version doesn't support it
+        console.warn('Could not drop existing constraint:', dropError.message);
+      }
+      
+      try {
+        await connection.execute(`
+          ALTER TABLE categories
+          ADD CONSTRAINT chk_max_level CHECK (level <= 4)
+        `);
+        console.info('✅ Added categories table constraint: max level is 4');
+      } catch (addError: any) {
+        // Constraint might already exist or MySQL version doesn't support CHECK
+        if (addError.code !== 'ER_DUP_CONSTRAINT_NAME' && addError.code !== 'ER_CHECK_CONSTRAINT_VIOLATED') {
+          console.warn('Could not add constraint (may not be supported in this MySQL version):', addError.message);
+        }
+      }
+    }
 
     // Try to add foreign key constraint for parent_id (self-referencing)
     try {

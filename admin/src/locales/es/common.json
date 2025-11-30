@@ -330,9 +330,17 @@
       "title": "Información del perfil",
       "firstName": "Nombre",
       "lastName": "Apellido",
+      "phoneNumber": "Número de teléfono",
       "email": "Correo electrónico",
       "role": "Rol",
-      "note": "La información del perfil se puede actualizar desde la configuración de tu cuenta."
+      "note": "La información del perfil se puede actualizar desde la configuración de tu cuenta.",
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando...",
+        "cancel": "Cancelar"
+      },
+      "updateSuccess": "Perfil actualizado correctamente",
+      "updateError": "Error al actualizar el perfil"
     },
     "notifications": {
       "title": "Notificaciones",

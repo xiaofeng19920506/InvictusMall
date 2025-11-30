@@ -284,12 +284,20 @@
       "error": "Failed to save settings."
     },
     "profile": {
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "title": "ข้อมูลโปรไฟล์",
+      "firstName": "ชื่อ",
+      "lastName": "นามสกุล",
+      "phoneNumber": "หมายเลขโทรศัพท์",
+      "email": "อีเมล",
+      "role": "บทบาท",
+      "note": "ข้อมูลโปรไฟล์สามารถอัปเดตได้ผ่านการตั้งค่าบัญชีของคุณ",
+      "actions": {
+        "save": "บันทึก",
+        "saving": "กำลังบันทึก...",
+        "cancel": "ยกเลิก"
+      },
+      "updateSuccess": "อัปเดตโปรไฟล์สำเร็จ",
+      "updateError": "อัปเดตโปรไฟล์ล้มเหลว"
     },
     "notifications": {
       "title": "Notifications",

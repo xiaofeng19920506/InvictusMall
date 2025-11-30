@@ -312,9 +312,17 @@
       "title": "프로필 정보",
       "firstName": "이름",
       "lastName": "성",
+      "phoneNumber": "전화번호",
       "email": "이메일",
       "role": "역할",
-      "note": "프로필 정보는 계정 설정에서 업데이트할 수 있습니다."
+      "note": "프로필 정보는 계정 설정에서 업데이트할 수 있습니다.",
+      "actions": {
+        "save": "저장",
+        "saving": "저장 중...",
+        "cancel": "취소"
+      },
+      "updateSuccess": "프로필이 성공적으로 업데이트되었습니다",
+      "updateError": "프로필 업데이트 실패"
     },
     "notifications": {
       "title": "알림",

@@ -312,9 +312,17 @@
       "title": "プロフィール情報",
       "firstName": "名",
       "lastName": "姓",
+      "phoneNumber": "電話番号",
       "email": "メールアドレス",
       "role": "役割",
-      "note": "プロフィール情報はアカウント設定から更新できます。"
+      "note": "プロフィール情報はアカウント設定から更新できます。",
+      "actions": {
+        "save": "保存",
+        "saving": "保存中...",
+        "cancel": "キャンセル"
+      },
+      "updateSuccess": "プロフィールが正常に更新されました",
+      "updateError": "プロフィールの更新に失敗しました"
     },
     "notifications": {
       "title": "通知",

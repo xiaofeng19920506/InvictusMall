@@ -284,12 +284,20 @@
       "error": "Failed to save settings."
     },
     "profile": {
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
+      "title": "Informasi Profil",
+      "firstName": "Nama Depan",
+      "lastName": "Nama Belakang",
+      "phoneNumber": "Nomor Telepon",
       "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "role": "Peran",
+      "note": "Informasi profil dapat diperbarui melalui pengaturan akun Anda.",
+      "actions": {
+        "save": "Simpan",
+        "saving": "Menyimpan...",
+        "cancel": "Batal"
+      },
+      "updateSuccess": "Profil berhasil diperbarui",
+      "updateError": "Gagal memperbarui profil"
     },
     "notifications": {
       "title": "Notifications",

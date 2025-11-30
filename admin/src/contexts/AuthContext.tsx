@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<AuthResponse>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   loading: boolean;
 }
 
@@ -85,8 +86,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const response = await authService.getCurrentUser();
+      if (response.success && response.user) {
+        setUser(response.user);
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    } catch (error: any) {
+      console.error('Failed to refresh user:', error);
+      // Don't clear user on refresh error, just log it
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -284,12 +284,20 @@
       "error": "Failed to save settings."
     },
     "profile": {
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "title": "Profielinformatie",
+      "firstName": "Voornaam",
+      "lastName": "Achternaam",
+      "phoneNumber": "Telefoonnummer",
+      "email": "E-mail",
+      "role": "Rol",
+      "note": "Profielinformatie kan worden bijgewerkt via uw accountinstellingen.",
+      "actions": {
+        "save": "Opslaan",
+        "saving": "Opslaan...",
+        "cancel": "Annuleren"
+      },
+      "updateSuccess": "Profiel succesvol bijgewerkt",
+      "updateError": "Profiel bijwerken mislukt"
     },
     "notifications": {
       "title": "Notifications",

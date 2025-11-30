@@ -54,32 +54,15 @@ export async function handleGetAllStaff(
     }
     // Role-based data filtering
     else if (requesterRole === "admin") {
-      // Admin can see all staff in their own store only
-      if (requesterStoreId) {
-        const allStaff = await staffModel.getAllStaff();
-        staffMembers = allStaff.filter((staff: any) => staff.storeId === requesterStoreId);
-        total = staffMembers.length;
-        // Apply pagination manually if limit is provided
-        if (limit !== undefined) {
-          const limitValue = parseInt(limit as string) || 0;
-          const offsetValue = offset !== undefined ? parseInt(offset as string) : 0;
-          staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
-        }
-      } else {
-        // Admin without store can see all admins and owners (for store creation)
-        const allStaff = await staffModel.getAllStaff();
-        staffMembers = allStaff.filter(
-          (staff: any) => 
-            (staff.role === "owner" || staff.role === "admin") && 
-            staff.isActive
-        );
-        total = staffMembers.length;
-        // Apply pagination manually if limit is provided
-        if (limit !== undefined) {
-          const limitValue = parseInt(limit as string) || 0;
-          const offsetValue = offset !== undefined ? parseInt(offset as string) : 0;
-          staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
-        }
+      // Admin can see ALL staff members regardless of store
+      const allStaff = await staffModel.getAllStaff();
+      staffMembers = allStaff;
+      total = staffMembers.length;
+      // Apply pagination manually if limit is provided
+      if (limit !== undefined) {
+        const limitValue = parseInt(limit as string) || 0;
+        const offsetValue = offset !== undefined ? parseInt(offset as string) : 0;
+        staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
       }
     } else if (requesterRole === "owner") {
       // Store owner can see all staff in the same store

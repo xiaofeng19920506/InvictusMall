@@ -312,9 +312,17 @@
       "title": "Informations du profil",
       "firstName": "Prénom",
       "lastName": "Nom",
+      "phoneNumber": "Numéro de téléphone",
       "email": "Adresse e-mail",
       "role": "Rôle",
-      "note": "Les informations du profil peuvent être mises à jour via les paramètres du compte."
+      "note": "Les informations du profil peuvent être mises à jour via les paramètres du compte.",
+      "actions": {
+        "save": "Enregistrer",
+        "saving": "Enregistrement...",
+        "cancel": "Annuler"
+      },
+      "updateSuccess": "Profil mis à jour avec succès",
+      "updateError": "Échec de la mise à jour du profil"
     },
     "notifications": {
       "title": "Notifications",

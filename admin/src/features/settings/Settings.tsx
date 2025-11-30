@@ -1,16 +1,18 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Save,
   User,
   Bell,
   Shield,
   Globe,
+  X,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme, type ThemeOption } from "../../contexts/ThemeContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { SUPPORTED_LANGUAGES } from "../../i18n/config";
+import { staffApi } from "../../services/api";
 import styles from "./Settings.module.css";
 
 type TimezoneOption =
@@ -29,7 +31,7 @@ const timezoneOptions: TimezoneOption[] = [
 const themeOptions: ThemeOption[] = ["light", "dark", "auto"];
 
 const Settings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
   const { showSuccess, showError } = useNotification();
@@ -37,6 +39,54 @@ const Settings: React.FC = () => {
     const lang = i18n.resolvedLanguage || i18n.language || "en";
     return lang.split("-")[0];
   }, [i18n.resolvedLanguage, i18n.language]);
+
+  // Track original profile data for comparison
+  const originalProfileData = useMemo(() => ({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    phoneNumber: user?.phoneNumber || "",
+  }), [user?.firstName, user?.lastName, user?.phoneNumber]);
+
+  // Initialize profileData with user data if available
+  const [profileData, setProfileData] = useState(() => ({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    phoneNumber: user?.phoneNumber || "",
+  }));
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Sync profileData with originalProfileData when user data loads or updates
+  // Only sync if profileData matches originalProfileData (no manual changes)
+  useEffect(() => {
+    if (user) {
+      const newData = {
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        phoneNumber: user.phoneNumber || "",
+      };
+      
+      // Only sync if current data matches original (meaning no manual changes)
+      const currentMatchesOriginal = (
+        profileData.firstName === originalProfileData.firstName &&
+        profileData.lastName === originalProfileData.lastName &&
+        profileData.phoneNumber === originalProfileData.phoneNumber
+      );
+      
+      if (currentMatchesOriginal) {
+        setProfileData(newData);
+      }
+    }
+  }, [user, originalProfileData]);
+
+  // Check if profile data has changed
+  const hasProfileChanges = useMemo(() => {
+    if (!user) return false;
+    return (
+      profileData.firstName !== originalProfileData.firstName ||
+      profileData.lastName !== originalProfileData.lastName ||
+      profileData.phoneNumber !== originalProfileData.phoneNumber
+    );
+  }, [profileData, originalProfileData, user]);
 
   const [settings, setSettings] = useState({
     notifications: {
@@ -53,7 +103,7 @@ const Settings: React.FC = () => {
       sessionTimeout: 30,
     },
   });
-  const [saving, setSaving] = useState(false);
+
 
   const languageOptions = useMemo(
     () =>
@@ -64,25 +114,79 @@ const Settings: React.FC = () => {
     [t]
   );
 
-  const handleSave = async () => {
-    setSaving(true);
+
+  const handleResetProfile = () => {
+    setProfileData(originalProfileData);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    setSavingProfile(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      showSuccess(t("settings.feedback.success"));
-    } catch (error) {
-      showError(t("settings.feedback.error"));
+      // Only allow users to update their own basic information
+      // Role, email, and other sensitive fields cannot be changed by the user
+      const response = await staffApi.updateStaff(user.id, {
+        firstName: profileData.firstName,
+        lastName: profileData.lastName,
+        phoneNumber: profileData.phoneNumber,
+        // Note: role is intentionally NOT included - users cannot change their own role
+      });
+
+      if (response.success) {
+        showSuccess(t("settings.profile.updateSuccess"));
+        // Refresh user data - this will update originalProfileData
+        // The useEffect will then sync profileData if it matches originalProfileData
+        if (refreshUser) {
+          await refreshUser();
+        }
+      } else {
+        showError(response.message || t("settings.profile.updateError"));
+      }
+    } catch (error: any) {
+      console.error("Error updating profile:", error);
+      showError(error?.message || t("settings.profile.updateError"));
     } finally {
-      setSaving(false);
+      setSavingProfile(false);
     }
   };
 
   return (
     <div className={styles.container}>
       <section className="card">
-        <div className="card-header">
+        <div className={styles.profileHeader}>
           <div className={styles.sectionHeader}>
             <User className="w-5 h-5 text-gray-600" />
             <h3 className={styles.sectionTitle}>{t("settings.profile.title")}</h3>
+          </div>
+          <div className={styles.profileActions}>
+            <button
+              onClick={handleSaveProfile}
+              disabled={!hasProfileChanges || savingProfile}
+              className="btn btn-primary btn-sm"
+              title={t("settings.profile.actions.save")}
+            >
+              {savingProfile ? (
+                <>
+                  <span className={styles.spinner} aria-hidden />
+                  {t("settings.profile.actions.saving")}
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  {t("settings.profile.actions.save")}
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleResetProfile}
+              disabled={!hasProfileChanges || savingProfile}
+              className="btn btn-secondary btn-sm"
+              title={t("settings.profile.actions.cancel")}
+            >
+              <X className="w-4 h-4 mr-2" />
+              {t("settings.profile.actions.cancel")}
+            </button>
           </div>
         </div>
         <div className={styles.sectionBody}>
@@ -94,9 +198,9 @@ const Settings: React.FC = () => {
               <input
                 id="firstName"
                 type="text"
-                defaultValue={user?.firstName}
+                value={profileData.firstName}
+                onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
                 className={styles.input}
-                disabled
               />
             </div>
             <div className={styles.formGroup}>
@@ -106,11 +210,23 @@ const Settings: React.FC = () => {
               <input
                 id="lastName"
                 type="text"
-                defaultValue={user?.lastName}
+                value={profileData.lastName}
+                onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
                 className={styles.input}
-                disabled
               />
             </div>
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.label} htmlFor="phoneNumber">
+              {t("settings.profile.phoneNumber")}
+            </label>
+            <input
+              id="phoneNumber"
+              type="tel"
+              value={profileData.phoneNumber}
+              onChange={(e) => setProfileData({ ...profileData, phoneNumber: e.target.value })}
+              className={styles.input}
+            />
           </div>
           <div className={styles.formGroup}>
             <label className={styles.label} htmlFor="email">
@@ -310,7 +426,7 @@ const Settings: React.FC = () => {
                   },
                 }))
               }
-              className={`${styles.select} ${styles.timezoneOptions}`}
+              className={styles.select}
             >
               {timezoneOptions.map((option) => (
                 <option key={option} value={option}>
@@ -389,16 +505,6 @@ const Settings: React.FC = () => {
         </section>
       )}
 
-      <div className={styles.saveRow}>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className={`btn btn-primary ${styles.saveButton}`}
-        >
-          {saving ? <span className={styles.spinner} aria-hidden /> : <Save className="w-4 h-4" />}
-          {saving ? t("settings.actions.saving") : t("settings.actions.save")}
-        </button>
-      </div>
     </div>
   );
 };

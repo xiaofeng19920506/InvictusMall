@@ -69,7 +69,8 @@ export const ROLE_PERMISSIONS = {
   ],
   employee: [
     'dashboard',
-    'stores'
+    'stores',
+    'settings'
   ]
 } as const;
 

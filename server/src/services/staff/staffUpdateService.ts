@@ -90,7 +90,9 @@ export async function handleUpdateStaff(
     if (req.body.role !== undefined) {
       // Role change restrictions
       if (isSelf) {
-        // Users cannot change their own role - skip this field silently
+        // Users cannot change their own role
+        ApiResponseHelper.forbidden(res, "You cannot change your own role");
+        return;
       } else {
         // Role change restrictions for editing others
         if (requesterRole === "admin") {

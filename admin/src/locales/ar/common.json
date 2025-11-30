@@ -284,12 +284,20 @@
       "error": "Failed to save settings."
     },
     "profile": {
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "title": "معلومات الملف الشخصي",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "phoneNumber": "رقم الهاتف",
+      "email": "البريد الإلكتروني",
+      "role": "الدور",
+      "note": "يمكن تحديث معلومات الملف الشخصي من خلال إعدادات حسابك.",
+      "actions": {
+        "save": "حفظ",
+        "saving": "جاري الحفظ...",
+        "cancel": "إلغاء"
+      },
+      "updateSuccess": "تم تحديث الملف الشخصي بنجاح",
+      "updateError": "فشل تحديث الملف الشخصي"
     },
     "notifications": {
       "title": "Notifications",

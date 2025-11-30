@@ -284,12 +284,20 @@
       "error": "Failed to save settings."
     },
     "profile": {
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "title": "Profil Bilgileri",
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "phoneNumber": "Telefon Numarası",
+      "email": "E-posta",
+      "role": "Rol",
+      "note": "Profil bilgileri hesap ayarlarınızdan güncellenebilir.",
+      "actions": {
+        "save": "Kaydet",
+        "saving": "Kaydediliyor...",
+        "cancel": "İptal"
+      },
+      "updateSuccess": "Profil başarıyla güncellendi",
+      "updateError": "Profil güncellenemedi"
     },
     "notifications": {
       "title": "Notifications",

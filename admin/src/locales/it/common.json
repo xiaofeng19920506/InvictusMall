@@ -284,12 +284,20 @@
       "error": "Failed to save settings."
     },
     "profile": {
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
+      "title": "Informazioni Profilo",
+      "firstName": "Nome",
+      "lastName": "Cognome",
+      "phoneNumber": "Numero di Telefono",
       "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "role": "Ruolo",
+      "note": "Le informazioni del profilo possono essere aggiornate tramite le impostazioni dell'account.",
+      "actions": {
+        "save": "Salva",
+        "saving": "Salvataggio...",
+        "cancel": "Annulla"
+      },
+      "updateSuccess": "Profilo aggiornato con successo",
+      "updateError": "Impossibile aggiornare il profilo"
     },
     "notifications": {
       "title": "Notifications",

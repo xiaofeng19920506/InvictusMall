@@ -284,12 +284,20 @@
       "error": "Failed to save settings."
     },
     "profile": {
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
+      "title": "Thông tin hồ sơ",
+      "firstName": "Tên",
+      "lastName": "Họ",
+      "phoneNumber": "Số điện thoại",
       "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "role": "Vai trò",
+      "note": "Thông tin hồ sơ có thể được cập nhật thông qua cài đặt tài khoản của bạn.",
+      "actions": {
+        "save": "Lưu",
+        "saving": "Đang lưu...",
+        "cancel": "Hủy"
+      },
+      "updateSuccess": "Cập nhật hồ sơ thành công",
+      "updateError": "Cập nhật hồ sơ thất bại"
     },
     "notifications": {
       "title": "Notifications",
