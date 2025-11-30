@@ -4,6 +4,7 @@ import { CreateProductRequest, UpdateProductRequest } from "../types/product";
 import {
   authenticateUserToken,
   authenticateAnyToken,
+  authenticateStaffToken,
   AuthenticatedRequest,
   requireStoreOwner,
   checkStoreOwnership,
@@ -13,6 +14,7 @@ import { StoreModel } from "../models/StoreModel";
 import { handleETagValidation } from "../utils/cacheUtils";
 import { ApiResponseHelper } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
+import { getAccessibleStoreIds, hasStoreAccess } from "../utils/ownerPermissions";
 import multer from "multer";
 import FormData from "form-data";
 import fetch from "node-fetch";
@@ -52,12 +54,14 @@ const uploadMultipleProductImages = multer({
 });
 
 /**
- * Get all products for a store (Public endpoint)
+ * Get all products for a store
+ * Public endpoint for client app, but requires authentication for admin app
  */
 router.get("/store/:storeId", async (req: Request, res: Response) => {
   try {
     const { storeId } = req.params;
     const { isActive, limit, offset } = req.query;
+    const authReq = req as AuthenticatedRequest;
 
     if (!storeId) {
       return ApiResponseHelper.validationError(res, "Store ID is required");
@@ -67,6 +71,14 @@ router.get("/store/:storeId", async (req: Request, res: Response) => {
     const store = await StoreModel.findById(storeId);
     if (!store) {
       return ApiResponseHelper.notFound(res, "Store");
+    }
+
+    // If authenticated as staff, check owner access
+    if (authReq.staff) {
+      const hasAccess = await hasStoreAccess(authReq, storeId);
+      if (!hasAccess) {
+        return ApiResponseHelper.error(res, "Access denied to this store", 403);
+      }
     }
 
     // Generate ETag based on last modified timestamp for this store's products
@@ -284,8 +296,14 @@ router.put(
         });
       }
 
-      // TODO: Add authorization check to verify store owner owns this store
-      // For now, allow any owner/admin to update products for any store
+      // Check if owner has access to this product's store
+      const hasAccess = await hasStoreAccess(req, existingProduct.storeId);
+      if (!hasAccess) {
+        return res.status(403).json({
+          success: false,
+          message: "Access denied to this product",
+        });
+      }
 
       if (productData.price !== undefined && productData.price < 0) {
         return res.status(400).json({
@@ -346,12 +364,12 @@ router.delete(
         });
       }
 
-      // Verify store ownership (admin can access any store, owners only their own)
-      const ownershipCheck = await checkStoreOwnership(req, existingProduct.storeId);
-      if (!ownershipCheck.authorized) {
+      // Check if owner has access to this product's store
+      const hasAccess = await hasStoreAccess(req, existingProduct.storeId);
+      if (!hasAccess) {
         return res.status(403).json({
           success: false,
-          message: ownershipCheck.error || "You do not have permission to access this store",
+          message: "Access denied to this product",
         });
       }
 

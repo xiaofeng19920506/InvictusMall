@@ -70,20 +70,33 @@ export class ActivityLogModel {
 
   /**
    * Get recent activity logs
+   * @param limit - Maximum number of logs to return
+   * @param storeIds - Optional array of store IDs to filter by (for owner access)
    */
-  static async getRecentLogs(limit: number = 20): Promise<ActivityLog[]> {
+  static async getRecentLogs(limit: number = 20, storeIds?: string[]): Promise<ActivityLog[]> {
     // Ensure limit is a valid number and within reasonable bounds
     const safeLimit = Math.min(Math.max(1, Math.floor(limit)), 100);
+
+    let whereClause = '';
+    const params: any[] = [];
+
+    // Filter by store IDs if provided
+    if (storeIds && storeIds.length > 0) {
+      const placeholders = storeIds.map(() => '?').join(',');
+      whereClause = `WHERE store_id IN (${placeholders})`;
+      params.push(...storeIds);
+    }
 
     const query = `
       SELECT id, type, message, store_name, store_id, user_id, user_name, metadata, created_at
       FROM activity_logs
+      ${whereClause}
       ORDER BY created_at DESC
       LIMIT ${safeLimit}
     `;
 
     try {
-      const [rows] = await pool.execute(query);
+      const [rows] = await pool.execute(query, params);
       
       return (rows as any[]).map(row => ({
         id: row.id.toString(),
@@ -136,18 +149,33 @@ export class ActivityLogModel {
 
   /**
    * Get activity logs by type
+   * @param type - Activity log type
+   * @param limit - Maximum number of logs to return
+   * @param storeIds - Optional array of store IDs to filter by (for owner access)
    */
-  static async getLogsByType(type: ActivityLog['type'], limit: number = 10): Promise<ActivityLog[]> {
+  static async getLogsByType(type: ActivityLog['type'], limit: number = 10, storeIds?: string[]): Promise<ActivityLog[]> {
+    let whereClause = 'WHERE type = ?';
+    const params: any[] = [type];
+
+    // Filter by store IDs if provided
+    if (storeIds && storeIds.length > 0) {
+      const placeholders = storeIds.map(() => '?').join(',');
+      whereClause += ` AND store_id IN (${placeholders})`;
+      params.push(...storeIds);
+    }
+
     const query = `
       SELECT id, type, message, store_name, store_id, user_id, user_name, metadata, created_at
       FROM activity_logs
-      WHERE type = ?
+      ${whereClause}
       ORDER BY created_at DESC
       LIMIT ?
     `;
     
+    params.push(limit);
+    
     try {
-      const [rows] = await pool.execute(query, [type, limit]);
+      const [rows] = await pool.execute(query, params);
       
       return (rows as any[]).map(row => ({
         id: row.id.toString(),

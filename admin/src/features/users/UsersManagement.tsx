@@ -172,7 +172,8 @@ const UsersManagement: React.FC = () => {
 
   const getInitialRole = (): RegisterFormData["role"] => {
     if (currentUser?.role === "admin") {
-      return "owner";
+      // Default to employee for admin (most common case)
+      return "employee";
     } else if (currentUser?.role === "owner") {
       return "employee";
     }
@@ -181,10 +182,13 @@ const UsersManagement: React.FC = () => {
 
   const getAvailableRoles = (): RegisterFormData["role"][] => {
     if (currentUser?.role === "admin") {
-      return ["owner"];
+      // Admin can register all roles
+      return ["admin", "owner", "manager", "employee"];
     } else if (currentUser?.role === "owner") {
+      // Owner can only register manager and employee for their stores
       return ["manager", "employee"];
     } else if (currentUser?.role === "manager") {
+      // Manager can only register employee
       return ["employee"];
     }
     return [];

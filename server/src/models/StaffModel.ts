@@ -234,6 +234,23 @@ export class StaffModel {
     };
   }
 
+  /**
+   * Get all store IDs owned by a staff member (for owner role)
+   * Returns empty array for admin or if staff is not an owner
+   */
+  async getStoreIdsByOwnerId(ownerId: string): Promise<string[]> {
+    const query = `
+      SELECT DISTINCT store_id 
+      FROM staff 
+      WHERE id = ? AND role = 'owner' AND is_active = true AND store_id IS NOT NULL
+    `;
+
+    const [rows] = await pool.execute(query, [ownerId]);
+    const stores = rows as any[];
+
+    return stores.map((row) => row.store_id).filter((id) => id !== null);
+  }
+
   async getAllStaffWithPagination(options?: { limit?: number; offset?: number }): Promise<{ staff: Staff[]; total: number }> {
     // Get total count
     const [countResult] = await pool.execute(`

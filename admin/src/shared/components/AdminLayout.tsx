@@ -133,6 +133,10 @@ const AdminLayout = ({
           if (item.id === "categories" && user.role !== "admin") {
             return false;
           }
+          // Hide stores management for manager role
+          if (item.id === "stores" && user.role === "manager") {
+            return false;
+          }
           return authService.hasPermission(user, item.permission);
         })
       : [];

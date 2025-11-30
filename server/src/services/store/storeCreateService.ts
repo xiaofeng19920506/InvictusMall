@@ -13,8 +13,13 @@ export async function handleCreateStore(
   storeService: StoreService
 ): Promise<void> {
   try {
-    // Only admins can create stores
-    if (!req.user || req.user.role !== "admin") {
+    // Only admins can create stores (manager cannot)
+    if (!req.staff) {
+      ApiResponseHelper.unauthorized(res, "Authentication required");
+      return;
+    }
+
+    if (req.staff.role !== "admin") {
       ApiResponseHelper.forbidden(res, "Only administrators can create stores");
       return;
     }

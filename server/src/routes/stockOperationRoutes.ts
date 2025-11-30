@@ -5,6 +5,8 @@ import { StockOperationService } from '../services/stockOperationService';
 import { ApiResponseHelper } from '../utils/apiResponse';
 import { logger } from '../utils/logger';
 import { StockOperationModel } from '../models/StockOperationModel';
+import { ProductModel } from '../models/ProductModel';
+import { hasStoreAccess, getAccessibleStoreIds } from '../utils/ownerPermissions';
 
 const router = Router();
 const stockOperationService = new StockOperationService();
@@ -73,6 +75,19 @@ router.post(
       const staffId = req.staff?.id || req.user?.id;
       if (!staffId) {
         ApiResponseHelper.error(res, 'Staff ID not found', 401);
+        return;
+      }
+
+      // Check if owner has access to this product's store
+      const product = await ProductModel.findById(req.body.productId);
+      if (!product) {
+        ApiResponseHelper.notFound(res, 'Product');
+        return;
+      }
+
+      const hasAccess = await hasStoreAccess(req, product.storeId);
+      if (!hasAccess) {
+        ApiResponseHelper.error(res, 'Access denied to this product', 403);
         return;
       }
 
@@ -197,6 +212,20 @@ router.get(
       }
       if (req.query.orderId) {
         options.orderId = req.query.orderId as string;
+      }
+
+      // Get accessible store IDs for owner filtering
+      const accessibleStoreIds = await getAccessibleStoreIds(req);
+      
+      // If owner has no accessible stores, return empty
+      if (accessibleStoreIds !== null && accessibleStoreIds.length === 0) {
+        ApiResponseHelper.success(res, { operations: [], total: 0 }, 'Stock operations retrieved successfully');
+        return;
+      }
+
+      // Filter by accessible stores for owner
+      if (accessibleStoreIds !== null && accessibleStoreIds.length > 0) {
+        options.storeIds = accessibleStoreIds;
       }
 
       // Get operations with details

@@ -71,6 +71,7 @@ export class OrderModel {
     options?: {
       status?: string;
       storeId?: string;
+      storeIds?: string[]; // For filtering by multiple store IDs (owner access)
       userId?: string;
       limit?: number;
       offset?: number;

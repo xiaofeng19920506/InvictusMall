@@ -5,6 +5,8 @@ import { StaffModel } from "../../models/StaffModel";
 import { ApiResponseHelper } from "../../utils/apiResponse";
 import { logger } from "../../utils/logger";
 import { handleETagValidation } from "../../utils/cacheUtils";
+import { getAccessibleStoreIds } from "../../utils/ownerPermissions";
+import { AuthenticatedRequest } from "../../middleware/auth";
 
 export async function handleGetAllStores(
   req: Request,
@@ -13,10 +15,14 @@ export async function handleGetAllStores(
 ): Promise<void> {
   try {
     const { category, search, limit, offset } = req.query;
+    const authReq = req as AuthenticatedRequest;
+
+    // Get accessible store IDs for owner filtering
+    const accessibleStoreIds = await getAccessibleStoreIds(authReq);
 
     // Generate ETag based on last modified timestamp
     const lastModified = await StoreModel.getLastModifiedTimestamp();
-    const cacheKey = `${category || ""}-${search || ""}-${limit || ""}-${offset || ""}`;
+    const cacheKey = `${category || ""}-${search || ""}-${limit || ""}-${offset || ""}-${accessibleStoreIds?.join(",") || "all"}`;
 
     // Check ETag validation (returns true if 304 was sent)
     if (handleETagValidation(req, res, lastModified, cacheKey)) {
@@ -28,6 +34,7 @@ export async function handleGetAllStores(
       const { stores, total } = await StoreModel.findAllWithPagination({
         limit: parseInt(limit as string) || undefined,
         offset: offset !== undefined ? parseInt(offset as string) : undefined,
+        storeIds: accessibleStoreIds || undefined, // Filter by accessible stores
       });
 
       // Add owner information to each store
@@ -72,6 +79,11 @@ export async function handleGetAllStores(
       stores = await storeService.getStoresByCategory(category);
     } else {
       stores = await storeService.getAllStores();
+    }
+
+    // Filter stores by accessible store IDs for owner
+    if (accessibleStoreIds !== null && accessibleStoreIds.length > 0) {
+      stores = stores.filter(store => accessibleStoreIds.includes(store.id));
     }
 
     // Add owner information to each store

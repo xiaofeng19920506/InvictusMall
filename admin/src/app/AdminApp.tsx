@@ -91,7 +91,7 @@ const AdminApp = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Redirect non-admin users away from categories page
+    // Redirect non-admin users away from categories page (only admin can manage categories)
     if (currentPage === "categories" && user.role !== "admin") {
       navigate("/dashboard", { replace: true });
     }

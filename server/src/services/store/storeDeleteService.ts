@@ -12,6 +12,20 @@ export async function handleDeleteStore(
   storeService: StoreService
 ): Promise<void> {
   try {
+    const authReq = req as AuthenticatedRequest;
+    
+    // Only admin can delete stores (owner and manager cannot)
+    if (!authReq.staff) {
+      ApiResponseHelper.unauthorized(res, "Authentication required");
+      return;
+    }
+
+    const userRole = authReq.staff.role;
+    if (userRole !== "admin") {
+      ApiResponseHelper.forbidden(res, "Only administrators can delete stores");
+      return;
+    }
+
     const { id } = req.params;
     if (!id) {
       ApiResponseHelper.validationError(res, "Store ID is required");

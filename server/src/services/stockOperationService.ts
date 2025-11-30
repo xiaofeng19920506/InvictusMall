@@ -180,6 +180,7 @@ export class StockOperationService {
     type?: 'in' | 'out';
     performedBy?: string;
     orderId?: string;
+    storeIds?: string[]; // For filtering by store IDs (owner access)
     limit?: number;
     offset?: number;
   }) {

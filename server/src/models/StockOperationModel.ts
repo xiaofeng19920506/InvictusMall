@@ -318,6 +318,7 @@ export class StockOperationModel {
     type?: StockOperationType;
     performedBy?: string;
     orderId?: string;
+    storeIds?: string[]; // For filtering by store IDs (owner access)
     limit?: number;
     offset?: number;
   }): Promise<{ operations: StockOperation[]; total: number }> {
@@ -328,20 +329,29 @@ export class StockOperationModel {
       const params: any[] = [];
 
       if (options?.productId) {
-        conditions.push('product_id = ?');
+        conditions.push('so.product_id = ?');
         params.push(options.productId);
       }
       if (options?.type) {
-        conditions.push('type = ?');
+        conditions.push('so.type = ?');
         params.push(options.type);
       }
       if (options?.performedBy) {
-        conditions.push('performed_by = ?');
+        conditions.push('so.performed_by = ?');
         params.push(options.performedBy);
       }
       if (options?.orderId) {
-        conditions.push('order_id = ?');
+        conditions.push('so.order_id = ?');
         params.push(options.orderId);
+      }
+
+      // Filter by store IDs if provided (join with products table)
+      let joinClause = '';
+      if (options?.storeIds && options.storeIds.length > 0) {
+        joinClause = 'INNER JOIN products p ON so.product_id = p.id';
+        const placeholders = options.storeIds.map(() => '?').join(',');
+        conditions.push(`p.store_id IN (${placeholders})`);
+        params.push(...options.storeIds);
       }
 
       const whereClause = conditions.length > 0 
@@ -349,17 +359,22 @@ export class StockOperationModel {
         : '';
 
       // Get total count
-      const [countRows] = await connection.execute(
-        `SELECT COUNT(*) as total FROM stock_operations ${whereClause}`,
-        params
-      );
+      const countQuery = `
+        SELECT COUNT(*) as total 
+        FROM stock_operations so
+        ${joinClause}
+        ${whereClause}
+      `;
+      const [countRows] = await connection.execute(countQuery, params);
       const total = (countRows as any[])[0]?.total || 0;
 
       // Get operations with pagination
       let query = `
-        SELECT * FROM stock_operations 
+        SELECT so.* 
+        FROM stock_operations so
+        ${joinClause}
         ${whereClause}
-        ORDER BY performed_at DESC
+        ORDER BY so.performed_at DESC
       `;
       const queryParams = [...params];
 

@@ -166,6 +166,7 @@ export class OrderQueries {
     options?: {
       status?: string;
       storeId?: string;
+      storeIds?: string[]; // For filtering by multiple store IDs (owner access)
       userId?: string;
       limit?: number;
       offset?: number;
@@ -181,7 +182,12 @@ export class OrderQueries {
         params.push(options.status);
       }
 
-      if (options?.storeId) {
+      // Handle storeId (single) or storeIds (multiple)
+      if (options?.storeIds && options.storeIds.length > 0) {
+        const placeholders = options.storeIds.map(() => '?').join(',');
+        whereClause += ` AND o.store_id IN (${placeholders})`;
+        params.push(...options.storeIds);
+      } else if (options?.storeId) {
         whereClause += ' AND o.store_id = ?';
         params.push(options.storeId);
       }

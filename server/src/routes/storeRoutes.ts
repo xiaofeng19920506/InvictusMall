@@ -231,6 +231,7 @@ router.post(
  */
 router.put(
   "/:id",
+  authenticateStaffToken,
   validateUpdateStore,
   handleValidationErrors,
   async (req: Request, res: Response) => {
@@ -259,7 +260,7 @@ router.put(
  *       500:
  *         description: Internal server error
  */
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", authenticateStaffToken, async (req: Request, res: Response) => {
   await handleDeleteStore(req, res, storeService);
 });
 

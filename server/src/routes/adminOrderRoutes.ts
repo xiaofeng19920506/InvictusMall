@@ -11,6 +11,7 @@ import { TransactionModel } from '../models/TransactionModel';
 import Stripe from 'stripe';
 import { ApiResponseHelper } from '../utils/apiResponse';
 import { logger } from '../utils/logger';
+import { getAccessibleStoreIds } from '../utils/ownerPermissions';
 
 const router = Router();
 const orderModel = new OrderModel();
@@ -74,14 +75,36 @@ const stripeClient = stripeSecretKey
 router.get(
   "/",
   authenticateStaffToken,
-  requireAdmin,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { status, storeId, userId, limit, offset } = req.query;
 
+      // Get accessible store IDs for owner filtering
+      const accessibleStoreIds = await getAccessibleStoreIds(req);
+      
+      // If owner has no accessible stores, return empty
+      if (accessibleStoreIds !== null && accessibleStoreIds.length === 0) {
+        return ApiResponseHelper.successWithPagination(res, [], 0);
+      }
+
+      // For owner, filter by accessible stores
+      // If storeId is provided, verify it's accessible
+      let finalStoreId = storeId as string | undefined;
+      if (accessibleStoreIds !== null && accessibleStoreIds.length > 0) {
+        if (finalStoreId && !accessibleStoreIds.includes(finalStoreId)) {
+          return ApiResponseHelper.error(res, 'Access denied to this store', 403);
+        }
+        // If no storeId provided, use accessible stores
+        if (!finalStoreId) {
+          // We'll filter in getAllOrders or pass storeIds
+          finalStoreId = undefined; // Will filter by accessibleStoreIds
+        }
+      }
+
       const { orders, total } = await orderModel.getAllOrders({
         status: status as string | undefined,
-        storeId: storeId as string | undefined,
+        storeId: finalStoreId,
+        storeIds: accessibleStoreIds !== null && accessibleStoreIds.length > 0 ? accessibleStoreIds : undefined,
         userId: userId as string | undefined,
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined

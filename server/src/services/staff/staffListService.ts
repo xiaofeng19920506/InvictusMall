@@ -3,6 +3,7 @@ import { StaffModel } from "../../models/StaffModel";
 import { ApiResponseHelper } from "../../utils/apiResponse";
 import { logger } from "../../utils/logger";
 import { AuthenticatedRequest } from "../../middleware/auth";
+import { getAccessibleStoreIds } from "../../utils/ownerPermissions";
 
 export async function handleGetAllStaff(
   req: AuthenticatedRequest,
@@ -30,9 +31,8 @@ export async function handleGetAllStaff(
     let staffMembers: any[] = [];
     let total = 0;
 
-    // Get requester's staff info to check store_id
-    const requesterStaff = await staffModel.getStaffById(requesterId);
-    const requesterStoreId = (requesterStaff as any)?.storeId || null;
+    // Get accessible store IDs for owner filtering
+    const accessibleStoreIds = await getAccessibleStoreIds(req);
 
     // Special case: When creating a store, admin should see all available owners and admins
     // This is used when creating a store to show available store owners
@@ -65,10 +65,12 @@ export async function handleGetAllStaff(
         staffMembers = staffMembers.slice(offsetValue, offsetValue + limitValue);
       }
     } else if (requesterRole === "owner") {
-      // Store owner can see all staff in the same store
-      if (requesterStoreId) {
+      // Owner can see all staff in their accessible stores
+      if (accessibleStoreIds !== null && accessibleStoreIds.length > 0) {
         const allStaff = await staffModel.getAllStaff();
-        staffMembers = allStaff.filter((staff: any) => staff.storeId === requesterStoreId);
+        staffMembers = allStaff.filter((staff: any) => 
+          staff.storeId && accessibleStoreIds.includes(staff.storeId)
+        );
         total = staffMembers.length;
         // Apply pagination manually if limit is provided
         if (limit !== undefined) {
@@ -81,10 +83,17 @@ export async function handleGetAllStaff(
         total = 0;
       }
     } else if (requesterRole === "manager") {
-      // Manager can see all staff including owner (in same store)
+      // Manager can only see themselves and employees in the same store (not other managers, owner, or admin)
+      // Get requester's staff info to check store_id
+      const requesterStaff = await staffModel.getStaffById(requesterId);
+      const requesterStoreId = (requesterStaff as any)?.storeId || null;
+      
       if (requesterStoreId) {
         const allStaff = await staffModel.getAllStaff();
-        staffMembers = allStaff.filter((staff: any) => staff.storeId === requesterStoreId);
+        staffMembers = allStaff.filter((staff: any) => 
+          staff.storeId === requesterStoreId &&
+          (staff.role === "employee" || (staff.id === requesterId && staff.role === "manager"))
+        );
         total = staffMembers.length;
         // Apply pagination manually if limit is provided
         if (limit !== undefined) {
@@ -106,6 +115,13 @@ export async function handleGetAllStaff(
       return;
     }
 
+    // Get requester's store ID for manager (needed for edit permission check)
+    let requesterStoreId: string | null = null;
+    if (requesterRole === "manager") {
+      const requesterStaff = await staffModel.getStaffById(requesterId);
+      requesterStoreId = (requesterStaff as any)?.storeId || null;
+    }
+
     // Remove password from response and add edit permission info
     const staffWithPermissions = staffMembers.map(({ password, ...staff }) => {
       let canEdit = false;
@@ -117,13 +133,20 @@ export async function handleGetAllStaff(
       } else if (requesterRole === "admin") {
         canEdit = true;
       } else if (requesterRole === "owner") {
+        // Owner can edit staff in their accessible stores (except other owners)
         canEdit =
-          (staff as any).storeId === requesterStoreId && staff.role !== "owner";
+          (staff as any).storeId && 
+          accessibleStoreIds !== null && 
+          accessibleStoreIds.includes((staff as any).storeId) &&
+          staff.role !== "owner";
       } else if (requesterRole === "manager") {
+        // Manager can only edit themselves and employees in their own store (not other managers, owner, or admin)
         canEdit =
-          staff.role !== "owner" &&
-          staff.role !== "admin" &&
-          (staff.role === "employee" || staff.role === "manager");
+          (staff as any).storeId === requesterStoreId &&
+          (
+            staff.role === "employee" ||
+            (isSelf && staff.role === "manager")
+          );
       }
 
       return {
