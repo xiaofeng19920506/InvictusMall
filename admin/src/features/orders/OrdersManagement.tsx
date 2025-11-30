@@ -82,20 +82,14 @@ const OrdersManagement: React.FC = () => {
   };
 
   const handleStatusUpdate = () => {
-    dispatch(
-      fetchOrders({
-        status: statusFilter || undefined,
-        limit: itemsPerPage,
-        offset: (currentPage - 1) * itemsPerPage,
-      })
-    );
+    refetchOrders();
     dispatch(setIsStatusModalOpen(false));
     dispatch(setSelectedOrder(null));
     showSuccess(t("orders.success.statusUpdated") || "Order status updated successfully");
   };
 
-  const handleOrderUpdate = (updatedOrder: any) => {
-    dispatch(updateOrderInList(updatedOrder));
+  const handleOrderUpdate = () => {
+    refetchOrders();
     showSuccess(t("orders.success.orderUpdated") || "Order updated successfully");
   };
 

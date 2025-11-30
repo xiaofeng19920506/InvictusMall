@@ -5,9 +5,11 @@ import { useAppSelector, useAppDispatch } from "../../store/hooks";
 import LogFilters from "./components/LogFilters";
 import LogTable from "./components/LogTable";
 import {
-  fetchLogs,
-  fetchAccessibleStores,
-} from "../../store/slices/systemLogsSlice";
+  useGetRecentLogsQuery,
+  useGetMyStoresForLogsQuery,
+} from "../../store/api/activityLogsApi";
+import { useGetAllStoresQuery } from "../../store/api/storesApi";
+import { setAccessibleStores } from "../../store/slices/systemLogsSlice";
 import styles from "./SystemLogs.module.css";
 
 const SystemLogs: React.FC = () => {
