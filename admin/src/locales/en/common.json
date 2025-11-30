@@ -149,6 +149,7 @@
     "searchPlaceholder": "Search users by name, email, or phone...",
     "filters": {
       "allRoles": "All Roles",
+      "allStores": "All Stores",
       "admin": "Admin",
       "owner": "Owner",
       "manager": "Manager",
@@ -361,6 +362,7 @@
     "searchPlaceholder": "Search logs...",
     "filters": {
       "all": "All Levels",
+      "allStores": "All Stores",
       "levels": {
         "info": "Info",
         "warning": "Warning",
@@ -956,7 +958,8 @@
       "placeholder": "Search orders..."
     },
     "filter": {
-      "allStatuses": "All Statuses"
+      "allStatuses": "All Statuses",
+      "allStores": "All Stores"
     },
     "table": {
       "orderId": "Order ID",

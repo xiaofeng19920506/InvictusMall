@@ -389,9 +389,123 @@ export class StaffModel {
   }
 
   async emailExists(email: string): Promise<boolean> {
-    const query = `SELECT id FROM staff WHERE email = ?`;
+    const query = `SELECT id FROM staff WHERE email = ? AND is_active = true`;
     const [rows] = await pool.execute(query, [email]);
     return (rows as any[]).length > 0;
+  }
+
+  /**
+   * Get all store IDs associated with a staff member (from both staff.store_id and staff_stores table)
+   */
+  async getStoreIdsByStaffId(staffId: string): Promise<string[]> {
+    const query = `
+      SELECT DISTINCT store_id
+      FROM (
+        SELECT store_id FROM staff WHERE id = ? AND store_id IS NOT NULL
+        UNION
+        SELECT store_id FROM staff_stores WHERE staff_id = ?
+      ) AS combined_stores
+      WHERE store_id IS NOT NULL
+    `;
+    const [rows] = await pool.execute(query, [staffId, staffId]);
+    return (rows as any[]).map((row: any) => row.store_id);
+  }
+
+  /**
+   * Add a store association for a staff member
+   */
+  async addStoreToStaff(staffId: string, storeId: string): Promise<void> {
+    const query = `
+      INSERT IGNORE INTO staff_stores (staff_id, store_id)
+      VALUES (?, ?)
+    `;
+    await pool.execute(query, [staffId, storeId]);
+  }
+
+  /**
+   * Remove a store association for a staff member
+   */
+  async removeStoreFromStaff(staffId: string, storeId: string): Promise<void> {
+    const query = `
+      DELETE FROM staff_stores
+      WHERE staff_id = ? AND store_id = ?
+    `;
+    await pool.execute(query, [staffId, storeId]);
+  }
+
+  /**
+   * Set stores for a staff member (replaces all existing associations)
+   */
+  async setStoresForStaff(staffId: string, storeIds: string[]): Promise<void> {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      // Remove all existing associations
+      await connection.execute(
+        `DELETE FROM staff_stores WHERE staff_id = ?`,
+        [staffId]
+      );
+
+      // Add new associations
+      if (storeIds.length > 0) {
+        const values = storeIds.map(() => '(?, ?)').join(', ');
+        const params = storeIds.flatMap(storeId => [staffId, storeId]);
+        await connection.execute(
+          `INSERT INTO staff_stores (staff_id, store_id) VALUES ${values}`,
+          params
+        );
+      }
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  /**
+   * Get staff by email, including inactive staff
+   * Used for handling staff transfers between stores
+   */
+  async getStaffByEmailIncludingInactive(email: string): Promise<Staff | null> {
+    const query = `
+      SELECT 
+        id, email, password, first_name, last_name, phone_number, role, 
+        department, employee_id, store_id, is_active, email_verified, 
+        created_at, updated_at, last_login_at, created_by
+      FROM staff 
+      WHERE email = ?
+    `;
+
+    const [rows] = await pool.execute(query, [email]);
+    const staffArray = rows as any[];
+
+    if (staffArray.length === 0) {
+      return null;
+    }
+
+    const staff = staffArray[0];
+    return {
+      id: staff.id,
+      email: staff.email,
+      password: staff.password,
+      firstName: staff.first_name,
+      lastName: staff.last_name,
+      phoneNumber: staff.phone_number,
+      role: staff.role,
+      department: staff.department,
+      employeeId: staff.employee_id,
+      storeId: staff.store_id,
+      isActive: Boolean(staff.is_active),
+      emailVerified: Boolean(staff.email_verified),
+      createdAt: staff.created_at,
+      updatedAt: staff.updated_at,
+      lastLoginAt: staff.last_login_at,
+      createdBy: staff.created_by,
+    };
   }
 
   async employeeIdExists(employeeId: string): Promise<boolean> {

@@ -43,9 +43,24 @@ const resources = {
 };
 
 export const SUPPORTED_LANGUAGES = [
-  "en", "zh", "es", "fr", "ko", "ja", 
-  "de", "pt", "ru", "ar", "it", "nl", 
-  "pl", "tr", "vi", "th", "id", "hi"
+  "en",
+  "zh",
+  "es",
+  "fr",
+  "ko",
+  "ja",
+  "de",
+  "pt",
+  "ru",
+  "ar",
+  "it",
+  "nl",
+  "pl",
+  "tr",
+  "vi",
+  "th",
+  "id",
+  "hi",
 ] as const;
 
 i18n

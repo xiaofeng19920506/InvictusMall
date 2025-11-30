@@ -27,19 +27,102 @@ export async function handleStaffSetupPassword(
       return;
     }
 
-    // Create staff member
-    const staff = await staffModel.createStaff({
-      email: invitation.email,
-      password,
-      firstName: invitation.firstName,
-      lastName: invitation.lastName,
-      phoneNumber,
-      role: invitation.role,
-      department: invitation.department,
-      employeeId: invitation.employeeId,
-      storeId: invitation.storeId,
-      createdBy: invitation.invitedBy,
-    });
+    // Check if there's an existing inactive staff member with this email
+    const existingStaff = await staffModel.getStaffByEmailIncludingInactive(invitation.email);
+    let staff;
+
+    if (existingStaff && !existingStaff.isActive) {
+      // Reactivate and transfer existing inactive staff to new store
+      const previousStoreId = existingStaff.storeId;
+      
+      // Update password first (before reactivation)
+      await staffModel.updatePassword(existingStaff.id, password);
+
+      // Update existing staff: reactivate, update role, and other info
+      const updatedStaff = await staffModel.updateStaff(existingStaff.id, {
+        firstName: invitation.firstName,
+        lastName: invitation.lastName,
+        phoneNumber: phoneNumber || existingStaff.phoneNumber,
+        role: invitation.role,
+        department: invitation.department || existingStaff.department,
+        employeeId: invitation.employeeId || existingStaff.employeeId,
+        isActive: true, // Reactivate
+      });
+
+      if (!updatedStaff) {
+        ApiResponseHelper.error(res, "Failed to reactivate staff member", 500);
+        return;
+      }
+
+      staff = updatedStaff;
+
+      // Add the new store to staff (supporting multiple stores)
+      if (invitation.storeId) {
+        await staffModel.addStoreToStaff(existingStaff.id, invitation.storeId);
+      }
+
+      // Log the transfer activity
+      await ActivityLogModel.createLog({
+        type: "staff_registered",
+        message: `Inactive staff member ${invitation.email} reactivated and transferred to new store`,
+        userId: existingStaff.id,
+        userName: `${invitation.firstName} ${invitation.lastName}`,
+        storeId: invitation.storeId,
+        metadata: {
+          staffId: existingStaff.id,
+          email: invitation.email,
+          role: invitation.role,
+          previousStoreId,
+          newStoreId: invitation.storeId,
+          invitationId: invitation.id,
+          reactivated: true,
+        },
+      });
+
+      logger.info("Inactive staff reactivated and transferred", {
+        staffId: existingStaff.id,
+        email: invitation.email,
+        previousStoreId,
+        newStoreId: invitation.storeId,
+      });
+    } else if (existingStaff && existingStaff.isActive) {
+      // Active staff already exists, cannot create duplicate
+      ApiResponseHelper.error(res, "Email already registered with an active account", 409);
+      return;
+    } else {
+      // Create new staff member
+      staff = await staffModel.createStaff({
+        email: invitation.email,
+        password,
+        firstName: invitation.firstName,
+        lastName: invitation.lastName,
+        phoneNumber,
+        role: invitation.role,
+        department: invitation.department,
+        employeeId: invitation.employeeId,
+        storeId: invitation.storeId, // Primary store
+        createdBy: invitation.invitedBy,
+      });
+
+      // Also add to staff_stores table for consistency
+      if (invitation.storeId) {
+        await staffModel.addStoreToStaff(staff.id, invitation.storeId);
+      }
+
+      // Log activity for new staff
+      await ActivityLogModel.createLog({
+        type: "staff_registered",
+        message: `Staff member ${staff.email} completed registration via invitation.`,
+        userId: staff.id,
+        userName: `${staff.firstName} ${staff.lastName}`,
+        metadata: {
+          staffId: staff.id,
+          email: staff.email,
+          role: staff.role,
+          invitationId: invitation.id,
+        },
+      });
+    }
 
     // Mark invitation as used
     await invitationModel.markInvitationAsUsed(token);
@@ -66,20 +149,7 @@ export async function handleStaffSetupPassword(
       path: "/",
     });
 
-    // Log activity
-    const userName = `${staff.firstName} ${staff.lastName}`;
-    await ActivityLogModel.createLog({
-      type: "staff_registered",
-      message: `Staff member ${staff.email} completed registration via invitation.`,
-      userId: staff.id,
-      userName,
-      metadata: {
-        staffId: staff.id,
-        email: staff.email,
-        role: staff.role,
-        invitationId: invitation.id,
-      },
-    });
+    // Activity logging is now handled above (either for reactivation or new staff)
 
     res.json({
       success: true,

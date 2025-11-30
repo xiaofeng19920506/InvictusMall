@@ -59,5 +59,13 @@ export const staffApi = {
     });
     return response.data;
   },
+
+  // Get stores accessible by current staff member
+  getMyStores: async (): Promise<ApiResponse<any[]>> => {
+    const response = await api.get("/api/staff/my-stores", {
+      withCredentials: true,
+    });
+    return response.data;
+  },
 };
 

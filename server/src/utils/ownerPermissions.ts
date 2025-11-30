@@ -33,10 +33,9 @@ export async function getAccessibleStoreIds(
     return await staffModel.getStoreIdsByOwnerId(id);
   }
 
-  // Other roles (manager, employee) have access to their assigned store
+  // Other roles (manager, employee) have access to all their assigned stores (from both staff.store_id and staff_stores)
   if (role === 'manager' || role === 'employee') {
-    const staff = await staffModel.getStaffById(id);
-    return staff?.storeId ? [staff.storeId] : [];
+    return await staffModel.getStoreIdsByStaffId(id);
   }
 
   // Default: no access

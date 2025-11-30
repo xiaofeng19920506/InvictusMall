@@ -505,6 +505,80 @@ const createTables = async (): Promise<void> => {
       }
     }
 
+    // Create staff_stores table for many-to-many relationship (staff can work at multiple stores)
+    try {
+      const [storeColumns]: any = await connection.execute(`
+        SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'stores'
+        AND COLUMN_NAME = 'id'
+      `);
+
+      let storeIdType = "VARCHAR(36)";
+      let charsetClause = "";
+
+      if (storeColumns && storeColumns.length > 0) {
+        const storeIdCol = storeColumns[0];
+        storeIdType = storeIdCol.COLUMN_TYPE;
+        if (storeIdCol.CHARACTER_SET_NAME) {
+          charsetClause = ` CHARACTER SET ${storeIdCol.CHARACTER_SET_NAME}`;
+          if (storeIdCol.COLLATION_NAME) {
+            charsetClause += ` COLLATE ${storeIdCol.COLLATION_NAME}`;
+          }
+        }
+      }
+
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS staff_stores (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          staff_id VARCHAR(36) NOT NULL,
+          store_id ${storeIdType}${charsetClause} NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_staff_store (staff_id, store_id),
+          INDEX idx_staff_id (staff_id),
+          INDEX idx_store_id (store_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
+      // Try to add foreign keys
+      try {
+        await connection.execute(`
+          ALTER TABLE staff_stores
+          ADD CONSTRAINT fk_staff_stores_staff
+          FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
+        `);
+      } catch (error: any) {
+        if (
+          error?.code !== "ER_DUP_KEY" &&
+          error?.code !== "ER_FK_DUP_NAME" &&
+          error?.errno !== 1142 &&
+          error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+        ) {
+          console.warn("Could not add foreign key to staff_stores (staff):", error.message);
+        }
+      }
+
+      try {
+        await connection.execute(`
+          ALTER TABLE staff_stores
+          ADD CONSTRAINT fk_staff_stores_store
+          FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+        `);
+      } catch (error: any) {
+        if (
+          error?.code !== "ER_DUP_KEY" &&
+          error?.code !== "ER_FK_DUP_NAME" &&
+          error?.errno !== 1142 &&
+          error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+        ) {
+          console.warn("Could not add foreign key to staff_stores (store):", error.message);
+        }
+      }
+    } catch (error: any) {
+      console.warn("Could not create staff_stores table:", error.message);
+    }
+
     // Create staff_invitations table (without foreign key first)
     // First check the stores.id column definition to match it exactly
     try {

@@ -19,8 +19,8 @@ export class StaffStoreService {
   /**
    * Get all stores associated with a staff member
    * - Admin can see all active stores
-   * - Other roles see only their assigned store
-   * TODO: Also get stores where this staff member is the owner
+   * - Owner can see all stores they own (from staff_stores table)
+   * - Manager/Employee can see all stores they work at (from staff_stores table and staff.store_id)
    */
   async getStoresForStaff(staffId: string, staffRole: string): Promise<Store[]> {
     try {
@@ -38,16 +38,16 @@ export class StaffStoreService {
         // Filter only active stores
         stores = stores.filter((store) => store.isActive);
       } else {
-        // For other roles, get their assigned store
-        if (staffMember.storeId) {
-          const store = await this.storeModel.findById(staffMember.storeId);
+        // For other roles, get all stores they're associated with (from both staff.store_id and staff_stores table)
+        const storeIds = await this.staffModel.getStoreIdsByStaffId(staffId);
+        
+        // Fetch all stores
+        for (const storeId of storeIds) {
+          const store = await this.storeModel.findById(storeId);
           if (store && store.isActive) {
-            stores = [store];
+            stores.push(store);
           }
         }
-
-        // TODO: Also get stores where this staff member is the owner
-        // This requires checking store_owner_id field if it exists
       }
 
       return stores;

@@ -79,43 +79,104 @@ export async function handleStaffRegister(
       return;
     }
 
-    // Check if email already exists
+    // Check if email already exists (active staff)
     const emailExists = await staffModel.emailExists(staffData.email);
     if (emailExists) {
       ApiResponseHelper.error(res, "Email already registered", 409);
       return;
     }
 
-    // Check if employee ID already exists (if provided)
-    if (staffData.employeeId) {
+    // Check if there's an inactive staff member with this email (for rehiring/transfer)
+    const existingInactiveStaff = await staffModel.getStaffByEmailIncludingInactive(staffData.email);
+    if (existingInactiveStaff && existingInactiveStaff.isActive) {
+      // Active staff exists, cannot register
+      ApiResponseHelper.error(res, "Email already registered", 409);
+      return;
+    }
+
+    let staff;
+    if (existingInactiveStaff && !existingInactiveStaff.isActive) {
+      // Reactivate and transfer existing inactive staff to new store
+      const previousStoreId = existingInactiveStaff.storeId;
+      
+      // Update password if provided
+      if (staffData.password) {
+        await staffModel.updatePassword(existingInactiveStaff.id, staffData.password);
+      }
+      
+      // Update existing staff: reactivate, update store, role, and other info
+      const updatedStaff = await staffModel.updateStaff(existingInactiveStaff.id, {
+        firstName: staffData.firstName,
+        lastName: staffData.lastName,
+        phoneNumber: staffData.phoneNumber,
+        role: staffData.role,
+        department: staffData.department,
+        employeeId: staffData.employeeId,
+        storeId: staffData.storeId,
+        isActive: true, // Reactivate
+      });
+
+      if (!updatedStaff) {
+        ApiResponseHelper.error(res, "Failed to reactivate staff member", 500);
+        return;
+      }
+
+      staff = updatedStaff;
+
+      // Log the transfer activity
+      await ActivityLogModel.createLog({
+        type: "staff_registered",
+        message: `Inactive staff member ${staffData.email} reactivated and transferred to new store`,
+        userId: existingInactiveStaff.id,
+        userName: `${staffData.firstName} ${staffData.lastName}`,
+        storeId: staffData.storeId,
+        metadata: {
+          staffId: existingInactiveStaff.id,
+          email: staffData.email,
+          role: staffData.role,
+          previousStoreId,
+          newStoreId: staffData.storeId,
+          createdBy: req.staff.id,
+          reactivated: true,
+        },
+      });
+
+      logger.info("Inactive staff reactivated and transferred via direct registration", {
+        staffId: existingInactiveStaff.id,
+        email: staffData.email,
+        previousStoreId,
+        newStoreId: staffData.storeId,
+      });
+    } else {
+      // Create new staff member
+      staff = await staffModel.createStaff({
+        ...staffData,
+        createdBy: req.staff.id,
+      });
+
+      // Log activity for new staff
+      await ActivityLogModel.createLog({
+        type: "staff_registered",
+        message: `New staff member ${staff.email} (${staff.role}) registered`,
+        userId: staff.id,
+        userName: `${staff.firstName} ${staff.lastName}`,
+        metadata: {
+          staffId: staff.id,
+          email: staff.email,
+          role: staff.role,
+          createdBy: req.staff.id,
+        },
+      });
+    }
+
+    // Check if employee ID already exists (if provided and not reactivating)
+    if (staffData.employeeId && (!existingInactiveStaff || existingInactiveStaff.isActive)) {
       const employeeIdExists = await staffModel.employeeIdExists(staffData.employeeId);
       if (employeeIdExists) {
         ApiResponseHelper.error(res, "Employee ID already exists", 409);
         return;
       }
     }
-
-    // Create staff member
-    const staff = await staffModel.createStaff({
-      ...staffData,
-      createdBy: req.staff.id,
-    });
-
-    // Log activity
-    const userId = getUserIdFromRequest(req);
-    const userName = await getUserNameFromRequest(req);
-    await ActivityLogModel.createLog({
-      type: "staff_registered",
-      message: `New staff member ${staff.email} (${staff.role}) registered`,
-      userId,
-      userName,
-      metadata: {
-        staffId: staff.id,
-        email: staff.email,
-        role: staff.role,
-        createdBy: req.staff.id,
-      },
-    });
 
     ApiResponseHelper.success(
       res,

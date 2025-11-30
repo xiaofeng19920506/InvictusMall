@@ -52,12 +52,23 @@ export async function handleStaffInvite(
       return;
     }
 
-    // Check if email already exists in staff table
+    // Check if email already exists in staff table (active staff)
     const emailExists = await staffModel.emailExists(email);
     if (emailExists) {
       ApiResponseHelper.error(res, "Email already registered", 409);
       return;
     }
+
+    // Check if there's an inactive staff member with this email (for rehiring/transfer)
+    const existingInactiveStaff = await staffModel.getStaffByEmailIncludingInactive(email);
+    if (existingInactiveStaff && existingInactiveStaff.isActive) {
+      // Active staff exists, cannot invite
+      ApiResponseHelper.error(res, "Email already registered", 409);
+      return;
+    }
+    
+    // If inactive staff exists, we'll handle reactivation in setup-password
+    // For now, allow the invitation to proceed
 
     // Check if employee ID already exists (if provided)
     if (employeeId) {
@@ -88,19 +99,21 @@ export async function handleStaffInvite(
         finalStoreId = accessibleStoreIds[0];
       }
     } else if (requesterRole === "manager") {
-      // Manager: assign to their store
-      const requesterStaff = await staffModel.getStaffById(requesterId);
-      const requesterStoreId = (requesterStaff as any)?.storeId;
-      if (!requesterStoreId) {
+      // Manager: assign to one of their stores
+      const requesterStoreIds = await staffModel.getStoreIdsByStaffId(requesterId);
+      if (!requesterStoreIds || requesterStoreIds.length === 0) {
         ApiResponseHelper.forbidden(res, "Manager is not associated with any store");
         return;
       }
-      // If storeId is provided, verify it matches the manager's store
-      if (storeId && storeId !== requesterStoreId) {
-        ApiResponseHelper.forbidden(res, "You can only invite employees for your own store");
+      // If storeId is provided, verify it matches one of the manager's stores
+      if (storeId && !requesterStoreIds.includes(storeId)) {
+        ApiResponseHelper.forbidden(res, "You can only invite employees for stores you work at");
         return;
       }
-      finalStoreId = requesterStoreId;
+      // If no storeId provided, assign to the first store
+      if (!storeId) {
+        finalStoreId = requesterStoreIds[0];
+      }
     }
 
     // Create invitation

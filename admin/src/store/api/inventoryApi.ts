@@ -1,34 +1,19 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { ApiResponse } from '../../services/api/types';
-import type { Product } from '../../services/api/productApi';
-import type { Store } from '../../shared/types/store';
-import type { StockOperation, CreateStockOperationRequest } from '../../services/api/stockOperationApi';
+import { baseApi } from "./baseApi";
+import type { ApiResponse } from "../../services/api/types";
+import type { Product } from "../../services/api/productApi";
+import type { Store } from "../../shared/types/store";
+import type {
+  StockOperation,
+  CreateStockOperationRequest,
+} from "../../services/api/stockOperationApi";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
-const baseQuery = fetchBaseQuery({
-  baseUrl: API_BASE_URL,
-  credentials: 'include',
-  prepareHeaders: (headers) => {
-    // Get token from localStorage (fallback when cookies don't work)
-    const token = localStorage.getItem('staff_auth_token');
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-    return headers;
-  },
-});
-
-export const inventoryApi = createApi({
-  reducerPath: 'inventoryApi',
-  baseQuery,
-  tagTypes: ['Products', 'Stores', 'StockOperations'],
+export const inventoryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     // Stores
     getAllStores: builder.query<Store[], void>({
-      query: () => '/api/stores',
+      query: () => "/api/stores",
       transformResponse: (response: ApiResponse<Store[]>) => response.data,
-      providesTags: ['Stores'],
+      providesTags: ["Stores"],
       keepUnusedDataFor: 300, // Cache for 5 minutes
     }),
 
@@ -39,9 +24,9 @@ export const inventoryApi = createApi({
     >({
       query: ({ storeId, isActive, limit, offset }) => {
         const params = new URLSearchParams();
-        if (isActive !== undefined) params.append('isActive', String(isActive));
-        if (limit !== undefined) params.append('limit', String(limit));
-        if (offset !== undefined) params.append('offset', String(offset));
+        if (isActive !== undefined) params.append("isActive", String(isActive));
+        if (limit !== undefined) params.append("limit", String(limit));
+        if (offset !== undefined) params.append("offset", String(offset));
         return `/api/products/store/${storeId}?${params.toString()}`;
       },
       transformResponse: (response: ApiResponse<Product[]>) => {
@@ -50,8 +35,8 @@ export const inventoryApi = createApi({
         return { products, total };
       },
       providesTags: (_result, _error, arg) => [
-        { type: 'Products', id: arg.storeId },
-        'Products',
+        { type: "Products", id: arg.storeId },
+        "Products",
       ],
       keepUnusedDataFor: 60, // Cache for 1 minute
     }),
@@ -62,14 +47,14 @@ export const inventoryApi = createApi({
     >({
       query: ({ productId, ...data }) => ({
         url: `/api/products/${productId}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
       }),
       transformResponse: (response: ApiResponse<Product>) => response.data,
       invalidatesTags: (result) => [
-        'Products',
-        { type: 'Products', id: result?.storeId },
-        'StockOperations',
+        "Products",
+        { type: "Products", id: result?.storeId },
+        "StockOperations",
       ],
     }),
 
@@ -78,26 +63,33 @@ export const inventoryApi = createApi({
       { operations: StockOperation[]; total: number },
       {
         productId?: string;
-        type?: 'in' | 'out';
+        type?: "in" | "out";
         limit?: number;
         offset?: number;
       }
     >({
       query: (params) => {
         const searchParams = new URLSearchParams();
-        if (params.productId) searchParams.append('productId', params.productId);
-        if (params.type) searchParams.append('type', params.type);
-        if (params.limit !== undefined) searchParams.append('limit', String(params.limit));
-        if (params.offset !== undefined) searchParams.append('offset', String(params.offset));
+        if (params.productId)
+          searchParams.append("productId", params.productId);
+        if (params.type) searchParams.append("type", params.type);
+        if (params.limit !== undefined)
+          searchParams.append("limit", String(params.limit));
+        if (params.offset !== undefined)
+          searchParams.append("offset", String(params.offset));
         return `/api/stock-operations?${searchParams.toString()}`;
       },
-      transformResponse: (response: ApiResponse<{ operations: StockOperation[]; total: number }>) => {
+      transformResponse: (
+        response: ApiResponse<{ operations: StockOperation[]; total: number }>
+      ) => {
         return response.data;
       },
       providesTags: (_result, _error, arg) => {
-        const tags: Array<{ type: 'StockOperations'; id?: string }> = [{ type: 'StockOperations' }];
+        const tags: Array<{ type: "StockOperations"; id?: string }> = [
+          { type: "StockOperations" },
+        ];
         if (arg.productId) {
-          tags.push({ type: 'StockOperations', id: arg.productId });
+          tags.push({ type: "StockOperations", id: arg.productId });
         }
         return tags;
       },
@@ -105,23 +97,29 @@ export const inventoryApi = createApi({
     }),
 
     createStockOperation: builder.mutation<
-      { operation: StockOperation; orderUpdated?: boolean; orderStatus?: string },
-      CreateStockOperationRequest
-    >({
-      query: (data) => ({
-        url: '/api/stock-operations',
-        method: 'POST',
-        body: data,
-      }),
-      transformResponse: (response: ApiResponse<{
+      {
         operation: StockOperation;
         orderUpdated?: boolean;
         orderStatus?: string;
-      }>) => response.data,
+      },
+      CreateStockOperationRequest
+    >({
+      query: (data) => ({
+        url: "/api/stock-operations",
+        method: "POST",
+        body: data,
+      }),
+      transformResponse: (
+        response: ApiResponse<{
+          operation: StockOperation;
+          orderUpdated?: boolean;
+          orderStatus?: string;
+        }>
+      ) => response.data,
       invalidatesTags: (_result, _error, arg) => [
-        { type: 'StockOperations' },
-        { type: 'StockOperations', id: arg.productId },
-        { type: 'Products' },
+        { type: "StockOperations" },
+        { type: "StockOperations", id: arg.productId },
+        { type: "Products" },
       ],
     }),
   }),
@@ -134,4 +132,3 @@ export const {
   useGetStockOperationsQuery,
   useCreateStockOperationMutation,
 } = inventoryApi;
-
