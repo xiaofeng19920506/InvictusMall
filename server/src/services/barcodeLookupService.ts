@@ -132,9 +132,12 @@ export class BarcodeLookupService {
    */
   private async lookupUPCItemDB(barcode: string): Promise<BarcodeLookupResult> {
     try {
+      // UPCItemDB API - use trial endpoint
+      // Without API key: 100 free calls/day
+      // With API key: Add &key= parameter for unlimited calls
       const apiKey = this.upcitemdbApiKey;
       const url = apiKey
-        ? `https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`
+        ? `https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}&key=${apiKey}`
         : `https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`;
 
       const response = await fetch(url, {
