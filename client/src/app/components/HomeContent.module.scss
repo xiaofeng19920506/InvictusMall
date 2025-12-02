@@ -1,0 +1,106 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.homeContainer {
+  min-height: 100vh;
+  @include flex-col;
+  background-color: color('gray-50');
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 80rem; // max-w-7xl = 80rem = 1280px
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 2rem; // py-8 = 2rem = 32px
+  padding-bottom: 2rem;
+  padding-left: 1rem; // px-4 = 1rem = 16px
+  padding-right: 1rem;
+  
+  @include respond-to('sm') {
+    padding-left: 1.5rem; // sm:px-6 = 1.5rem = 24px
+    padding-right: 1.5rem;
+  }
+  
+  @include respond-to('lg') {
+    padding-left: 2rem; // lg:px-8 = 2rem = 32px
+    padding-right: 2rem;
+  }
+}
+
+.headerSection {
+  margin-bottom: spacing(8);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: spacing(1);
+  
+  // Ensure proper spacing between title and subtitle
+  h2 {
+    margin-bottom: 0;
+  }
+  
+  p {
+    margin-top: 0;
+  }
+}
+
+.title {
+  font-size: font-size('3xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+  margin: 0;
+}
+
+.subtitle {
+  color: color('gray-600');
+  margin: 0;
+  font-size: font-size('base');
+}
+
+.errorContainer {
+  margin-bottom: spacing(8);
+  padding: spacing(4);
+  background-color: color('red-50');
+  border: 1px solid color('red-200');
+  border-radius: border-radius('lg');
+}
+
+.errorContent {
+  @include flex;
+  @include items-center;
+  @include justify-between;
+}
+
+.errorLeft {
+  @include flex;
+  @include items-center;
+}
+
+.errorIcon {
+  height: spacing(5);
+  width: spacing(5);
+  color: color('red-400');
+  margin-right: spacing(2);
+}
+
+.errorMessage {
+  color: color('red-700');
+}
+
+.retryButton {
+  margin-left: spacing(4);
+  padding: spacing(1) spacing(3);
+  background-color: color('red-600');
+  color: color('white');
+  border-radius: border-radius('md');
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: color('red-700');
+  }
+}
+

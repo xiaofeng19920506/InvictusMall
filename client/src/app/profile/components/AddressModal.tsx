@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AddressModalCloseButton from "./AddressModalCloseButton";
 import { ShippingAddress } from "@/lib/server-api";
+import styles from "./AddressModal.module.scss";
 
 interface AddressModalProps {
   isOpen: boolean;
@@ -30,14 +31,14 @@ export default function AddressModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 px-4 py-8">
-      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-2xl">
-        <div className="sticky top-0 flex items-start justify-between gap-4 border-b border-gray-200 bg-white px-6 py-4">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900">
+    <div className={styles.backdrop}>
+      <div className={styles.modal}>
+        <div className={styles.header}>
+          <div className={styles.headerContent}>
+            <h3 className={styles.title}>
               {isEditing ? "Edit Address" : "Add Address"}
             </h3>
-            <p className="text-sm text-gray-500">
+            <p className={styles.subtitle}>
               {isEditing
                 ? "Update the address information below."
                 : "Enter the address information below."}
@@ -51,10 +52,10 @@ export default function AddressModal({
 
         <form
           action={isEditing ? updateAddressAction : createAddressAction}
-          className="px-6 py-6 space-y-4"
+          className={styles.form}
         >
           {errorMessage && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+            <div className={styles.errorMessage}>
               {errorMessage}
             </div>
           )}
@@ -64,11 +65,11 @@ export default function AddressModal({
             <input type="hidden" name="addressId" value={editingAddress.id} />
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+          <div className={styles.formGrid}>
+            <div className={styles.formField}>
               <label
                 htmlFor="label"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={styles.formLabel}
               >
                 Label (optional)
               </label>
@@ -77,15 +78,15 @@ export default function AddressModal({
                 id="label"
                 name="label"
                 defaultValue={editingAddress?.label ?? ""}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={styles.formInput}
                 placeholder="e.g., Home, Work, Office"
               />
             </div>
 
-            <div>
+            <div className={styles.formField}>
               <label
                 htmlFor="fullName"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={styles.formLabel}
               >
                 Full Name *
               </label>
@@ -95,17 +96,17 @@ export default function AddressModal({
                 name="fullName"
                 defaultValue={editingAddress?.fullName ?? ""}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={styles.formInput}
                 placeholder="John Doe"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+          <div className={styles.formGrid}>
+            <div className={styles.formField}>
               <label
                 htmlFor="phoneNumber"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={styles.formLabel}
               >
                 Phone Number *
               </label>
@@ -116,15 +117,15 @@ export default function AddressModal({
                 defaultValue={editingAddress?.phoneNumber ?? ""}
                 required
                 minLength={10}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={styles.formInput}
                 placeholder="1234567890"
               />
             </div>
 
-            <div>
+            <div className={styles.formField}>
               <label
                 htmlFor="aptNumber"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={styles.formLabel}
               >
                 Apt/Suite (optional)
               </label>
@@ -133,15 +134,15 @@ export default function AddressModal({
                 id="aptNumber"
                 name="aptNumber"
                 defaultValue={editingAddress?.aptNumber ?? ""}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={styles.formInput}
               />
             </div>
           </div>
 
-          <div>
+          <div className={styles.formField}>
             <label
               htmlFor="streetAddress"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className={styles.formLabel}
             >
               Street Address *
             </label>
@@ -151,17 +152,17 @@ export default function AddressModal({
               name="streetAddress"
               defaultValue={editingAddress?.streetAddress ?? ""}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className={styles.formInput}
               placeholder="123 Main St"
               autoComplete="off"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+          <div className={styles.formGrid}>
+            <div className={styles.formField}>
               <label
                 htmlFor="city"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={styles.formLabel}
               >
                 City *
               </label>
@@ -171,13 +172,13 @@ export default function AddressModal({
                 name="city"
                 defaultValue={editingAddress?.city ?? ""}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={styles.formInput}
               />
             </div>
-            <div>
+            <div className={styles.formField}>
               <label
                 htmlFor="stateProvince"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={styles.formLabel}
               >
                 State/Province *
               </label>
@@ -187,16 +188,16 @@ export default function AddressModal({
                 name="stateProvince"
                 defaultValue={editingAddress?.stateProvince ?? ""}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={styles.formInput}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+          <div className={styles.formGrid}>
+            <div className={styles.formField}>
               <label
                 htmlFor="zipCode"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={styles.formLabel}
               >
                 ZIP Code *
               </label>
@@ -206,13 +207,13 @@ export default function AddressModal({
                 name="zipCode"
                 defaultValue={editingAddress?.zipCode ?? ""}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={styles.formInput}
               />
             </div>
-            <div>
+            <div className={styles.formField}>
               <label
                 htmlFor="country"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={styles.formLabel}
               >
                 Country *
               </label>
@@ -221,7 +222,7 @@ export default function AddressModal({
                 name="country"
                 defaultValue={editingAddress?.country ?? "USA"}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className={styles.formSelect}
               >
                 <option value="USA">United States</option>
                 <option value="Canada">Canada</option>
@@ -230,33 +231,33 @@ export default function AddressModal({
             </div>
           </div>
 
-          <div className="flex items-center">
+          <div className={styles.checkboxWrapper}>
             <input
               type="checkbox"
               id="isDefault"
               name="isDefault"
               defaultChecked={editingAddress?.isDefault ?? false}
-              className="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+              className={styles.checkbox}
             />
             <label
               htmlFor="isDefault"
-              className="ml-2 text-sm text-gray-700 cursor-pointer"
+              className={styles.checkboxLabel}
             >
               Set as default address
             </label>
           </div>
 
-          <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end sm:gap-3 gap-2 pt-2">
+          <div className={styles.actions}>
             <Link
               href={closeHref}
               scroll={false}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors text-center"
+              className={styles.cancelButton}
             >
               Cancel
             </Link>
             <button
               type="submit"
-              className="px-4 py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors cursor-pointer"
+              className={styles.submitButton}
             >
               {isEditing ? "Update Address" : "Save Address"}
             </button>

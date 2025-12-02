@@ -513,3 +513,52 @@ export async function fetchUserServer(
     throw error;
   }
 }
+
+// Category type
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: string;
+  level: number;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  children?: Category[];
+}
+
+/**
+ * Server-side function to fetch level 1 categories for navigation
+ * This runs on the server and can be cached for better performance
+ */
+export async function fetchCategoriesServer(): Promise<ApiResponse<Category[]>> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const url = `${baseUrl}/api/categories?level=1`;
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      // Cache categories for 5 minutes since they don't change frequently
+      next: { revalidate: 300 },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch categories: ${response.statusText}`);
+    }
+
+    const data: ApiResponse<Category[]> = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching categories on server:", error);
+    // Return empty array on error to prevent page crashes
+    return {
+      success: false,
+      data: [],
+      message: error instanceof Error ? error.message : "Failed to fetch categories",
+    };
+  }
+}

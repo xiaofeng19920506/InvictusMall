@@ -1,0 +1,300 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: spacing(6);
+}
+
+.orderHeaderCard {
+  @include card;
+}
+
+.orderHeader {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: spacing(4);
+  
+  @include respond-to('md') {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.orderInfo {
+  @include flex;
+  @include items-center;
+  gap: spacing(4);
+  margin-bottom: spacing(2);
+  
+  @include respond-to('md') {
+    margin-bottom: 0;
+  }
+}
+
+.orderTitle {
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+  word-break: break-all;
+}
+
+.statusBadge {
+  padding: spacing(1) spacing(3);
+  border-radius: border-radius('full');
+  font-size: font-size('xs');
+  font-weight: font-weight('medium');
+}
+
+.orderMeta {
+  display: flex;
+  flex-direction: column;
+  gap: spacing(2);
+  
+  @include respond-to('md') {
+    flex-direction: row;
+  }
+}
+
+.metaText {
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.orderTotal {
+  margin-top: spacing(4);
+  text-align: right;
+  
+  @include respond-to('md') {
+    margin-top: 0;
+  }
+}
+
+.totalAmount {
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+}
+
+.totalLabel {
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.itemsCard {
+  @include card;
+}
+
+.itemsTitle {
+  font-size: font-size('xl');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: spacing(4);
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: spacing(4);
+}
+
+.itemRow {
+  @include flex;
+  @include items-center;
+  @include justify-between;
+  border-bottom: 1px solid color('gray-200');
+  padding-bottom: spacing(4);
+  
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.itemLeft {
+  @include flex;
+  @include items-center;
+  gap: spacing(4);
+}
+
+.itemImage {
+  width: 5rem;
+  height: 5rem;
+  object-fit: cover;
+  border-radius: border-radius('md');
+  background-color: color('gray-200');
+}
+
+.itemInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.itemName {
+  font-weight: font-weight('medium');
+  color: color('gray-900');
+}
+
+.itemDetails {
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.itemQuantity {
+  margin-top: spacing(2);
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.itemPrice {
+  font-size: font-size('lg');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+}
+
+.shippingCard {
+  @include card;
+}
+
+.shippingTitle {
+  font-size: font-size('xl');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: spacing(4);
+}
+
+.shippingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: spacing(2);
+  font-size: font-size('sm');
+}
+
+.shippingText {
+  color: color('gray-900');
+}
+
+.paymentCard {
+  @include card;
+}
+
+.paymentTitle {
+  font-size: font-size('xl');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: spacing(4);
+}
+
+.paymentInfo {
+  display: flex;
+  flex-direction: column;
+  gap: spacing(2);
+  font-size: font-size('sm');
+}
+
+.paymentRow {
+  @include flex;
+  @include justify-between;
+}
+
+.paymentLabel {
+  color: color('gray-600');
+}
+
+.paymentValue {
+  color: color('gray-900');
+  font-weight: font-weight('medium');
+  
+  &.total {
+    font-weight: font-weight('bold');
+    font-size: font-size('lg');
+  }
+}
+
+.trackingCard {
+  @include card;
+}
+
+.trackingTitle {
+  font-size: font-size('xl');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: spacing(4);
+}
+
+.trackingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: spacing(2);
+}
+
+.trackingText {
+  font-size: font-size('sm');
+  color: color('gray-600');
+  
+  .trackingLabel {
+    font-weight: font-weight('medium');
+  }
+}
+
+.trackingStatus {
+  font-size: font-size('sm');
+  
+  &.shipped {
+    color: color('blue-600');
+  }
+  
+  &.delivered {
+    color: color('green-600');
+  }
+}
+
+.actions {
+  @include flex;
+  gap: spacing(4);
+}
+
+.backButton {
+  padding: spacing(2) spacing(4);
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('md');
+  color: color('gray-700');
+  background-color: color('white');
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+  display: inline-block;
+  
+  &:hover {
+    background-color: color('gray-50');
+  }
+}
+
+.reviewButton {
+  padding: spacing(2) spacing(4);
+  background-color: color('blue-500');
+  color: color('white');
+  border-radius: border-radius('md');
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: color('blue-600');
+  }
+}
+
+.reservationInfo {
+  margin-top: spacing(2);
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.reservationNote {
+  margin-top: spacing(1);
+  font-size: font-size('xs');
+  color: color('gray-500');
+}
+

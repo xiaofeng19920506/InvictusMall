@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import styles from "./AddressModalCloseButton.module.scss";
 
 interface AddressModalCloseButtonProps {
   href: string;
@@ -22,7 +23,7 @@ export default function AddressModalCloseButton({
       type="button"
       onClick={handleClick}
       aria-label={ariaLabel}
-      className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+      className={styles.button}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -30,7 +31,7 @@ export default function AddressModalCloseButton({
         fill="none"
         stroke="currentColor"
         strokeWidth={1.5}
-        className="h-6 w-6"
+        className={styles.icon}
         aria-hidden="true"
       >
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />

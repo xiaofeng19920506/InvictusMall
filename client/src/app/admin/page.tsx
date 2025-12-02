@@ -2,109 +2,110 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
+import styles from './page.module.scss';
 
 export default function AdminDashboard() {
   const { user } = useAuth();
 
   return (
     <ProtectedRoute requiredRole="admin">
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <p className="text-gray-600 mt-2">
+      <div className={styles.pageContainer}>
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <h1 className={styles.title}>Admin Dashboard</h1>
+            <p className={styles.subtitle}>
               Welcome back, {user?.firstName}! Manage your mall operations.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={styles.statsGrid}>
             {/* Stats Cards */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-orange-100 rounded-full">
-                  <span className="text-2xl">🏪</span>
+            <div className={styles.statCard}>
+              <div className={styles.statContent}>
+                <div className={`${styles.statIcon} ${styles.orange}`}>
+                  <span className={styles.statIconText}>🏪</span>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Total Stores</h3>
-                  <p className="text-3xl font-bold text-orange-500">24</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <span className="text-2xl">👥</span>
-                </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Total Users</h3>
-                  <p className="text-3xl font-bold text-blue-500">1,234</p>
+                <div className={styles.statInfo}>
+                  <h3 className={styles.statTitle}>Total Stores</h3>
+                  <p className={`${styles.statValue} ${styles.orange}`}>24</p>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center">
-                <div className="p-3 bg-green-100 rounded-full">
-                  <span className="text-2xl">💰</span>
+            <div className={styles.statCard}>
+              <div className={styles.statContent}>
+                <div className={`${styles.statIcon} ${styles.blue}`}>
+                  <span className={styles.statIconText}>👥</span>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Revenue</h3>
-                  <p className="text-3xl font-bold text-green-500">$45.2K</p>
+                <div className={styles.statInfo}>
+                  <h3 className={styles.statTitle}>Total Users</h3>
+                  <p className={`${styles.statValue} ${styles.blue}`}>1,234</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.statCard}>
+              <div className={styles.statContent}>
+                <div className={`${styles.statIcon} ${styles.green}`}>
+                  <span className={styles.statIconText}>💰</span>
+                </div>
+                <div className={styles.statInfo}>
+                  <h3 className={styles.statTitle}>Revenue</h3>
+                  <p className={`${styles.statValue} ${styles.green}`}>$45.2K</p>
                 </div>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow-md p-6 md:col-span-2 lg:col-span-3">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl mb-2 block">➕</span>
-                  <h4 className="font-medium text-gray-900">Add New Store</h4>
-                  <p className="text-sm text-gray-600">Register a new store</p>
+            <div className={styles.quickActionsCard}>
+              <h3 className={styles.quickActionsTitle}>Quick Actions</h3>
+              <div className={styles.quickActionsGrid}>
+                <button className={styles.quickActionButton}>
+                  <span className={styles.quickActionIcon}>➕</span>
+                  <h4 className={styles.quickActionTitle}>Add New Store</h4>
+                  <p className={styles.quickActionDescription}>Register a new store</p>
                 </button>
                 
-                <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl mb-2 block">📊</span>
-                  <h4 className="font-medium text-gray-900">View Analytics</h4>
-                  <p className="text-sm text-gray-600">Check performance metrics</p>
+                <button className={styles.quickActionButton}>
+                  <span className={styles.quickActionIcon}>📊</span>
+                  <h4 className={styles.quickActionTitle}>View Analytics</h4>
+                  <p className={styles.quickActionDescription}>Check performance metrics</p>
                 </button>
                 
-                <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl mb-2 block">⚙️</span>
-                  <h4 className="font-medium text-gray-900">System Settings</h4>
-                  <p className="text-sm text-gray-600">Configure mall settings</p>
+                <button className={styles.quickActionButton}>
+                  <span className={styles.quickActionIcon}>⚙️</span>
+                  <h4 className={styles.quickActionTitle}>System Settings</h4>
+                  <p className={styles.quickActionDescription}>Configure mall settings</p>
                 </button>
               </div>
             </div>
 
             {/* Recent Activity */}
-            <div className="bg-white rounded-lg shadow-md p-6 md:col-span-2 lg:col-span-3">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <div className="flex items-center">
-                    <span className="text-orange-500 mr-3">🏪</span>
-                    <span className="text-sm text-gray-900">New store "Tech Hub" registered</span>
+            <div className={styles.recentActivityCard}>
+              <h3 className={styles.recentActivityTitle}>Recent Activity</h3>
+              <div className={styles.activityList}>
+                <div className={styles.activityItem}>
+                  <div className={styles.activityContent}>
+                    <span className={`${styles.activityIcon} ${styles.orange}`}>🏪</span>
+                    <span className={styles.activityText}>New store "Tech Hub" registered</span>
                   </div>
-                  <span className="text-xs text-gray-500">2 hours ago</span>
+                  <span className={styles.activityTime}>2 hours ago</span>
                 </div>
                 
-                <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <div className="flex items-center">
-                    <span className="text-blue-500 mr-3">👤</span>
-                    <span className="text-sm text-gray-900">User "John Doe" signed up</span>
+                <div className={styles.activityItem}>
+                  <div className={styles.activityContent}>
+                    <span className={`${styles.activityIcon} ${styles.blue}`}>👤</span>
+                    <span className={styles.activityText}>User "John Doe" signed up</span>
                   </div>
-                  <span className="text-xs text-gray-500">4 hours ago</span>
+                  <span className={styles.activityTime}>4 hours ago</span>
                 </div>
                 
-                <div className="flex items-center justify-between py-2 border-b border-gray-100">
-                  <div className="flex items-center">
-                    <span className="text-green-500 mr-3">✅</span>
-                    <span className="text-sm text-gray-900">Store "Fashion World" verified</span>
+                <div className={styles.activityItem}>
+                  <div className={styles.activityContent}>
+                    <span className={`${styles.activityIcon} ${styles.green}`}>✅</span>
+                    <span className={styles.activityText}>Store "Fashion World" verified</span>
                   </div>
-                  <span className="text-xs text-gray-500">6 hours ago</span>
+                  <span className={styles.activityTime}>6 hours ago</span>
                 </div>
               </div>
             </div>

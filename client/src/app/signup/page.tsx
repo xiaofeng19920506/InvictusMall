@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import styles from './page.module.scss';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -49,26 +50,26 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="text-center">
-          <Link href="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-orange-500 mb-2">Invictus Mall</h1>
+    <div className={styles.pageContainer}>
+      <div className={styles.headerContainer}>
+        <div className={styles.header}>
+          <Link href="/" className={styles.logo}>
+            <h1 className={styles.logoTitle}>Invictus Mall</h1>
           </Link>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h2>
-          <p className="text-gray-600">Join Invictus Mall and start shopping today!</p>
+          <h2 className={styles.subtitle}>Create Account</h2>
+          <p className={styles.description}>Join Invictus Mall and start shopping today!</p>
         </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+      <div className={styles.formContainer}>
+        <div className={styles.formCard}>
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.nameFields}>
+              <div className={styles.formField}>
+                <label htmlFor="firstName" className={styles.formLabel}>
                   First Name
                 </label>
-                <div className="mt-1">
+                <div className={styles.formInputWrapper}>
                   <input
                     id="firstName"
                     name="firstName"
@@ -77,17 +78,17 @@ export default function SignupPage() {
                     required
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                    className={styles.formInput}
                     placeholder="First name"
                   />
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+              <div className={styles.formField}>
+                <label htmlFor="lastName" className={styles.formLabel}>
                   Last Name
                 </label>
-                <div className="mt-1">
+                <div className={styles.formInputWrapper}>
                   <input
                     id="lastName"
                     name="lastName"
@@ -96,18 +97,18 @@ export default function SignupPage() {
                     required
                     value={formData.lastName}
                     onChange={handleChange}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                    className={styles.formInput}
                     placeholder="Last name"
                   />
                 </div>
               </div>
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <div className={styles.formField}>
+              <label htmlFor="email" className={styles.formLabel}>
                 Email Address
               </label>
-              <div className="mt-1">
+              <div className={styles.formInputWrapper}>
                 <input
                   id="email"
                   name="email"
@@ -116,17 +117,17 @@ export default function SignupPage() {
                   required
                   value={formData.email}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                  className={styles.formInput}
                   placeholder="Enter your email"
                 />
               </div>
             </div>
 
-            <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+            <div className={styles.formField}>
+              <label htmlFor="phoneNumber" className={styles.formLabel}>
                 Phone Number
               </label>
-              <div className="mt-1">
+              <div className={styles.formInputWrapper}>
                 <input
                   id="phoneNumber"
                   name="phoneNumber"
@@ -135,14 +136,14 @@ export default function SignupPage() {
                   required
                   value={formData.phoneNumber}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                  className={styles.formInput}
                   placeholder="Enter your phone number"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+              <div className={styles.errorMessage}>
                 {error}
               </div>
             )}
@@ -151,27 +152,25 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className={styles.submitButton}
               >
                 {isLoading ? 'Creating Account...' : 'Create Account'}
               </button>
             </div>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Already have an account?</span>
+          <div className={styles.dividerContainer}>
+            <div className={styles.divider}>
+              <div className={styles.dividerLine}></div>
+              <div className={styles.dividerText}>
+                <span className={styles.dividerTextInner}>Already have an account?</span>
               </div>
             </div>
 
-            <div className="mt-6 text-center">
+            <div className={styles.loginButton}>
               <Link
                 href="/login"
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
+                className={styles.loginLink}
               >
                 Sign in instead
               </Link>

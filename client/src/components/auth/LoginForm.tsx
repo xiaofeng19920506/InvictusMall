@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import styles from './LoginForm.module.scss';
 
 interface LoginFormProps {
   onSuccess?: () => void;
@@ -37,12 +38,12 @@ export default function LoginForm({ onSuccess, onSwitchToSignup, onSwitchToForgo
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Sign In</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title}>Sign In</h2>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.formGroup}>
+          <label htmlFor="email" className={styles.label}>
             Email Address
           </label>
           <input
@@ -51,13 +52,13 @@ export default function LoginForm({ onSuccess, onSwitchToSignup, onSwitchToForgo
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className={styles.input}
             placeholder="Enter your email"
           />
         </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+        <div className={styles.formGroup}>
+          <label htmlFor="password" className={styles.label}>
             Password
           </label>
           <input
@@ -66,13 +67,13 @@ export default function LoginForm({ onSuccess, onSwitchToSignup, onSwitchToForgo
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900"
+            className={styles.input}
             placeholder="Enter your password"
           />
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          <div className={styles.errorMessage}>
             {error}
           </div>
         )}
@@ -80,29 +81,29 @@ export default function LoginForm({ onSuccess, onSwitchToSignup, onSwitchToForgo
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className={styles.submitButton}
         >
           {isLoading ? 'Signing In...' : 'Sign In'}
         </button>
       </form>
 
-      <div className="mt-4 text-center">
+      <div className={styles.forgotPasswordLink}>
         <button
           type="button"
           onClick={onSwitchToForgotPassword}
-          className="text-sm text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
+          className={styles.link}
         >
           Forgot your password?
         </button>
       </div>
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
+      <div className={styles.switchLink}>
+        <p>
           Don't have an account?{' '}
           <button
             type="button"
             onClick={onSwitchToSignup}
-            className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
+            className={styles.link}
           >
             Sign up
           </button>

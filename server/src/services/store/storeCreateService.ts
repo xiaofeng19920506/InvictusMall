@@ -26,6 +26,18 @@ export async function handleCreateStore(
 
     const { ownerId, ...storeData } = req.body;
 
+    // Validate category is provided and not empty
+    if (!storeData.category || !Array.isArray(storeData.category) || storeData.category.length === 0) {
+      ApiResponseHelper.validationError(res, "At least one category is required");
+      return;
+    }
+
+    // Validate that all categories are non-empty strings
+    if (storeData.category.some((cat: any) => !cat || typeof cat !== 'string' || cat.trim().length === 0)) {
+      ApiResponseHelper.validationError(res, "All categories must be non-empty strings");
+      return;
+    }
+
     // Validate owner exists and has the 'owner' role before creating store
     const staffModel = new StaffModel();
     const owner = await staffModel.getStaffById(ownerId);

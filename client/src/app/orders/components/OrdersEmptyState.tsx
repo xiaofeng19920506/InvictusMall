@@ -3,6 +3,7 @@ import {
   getOrderStatusLabel,
   type OrderStatusTabValue,
 } from "../orderStatusConfig";
+import styles from "./OrdersEmptyState.module.scss";
 
 interface OrdersEmptyStateProps {
   status: OrderStatusTabValue;
@@ -10,19 +11,19 @@ interface OrdersEmptyStateProps {
 
 export default function OrdersEmptyState({ status }: OrdersEmptyStateProps) {
   return (
-    <div className="bg-white rounded-lg shadow-md p-12 text-center">
-      <div className="text-6xl mb-4">📦</div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">
+    <div className={styles.container}>
+      <div className={styles.icon}>📦</div>
+      <h3 className={styles.title}>
         No orders found
       </h3>
-      <p className="text-gray-600 mb-6">
+      <p className={styles.message}>
         {status !== "all"
           ? `You don't have any ${getOrderStatusLabel(status)} orders.`
           : "You haven't placed any orders yet."}
       </p>
       <Link
         href="/"
-        className="inline-block bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors"
+        className={styles.button}
       >
         Start Shopping
       </Link>

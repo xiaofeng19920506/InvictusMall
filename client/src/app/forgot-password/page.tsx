@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import styles from './page.module.scss';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -35,38 +36,38 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="text-center">
-            <Link href="/" className="inline-block">
-              <h1 className="text-3xl font-bold text-orange-500 mb-2">Invictus Mall</h1>
+      <div className={styles.pageContainer}>
+        <div className={styles.headerContainer}>
+          <div className={styles.header}>
+            <Link href="/" className={styles.logo}>
+              <h1 className={styles.logoTitle}>Invictus Mall</h1>
             </Link>
           </div>
         </div>
 
-        <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className={styles.formContainer}>
+          <div className={styles.formCard}>
+            <div className={styles.successCard}>
+              <div className={styles.successIcon}>
+                <svg className={styles.successIconSvg} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Check Your Email</h2>
-              <p className="text-gray-600 mb-6">
+              <h2 className={styles.successTitle}>Check Your Email</h2>
+              <p className={styles.successMessage}>
                 If an account with that email exists, we've sent you a password reset link. 
                 Please check your email and follow the instructions to reset your password.
               </p>
-              <div className="space-y-3">
+              <div className={styles.successActions}>
                 <Link
                   href="/login"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
+                  className={styles.submitButton}
                 >
                   Back to Sign In
                 </Link>
                 <Link
                   href="/"
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
+                  className={styles.secondaryButton}
                 >
                   Return to Home
                 </Link>
@@ -79,25 +80,25 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="text-center">
-          <Link href="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-orange-500 mb-2">Invictus Mall</h1>
+    <div className={styles.pageContainer}>
+      <div className={styles.headerContainer}>
+        <div className={styles.header}>
+          <Link href="/" className={styles.logo}>
+            <h1 className={styles.logoTitle}>Invictus Mall</h1>
           </Link>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Reset Password</h2>
-          <p className="text-gray-600">Enter your email address and we'll send you a link to reset your password.</p>
+          <h2 className={styles.subtitle}>Reset Password</h2>
+          <p className={styles.description}>Enter your email address and we'll send you a link to reset your password.</p>
         </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+      <div className={styles.formContainer}>
+        <div className={styles.formCard}>
+          <form onSubmit={handleSubmit} className={styles.form}>
+            <div className={styles.formField}>
+              <label htmlFor="email" className={styles.formLabel}>
                 Email Address
               </label>
-              <div className="mt-1">
+              <div className={styles.formInputWrapper}>
                 <input
                   id="email"
                   name="email"
@@ -106,14 +107,14 @@ export default function ForgotPasswordPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                  className={styles.formInput}
                   placeholder="Enter your email address"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+              <div className={styles.errorMessage}>
                 {error}
               </div>
             )}
@@ -122,27 +123,25 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className={styles.submitButton}
               >
                 {isLoading ? 'Sending...' : 'Send Reset Link'}
               </button>
             </div>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Remember your password?</span>
+          <div className={styles.dividerContainer}>
+            <div className={styles.divider}>
+              <div className={styles.dividerLine}></div>
+              <div className={styles.dividerText}>
+                <span className={styles.dividerTextInner}>Remember your password?</span>
               </div>
             </div>
 
-            <div className="mt-6 text-center">
+            <div className={styles.loginButton}>
               <Link
                 href="/login"
-                className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-colors"
+                className={styles.loginLink}
               >
                 Sign in instead
               </Link>

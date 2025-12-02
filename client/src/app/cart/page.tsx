@@ -5,6 +5,7 @@ import {
   ShippingAddress,
 } from "@/lib/server-api";
 import { createStripeCheckoutSessionAction } from "./actions";
+import styles from "./page.module.scss";
 
 export default async function CartPage() {
   const cookieStore = await cookies();
@@ -33,7 +34,7 @@ export default async function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={styles.pageContainer}>
       <CartContent
         addresses={addresses}
         defaultAddressId={addresses.find((address) => address.isDefault)?.id}

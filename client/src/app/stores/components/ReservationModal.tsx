@@ -5,6 +5,7 @@ import { Product } from "@/services/product";
 import { Store } from "@/services/api";
 import { useCart } from "@/contexts/CartContext";
 import apiService from "@/services/api";
+import styles from "./ReservationModal.module.scss";
 
 interface ReservationModalProps {
   service: Product;
@@ -174,7 +175,7 @@ export default function ReservationModal({
   return (
     <div 
       ref={backdropRef}
-      className="absolute inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50 p-4"
+      className={styles.backdrop}
       onClick={(e) => {
         if (e.target === backdropRef.current) {
           onClose();
@@ -183,47 +184,47 @@ export default function ReservationModal({
     >
       <div 
         ref={modalRef}
-        className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        className={styles.modal}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Make Reservation</h2>
+        <div className={styles.header}>
+          <h2 className={styles.title}>Make Reservation</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors text-2xl font-bold"
+            className={styles.closeButton}
             aria-label="Close modal"
           >
             ×
           </button>
         </div>
 
-        <div className="p-6">
-          <div className="mb-6">
-            <h3 className="font-semibold text-gray-900 mb-1">{service.name}</h3>
-            <p className="text-sm text-gray-600">{store.name}</p>
-            <p className="text-lg font-bold text-orange-500 mt-2">
+        <div className={styles.content}>
+          <div className={styles.serviceInfo}>
+            <h3 className={styles.serviceName}>{service.name}</h3>
+            <p className={styles.storeName}>{store.name}</p>
+            <p className={styles.servicePrice}>
               ${service.price.toFixed(2)}
             </p>
           </div>
 
           {added ? (
-            <div className="text-center py-8">
-              <div className="text-green-500 text-6xl mb-4">✓</div>
-              <p className="text-lg font-semibold text-gray-900 mb-2">
+            <div className={styles.successContainer}>
+              <div className={styles.successIcon}>✓</div>
+              <p className={styles.successTitle}>
                 Added to Cart!
               </p>
-              <p className="text-sm text-gray-600">
+              <p className={styles.successMessage}>
                 Your reservation has been added to your cart for checkout.
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
+            <form onSubmit={handleSubmit} className={styles.form}>
+              <div className={styles.formField}>
                 <label
                   htmlFor="date"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className={styles.formLabel}
                 >
-                  Reservation Date <span className="text-red-500">*</span>
+                  Reservation Date <span className={styles.required}>*</span>
                 </label>
                 <input
                   id="date"
@@ -233,16 +234,16 @@ export default function ReservationModal({
                   min={today}
                   value={formData.date}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className={styles.formInput}
                 />
               </div>
 
-              <div>
+              <div className={styles.formField}>
                 <label
                   htmlFor="timeSlot"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className={styles.formLabel}
                 >
-                  Available Time Slot <span className="text-red-500">*</span>
+                  Available Time Slot <span className={styles.required}>*</span>
                 </label>
                 <select
                   id="timeSlot"
@@ -251,7 +252,7 @@ export default function ReservationModal({
                   value={formData.timeSlot}
                   onChange={handleChange}
                   disabled={!formData.date || loadingTimeSlots || availableTimeSlots.length === 0}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={styles.formInput}
                 >
                   <option value="">
                     {!formData.date
@@ -272,16 +273,16 @@ export default function ReservationModal({
                   ))}
                 </select>
                 {formData.date && availableTimeSlots.length === 0 && !loadingTimeSlots && (
-                  <p className="mt-1 text-sm text-amber-600">
+                  <p className={styles.warningText}>
                     All time slots are booked for this date. Please select another date.
                   </p>
                 )}
               </div>
 
-              <div>
+              <div className={styles.formField}>
                 <label
                   htmlFor="notes"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className={styles.formLabel}
                 >
                   Additional Notes
                 </label>
@@ -291,22 +292,22 @@ export default function ReservationModal({
                   rows={3}
                   value={formData.notes}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className={styles.formTextarea}
                   placeholder="Any special requests or requirements..."
                 />
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                <div className={styles.errorMessage}>
                   {error}
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4">
+              <div className={styles.buttonGroup}>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                  className={styles.cancelButton}
                   disabled={submitting}
                 >
                   Cancel
@@ -314,7 +315,7 @@ export default function ReservationModal({
                 <button
                   type="submit"
                   disabled={submitting || added}
-                  className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  className={styles.submitButton}
                 >
                   {added ? "✓ Added to Cart" : submitting ? "Adding..." : "Add to Cart"}
                 </button>

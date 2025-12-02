@@ -1,0 +1,227 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(4px);
+  background-color: rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 1rem; // p-4
+}
+
+.modal {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('xl');
+  max-width: 28rem; // max-w-md
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  background-color: color('white');
+  border-bottom: 1px solid color('gray-200');
+  padding: 1rem 1.5rem; // px-6 py-4
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: font-size('xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+}
+
+.closeButton {
+  color: color('gray-400');
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  padding: 0;
+  
+  &:hover {
+    color: color('gray-600');
+  }
+}
+
+.content {
+  padding: 1.5rem; // p-6
+}
+
+.serviceInfo {
+  margin-bottom: 1.5rem; // mb-6
+}
+
+.serviceName {
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: 0.25rem; // mb-1
+}
+
+.storeName {
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.servicePrice {
+  font-size: font-size('lg');
+  font-weight: font-weight('bold');
+  color: color('orange-500');
+  margin-top: 0.5rem; // mt-2
+}
+
+.successContainer {
+  text-align: center;
+  padding-top: 2rem; // py-8
+  padding-bottom: 2rem;
+}
+
+.successIcon {
+  color: color('green-500');
+  font-size: 3.75rem; // text-6xl
+  margin-bottom: 1rem; // mb-4
+}
+
+.successTitle {
+  font-size: font-size('lg');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: 0.5rem; // mb-2
+}
+
+.successMessage {
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; // space-y-4
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+}
+
+.formLabel {
+  display: block;
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  color: color('gray-700');
+  margin-bottom: 0.25rem; // mb-1
+}
+
+.required {
+  color: color('red-500');
+}
+
+.formInput {
+  width: 100%;
+  padding: 0.5rem 0.75rem; // px-3 py-2
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('md');
+  font-size: font-size('base');
+  color: color('gray-900');
+  background-color: color('white');
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color('orange-500');
+  }
+  
+  &:disabled {
+    background-color: color('gray-100');
+    cursor: not-allowed;
+  }
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem; // px-3 py-2
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('md');
+  font-size: font-size('base');
+  color: color('gray-900');
+  background-color: color('white');
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color('orange-500');
+  }
+}
+
+.warningText {
+  margin-top: 0.25rem; // mt-1
+  font-size: font-size('sm');
+  color: color('amber-600');
+}
+
+.errorMessage {
+  background-color: color('red-50');
+  border: 1px solid color('red-200');
+  color: color('red-700');
+  padding: 0.75rem 1rem; // px-4 py-3
+  border-radius: border-radius('md');
+  font-size: font-size('sm');
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 0.75rem; // gap-3
+  padding-top: 1rem; // pt-4
+}
+
+.cancelButton {
+  flex: 1;
+  padding: 0.5rem 1rem; // px-4 py-2
+  border: 1px solid color('gray-300');
+  color: color('gray-700');
+  border-radius: border-radius('md');
+  transition: background-color 0.2s;
+  cursor: pointer;
+  background-color: color('white');
+  
+  &:hover:not(:disabled) {
+    background-color: color('gray-50');
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.submitButton {
+  flex: 1;
+  padding: 0.5rem 1rem; // px-4 py-2
+  background-color: color('orange-500');
+  color: color('white');
+  border-radius: border-radius('md');
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: none;
+  
+  &:hover:not(:disabled) {
+    background-color: color('orange-600');
+  }
+  
+  &:disabled {
+    background-color: color('gray-400');
+    cursor: not-allowed;
+  }
+}
+

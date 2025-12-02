@@ -41,7 +41,7 @@ export interface CreateStoreRequest {
   location: Location[];
   establishedYear: number;
   imageUrl?: string;
-  category?: string[];
+  category: string[]; // Required: at least one category must be provided
   rating?: number;
   reviewCount?: number;
   isVerified?: boolean;

@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import SetupPasswordForm from './SetupPasswordForm';
+import styles from './page.module.scss';
 
 interface SetupPasswordPageProps {
   searchParams: Promise<{ token?: string }>;
@@ -12,10 +13,10 @@ export default async function SetupPasswordPage({ searchParams }: SetupPasswordP
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
+        <div className={styles.pageContainer}>
+          <div className={styles.loadingContainer}>
+            <div className={styles.spinner}></div>
+            <p className={styles.loadingText}>Loading...</p>
           </div>
         </div>
       }

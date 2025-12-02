@@ -1,0 +1,48 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; // gap-2
+}
+
+.button {
+  padding: 0.5rem 1rem; // px-4 py-2
+  border-radius: border-radius('md');
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: none;
+  font-size: font-size('sm');
+  color: color('white');
+  
+  &.edit {
+    background-color: color('blue-500');
+    
+    &:hover {
+      background-color: color('blue-600');
+    }
+  }
+  
+  &.setDefault {
+    background-color: color('green-500');
+    
+    &:hover:not(:disabled) {
+      background-color: color('green-600');
+    }
+    
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+  
+  &.delete {
+    background-color: color('red-500');
+    
+    &:hover {
+      background-color: color('red-600');
+    }
+  }
+}
+

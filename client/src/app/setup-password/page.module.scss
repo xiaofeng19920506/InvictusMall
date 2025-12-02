@@ -1,0 +1,37 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: color('gray-50');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingContainer {
+  text-align: center;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  border-radius: border-radius('full');
+  width: 2rem; // h-8 w-8
+  height: 2rem;
+  border: 2px solid color('orange-500');
+  border-top-color: transparent;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.loadingText {
+  margin-top: 1rem; // mt-4
+  color: color('gray-600');
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+

@@ -14,6 +14,7 @@ import ChangePasswordForm from "./components/ChangePasswordForm";
 import ProfileAddresses from "./components/ProfileAddresses";
 import ProfilePageWrapper from "./components/ProfilePageWrapper";
 import ProfileToast from "./components/ProfileToast";
+import styles from "./page.module.scss";
 
 interface ProfileSearchParams {
   tab?: string;
@@ -113,11 +114,11 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
         clearHref={toastClearHref}
       />
       <Header />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">My Account</h1>
-            <p className="text-gray-600 mt-2">
+      <div className={styles.pageContainer}>
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <h1 className={styles.title}>My Account</h1>
+            <p className={styles.subtitle}>
               Manage your account settings and preferences
             </p>
           </div>

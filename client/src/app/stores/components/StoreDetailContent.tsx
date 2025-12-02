@@ -9,14 +9,18 @@ import Header from "@/components/common/Header";
 import Link from "next/link";
 import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
 import ReservationModal from "./ReservationModal";
+import StoreHeader from "./StoreHeader";
+import styles from "./StoreDetailContent.module.scss";
 
-function StarRating({ rating, size = "text-lg" }: { rating: number; size?: string }) {
+import starRatingStyles from "./StarRating.module.scss";
+
+function StarRating({ rating, size = "lg" }: { rating: number; size?: "sm" | "base" | "lg" | "xl" }) {
   // If no rating or rating is 0, show all empty stars
   if (!rating || rating === 0) {
     return (
-      <div className="flex">
+      <div className={starRatingStyles.container}>
         {[...Array(5)].map((_, i) => (
-          <span key={i} className={`${size} text-gray-300`}>
+          <span key={i} className={`${starRatingStyles.star} ${starRatingStyles.empty} ${starRatingStyles[size]}`}>
             ☆
           </span>
         ))}
@@ -25,7 +29,7 @@ function StarRating({ rating, size = "text-lg" }: { rating: number; size?: strin
   }
 
   return (
-    <div className="flex">
+    <div className={starRatingStyles.container}>
       {[...Array(5)].map((_, i) => {
         const starValue = i + 1;
         const filled = rating >= starValue;
@@ -34,9 +38,9 @@ function StarRating({ rating, size = "text-lg" }: { rating: number; size?: strin
         return (
           <span
             key={i}
-            className={`${size} ${
-              filled || halfFilled ? "text-yellow-400" : "text-gray-300"
-            }`}
+            className={`${starRatingStyles.star} ${
+              filled || halfFilled ? starRatingStyles.filled : starRatingStyles.empty
+            } ${starRatingStyles[size]}`}
           >
             {filled ? "⭐" : halfFilled ? "⭐" : "☆"}
           </span>
@@ -186,8 +190,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     return (
       <>
         <Header />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+        <div className={styles.loadingContainer}>
+          <div className={styles.spinner}></div>
         </div>
       </>
     );
@@ -197,17 +201,17 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     return (
       <>
         <Header />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <div className={styles.errorContainer}>
+          <div className={styles.errorContent}>
+            <h2 className={styles.errorTitle}>
               Store Not Found
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className={styles.errorMessage}>
               {error || "The store you are looking for does not exist."}
             </p>
             <Link
               href="/"
-              className="bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors cursor-pointer"
+              className={styles.backButton}
             >
               Back to Stores
             </Link>
@@ -221,86 +225,14 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     <>
       <Header />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Store Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-shrink-0">
-              <img
-                src={getImageUrl(store.imageUrl) || getPlaceholderImage()}
-                alt={store.name}
-                className="w-full md:w-64 h-64 object-cover rounded-lg bg-gray-200"
-                onError={handleImageError}
-              />
-            </div>
-
-            <div className="flex-1">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-3xl font-bold text-gray-900">
-                      {store.name}
-                    </h1>
-                    {store.isVerified && (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
-                        ✓ Verified
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <StarRating rating={store.rating} size="text-sm" />
-                      <span>{store.rating.toFixed(1)}</span>
-                    </div>
-                    <span>({store.reviewCount} reviews)</span>
-                    <span>📍 {store.location}</span>
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-gray-700 mb-4">{store.description}</p>
-
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Category:</span>
-                  <span className="ml-2 font-medium">{store.category}</span>
-                </div>
-                {!productsLoading && (
-                  <>
-                    {products.length > 0 && (
-                      <div>
-                        <span className="text-gray-500">Products:</span>
-                        <span className="ml-2 font-medium">{products.length}</span>
-                      </div>
-                    )}
-                    {products.length === 0 && services.length > 0 && (
-                      <div>
-                        <span className="text-gray-500">Services:</span>
-                        <span className="ml-2 font-medium">{services.length}</span>
-                      </div>
-                    )}
-                  </>
-                )}
-                <div>
-                  <span className="text-gray-500">Established:</span>
-                  <span className="ml-2 font-medium">{store.establishedYear}</span>
-                </div>
-                {store.discount && (
-                  <div>
-                    <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full font-medium">
-                      {store.discount}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className={styles.container}>
+        {/* Store Header - Using StoreHeader component */}
+        <StoreHeader store={store} storeId={storeId} />
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+        <div className={styles.tabsCard}>
+          <div className={styles.tabsNav}>
+            <nav className={styles.tabsList} aria-label="Tabs">
               {[
                 ...(products.length > 0 ? [{ id: "products", label: `Products (${products.length})` }] : []),
                 ...(services.length > 0 ? [{ id: "services", label: `Services (${services.length})` }] : []),
@@ -309,11 +241,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm cursor-pointer ${
-                    activeTab === tab.id
-                      ? "border-orange-500 text-orange-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
+                  className={`${styles.tabButton} ${activeTab === tab.id ? styles.active : ''}`}
                 >
                   {tab.label}
                 </button>
@@ -321,21 +249,21 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             </nav>
           </div>
 
-          <div className="p-6">
+          <div className={styles.tabContent}>
             {/* Products Tab */}
             {activeTab === "products" && (
               <div>
                 {productsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                  <div className={styles.loadingSpinner}>
+                    <div className={styles.smallSpinner}></div>
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className={styles.productsGrid}>
                       {products.map((product) => (
                         <div
                           key={product.id}
-                          className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                          className={styles.productCard}
                           onClick={() => router.push(`/products/${product.id}`)}
                         >
                           {(product.imageUrls && product.imageUrls.length > 0) || product.imageUrl ? (
@@ -344,35 +272,30 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                                 product.imageUrls && product.imageUrls.length > 0
                                   ? product.imageUrls[0]
                                   : product.imageUrl
-                              ) || "/placeholder/product.png"}
+                              ) || getPlaceholderImage()}
                               alt={product.name}
-                              className="w-full h-48 object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                // Prevent infinite onError loop by removing the handler
-                                target.onerror = null;
-                                target.src = "/placeholder/product.png";
-                              }}
+                              className={styles.productImage}
+                              onError={handleImageError}
                             />
                           ) : (
-                            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-400">No Image</span>
+                            <div className={styles.productImagePlaceholder}>
+                              <span>No Image</span>
                             </div>
                           )}
-                          <div className="p-4">
-                            <h4 className="font-semibold text-gray-900 mb-1">
+                          <div className={styles.productContent}>
+                            <h4 className={styles.productName}>
                               {product.name}
                             </h4>
                             {product.description && (
-                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                              <p className={styles.productDescription}>
                                 {product.description}
                               </p>
                             )}
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xl font-bold text-orange-500">
+                            <div className={styles.productFooter}>
+                              <span className={styles.productPrice}>
                                 ${product.price.toFixed(2)}
                               </span>
-                              <span className="text-sm text-gray-500">
+                              <span className={styles.productStock}>
                                 Stock: {product.stockQuantity}
                               </span>
                             </div>
@@ -383,8 +306,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                     </div>
 
                     {products.length === 0 && !productsLoading && (
-                      <div className="text-center py-12">
-                        <p className="text-gray-600">No products available yet.</p>
+                      <div className={styles.emptyState}>
+                        <p>No products available yet.</p>
                       </div>
                     )}
                   </>
@@ -396,16 +319,16 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             {activeTab === "services" && (
               <div>
                 {productsLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+                  <div className={styles.loadingSpinner}>
+                    <div className={styles.smallSpinner}></div>
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className={styles.productsGrid}>
                       {services.map((service) => (
                         <div
                           key={service.id}
-                          className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                          className={styles.productCard}
                         >
                           {((service.imageUrls && service.imageUrls.length > 0) || service.imageUrl) ? (
                             <img
@@ -413,32 +336,27 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                                 service.imageUrls && service.imageUrls.length > 0
                                   ? service.imageUrls[0]
                                   : service.imageUrl
-                              ) || "/placeholder/service.png"}
+                              ) || getPlaceholderImage()}
                               alt={service.name}
-                              className="w-full h-48 object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                // Prevent infinite onError loop by removing the handler
-                                target.onerror = null;
-                                target.src = "/placeholder/service.png";
-                              }}
+                              className={styles.productImage}
+                              onError={handleImageError}
                             />
                           ) : (
-                            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-400">No Image</span>
+                            <div className={styles.productImagePlaceholder}>
+                              <span>No Image</span>
                             </div>
                           )}
-                          <div className="p-4">
-                            <h4 className="font-semibold text-gray-900 mb-1">
+                          <div className={styles.productContent}>
+                            <h4 className={styles.productName}>
                               {service.name}
                             </h4>
                             {service.description && (
-                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                              <p className={styles.productDescription}>
                                 {service.description}
                               </p>
                             )}
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xl font-bold text-orange-500">
+                            <div className={styles.productFooter}>
+                              <span className={styles.productPrice}>
                                 ${service.price.toFixed(2)}
                               </span>
                             </div>
@@ -447,7 +365,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                                 setSelectedService(service);
                                 setIsReservationModalOpen(true);
                               }}
-                              className="w-full py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors cursor-pointer"
+                              className={styles.reservationButton}
                             >
                               Make Reservation
                             </button>
@@ -457,8 +375,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                     </div>
 
                     {services.length === 0 && !productsLoading && (
-                      <div className="text-center py-12">
-                        <p className="text-gray-600">No services available yet.</p>
+                      <div className={styles.emptyState}>
+                        <p>No services available yet.</p>
                       </div>
                     )}
                   </>
@@ -468,10 +386,10 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
 
             {/* Reviews Tab */}
             {activeTab === "reviews" && (
-              <div className="space-y-4">
-                <div className="text-center py-12">
-                  <p className="text-gray-600">Review system coming soon...</p>
-                  <p className="text-sm text-gray-500 mt-2">
+              <div className={styles.reviewsSection}>
+                <div className={styles.emptyState}>
+                  <p>Review system coming soon...</p>
+                  <p className={styles.emptySubtext}>
                     Reviews feature will be implemented in the next update.
                   </p>
                 </div>

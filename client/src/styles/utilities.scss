@@ -1,0 +1,115 @@
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+
+// Utility classes for common patterns
+// These can be used across components
+
+// Display
+.hidden {
+  display: none;
+}
+
+.block {
+  display: block;
+}
+
+.inline-block {
+  display: inline-block;
+}
+
+// Width & Height
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.min-h-screen {
+  min-height: 100vh;
+}
+
+// Position
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+.fixed {
+  position: fixed;
+}
+
+.sticky {
+  position: sticky;
+}
+
+// Z-index
+.z-50 {
+  z-index: 50;
+}
+
+// Overflow
+.overflow-x-auto {
+  overflow-x: auto;
+}
+
+.overflow-y-auto {
+  overflow-y: auto;
+}
+
+// Text utilities
+.break-all {
+  word-break: break-all;
+}
+
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+
+// Cursor
+.cursor-pointer {
+  cursor: pointer;
+}
+
+// Transform
+.transform {
+  transform: translateY(-50%);
+}
+
+// Responsive utilities
+@media (min-width: 640px) {
+  .sm\:px-6 {
+    padding-left: spacing(6);
+    padding-right: spacing(6);
+  }
+}
+
+@media (min-width: 768px) {
+  .md\:flex-row {
+    flex-direction: row;
+  }
+  
+  .md\:items-center {
+    align-items: center;
+  }
+  
+  .md\:justify-between {
+    justify-content: space-between;
+  }
+  
+  .md\:mt-0 {
+    margin-top: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:px-8 {
+    padding-left: spacing(8);
+    padding-right: spacing(8);
+  }
+}
+

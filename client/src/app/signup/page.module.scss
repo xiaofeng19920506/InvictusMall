@@ -1,0 +1,236 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: color('gray-50');
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 3rem; // py-12
+  padding-bottom: 3rem;
+  padding-left: 1.5rem; // sm:px-6
+  padding-right: 1.5rem;
+  
+  @include respond-to('lg') {
+    padding-left: 2rem; // lg:px-8
+    padding-right: 2rem;
+  }
+}
+
+.headerContainer {
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  
+  @include respond-to('sm') {
+    max-width: 28rem; // sm:max-w-md
+  }
+}
+
+.header {
+  text-align: center;
+}
+
+.logo {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.logoTitle {
+  font-size: font-size('3xl');
+  font-weight: font-weight('bold');
+  color: color('orange-500');
+  margin-bottom: 0.5rem; // mb-2
+}
+
+.subtitle {
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+  margin-bottom: 0.5rem; // mb-2
+}
+
+.description {
+  color: color('gray-600');
+}
+
+.formContainer {
+  margin-top: 2rem; // mt-8
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  
+  @include respond-to('sm') {
+    max-width: 28rem; // sm:max-w-md
+  }
+}
+
+.formCard {
+  background-color: color('white');
+  padding-top: 2rem; // py-8
+  padding-bottom: 2rem;
+  padding-left: 1rem; // px-4
+  padding-right: 1rem;
+  box-shadow: shadow('md');
+  border-radius: border-radius('lg');
+  
+  @include respond-to('sm') {
+    padding-left: 2.5rem; // sm:px-10
+    padding-right: 2.5rem;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; // space-y-6
+}
+
+.nameFields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem; // gap-4
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+}
+
+.formLabel {
+  display: block;
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  color: color('gray-700');
+}
+
+.formInputWrapper {
+  margin-top: 0.25rem; // mt-1
+}
+
+.formInput {
+  appearance: none;
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.75rem; // px-3 py-2
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('md');
+  font-size: font-size('sm');
+  color: color('gray-900');
+  background-color: color('white');
+  
+  &::placeholder {
+    color: color('gray-400');
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color('orange-500');
+    border-color: color('orange-500');
+  }
+}
+
+.errorMessage {
+  background-color: color('red-50');
+  border: 1px solid color('red-200');
+  color: color('red-700');
+  padding: 0.75rem 1rem; // px-4 py-3
+  border-radius: border-radius('md');
+}
+
+.submitButton {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 1rem; // py-2 px-4
+  border: 1px solid transparent;
+  border-radius: border-radius('md');
+  box-shadow: shadow('sm');
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  color: color('white');
+  background-color: color('orange-500');
+  transition: all 0.2s;
+  cursor: pointer;
+  
+  &:hover:not(:disabled) {
+    background-color: color('orange-600');
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color('orange-500');
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.dividerContainer {
+  margin-top: 1.5rem; // mt-6
+}
+
+.divider {
+  position: relative;
+}
+
+.dividerLine {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  
+  &::before {
+    content: '';
+    width: 100%;
+    border-top: 1px solid color('gray-300');
+  }
+}
+
+.dividerText {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  font-size: font-size('sm');
+}
+
+.dividerTextInner {
+  padding: 0 0.5rem; // px-2
+  background-color: color('white');
+  color: color('gray-500');
+}
+
+.loginButton {
+  margin-top: 1.5rem; // mt-6
+  text-align: center;
+}
+
+.loginLink {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 1rem; // py-2 px-4
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('md');
+  box-shadow: shadow('sm');
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  color: color('gray-700');
+  background-color: color('white');
+  text-decoration: none;
+  transition: all 0.2s;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: color('gray-50');
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color('orange-500');
+  }
+}
+

@@ -5,6 +5,7 @@ import { useFavorites } from '@/contexts/FavoritesContext';
 import { apiService, Store } from '@/services/api';
 import Header from '@/components/common/Header';
 import StoreCard from '../stores/components/StoreCard';
+import styles from './page.module.scss';
 
 export default function FavoritesPage() {
   const { favorites, removeFavorite } = useFavorites();
@@ -44,40 +45,40 @@ export default function FavoritesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={styles.pageContainer}>
       <Header />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">My Favorites</h1>
+      <div className={styles.container}>
+        <h1 className={styles.title}>My Favorites</h1>
 
         {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading favorite stores...</p>
+          <div className={styles.loadingContainer}>
+            <div className={styles.spinner}></div>
+            <p className={styles.loadingText}>Loading favorite stores...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          <div className={styles.errorMessage}>
             {error}
           </div>
         ) : stores.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <div className="text-6xl mb-4">❤️</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No favorite stores yet</h3>
-            <p className="text-gray-600 mb-6">
+          <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>❤️</div>
+            <h3 className={styles.emptyTitle}>No favorite stores yet</h3>
+            <p className={styles.emptyMessage}>
               Start exploring stores and add them to your favorites!
             </p>
             <a
               href="/"
-              className="inline-block bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors"
+              className={styles.browseButton}
             >
               Browse Stores
             </a>
           </div>
         ) : (
           <>
-            <p className="text-gray-600 mb-6">
+            <p className={styles.countText}>
               You have {stores.length} favorite store{stores.length !== 1 ? 's' : ''}
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className={styles.grid}>
               {stores.map((store) => (
                 <StoreCard key={store.id} store={store} />
               ))}

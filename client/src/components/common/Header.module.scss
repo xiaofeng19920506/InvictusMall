@@ -1,0 +1,386 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.header {
+  background-color: color('gray-900');
+  color: color('white');
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: shadow('lg');
+}
+
+.headerContent {
+  max-width: 80rem; // max-w-7xl = 80rem = 1280px
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem; // px-4
+  padding-right: 1rem;
+  
+  @include respond-to('sm') {
+    padding-left: 1.5rem; // sm:px-6
+    padding-right: 1.5rem;
+  }
+  
+  @include respond-to('lg') {
+    padding-left: 2rem; // lg:px-8
+    padding-right: 2rem;
+  }
+}
+
+.headerInner {
+  @include flex;
+  @include items-center;
+  @include justify-between;
+  height: 4rem; // h-16 = 4rem = 64px
+  gap: 1rem; // Ensure spacing between elements
+}
+
+.logo {
+  @include flex;
+  @include items-center;
+  
+  h1 {
+    font-size: font-size('2xl');
+    font-weight: font-weight('bold');
+    color: color('orange-500');
+    cursor: pointer;
+    transition: color 0.2s;
+    
+    &:hover {
+      color: color('orange-600');
+    }
+    
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px color('orange-500');
+    }
+  }
+}
+
+.searchForm {
+  flex: 1;
+  max-width: 42rem;
+  margin: 0 spacing(8);
+}
+
+.searchControls {
+  @include flex;
+  gap: spacing(2);
+}
+
+.searchTypeSelect {
+  padding: spacing(2) spacing(3);
+  color: color('gray-900');
+  background-color: color('white');
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('lg');
+  font-size: font-size('sm');
+  
+  &:focus {
+    outline: none;
+    border-color: color('orange-500');
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+  }
+  
+  &:hover {
+    border-color: color('orange-500');
+  }
+}
+
+.searchInputWrapper {
+  position: relative;
+  flex: 1;
+}
+
+.searchInput {
+  width: 100%;
+  padding: spacing(2) spacing(4);
+  padding-right: spacing(10);
+  color: color('gray-900');
+  background-color: color('white');
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('lg');
+  font-size: font-size('base');
+  
+  &:focus {
+    outline: none;
+    border-color: color('orange-500');
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+  }
+}
+
+.searchButton {
+  position: absolute;
+  right: spacing(2);
+  top: 50%;
+  transform: translateY(-50%);
+  color: color('gray-400');
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: spacing(1);
+  
+  &:hover {
+    color: color('gray-600');
+  }
+}
+
+.headerActions {
+  @include flex;
+  @include items-center;
+  gap: spacing(4);
+}
+
+.userActions {
+  @include flex;
+  @include items-center;
+  gap: spacing(4);
+}
+
+// Common button styles for consistent height
+.headerButton {
+  @include flex;
+  @include items-center;
+  gap: spacing(2);
+  padding: spacing(2) spacing(4);
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  color: color('white');
+  background-color: color('gray-800');
+  border-radius: border-radius('lg');
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+  height: 2.5rem; // h-10 = 2.5rem = 40px - Fixed height for consistency
+  
+  &:hover {
+    background-color: color('gray-700');
+  }
+}
+
+.adminButton {
+  @extend .headerButton;
+  background-color: color('orange-500');
+  
+  &:hover {
+    background-color: color('orange-600');
+  }
+}
+
+
+.signInButton {
+  @extend .headerButton;
+}
+
+.signUpButton {
+  @extend .headerButton;
+  background-color: color('orange-500');
+  
+  &:hover {
+    background-color: color('orange-600');
+  }
+}
+
+.cartButton {
+  @extend .headerButton;
+  position: relative;
+  height: 2.5rem; // h-10 - Ensure same height as user dropdown button
+}
+
+.userDropdownButton {
+  @extend .headerButton;
+  padding: spacing(2) spacing(3);
+  height: 2.5rem; // h-10 - Ensure same height as cart button
+}
+
+.userDropdown {
+  position: relative;
+}
+
+.dropdownMenu {
+  position: absolute;
+  right: 0;
+  margin-top: spacing(2);
+  width: 12rem;
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('lg');
+  padding: spacing(1);
+  z-index: 50;
+  border: 1px solid color('gray-200');
+}
+
+.dropdownItem {
+  display: block;
+  padding: spacing(2) spacing(4);
+  font-size: font-size('sm');
+  color: color('gray-700');
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-decoration: none;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  
+  &:hover {
+    background-color: color('gray-100');
+  }
+  
+  > div {
+    @include flex;
+    @include items-center;
+    gap: spacing(2);
+  }
+}
+
+.userAvatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: border-radius('full');
+  border: 2px solid color('white');
+}
+
+.userInitials {
+  width: 2rem;
+  height: 2rem;
+  border-radius: border-radius('full');
+  background-color: color('orange-500');
+  @include flex;
+  @include items-center;
+  @include justify-center;
+  color: color('white');
+  font-size: font-size('xs');
+  font-weight: font-weight('bold');
+}
+
+.welcomeText {
+  font-size: font-size('sm');
+  color: color('gray-300');
+}
+
+.badge {
+  padding: spacing(1) spacing(2);
+  font-size: font-size('xs');
+  color: color('white');
+  border-radius: border-radius('full');
+  
+  &.admin {
+    background-color: color('orange-500');
+  }
+  
+  &.storeOwner {
+    background-color: color('blue-500');
+  }
+}
+
+.dropdownArrow {
+  color: color('gray-400');
+}
+
+.cartBadge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  background-color: color('orange-500');
+  color: color('white');
+  font-size: font-size('xs');
+  border-radius: border-radius('full');
+  width: 1.25rem;
+  height: 1.25rem;
+  @include flex;
+  @include items-center;
+  @include justify-center;
+}
+
+.categoryNav {
+  background-color: color('gray-800');
+  border-top: 1px solid color('gray-700');
+  min-height: 3.5rem; // Increased height for better appearance
+  display: flex;
+  align-items: center; // Vertically center the content
+}
+
+.categoryNavContent {
+  max-width: 80rem; // max-w-7xl = 80rem = 1280px
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem; // px-4
+  padding-right: 1rem;
+  width: 100%;
+  
+  @include respond-to('sm') {
+    padding-left: 1.5rem; // sm:px-6
+    padding-right: 1.5rem;
+  }
+  
+  @include respond-to('lg') {
+    padding-left: 2rem; // lg:px-8
+    padding-right: 2rem;
+  }
+}
+
+.categoryList {
+  @include flex;
+  @include items-center; // Vertically center buttons
+  gap: spacing(2); // Horizontal gap between buttons
+  overflow-x: auto;
+  padding: 0; // Remove vertical padding since we're centering with align-items
+  
+  // Hide scrollbar but keep functionality
+  scrollbar-width: thin;
+  scrollbar-color: color('gray-600') color('gray-800');
+  
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: color('gray-800');
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: color('gray-600');
+    border-radius: 2px;
+    
+    &:hover {
+      background: color('gray-500');
+    }
+  }
+}
+
+.categoryButton {
+  padding: spacing(2.5) spacing(4); // Increased vertical padding
+  font-size: font-size('base'); // Increased from 'sm' to 'base' (16px)
+  font-weight: font-weight('medium');
+  border-radius: border-radius('md');
+  white-space: nowrap;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  flex-shrink: 0; // Prevent buttons from shrinking
+  
+  &.active {
+    background-color: color('orange-500');
+    color: color('white');
+  }
+  
+  &.inactive {
+    color: color('gray-300');
+    
+    &:hover {
+      background-color: color('orange-500');
+      color: color('white');
+    }
+  }
+}
+
+.loadingCategories {
+  padding: spacing(2) spacing(4);
+  font-size: font-size('sm');
+  color: color('gray-400');
+}
+

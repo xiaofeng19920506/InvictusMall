@@ -6,6 +6,7 @@ import {
   setDefaultAddressAction,
 } from "./addressActions";
 import { ShippingAddress } from "@/lib/server-api";
+import styles from "./ProfileAddresses.module.scss";
 
 interface ProfileAddressesProps {
   initialAddresses: ShippingAddress[];
@@ -36,7 +37,7 @@ export default function ProfileAddresses({
     feedbackStatus === "error" && feedbackMessage ? feedbackMessage : undefined;
 
   return (
-    <div className="space-y-4">
+    <div className={styles.container}>
       <AddressManager
         addresses={initialAddresses}
         showModal={showModal}

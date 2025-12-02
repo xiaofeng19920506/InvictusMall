@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import styles from "./ProfileToast.module.scss";
 
 interface ProfileToastProps {
   status?: "success" | "error";
@@ -58,30 +59,27 @@ export default function ProfileToast({
     return null;
   }
 
-  const tone =
-    currentStatus === "success"
-      ? "bg-emerald-50 text-emerald-900 border-emerald-200"
-      : "bg-rose-50 text-rose-900 border-rose-200";
-
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+    <div className={styles.container}>
       <div
-        className={`w-80 border shadow-lg rounded-lg px-4 py-3 ${tone} transition-opacity`}
+        className={`${styles.toast} ${
+          currentStatus === "success" ? styles.success : styles.error
+        }`}
       >
-        <div className="flex items-start gap-3">
-          <span aria-hidden className="mt-1 text-lg">
+        <div className={styles.content}>
+          <span aria-hidden className={styles.icon}>
             {currentStatus === "success" ? "✓" : "⚠"}
           </span>
-          <div className="flex-1">
-            <p className="text-sm font-semibold">
+          <div className={styles.textContent}>
+            <p className={styles.title}>
               {currentStatus === "success" ? "Success" : "Something went wrong"}
             </p>
-            <p className="text-sm mt-1 leading-snug">{currentMessage}</p>
+            <p className={styles.message}>{currentMessage}</p>
           </div>
           <button
             type="button"
             onClick={() => setIsVisible(false)}
-            className="ml-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            className={styles.closeButton}
             aria-label="Dismiss notification"
           >
             ×

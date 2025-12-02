@@ -1,10 +1,17 @@
+"use client";
+
 import { Order } from "@/lib/server-api";
 import Link from "next/link";
-import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
+import {
+  getImageUrl,
+  getPlaceholderImage,
+  handleImageError,
+} from "@/utils/imageUtils";
 import {
   getOrderStatusBadgeStyle,
   getOrderStatusLabel,
 } from "../orderStatusConfig";
+import styles from "./OrderDetailInfo.module.scss";
 
 interface OrderDetailInfoProps {
   order: Order;
@@ -22,144 +29,135 @@ function formatDate(dateString: string) {
 
 export default function OrderDetailInfo({ order }: OrderDetailInfoProps) {
   return (
-    <div className="space-y-6">
+    <div className={styles.container}>
       {/* Order Header */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+      <div className={styles.orderHeaderCard}>
+        <div className={styles.orderHeader}>
           <div>
-            <div className="flex items-center space-x-4 mb-2">
-              <h1 className="text-2xl font-bold text-gray-900 break-all">
-                Order #{order.id}
-              </h1>
+            <div className={styles.orderInfo}>
+              <h1 className={styles.orderTitle}>Order #{order.id}</h1>
               <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusBadgeStyle(
+                className={`${styles.statusBadge} ${getOrderStatusBadgeStyle(
                   order.status
                 )}`}
               >
-              {getOrderStatusLabel(order.status)}
+                {getOrderStatusLabel(order.status)}
               </span>
             </div>
-            <p className="text-sm text-gray-600">
-              Placed on {formatDate(order.orderDate)}
-            </p>
-            {order.shippedDate && (
-              <p className="text-sm text-gray-600">
-                Shipped on {formatDate(order.shippedDate)}
+            <div className={styles.orderMeta}>
+              <p className={styles.metaText}>
+                Placed on {formatDate(order.orderDate)}
               </p>
-            )}
-            {order.deliveredDate && (
-              <p className="text-sm text-gray-600">
-                Delivered on {formatDate(order.deliveredDate)}
-              </p>
-            )}
+              {order.shippedDate && (
+                <p className={styles.metaText}>
+                  Shipped on {formatDate(order.shippedDate)}
+                </p>
+              )}
+              {order.deliveredDate && (
+                <p className={styles.metaText}>
+                  Delivered on {formatDate(order.deliveredDate)}
+                </p>
+              )}
+            </div>
           </div>
-          <div className="mt-4 md:mt-0 text-right">
-            <p className="text-2xl font-bold text-gray-900">
+          <div className={styles.orderTotal}>
+            <p className={styles.totalAmount}>
               ${order.totalAmount.toFixed(2)}
             </p>
-            <p className="text-sm text-gray-600">
-              {order.items.length} item(s)
-            </p>
+            <p className={styles.totalLabel}>{order.items.length} item(s)</p>
           </div>
         </div>
       </div>
 
       {/* Order Items */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Order Items
-        </h2>
-        <div className="space-y-4">
+      <div className={styles.itemsCard}>
+        <h2 className={styles.itemsTitle}>Order Items</h2>
+        <div className={styles.itemsList}>
           {order.items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between border-b border-gray-200 pb-4 last:border-0 last:pb-0"
-            >
-              <div className="flex items-center space-x-4">
+            <div key={item.id} className={styles.itemRow}>
+              <div className={styles.itemLeft}>
                 <img
                   src={getImageUrl(item.productImage) || getPlaceholderImage()}
                   alt={item.productName}
-                  className="w-20 h-20 object-cover rounded bg-gray-200"
+                  className={styles.itemImage}
                   onError={handleImageError}
                 />
-                <div>
-                  <p className="font-medium text-gray-900">
-                    {item.productName}
-                  </p>
-                  <p className="text-sm text-gray-600">
+                <div className={styles.itemInfo}>
+                  <p className={styles.itemName}>{item.productName}</p>
+                  <p className={styles.itemDetails}>
                     Quantity: {item.quantity}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className={styles.itemDetails}>
                     ${item.price.toFixed(2)} each
                   </p>
-                  {(item as any).isReservation && (item as any).reservationDate && (item as any).reservationTime && (
-                    <div className="mt-2 text-sm text-gray-600">
-                      <p>
-                        📅 {new Date((item as any).reservationDate).toLocaleDateString('en-US', {
-                          weekday: 'short',
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </p>
-                      <p>
-                        🕐 {new Date(`2000-01-01T${(item as any).reservationTime}`).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })}
-                      </p>
-                      {(item as any).reservationNotes && (
-                        <p className="mt-1 text-xs text-gray-500">
-                          Notes: {(item as any).reservationNotes}
+                  {(item as any).isReservation &&
+                    (item as any).reservationDate &&
+                    (item as any).reservationTime && (
+                      <div className={styles.reservationInfo}>
+                        <p>
+                          📅{" "}
+                          {new Date(
+                            (item as any).reservationDate
+                          ).toLocaleDateString("en-US", {
+                            weekday: "short",
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
                         </p>
-                      )}
-                    </div>
-                  )}
+                        <p>
+                          🕐{" "}
+                          {new Date(
+                            `2000-01-01T${(item as any).reservationTime}`
+                          ).toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                            hour12: true,
+                          })}
+                        </p>
+                        {(item as any).reservationNotes && (
+                          <p className={styles.reservationNote}>
+                            Notes: {(item as any).reservationNotes}
+                          </p>
+                        )}
+                      </div>
+                    )}
                 </div>
               </div>
-              <p className="text-lg font-semibold text-gray-900">
-                ${item.subtotal.toFixed(2)}
-              </p>
+              <p className={styles.itemPrice}>${item.subtotal.toFixed(2)}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Shipping Information */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Shipping Information
-        </h2>
-        <div className="space-y-2 text-sm">
-          <p className="text-gray-900">
+      <div className={styles.shippingCard}>
+        <h2 className={styles.shippingTitle}>Shipping Information</h2>
+        <div className={styles.shippingInfo}>
+          <p className={styles.shippingText}>
             {order.shippingAddress.streetAddress}
             {order.shippingAddress.aptNumber &&
               `, ${order.shippingAddress.aptNumber}`}
           </p>
-          <p className="text-gray-900">
+          <p className={styles.shippingText}>
             {order.shippingAddress.city}, {order.shippingAddress.stateProvince}{" "}
             {order.shippingAddress.zipCode}
           </p>
-          <p className="text-gray-900">{order.shippingAddress.country}</p>
+          <p className={styles.shippingText}>{order.shippingAddress.country}</p>
         </div>
       </div>
 
       {/* Payment Information */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Payment Information
-        </h2>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Payment Method:</span>
-            <span className="text-gray-900 font-medium">
-              {order.paymentMethod}
-            </span>
+      <div className={styles.paymentCard}>
+        <h2 className={styles.paymentTitle}>Payment Information</h2>
+        <div className={styles.paymentInfo}>
+          <div className={styles.paymentRow}>
+            <span className={styles.paymentLabel}>Payment Method:</span>
+            <span className={styles.paymentValue}>{order.paymentMethod}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Total Amount:</span>
-            <span className="text-gray-900 font-bold text-lg">
+          <div className={styles.paymentRow}>
+            <span className={styles.paymentLabel}>Total Amount:</span>
+            <span className={`${styles.paymentValue} ${styles.total}`}>
               ${order.totalAmount.toFixed(2)}
             </span>
           </div>
@@ -168,22 +166,20 @@ export default function OrderDetailInfo({ order }: OrderDetailInfoProps) {
 
       {/* Tracking Information */}
       {order.trackingNumber && (
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Tracking Information
-          </h2>
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Tracking Number:</span>{" "}
+        <div className={styles.trackingCard}>
+          <h2 className={styles.trackingTitle}>Tracking Information</h2>
+          <div className={styles.trackingInfo}>
+            <p className={styles.trackingText}>
+              <span className={styles.trackingLabel}>Tracking Number:</span>{" "}
               {order.trackingNumber}
             </p>
             {order.status === "shipped" && (
-              <p className="text-sm text-blue-600">
+              <p className={`${styles.trackingStatus} ${styles.shipped}`}>
                 Your order has been shipped and is on its way!
               </p>
             )}
             {order.status === "delivered" && (
-              <p className="text-sm text-green-600">
+              <p className={`${styles.trackingStatus} ${styles.delivered}`}>
                 Your order has been delivered!
               </p>
             )}
@@ -192,17 +188,12 @@ export default function OrderDetailInfo({ order }: OrderDetailInfoProps) {
       )}
 
       {/* Actions */}
-      <div className="flex space-x-4">
-        <Link
-          href="/orders"
-          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
-        >
+      <div className={styles.actions}>
+        <Link href="/orders" className={styles.backButton}>
           Back to Orders
         </Link>
         {order.status === "delivered" && (
-          <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
-            Write Review
-          </button>
+          <button className={styles.reviewButton}>Write Review</button>
         )}
       </div>
     </div>

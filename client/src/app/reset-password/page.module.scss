@@ -1,0 +1,85 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: color('gray-50');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 3rem; // py-12
+  padding-bottom: 3rem;
+  padding-left: 1rem; // px-4
+  padding-right: 1rem;
+  
+  @include respond-to('sm') {
+    padding-left: 1.5rem; // sm:px-6
+    padding-right: 1.5rem;
+  }
+  
+  @include respond-to('lg') {
+    padding-left: 2rem; // lg:px-8
+    padding-right: 2rem;
+  }
+}
+
+.container {
+  max-width: 28rem; // max-w-md
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem; // space-y-8
+}
+
+.header {
+  text-align: center;
+}
+
+.title {
+  font-size: font-size('3xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+  margin-bottom: 0.5rem; // mb-2
+}
+
+.description {
+  text-align: center;
+  color: color('gray-600');
+}
+
+.loadingCard {
+  max-width: 28rem; // max-w-md
+  margin-left: auto;
+  margin-right: auto;
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+  padding: 1.5rem; // p-6
+}
+
+.loadingContent {
+  text-align: center;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  border-radius: border-radius('full');
+  width: 2rem; // h-8 w-8
+  height: 2rem;
+  border: 2px solid color('orange-500');
+  border-top-color: transparent;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.loadingText {
+  margin-top: 1rem; // mt-4
+  color: color('gray-600');
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+

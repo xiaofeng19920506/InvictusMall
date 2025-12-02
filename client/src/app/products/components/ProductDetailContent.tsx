@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { productService, Product } from "@/services/product";
 import { useCart } from "@/contexts/CartContext";
-import { getImageUrl } from "@/utils/imageUtils";
+import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
 import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
+import styles from "./ProductDetailContent.module.scss";
 
 interface ProductDetailContentProps {
   productId: string;
@@ -58,10 +59,10 @@ export default function ProductDetailContent({ productId }: ProductDetailContent
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+      <div className={styles.pageContainer}>
+        <div className={styles.container}>
+          <div className={styles.loadingContainer}>
+            <div className={styles.spinner}></div>
           </div>
         </div>
       </div>
@@ -70,13 +71,13 @@ export default function ProductDetailContent({ productId }: ProductDetailContent
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-12">
-            <p className="text-gray-600">Product not found.</p>
+      <div className={styles.pageContainer}>
+        <div className={styles.container}>
+          <div className={styles.errorContainer}>
+            <p className={styles.errorMessage}>Product not found.</p>
             <button
               onClick={() => router.back()}
-              className="mt-4 text-orange-500 hover:text-orange-600"
+              className={styles.backButton}
             >
               Go back
             </button>
@@ -100,32 +101,28 @@ export default function ProductDetailContent({ productId }: ProductDetailContent
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className={styles.pageContainer}>
+      <div className={styles.container}>
         <button
           onClick={() => router.back()}
-          className="mb-6 text-gray-600 hover:text-gray-900 flex items-center gap-2"
+          className={styles.backLink}
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className={styles.backIcon} />
           Back
         </button>
 
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
+        <div className={styles.productCard}>
+          <div className={styles.productGrid}>
             {/* Image Gallery */}
-            <div className="relative">
+            <div className={styles.imageSection}>
               {images.length > 0 ? (
                 <>
-                  <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                  <div className={styles.imageContainer}>
                     <img
-                      src={getImageUrl(images[currentImageIndex]) || "/placeholder/product.png"}
+                      src={getImageUrl(images[currentImageIndex]) || getPlaceholderImage()}
                       alt={product.name}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.onerror = null;
-                        target.src = "/placeholder/product.png";
-                      }}
+                      className={styles.productImage}
+                      onError={handleImageError}
                     />
                     
                     {/* Navigation arrows (only show if more than 1 image) */}
@@ -133,17 +130,17 @@ export default function ProductDetailContent({ productId }: ProductDetailContent
                       <>
                         <button
                           onClick={prevImage}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all"
+                          className={`${styles.navButton} ${styles.prev}`}
                           aria-label="Previous image"
                         >
-                          <ChevronLeft className="w-6 h-6 text-gray-800" />
+                          <ChevronLeft className={styles.navIcon} />
                         </button>
                         <button
                           onClick={nextImage}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 shadow-lg transition-all"
+                          className={`${styles.navButton} ${styles.next}`}
                           aria-label="Next image"
                         >
-                          <ChevronRight className="w-6 h-6 text-gray-800" />
+                          <ChevronRight className={styles.navIcon} />
                         </button>
                       </>
                     )}
@@ -151,26 +148,18 @@ export default function ProductDetailContent({ productId }: ProductDetailContent
 
                   {/* Thumbnail navigation */}
                   {images.length > 1 && (
-                    <div className="mt-4 flex gap-2 overflow-x-auto">
+                    <div className={styles.thumbnails}>
                       {images.map((imageUrl, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
-                          className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                            index === currentImageIndex
-                              ? "border-orange-500 ring-2 ring-orange-200"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
+                          className={`${styles.thumbnail} ${index === currentImageIndex ? styles.active : ''}`}
                         >
                           <img
-                            src={getImageUrl(imageUrl) || "/placeholder/product.png"}
+                            src={getImageUrl(imageUrl) || getPlaceholderImage()}
                             alt={`${product.name} thumbnail ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.onerror = null;
-                              target.src = "/placeholder/product.png";
-                            }}
+                            className={styles.thumbnailImage}
+                            onError={handleImageError}
                           />
                         </button>
                       ))}
@@ -179,53 +168,53 @@ export default function ProductDetailContent({ productId }: ProductDetailContent
 
                   {/* Image counter */}
                   {images.length > 1 && (
-                    <div className="mt-2 text-sm text-gray-500 text-center">
+                    <div className={styles.imageCounter}>
                       Image {currentImageIndex + 1} of {images.length}
                     </div>
                   )}
                 </>
               ) : (
-                <div className="aspect-square bg-gray-200 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-400">No Image</span>
+                <div className={styles.imagePlaceholder}>
+                  <span>No Image</span>
                 </div>
               )}
             </div>
 
             {/* Product Info */}
-            <div className="flex flex-col">
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
+            <div className={styles.infoSection}>
+              <h1 className={styles.title}>{product.name}</h1>
               
               {product.description && (
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-2">Description</h2>
-                  <p className="text-gray-600 whitespace-pre-wrap">{product.description}</p>
+                <div className={styles.descriptionSection}>
+                  <h2 className={styles.descriptionTitle}>Description</h2>
+                  <p className={styles.descriptionText}>{product.description}</p>
                 </div>
               )}
 
-              <div className="mb-6">
-                <div className="text-4xl font-bold text-orange-500 mb-2">
+              <div className={styles.priceSection}>
+                <div className={styles.price}>
                   ${product.price.toFixed(2)}
                 </div>
                 {product.stockQuantity !== undefined && (
-                  <div className="text-sm text-gray-600">
+                  <div className={styles.stock}>
                     Stock: {product.stockQuantity > 0 ? `${product.stockQuantity} available` : "Out of stock"}
                   </div>
                 )}
               </div>
 
-              <div className="mt-auto">
+              <div style={{ marginTop: 'auto' }}>
                 <button
                   onClick={handleAddToCart}
                   disabled={product.stockQuantity === 0}
-                  className={`w-full py-3 px-6 rounded-md font-semibold transition-colors flex items-center justify-center gap-2 ${
+                  className={`${styles.addToCartButton} ${
                     added
-                      ? "bg-green-500 text-white"
+                      ? styles.added
                       : product.stockQuantity === 0
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-orange-500 text-white hover:bg-orange-600"
+                      ? styles.disabled
+                      : ''
                   }`}
                 >
-                  <ShoppingCart className="w-5 h-5" />
+                  <ShoppingCart className={styles.cartIcon} />
                   {added ? "✓ Added to Cart" : product.stockQuantity === 0 ? "Out of Stock" : "Add to Cart"}
                 </button>
               </div>

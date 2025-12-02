@@ -1,0 +1,174 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: color('gray-50');
+}
+
+.container {
+  max-width: 80rem; // max-w-7xl
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 2rem; // py-8
+  padding-bottom: 2rem;
+  padding-left: 1rem; // px-4
+  padding-right: 1rem;
+  
+  @include respond-to('sm') {
+    padding-left: 1.5rem; // sm:px-6
+    padding-right: 1.5rem;
+  }
+  
+  @include respond-to('lg') {
+    padding-left: 2rem; // lg:px-8
+    padding-right: 2rem;
+  }
+}
+
+.emptyCartContainer {
+  min-height: 100vh;
+  background-color: color('gray-50');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyCartContent {
+  text-align: center;
+}
+
+.emptyCartTitle {
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+  margin-bottom: 1rem; // mb-4
+}
+
+.continueShoppingButton {
+  display: inline-block;
+  background-color: color('orange-500');
+  color: color('white');
+  padding: 0.5rem 1.5rem; // px-6 py-2
+  border-radius: border-radius('md');
+  transition: background-color 0.2s;
+  text-decoration: none;
+  
+  &:hover {
+    background-color: color('orange-600');
+  }
+}
+
+.progressContainer {
+  margin-bottom: 2rem; // mb-8
+}
+
+.progressBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 48rem; // max-w-3xl
+}
+
+.stepGroup {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  
+  &.active {
+    color: color('orange-600');
+  }
+  
+  &.completed {
+    color: color('green-600');
+  }
+  
+  &.inactive {
+    color: color('gray-400');
+  }
+}
+
+.stepCircle {
+  width: 2rem; // w-8
+  height: 2rem; // h-8
+  border-radius: border-radius('full');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: font-weight('semibold');
+  
+  &.active {
+    background-color: color('orange-600');
+    color: color('white');
+  }
+  
+  &.completed {
+    background-color: color('green-600');
+    color: color('white');
+  }
+  
+  &.inactive {
+    background-color: color('gray-300');
+    color: color('gray-600');
+  }
+}
+
+.stepLabel {
+  margin-left: 0.5rem; // ml-2
+  font-weight: font-weight('medium');
+}
+
+.stepConnector {
+  flex: 1;
+  height: 0.25rem; // h-1
+  margin-left: 1rem; // mx-4
+  margin-right: 1rem;
+  
+  &.completed {
+    background-color: color('green-600');
+  }
+  
+  &.inactive {
+    background-color: color('gray-300');
+  }
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 2rem; // gap-8
+  
+  @include respond-to('lg') {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.mainContent {
+  @include respond-to('lg') {
+    grid-column: span 2;
+  }
+}
+
+.stepCard {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+}
+
+.errorBanner {
+  border-bottom: 1px solid color('red-200');
+  background-color: color('red-50');
+  padding: 1rem; // p-4
+}
+
+.errorMessage {
+  font-size: font-size('sm');
+  color: color('red-700');
+}
+
+.sidebar {
+  @include respond-to('lg') {
+    grid-column: span 1;
+  }
+}
+

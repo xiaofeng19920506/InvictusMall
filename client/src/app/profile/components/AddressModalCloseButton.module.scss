@@ -1,0 +1,21 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.button {
+  color: color('gray-400');
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0;
+  
+  &:hover {
+    color: color('gray-600');
+  }
+}
+
+.icon {
+  width: 1.5rem; // h-6 w-6
+  height: 1.5rem;
+}
+

@@ -4,6 +4,8 @@ import {
   getOrderStatusBadgeStyle,
   getOrderStatusLabel,
 } from "../orderStatusConfig";
+import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
+import styles from "./OrdersList.module.scss";
 
 interface OrdersListProps {
   orders: Order[];
@@ -20,15 +22,15 @@ function formatDate(dateString: string) {
 export default function OrdersList({ orders }: OrdersListProps) {
   if (orders.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-12 text-center">
-        <div className="text-6xl mb-4">📦</div>
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">
+      <div className={styles.emptyState}>
+        <div className={styles.emptyIcon}>📦</div>
+        <h3 className={styles.emptyTitle}>
           No orders found
         </h3>
-        <p className="text-gray-600 mb-6">You haven't placed any orders yet.</p>
+        <p className={styles.emptyMessage}>You haven't placed any orders yet.</p>
         <Link
           href="/"
-          className="inline-block bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors"
+          className={styles.startShoppingButton}
         >
           Start Shopping
         </Link>
@@ -37,70 +39,71 @@ export default function OrdersList({ orders }: OrdersListProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className={styles.container}>
       {orders.map((order) => (
-        <div key={order.id} className="bg-white rounded-lg shadow-md p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-            <div>
-              <div className="flex items-center space-x-4 mb-2">
-                <h3 className="text-lg font-semibold text-gray-900 break-all">
+        <div key={order.id} className={styles.orderCard}>
+          <div className={styles.orderHeader}>
+            <div className={styles.orderInfoLeft}>
+              <div className={styles.orderTitleRow}>
+                <h3 className={styles.orderTitle}>
                   Order #{order.id}
                 </h3>
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getOrderStatusBadgeStyle(
+                  className={`${styles.statusBadge} ${getOrderStatusBadgeStyle(
                     order.status
                   )}`}
                 >
                   {getOrderStatusLabel(order.status)}
                 </span>
               </div>
-              <p className="text-sm text-gray-600">
+              <p className={styles.orderDate}>
                 Placed on {formatDate(order.orderDate)}
               </p>
               {order.shippedDate && (
-                <p className="text-sm text-gray-600">
+                <p className={styles.orderDate}>
                   Shipped on {formatDate(order.shippedDate)}
                 </p>
               )}
               {order.deliveredDate && (
-                <p className="text-sm text-gray-600">
+                <p className={styles.orderDate}>
                   Delivered on {formatDate(order.deliveredDate)}
                 </p>
               )}
             </div>
-            <div className="mt-4 md:mt-0 text-right">
-              <p className="text-lg font-bold text-gray-900">
+            <div className={styles.orderTotal}>
+              <p className={styles.totalAmount}>
                 ${order.totalAmount.toFixed(2)}
               </p>
-              <p className="text-sm text-gray-600">{order.items.length} item(s)</p>
+              <p className={styles.itemCount}>{order.items.length} item(s)</p>
             </div>
           </div>
 
-          <div className="border-t border-gray-200 pt-4">
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-900 mb-2">
+          <div className={styles.divider}>
+            <div className={styles.storeInfo}>
+              <p className={styles.storeLabel}>
                 From: {order.storeName}
               </p>
-              <div className="space-y-1">
+              <div className={styles.itemsList}>
                 {order.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between text-sm"
+                    className={styles.orderItem}
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className={styles.itemLeft}>
                       {item.productImage && (
                         <img
-                          src={item.productImage}
+                          src={getImageUrl(item.productImage) || getPlaceholderImage()}
                           alt={item.productName}
-                          className="w-12 h-12 object-cover rounded"
+                          className={styles.itemImage}
+                          onError={handleImageError}
                         />
                       )}
-                      <div>
-                        <p className="text-gray-900">{item.productName}</p>
-                        <p className="text-gray-500">Qty: {item.quantity}</p>
+                      <div className={styles.itemInfo}>
+                        <p className={styles.itemName}>{item.productName}</p>
+                        <p className={styles.itemQuantity}>Qty: {item.quantity}</p>
                       </div>
                     </div>
-                    <p className="text-gray-900 font-medium">
+                    <p className={styles.itemPrice}>
                       ${item.subtotal.toFixed(2)}
                     </p>
                   </div>
@@ -109,18 +112,18 @@ export default function OrdersList({ orders }: OrdersListProps) {
             </div>
 
             {order.trackingNumber && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">Tracking Number:</span>{" "}
+              <div className={styles.trackingSection}>
+                <p className={styles.trackingText}>
+                  <span className={styles.trackingLabel}>Tracking Number:</span>{" "}
                   {order.trackingNumber}
                 </p>
               </div>
             )}
 
-            <div className="mt-4">
+            <div>
               <Link
                 href={`/orders/${order.id}`}
-                className="text-sm text-orange-500 hover:text-orange-600 font-medium"
+                className={styles.viewDetailsLink}
               >
                 View Details
               </Link>

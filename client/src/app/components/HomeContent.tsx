@@ -6,6 +6,7 @@ import Header from "@/components/common/Header";
 import StoreGrid from "../stores/components/StoreGrid";
 import { useRealTimeStores } from "@/hooks/useRealTimeStores";
 import { Store } from "@/services/api";
+import styles from "./HomeContent.module.scss";
 
 interface HomeContentProps {
   initialStores: Store[];
@@ -80,22 +81,22 @@ export default function HomeContent({
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className={styles.homeContainer}>
       <Header
         onSearch={handleSearch}
         onCategoryFilter={handleCategoryFilter}
         onSearchTypeChange={handleSearchTypeChange}
       />
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex items-center gap-4 flex-wrap">
-          <h2 className="text-3xl font-bold text-gray-900">
+      <main className={styles.main}>
+        <div className={styles.headerSection}>
+          <h2 className={styles.title}>
             {searchType === "All"
               ? selectedCategory === "All"
                 ? "All Stores"
                 : `${selectedCategory} Stores`
               : `${searchType} Search Results`}
           </h2>
-          <p className="text-gray-600">
+          <p className={styles.subtitle}>
             {stores.length}{" "}
             {searchType === "All" ? "store" : searchType.toLowerCase()}
             {stores.length !== 1 ? "s" : ""} found
@@ -106,11 +107,11 @@ export default function HomeContent({
 
         {/* Error State */}
         {error && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
+          <div className={styles.errorContainer}>
+            <div className={styles.errorContent}>
+              <div className={styles.errorLeft}>
                 <svg
-                  className="h-5 w-5 text-red-400 mr-2"
+                  className={styles.errorIcon}
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -120,11 +121,11 @@ export default function HomeContent({
                     clipRule="evenodd"
                   />
                 </svg>
-                <span className="text-red-700">{error}</span>
+                <span className={styles.errorMessage}>{error}</span>
               </div>
               <button
                 onClick={handleRetry}
-                className="ml-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors cursor-pointer"
+                className={styles.retryButton}
               >
                 Retry
               </button>

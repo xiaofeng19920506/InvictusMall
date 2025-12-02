@@ -4,6 +4,7 @@ import StoreHeader from "../components/StoreHeader";
 import StoreTabsContent from "../components/StoreTabsContent";
 import Header from "@/components/common/Header";
 import type { Metadata } from "next";
+import styles from "./page.module.scss";
 
 interface StorePageProps {
   params: Promise<{
@@ -91,8 +92,8 @@ export default async function StoreDetailPage({ params }: StorePageProps) {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className={styles.pageContainer}>
+        <div className={styles.container}>
           <StoreHeader store={store} storeId={id} />
           <StoreTabsContent store={store} />
         </div>

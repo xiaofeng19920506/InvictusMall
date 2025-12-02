@@ -1,0 +1,244 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: color('gray-50');
+}
+
+.container {
+  max-width: 80rem; // max-w-7xl
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 2rem; // py-8
+  padding-bottom: 2rem;
+  padding-left: 1rem; // px-4
+  padding-right: 1rem;
+  
+  @include respond-to('sm') {
+    padding-left: 1.5rem; // sm:px-6
+    padding-right: 1.5rem;
+  }
+  
+  @include respond-to('lg') {
+    padding-left: 2rem; // lg:px-8
+    padding-right: 2rem;
+  }
+}
+
+.header {
+  margin-bottom: 2rem; // mb-8
+}
+
+.title {
+  font-size: font-size('3xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+}
+
+.subtitle {
+  color: color('gray-600');
+  margin-top: 0.5rem; // mt-2
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem; // gap-6
+  
+  @include respond-to('md') {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  @include respond-to('lg') {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.statCard {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+  padding: 1.5rem; // p-6
+}
+
+.statContent {
+  display: flex;
+  align-items: center;
+}
+
+.statIcon {
+  padding: 0.75rem; // p-3
+  border-radius: border-radius('full');
+  
+  &.orange {
+    background-color: color('orange-100');
+  }
+  
+  &.blue {
+    background-color: color('blue-100');
+  }
+  
+  &.green {
+    background-color: color('green-100');
+  }
+}
+
+.statIconText {
+  font-size: font-size('2xl');
+}
+
+.statInfo {
+  margin-left: 1rem; // ml-4
+}
+
+.statTitle {
+  font-size: font-size('lg');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+}
+
+.statValue {
+  font-size: font-size('3xl');
+  font-weight: font-weight('bold');
+  
+  &.orange {
+    color: color('orange-500');
+  }
+  
+  &.blue {
+    color: color('blue-500');
+  }
+  
+  &.green {
+    color: color('green-500');
+  }
+}
+
+.quickActionsCard {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+  padding: 1.5rem; // p-6
+  
+  @include respond-to('md') {
+    grid-column: span 2;
+  }
+  
+  @include respond-to('lg') {
+    grid-column: span 3;
+  }
+}
+
+.quickActionsTitle {
+  font-size: font-size('lg');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: 1rem; // mb-4
+}
+
+.quickActionsGrid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem; // gap-4
+  
+  @include respond-to('md') {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.quickActionButton {
+  padding: 1rem; // p-4
+  border: 1px solid color('gray-200');
+  border-radius: border-radius('lg');
+  transition: background-color 0.2s;
+  cursor: pointer;
+  background-color: color('white');
+  text-align: left;
+  
+  &:hover {
+    background-color: color('gray-50');
+  }
+}
+
+.quickActionIcon {
+  font-size: font-size('2xl');
+  margin-bottom: 0.5rem; // mb-2
+  display: block;
+}
+
+.quickActionTitle {
+  font-weight: font-weight('medium');
+  color: color('gray-900');
+}
+
+.quickActionDescription {
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.recentActivityCard {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+  padding: 1.5rem; // p-6
+  
+  @include respond-to('md') {
+    grid-column: span 2;
+  }
+  
+  @include respond-to('lg') {
+    grid-column: span 3;
+  }
+}
+
+.recentActivityTitle {
+  font-size: font-size('lg');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: 1rem; // mb-4
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; // space-y-3
+}
+
+.activityItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.5rem; // py-2
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid color('gray-100');
+}
+
+.activityContent {
+  display: flex;
+  align-items: center;
+}
+
+.activityIcon {
+  color: color('orange-500');
+  margin-right: 0.75rem; // mr-3
+  
+  &.blue {
+    color: color('blue-500');
+  }
+  
+  &.green {
+    color: color('green-500');
+  }
+}
+
+.activityText {
+  font-size: font-size('sm');
+  color: color('gray-900');
+}
+
+.activityTime {
+  font-size: font-size('xs');
+  color: color('gray-500');
+}
+

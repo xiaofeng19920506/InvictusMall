@@ -1,0 +1,144 @@
+@use './variables.scss' as *;
+
+// Flexbox Mixins
+@mixin flex {
+  display: flex;
+}
+
+@mixin flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+@mixin items-center {
+  align-items: center;
+}
+
+@mixin items-start {
+  align-items: flex-start;
+}
+
+@mixin items-end {
+  align-items: flex-end;
+}
+
+@mixin justify-center {
+  justify-content: center;
+}
+
+@mixin justify-between {
+  justify-content: space-between;
+}
+
+@mixin justify-start {
+  justify-content: flex-start;
+}
+
+@mixin justify-end {
+  justify-content: flex-end;
+}
+
+@mixin flex-wrap {
+  flex-wrap: wrap;
+}
+
+// Spacing Mixins
+@mixin space-x($size) {
+  > * + * {
+    margin-left: spacing($size);
+  }
+}
+
+@mixin space-y($size) {
+  > * + * {
+    margin-top: spacing($size);
+  }
+}
+
+// Text Mixins
+@mixin text-center {
+  text-align: center;
+}
+
+@mixin text-left {
+  text-align: left;
+}
+
+@mixin text-right {
+  text-align: right;
+}
+
+// Common Utility Classes
+@mixin container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: spacing(4);
+  padding-right: spacing(4);
+  
+  @include respond-to('sm') {
+    padding-left: spacing(6);
+    padding-right: spacing(6);
+  }
+  
+  @include respond-to('lg') {
+    padding-left: spacing(8);
+    padding-right: spacing(8);
+  }
+}
+
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: spacing(2) spacing(4);
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  border-radius: border-radius('lg');
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+  
+  &:hover {
+    opacity: 0.9;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin card {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+  padding: spacing(6);
+}
+
+@mixin input-base {
+  width: 100%;
+  padding: spacing(2) spacing(4);
+  font-size: font-size('base');
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('lg');
+  background-color: color('white');
+  color: color('gray-900');
+  
+  &:focus {
+    outline: none;
+    border-color: color('orange-500');
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+  }
+  
+  &::placeholder {
+    color: color('gray-400');
+  }
+}
+

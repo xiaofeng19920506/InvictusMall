@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import ConfirmDeleteModal from "@/components/common/ConfirmDeleteModal";
+import styles from "./AddressActionButtons.module.scss";
 
 interface AddressActionButtonsProps {
   addressId: string;
@@ -72,11 +73,11 @@ export default function AddressActionButtons({
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <div className={styles.container}>
         <button
           type="button"
           onClick={handleEditClick}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors cursor-pointer text-sm"
+          className={`${styles.button} ${styles.edit}`}
         >
           Edit
         </button>
@@ -85,7 +86,7 @@ export default function AddressActionButtons({
             type="button"
             onClick={handleSetDefault}
             disabled={isSettingDefault}
-            className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+            className={`${styles.button} ${styles.setDefault}`}
           >
             {isSettingDefault ? "Setting..." : "Set Default"}
           </button>
@@ -93,7 +94,7 @@ export default function AddressActionButtons({
         <button
           type="button"
           onClick={handleDelete}
-          className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors cursor-pointer text-sm"
+          className={`${styles.button} ${styles.delete}`}
         >
           Delete
         </button>

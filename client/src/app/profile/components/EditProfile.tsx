@@ -1,5 +1,6 @@
 import AvatarUpload from "./AvatarUpload";
 import { updateProfileAction } from "../actions";
+import styles from "./EditProfile.module.scss";
 
 interface EditProfileProps {
   initialUser: {
@@ -14,9 +15,9 @@ interface EditProfileProps {
 export default function EditProfile({ initialUser }: EditProfileProps) {
   if (!initialUser) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Edit Profile</h2>
-        <p className="text-sm text-gray-600">
+      <div className={styles.container}>
+        <h2 className={styles.title}>Edit Profile</h2>
+        <p className={styles.errorMessage}>
           We couldn&apos;t load your profile details. Please reload the page and
           try again.
         </p>
@@ -25,10 +26,10 @@ export default function EditProfile({ initialUser }: EditProfileProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Edit Profile</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title} style={{ marginBottom: '1.5rem' }}>Edit Profile</h2>
 
-      <div className="mb-6">
+      <div className={styles.avatarSection}>
         <AvatarUpload
           currentAvatar={initialUser.avatar}
           firstName={initialUser.firstName}
@@ -37,12 +38,12 @@ export default function EditProfile({ initialUser }: EditProfileProps) {
         />
       </div>
 
-      <form action={updateProfileAction} className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
+      <form action={updateProfileAction} className={styles.form}>
+        <div className={styles.formGrid}>
+          <div className={styles.formField}>
             <label
               htmlFor="firstName"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className={styles.formLabel}
             >
               First Name
             </label>
@@ -52,14 +53,14 @@ export default function EditProfile({ initialUser }: EditProfileProps) {
               name="firstName"
               defaultValue={initialUser.firstName}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className={styles.formInput}
             />
           </div>
 
-          <div>
+          <div className={styles.formField}>
             <label
               htmlFor="lastName"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className={styles.formLabel}
             >
               Last Name
             </label>
@@ -69,15 +70,15 @@ export default function EditProfile({ initialUser }: EditProfileProps) {
               name="lastName"
               defaultValue={initialUser.lastName}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className={styles.formInput}
             />
           </div>
         </div>
 
-        <div>
+        <div className={styles.formField}>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className={styles.formLabel}
           >
             Email Address
           </label>
@@ -87,15 +88,15 @@ export default function EditProfile({ initialUser }: EditProfileProps) {
             name="email"
             defaultValue={initialUser.email}
             disabled
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500 cursor-not-allowed"
+            className={styles.formInput}
           />
-          <p className="mt-1 text-xs text-gray-500">Email cannot be changed.</p>
+          <p className={styles.helpText}>Email cannot be changed.</p>
         </div>
 
-        <div>
+        <div className={styles.formField}>
           <label
             htmlFor="phoneNumber"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className={styles.formLabel}
           >
             Phone Number
           </label>
@@ -105,13 +106,13 @@ export default function EditProfile({ initialUser }: EditProfileProps) {
             name="phoneNumber"
             defaultValue={initialUser.phoneNumber}
             placeholder="Enter your phone number"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className={styles.formInput}
           />
         </div>
 
         <button
           type="submit"
-          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors cursor-pointer"
+          className={styles.submitButton}
         >
           Save Changes
         </button>

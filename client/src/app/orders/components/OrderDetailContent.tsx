@@ -1,3 +1,5 @@
+"use client";
+
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import { Order } from "@/lib/server-api";
 import Link from "next/link";
@@ -6,6 +8,7 @@ import {
   getOrderStatusBadgeStyle,
   getOrderStatusLabel,
 } from "../orderStatusConfig";
+import styles from "./OrderDetailContent.module.scss";
 
 interface OrderDetailContentProps {
   initialOrder: Order | null;
@@ -25,9 +28,9 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
   if (!initialOrder) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+        <div className={styles.pageContainer}>
+          <div className={styles.container}>
+            <div className={styles.errorMessage}>
               Order not found.
             </div>
           </div>
@@ -39,34 +42,34 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
   const order = initialOrder;
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className={styles.pageContainer}>
+        <div className={styles.container}>
           {/* Header */}
-          <div className="mb-6">
+          <div className={styles.header}>
             <Link
               href="/orders"
-              className="text-orange-500 hover:text-orange-600 mb-4 inline-block cursor-pointer"
+              className={styles.backLink}
             >
               ← Back to Orders
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900">Order Details</h1>
+            <h1 className={styles.title}>Order Details</h1>
           </div>
 
-          <div className="space-y-6">
+          <div className={styles.content}>
             {/* Order Summary */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2 break-all">
+            <div className={styles.card}>
+              <div className={styles.orderHeader}>
+                <div className={styles.orderInfo}>
+                  <h2 className={styles.orderTitle}>
                     Order #{order.id}
                   </h2>
-                  <p className="text-sm text-gray-600">
+                  <p className={styles.orderDate}>
                     Placed on {formatDate(order.orderDate)}
                   </p>
                 </div>
-                <div className="mt-4 md:mt-0">
+                <div className={styles.statusContainer}>
                   <span
-                    className={`px-4 py-2 rounded-full text-sm font-medium ${getOrderStatusBadgeStyle(
+                    className={`${styles.statusBadge} ${getOrderStatusBadgeStyle(
                       order.status
                     )}`}
                   >
@@ -76,29 +79,29 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
               </div>
 
               {/* Store Info */}
-              <div className="border-t border-gray-200 pt-4 mb-4">
-                <p className="text-sm font-medium text-gray-900 mb-1">Store:</p>
-                <p className="text-gray-700">{order.storeName}</p>
+              <div className={styles.divider}>
+                <p className={styles.storeLabel}>Store:</p>
+                <p className={styles.storeName}>{order.storeName}</p>
               </div>
 
               {/* Order Items */}
-              <div className="border-t border-gray-200 pt-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Items</h3>
-                <div className="space-y-4">
+              <div className={styles.divider}>
+                <h3 className={styles.itemsTitle}>Order Items</h3>
+                <div className={styles.itemsList}>
                   {order.items.map((item) => (
-                    <div key={item.id} className="flex gap-4 border-b border-gray-100 pb-4 last:border-0">
+                    <div key={item.id} className={styles.itemRow}>
                       <img
                         src={getImageUrl(item.productImage) || getPlaceholderImage()}
                         alt={item.productName}
-                        className="w-20 h-20 object-cover rounded bg-gray-200"
+                        className={styles.itemImage}
                         onError={handleImageError}
                       />
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{item.productName}</h4>
-                        <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                        <p className="text-sm text-gray-600">Unit Price: ${item.price.toFixed(2)}</p>
+                      <div className={styles.itemInfo}>
+                        <h4 className={styles.itemName}>{item.productName}</h4>
+                        <p className={styles.itemDetail}>Quantity: {item.quantity}</p>
+                        <p className={styles.itemDetail}>Unit Price: ${item.price.toFixed(2)}</p>
                         {(item as any).isReservation && (item as any).reservationDate && (item as any).reservationTime && (
-                          <div className="mt-2 text-sm text-gray-600">
+                          <div className={styles.reservationInfo}>
                             <p>
                               📅 {new Date((item as any).reservationDate).toLocaleDateString('en-US', {
                                 weekday: 'short',
@@ -115,15 +118,15 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
                               })}
                             </p>
                             {(item as any).reservationNotes && (
-                              <p className="mt-1 text-xs text-gray-500">
+                              <p className={styles.reservationNote}>
                                 Notes: {(item as any).reservationNotes}
                               </p>
                             )}
                           </div>
                         )}
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">
+                      <div className={styles.itemPrice}>
+                        <p className={styles.priceAmount}>
                           ${item.subtotal.toFixed(2)}
                         </p>
                       </div>
@@ -133,10 +136,10 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
               </div>
 
               {/* Order Total */}
-              <div className="border-t border-gray-200 pt-4 mt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-gray-900">Total:</span>
-                  <span className="text-2xl font-bold text-orange-500">
+              <div className={styles.totalSection}>
+                <div className={styles.totalRow}>
+                  <span className={styles.totalLabel}>Total:</span>
+                  <span className={styles.totalAmount}>
                     ${order.totalAmount.toFixed(2)}
                   </span>
                 </div>
@@ -144,12 +147,12 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
             </div>
 
             {/* Shipping Information */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Shipping Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-2">Shipping Address</p>
-                  <div className="text-gray-700">
+            <div className={styles.card}>
+              <h3 className={styles.sectionTitle}>Shipping Information</h3>
+              <div className={styles.shippingGrid}>
+                <div className={styles.shippingField}>
+                  <p className={styles.shippingLabel}>Shipping Address</p>
+                  <div className={styles.shippingText}>
                     <p>{order.shippingAddress.streetAddress}</p>
                     {order.shippingAddress.aptNumber && (
                       <p>Apt {order.shippingAddress.aptNumber}</p>
@@ -161,20 +164,20 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
                     <p>{order.shippingAddress.country}</p>
                   </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500 mb-2">Payment Method</p>
-                  <p className="text-gray-700">{order.paymentMethod}</p>
+                <div className={styles.shippingField}>
+                  <p className={styles.shippingLabel}>Payment Method</p>
+                  <p className={styles.shippingText}>{order.paymentMethod}</p>
                   {order.shippedDate && (
-                    <>
-                      <p className="text-sm font-medium text-gray-500 mt-4 mb-2">Shipped Date</p>
-                      <p className="text-gray-700">{formatDate(order.shippedDate)}</p>
-                    </>
+                    <div className={styles.shippingDateSection}>
+                      <p className={styles.shippingLabel}>Shipped Date</p>
+                      <p className={styles.shippingText}>{formatDate(order.shippedDate)}</p>
+                    </div>
                   )}
                   {order.deliveredDate && (
-                    <>
-                      <p className="text-sm font-medium text-gray-500 mt-4 mb-2">Delivered Date</p>
-                      <p className="text-gray-700">{formatDate(order.deliveredDate)}</p>
-                    </>
+                    <div className={styles.shippingDateSection}>
+                      <p className={styles.shippingLabel}>Delivered Date</p>
+                      <p className={styles.shippingText}>{formatDate(order.deliveredDate)}</p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -182,14 +185,14 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
 
             {/* Tracking Information */}
             {order.trackingNumber && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Tracking Information</h3>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-500 mb-1">Tracking Number</p>
-                    <p className="text-gray-900 font-mono">{order.trackingNumber}</p>
+              <div className={styles.card}>
+                <h3 className={styles.sectionTitle}>Tracking Information</h3>
+                <div className={styles.trackingSection}>
+                  <div className={styles.trackingInfo}>
+                    <p className={styles.trackingLabel}>Tracking Number</p>
+                    <p className={styles.trackingNumber}>{order.trackingNumber}</p>
                   </div>
-                  <button className="bg-orange-500 text-white px-4 py-2 rounded-md hover:bg-orange-600 transition-colors cursor-pointer">
+                  <button className={styles.trackButton}>
                     Track Package
                   </button>
                 </div>
@@ -197,19 +200,19 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
             )}
 
             {/* Actions */}
-            <div className="flex gap-4">
+            <div className={styles.actions}>
               {order.status === 'delivered' && (
-                <button className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors cursor-pointer">
+                <button className={`${styles.actionButton} ${styles.blue}`}>
                   Write Review
                 </button>
               )}
               {order.status === 'shipped' && (
-                <button className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors cursor-pointer">
+                <button className={`${styles.actionButton} ${styles.green}`}>
                   Track Package
                 </button>
               )}
               {(order.status === 'pending' || order.status === 'processing') && (
-                <button className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition-colors cursor-pointer">
+                <button className={`${styles.actionButton} ${styles.red}`}>
                   Cancel Order
                 </button>
               )}

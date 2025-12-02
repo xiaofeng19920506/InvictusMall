@@ -1,0 +1,200 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.container {
+  padding: 1.5rem; // p-6
+}
+
+.title {
+  font-size: font-size('2xl');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: 1.5rem; // mb-6
+}
+
+.section {
+  margin-bottom: 1.5rem; // mb-6
+  padding-bottom: 1.5rem; // pb-6
+  border-bottom: 1px solid color('gray-200');
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem; // mb-2
+}
+
+.sectionTitle {
+  font-size: font-size('lg');
+  font-weight: font-weight('medium');
+  color: color('gray-900');
+}
+
+.changeButton {
+  font-size: font-size('sm');
+  color: color('orange-600');
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: font-weight('medium');
+  padding: 0;
+  
+  &:hover {
+    color: color('orange-700');
+  }
+}
+
+.addressContent {
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.addressName {
+  font-weight: font-weight('medium');
+  color: color('gray-900');
+}
+
+.paymentInfo {
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.paymentNote {
+  font-size: font-size('xs');
+  color: color('gray-500');
+  margin-top: 0.25rem; // mt-1
+}
+
+.itemsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; // space-y-4
+}
+
+.itemCard {
+  display: flex;
+  gap: 1rem; // gap-4
+  padding-bottom: 1rem; // pb-4
+  border-bottom: 1px solid color('gray-200');
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.itemImage {
+  width: 5rem; // w-20
+  height: 5rem; // h-20
+  object-fit: cover;
+  border-radius: border-radius('md');
+}
+
+.itemImagePlaceholder {
+  width: 5rem; // w-20
+  height: 5rem; // h-20
+  background-color: color('gray-200');
+  border-radius: border-radius('md');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color('gray-400');
+  font-size: font-size('xs');
+}
+
+.itemDetails {
+  flex: 1;
+}
+
+.itemName {
+  font-weight: font-weight('medium');
+  color: color('gray-900');
+}
+
+.itemStore {
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.reservationInfo {
+  margin-top: 0.5rem; // mt-2
+  font-size: font-size('sm');
+  color: color('gray-600');
+}
+
+.itemQuantity {
+  font-size: font-size('sm');
+  color: color('gray-600');
+  margin-top: 0.25rem; // mt-1
+}
+
+.itemPrice {
+  text-align: right;
+}
+
+.itemPriceAmount {
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+}
+
+.actionBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1.5rem; // pt-6
+  border-top: 1px solid color('gray-200');
+}
+
+.backButton {
+  padding: 0.5rem 1.5rem; // px-6 py-2
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('md');
+  color: color('gray-700');
+  background-color: color('white');
+  transition: background-color 0.2s;
+  font-weight: font-weight('medium');
+  cursor: pointer;
+  
+  &:hover {
+    background-color: color('gray-50');
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color('orange-500');
+  }
+}
+
+.placeOrderButton {
+  background-color: color('orange-500');
+  color: color('white');
+  padding: 0.75rem 2rem; // px-8 py-3
+  border-radius: border-radius('md');
+  transition: background-color 0.2s;
+  font-weight: font-weight('medium');
+  font-size: font-size('lg');
+  cursor: pointer;
+  border: none;
+  
+  &:hover:not(:disabled) {
+    background-color: color('orange-600');
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color('orange-500');
+  }
+  
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.termsNotice {
+  margin-top: 1rem; // mt-4
+  font-size: font-size('xs');
+  color: color('gray-500');
+  text-align: center;
+}
+
