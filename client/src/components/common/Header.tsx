@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import Link from 'next/link';
@@ -61,34 +61,37 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
     };
   }, []);
 
-  // Fetch top-level categories on mount
+  // Fetch top-level categories on mount (filtered by stores at API level)
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true);
+        // Clear any cached category data to ensure fresh fetch
+        const cacheKey = 'api_cache_/api/categories?level=1';
+        try {
+          localStorage.removeItem(cacheKey);
+        } catch (e) {
+          // Ignore cache clear errors
+        }
+        
         const response = await apiService.getTopLevelCategories();
         console.log('Categories API response:', response);
         
         if (response.success && response.data && Array.isArray(response.data)) {
-          if (response.data.length > 0) {
-            // Map category names and prepend 'All'
-            const categoryNames = ['All', ...response.data.map((cat: Category) => cat.name)];
-            console.log('Setting categories:', categoryNames);
-            setCategories(categoryNames);
-          } else {
-            console.warn('Categories API returned empty array. Make sure to run: npm run seed-categories');
-            // Fallback to default categories if no categories exist
-            setCategories(['All', 'Electronics', 'Pet Supplies']);
-          }
+          // Map category names and prepend 'All'
+          // API already filters to only include categories with stores (directly or via descendants)
+          const categoryNames = ['All', ...response.data.map((cat: Category) => cat.name)];
+          console.log('Setting categories (filtered by stores):', categoryNames);
+          setCategories(categoryNames);
         } else {
           console.warn('Invalid response structure:', response);
-          // Fallback to default categories if response structure is invalid
-          setCategories(['All', 'Electronics', 'Pet Supplies']);
+          // Fallback if response structure is invalid
+          setCategories(['All']);
         }
       } catch (error) {
         console.error('Error fetching categories:', error);
-        // Fallback to default categories on error
-        setCategories(['All', 'Electronics', 'Pet Supplies']);
+        // Fallback on error
+        setCategories(['All']);
       } finally {
         setLoadingCategories(false);
       }
@@ -97,48 +100,48 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
     fetchCategories();
   }, []);
 
-  const searchTypes = [
+  const searchTypes = useMemo(() => [
     'All',
     'Store',
     'Products'
-  ];
+  ], []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (onSearch) {
       onSearch(searchQuery);
     }
-  };
+  }, [onSearch, searchQuery]);
 
-  const handleCategoryChange = (category: string) => {
+  const handleCategoryChange = useCallback((category: string) => {
     setSelectedCategory(category);
     if (onCategoryFilter) {
       onCategoryFilter(category);
     }
-  };
+  }, [onCategoryFilter]);
 
-  // Build URL for category link
-  const getCategoryUrl = (category: string) => {
+  // Build URL for category link - memoized
+  const getCategoryUrl = useCallback((category: string) => {
     const params = new URLSearchParams();
     if (searchQuery) params.set('search', searchQuery);
     if (category && category !== 'All') params.set('category', category);
     if (searchType && searchType !== 'All') params.set('searchType', searchType);
     const queryString = params.toString();
     return queryString ? `/?${queryString}` : '/';
-  };
+  }, [searchQuery, searchType]);
 
-  const handleSearchTypeChange = (type: string) => {
+  const handleSearchTypeChange = useCallback((type: string) => {
     setSearchType(type);
     if (onSearchTypeChange) {
       onSearchTypeChange(type);
     }
-  };
+  }, [onSearchTypeChange]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     logout();
     setShowDropdown(false);
     router.push('/');
-  };
+  }, [logout, router]);
 
   const shouldShowCategoryNav =
     pathname === '/' && typeof onCategoryFilter === 'function';

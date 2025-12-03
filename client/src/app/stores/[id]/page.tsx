@@ -49,12 +49,23 @@ export async function generateMetadata({ params }: StorePageProps): Promise<Meta
       const store = response.data;
       return {
         title: `${store.name} - Invictus Mall | Shop ${store.category} Products`,
-        description: store.description || `Shop at ${store.name}. ${store.category} store with ${store.productsCount} products. ${store.isVerified ? 'Verified store.' : ''} Rated ${store.rating.toFixed(1)} stars.`,
+        description: store.description || `Shop at ${store.name}. ${store.category} store with ${store.productsCount || 0} products. ${store.isVerified ? 'Verified store. ' : ''}Rated ${store.rating?.toFixed(1) || '5.0'} stars.`,
+        keywords: [
+          store.name,
+          store.category,
+          "online shopping",
+          "Invictus Mall",
+          store.isVerified ? "verified store" : "",
+        ].filter(Boolean),
         openGraph: {
           title: `${store.name} - Invictus Mall`,
           description: store.description || `Shop at ${store.name} - ${store.category} store`,
           type: "website",
           images: store.imageUrl ? [store.imageUrl] : [],
+          url: `https://invictusmall.com/stores/${id}`,
+        },
+        alternates: {
+          canonical: `https://invictusmall.com/stores/${id}`,
         },
       };
     }
@@ -89,8 +100,30 @@ export default async function StoreDetailPage({ params }: StorePageProps) {
     notFound();
   }
 
+  // Generate structured data for SEO (JSON-LD)
+  const structuredData = {
+    "@context": "https://schema.org/",
+    "@type": "Store",
+    "name": store.name,
+    "description": store.description || `${store.name} - ${store.category} store on Invictus Mall`,
+    "image": store.imageUrl || undefined,
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "US"
+    },
+    "aggregateRating": store.rating ? {
+      "@type": "AggregateRating",
+      "ratingValue": store.rating.toFixed(1),
+      "reviewCount": store.reviewCount || 0
+    } : undefined,
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Header />
       <div className={styles.pageContainer}>
         <div className={styles.container}>

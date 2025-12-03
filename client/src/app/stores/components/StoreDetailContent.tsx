@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { apiService, Store } from "@/services/api";
 import { productService, Product } from "@/services/product";
@@ -112,9 +112,15 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const initialTabSet = useRef(false);
 
-  // Separate products and services
-  const products = allItems.filter(item => item.category === "product" || !item.category);
-  const services = allItems.filter(item => item.category === "service");
+  // Memoize filtered products and services to avoid recalculation
+  const products = useMemo(
+    () => allItems.filter(item => item.category === "product" || !item.category),
+    [allItems]
+  );
+  const services = useMemo(
+    () => allItems.filter(item => item.category === "service"),
+    [allItems]
+  );
 
   useEffect(() => {
     if (storeId && !initialStore) {
@@ -125,7 +131,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     if (storeId) {
       fetchProducts();
     }
-  }, [storeId]);
+  }, [storeId, initialStore, fetchStoreDetails, fetchProducts]);
 
   // Set initial tab and handle tab switching when content is unavailable
   useEffect(() => {
@@ -153,7 +159,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     }
   }, [products.length, services.length, productsLoading, activeTab]);
 
-  const fetchStoreDetails = async () => {
+  const fetchStoreDetails = useCallback(async () => {
     try {
       const response = await apiService.getStoreById(storeId);
       if (response.success) {
@@ -166,9 +172,9 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setProductsLoading(true);
       const response = await productService.getProductsByStoreId(storeId, { isActive: true });
@@ -184,7 +190,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     } finally {
       setProductsLoading(false);
     }
-  };
+  }, [storeId]);
 
   if (loading) {
     return (

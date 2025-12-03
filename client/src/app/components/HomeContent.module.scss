@@ -2,9 +2,13 @@
 @use '../../styles/mixins.scss' as *;
 
 .homeContainer {
-  min-height: 100vh;
+  flex: 1; // Take available space but allow footer to show
+  min-height: 0; // Important for flex child
   @include flex-col;
   background-color: color('white'); // Amazon uses white background
+  overflow: hidden; // Prevent page scrolling
+  display: flex;
+  flex-direction: column;
 }
 
 .main {
@@ -14,9 +18,12 @@
   margin-left: auto;
   margin-right: auto;
   padding-top: 1rem; // Reduced top padding
-  padding-bottom: 2rem;
+  padding-bottom: 1rem;
   padding-left: 0.75rem; // Reduced side padding for more content density
   padding-right: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // Prevent main from scrolling
   
   @include respond-to('sm') {
     padding-left: 1rem;
@@ -35,13 +42,14 @@
 }
 
 .headerSection {
-  margin-bottom: spacing(4); // Reduced margin for Amazon-style compact layout
+  margin-bottom: spacing(3); // Reduced margin for compact layout
   padding-left: spacing(2);
   padding-right: spacing(2);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: spacing(1);
+  flex-shrink: 0; // Don't shrink when space is limited
   
   // Ensure proper spacing between title and subtitle
   h2 {
@@ -77,11 +85,12 @@
 }
 
 .errorContainer {
-  margin-bottom: spacing(8);
+  margin-bottom: spacing(3); // Reduced margin
   padding: spacing(4);
   background-color: color('red-50');
   border: 1px solid color('red-200');
   border-radius: border-radius('lg');
+  flex-shrink: 0; // Don't shrink when space is limited
 }
 
 .errorContent {
@@ -118,6 +127,35 @@
   
   &:hover {
     background-color: color('red-700');
+  }
+}
+
+.storeGridContainer {
+  flex: 1;
+  overflow-y: auto; // Only this container scrolls
+  overflow-x: hidden;
+  min-height: 0; // Important for flex child to allow scrolling
+  padding-bottom: spacing(2);
+  
+  // Custom scrollbar styling
+  scrollbar-width: thin;
+  scrollbar-color: color('gray-400') color('gray-100');
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: color('gray-100');
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: color('gray-400');
+    border-radius: 4px;
+    
+    &:hover {
+      background: color('gray-500');
+    }
   }
 }
 

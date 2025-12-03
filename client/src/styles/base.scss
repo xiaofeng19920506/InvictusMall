@@ -23,6 +23,8 @@
 
 html {
   font-size: 16px;
+  height: 100%;
+  overflow: hidden; // Prevent html from scrolling
 }
 
 body {
@@ -32,6 +34,10 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100vh; // Fixed height to viewport
+  overflow: hidden; // Prevent body from scrolling
+  display: flex;
+  flex-direction: column;
 }
 
 a {

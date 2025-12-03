@@ -1,26 +1,62 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { productService, Product } from "@/services/product";
 import { useCart } from "@/contexts/CartContext";
 import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
 import { ChevronLeft, ChevronRight, ShoppingCart } from "lucide-react";
+import type { Store } from "@/services/api";
 import styles from "./ProductDetailContent.module.scss";
 
 interface ProductDetailContentProps {
   productId: string;
+  initialProduct?: {
+    id: string;
+    storeId: string;
+    name: string;
+    description?: string;
+    price: number;
+    imageUrl?: string;
+    imageUrls?: string[];
+    stockQuantity: number;
+    category?: string;
+    isActive: boolean;
+  };
+  initialStore?: Store;
 }
 
-export default function ProductDetailContent({ productId }: ProductDetailContentProps) {
+export default function ProductDetailContent({ 
+  productId, 
+  initialProduct,
+  initialStore 
+}: ProductDetailContentProps) {
   const router = useRouter();
   const { addItem } = useCart();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState<Product | null>(
+    initialProduct ? {
+      id: initialProduct.id,
+      storeId: initialProduct.storeId,
+      name: initialProduct.name,
+      description: initialProduct.description,
+      price: initialProduct.price,
+      imageUrl: initialProduct.imageUrl,
+      imageUrls: initialProduct.imageUrls,
+      stockQuantity: initialProduct.stockQuantity,
+      category: initialProduct.category,
+      isActive: initialProduct.isActive,
+    } : null
+  );
+  const [loading, setLoading] = useState(!initialProduct);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
+    // Only fetch if we don't have initial product data
+    if (initialProduct) {
+      return;
+    }
+
     const fetchProduct = async () => {
       try {
         setLoading(true);
@@ -38,24 +74,38 @@ export default function ProductDetailContent({ productId }: ProductDetailContent
     if (productId) {
       fetchProduct();
     }
-  }, [productId]);
+  }, [productId, initialProduct]);
 
-  const handleAddToCart = () => {
+  // Memoize image URLs to avoid recalculation
+  const productImage = useMemo(() => {
+    if (!product) return undefined;
+    return (product.imageUrls && product.imageUrls.length > 0) 
+      ? product.imageUrls[0] 
+      : product.imageUrl;
+  }, [product]);
+
+  const images = useMemo(() => {
+    if (!product) return [];
+    return product.imageUrls && product.imageUrls.length > 0 
+      ? product.imageUrls 
+      : (product.imageUrl ? [product.imageUrl] : []);
+  }, [product]);
+
+  const handleAddToCart = useCallback(() => {
     if (!product) return;
     
     addItem({
       productId: product.id,
       productName: product.name,
-      productImage: (product.imageUrls && product.imageUrls.length > 0) 
-        ? product.imageUrls[0] 
-        : product.imageUrl,
+      productImage: productImage,
       price: product.price,
       quantity: 1,
       storeId: product.storeId,
+      storeName: store?.name || "Unknown Store",
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
-  };
+  }, [product, productImage, store, addItem]);
 
   if (loading) {
     return (
@@ -87,18 +137,13 @@ export default function ProductDetailContent({ productId }: ProductDetailContent
     );
   }
 
-  // Get all images - prefer imageUrls, fallback to imageUrl
-  const images = product.imageUrls && product.imageUrls.length > 0 
-    ? product.imageUrls 
-    : (product.imageUrl ? [product.imageUrl] : []);
-
-  const nextImage = () => {
+  const nextImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
+  }, [images.length]);
 
-  const prevImage = () => {
+  const prevImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
+  }, [images.length]);
 
   return (
     <div className={styles.pageContainer}>

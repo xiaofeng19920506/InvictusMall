@@ -13,7 +13,7 @@ export class ProductService {
     storeId: string,
     options?: { isActive?: boolean; limit?: number; offset?: number }
   ): Promise<{ products: Product[]; total: number }> {
-    if (limit !== undefined) {
+    if (options?.limit !== undefined) {
       return await ProductModel.findByStoreIdWithPagination(storeId, options);
     }
     const products = await ProductModel.findByStoreId(storeId, options);
@@ -119,18 +119,10 @@ export class ProductService {
       throw new Error('Product not found');
     }
 
-    // Verify store ownership if storeId is being updated
-    if (productData.storeId !== undefined && productData.storeId !== existingProduct.storeId) {
-      const ownershipCheck = await checkStoreOwnership(req, productData.storeId);
-      if (!ownershipCheck.authorized) {
-        throw new Error(ownershipCheck.error || 'You do not have permission to access this store');
-      }
-    } else if (existingProduct.storeId) {
-      // Check ownership for existing store
-      const ownershipCheck = await checkStoreOwnership(req, existingProduct.storeId);
-      if (!ownershipCheck.authorized) {
-        throw new Error(ownershipCheck.error || 'You do not have permission to access this store');
-      }
+    // Check ownership for existing store (products cannot be moved between stores)
+    const ownershipCheck = await checkStoreOwnership(req, existingProduct.storeId);
+    if (!ownershipCheck.authorized) {
+      throw new Error(ownershipCheck.error || 'You do not have permission to access this store');
     }
 
     // Validate price if provided

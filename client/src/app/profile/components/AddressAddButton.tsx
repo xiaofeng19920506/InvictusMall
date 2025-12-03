@@ -1,6 +1,4 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import styles from "./AddressAddButton.module.scss";
 
 interface AddressAddButtonProps {
@@ -12,20 +10,14 @@ export default function AddressAddButton({
   href,
   label = "+ Add Address",
 }: AddressAddButtonProps) {
-  const router = useRouter();
-
-  const handleClick = () => {
-    router.push(href, { scroll: false });
-  };
-
   return (
-    <button
-      type="button"
-      onClick={handleClick}
+    <Link
+      href={href}
       className={styles.button}
+      scroll={false}
     >
       {label}
-    </button>
+    </Link>
   );
 }
 

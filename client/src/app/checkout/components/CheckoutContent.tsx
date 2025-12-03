@@ -375,6 +375,7 @@ export default function CheckoutContent({
                     onContinue={handleContinueToReview}
                     onBack={handleBackToDelivery}
                     onCreatePaymentIntent={handleCreatePaymentIntent}
+                    onError={(error) => setStatusError(error)}
                   />
                 )}
 

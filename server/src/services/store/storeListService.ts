@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { StoreService } from "../storeService";
 import { StoreModel } from "../../models/StoreModel";
+import { ProductModel } from "../../models/ProductModel";
 import { StaffModel } from "../../models/StaffModel";
+import { Store } from "../../types/store";
 import { ApiResponseHelper } from "../../utils/apiResponse";
 import { logger } from "../../utils/logger";
 import { handleETagValidation } from "../../utils/cacheUtils";
@@ -14,7 +16,7 @@ export async function handleGetAllStores(
   storeService: StoreService
 ): Promise<void> {
   try {
-    const { category, search, limit, offset } = req.query;
+    const { category, search, searchType, limit, offset } = req.query;
     const authReq = req as AuthenticatedRequest;
 
     // Get accessible store IDs for owner filtering
@@ -22,7 +24,7 @@ export async function handleGetAllStores(
 
     // Generate ETag based on last modified timestamp
     const lastModified = await StoreModel.getLastModifiedTimestamp();
-    const cacheKey = `${category || ""}-${search || ""}-${limit || ""}-${offset || ""}-${accessibleStoreIds?.join(",") || "all"}`;
+    const cacheKey = `${category || ""}-${search || ""}-${searchType || ""}-${limit || ""}-${offset || ""}-${accessibleStoreIds?.join(",") || "all"}`;
 
     // Check ETag validation (returns true if 304 was sent)
     if (handleETagValidation(req, res, lastModified, cacheKey)) {
@@ -72,8 +74,42 @@ export async function handleGetAllStores(
     }
 
     // Regular fetch without pagination (for client app or when category/search is provided)
-    let stores;
-    if (search && typeof search === "string") {
+    let stores: Store[] = [];
+    
+    // Handle product search - find stores that have matching products
+    if (search && typeof search === "string" && searchType === "Products") {
+      const products = await ProductModel.search(search);
+      const storeIds = [...new Set(products.map(p => p.storeId))];
+      
+      if (storeIds.length === 0) {
+        stores = [];
+      } else {
+        // Fetch stores that have matching products
+        const allStores = await storeService.getAllStores();
+        stores = allStores.filter(store => storeIds.includes(store.id));
+      }
+    } else if (search && typeof search === "string" && searchType === "All") {
+      // Search both stores and products, then combine unique stores
+      const [foundStores, products] = await Promise.all([
+        storeService.searchStores(search),
+        ProductModel.search(search)
+      ]);
+      
+      const productStoreIds = [...new Set(products.map(p => p.storeId))];
+      const allStores = await storeService.getAllStores();
+      const storesWithProducts = allStores.filter(store => productStoreIds.includes(store.id));
+      
+      // Combine and deduplicate stores
+      const combinedStores: Store[] = [...foundStores];
+      storesWithProducts.forEach(store => {
+        if (!combinedStores.find(s => s.id === store.id)) {
+          combinedStores.push(store);
+        }
+      });
+      
+      stores = combinedStores;
+    } else if (search && typeof search === "string") {
+      // Regular store search (searchType is "Store")
       stores = await storeService.searchStores(search);
     } else if (category && typeof category === "string") {
       stores = await storeService.getStoresByCategory(category);

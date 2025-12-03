@@ -5,15 +5,11 @@ import styles from "./AddressList.module.scss";
 interface AddressListProps {
   addresses: ShippingAddress[];
   getEditHref: (id: string) => string;
-  deleteAddressAction: (formData: FormData) => Promise<void>;
-  setDefaultAddressAction: (formData: FormData) => Promise<void>;
 }
 
 export default function AddressList({
   addresses,
   getEditHref,
-  deleteAddressAction,
-  setDefaultAddressAction,
 }: AddressListProps) {
   if (addresses.length === 0) {
     return (
@@ -41,10 +37,7 @@ export default function AddressList({
           .join("\n");
 
         return (
-          <div
-            key={address.id}
-            className={styles.addressCard}
-          >
+          <div key={address.id} className={styles.addressCard}>
             <div className={styles.addressContent}>
               <div className={styles.addressHeader}>
                 {address.label?.trim() && (
@@ -78,8 +71,6 @@ export default function AddressList({
               addressId={address.id}
               isDefault={address.isDefault}
               editHref={editHref}
-              deleteAction={deleteAddressAction}
-              setDefaultAction={setDefaultAddressAction}
               addressLabel={addressLabelForModal}
             />
           </div>

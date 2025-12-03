@@ -1,6 +1,14 @@
 @use '../../styles/variables.scss' as *;
 @use '../../styles/mixins.scss' as *;
 
+// Ensure ProtectedRoute wrapper uses flex layout to support fixed header/footer
+.protectedRouteWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
 .loadingContainer {
   @include flex;
   @include items-center;

@@ -232,6 +232,39 @@ export class ProductModel {
     }
   }
 
+  // Search products by name or description
+  static async search(query: string, options?: { limit?: number }): Promise<Product[]> {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      const searchTerm = `%${query}%`;
+      const limit = options?.limit || 100;
+      
+      const [rows] = await connection.execute(
+        `SELECT DISTINCT p.* FROM products p
+         WHERE (p.name LIKE ? OR p.description LIKE ?)
+         AND p.is_active = TRUE
+         ORDER BY p.name ASC
+         LIMIT ?`,
+        [searchTerm, searchTerm, limit]
+      );
+      
+      const products = rows as any[];
+      if (!products || products.length === 0) {
+        return [];
+      }
+      
+      return products.map(this.mapRowToProduct);
+    } catch (error: any) {
+      console.error('Database error in search:', error);
+      throw error;
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
+
   // Get product by barcode
   static async findByBarcode(barcode: string): Promise<Product | null> {
     let connection;

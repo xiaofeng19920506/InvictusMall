@@ -13,8 +13,6 @@ interface AddressManagerProps {
   getEditHref: (id: string) => string;
   createAddressAction: (formData: FormData) => Promise<void>;
   updateAddressAction: (formData: FormData) => Promise<void>;
-  deleteAddressAction: (formData: FormData) => Promise<void>;
-  setDefaultAddressAction: (formData: FormData) => Promise<void>;
   errorMessage?: string;
 }
 
@@ -27,8 +25,6 @@ export default function AddressManager({
   getEditHref,
   createAddressAction,
   updateAddressAction,
-  deleteAddressAction,
-  setDefaultAddressAction,
   errorMessage,
 }: AddressManagerProps) {
   const isEditing = Boolean(editingAddress);
@@ -50,9 +46,7 @@ export default function AddressManager({
           <AddressList
             addresses={addresses}
             getEditHref={getEditHref}
-            deleteAddressAction={deleteAddressAction}
-            setDefaultAddressAction={setDefaultAddressAction}
-            />
+          />
         </div>
       </section>
 

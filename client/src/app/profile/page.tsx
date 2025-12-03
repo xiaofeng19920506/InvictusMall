@@ -6,8 +6,9 @@ import {
 import { User } from "@/models/User";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import Header from "@/components/common/Header";
-import ProfileNavigationTabs from "./components/ProfileNavigationTabs";
+import ProfileSidebar from "./components/ProfileSidebar";
 import AccountInformation from "./components/AccountInformation";
 import EditProfile from "./components/EditProfile";
 import ChangePasswordForm from "./components/ChangePasswordForm";
@@ -31,7 +32,7 @@ interface ProfilePageProps {
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const params = await searchParams;
   const activeTab =
-    (params.tab as "profile" | "password" | "addresses") || "profile";
+    (params.tab as "account" | "profile" | "password" | "addresses") || "account";
   const feedbackStatus =
     params.status === "success" || params.status === "error"
       ? params.status
@@ -48,7 +49,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     paramsWithoutFeedback.set(key, value);
   });
   if (!paramsWithoutFeedback.has("tab")) {
-    paramsWithoutFeedback.set("tab", activeTab);
+    paramsWithoutFeedback.set("tab", activeTab === "account" ? "account" : activeTab);
   }
   const toastClearHref = `/profile${
     paramsWithoutFeedback.toString()
@@ -115,51 +116,47 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       />
       <Header />
       <div className={styles.pageContainer}>
-        <div className={styles.container}>
-          <div className={styles.header}>
-            <h1 className={styles.title}>My Account</h1>
-            <p className={styles.subtitle}>
-              Manage your account settings and preferences
-            </p>
+        <div className={styles.layout}>
+          {/* Sidebar Navigation - Server Component */}
+          <ProfileSidebar activeTab={activeTab} searchParams={params} />
+
+          {/* Main Content Area */}
+          <div className={styles.content}>
+            {/* Content based on active tab */}
+            {activeTab === "account" && (
+              <AccountInformation user={user} />
+            )}
+            {activeTab === "profile" && (
+              <EditProfile
+                initialUser={
+                  user
+                    ? {
+                        firstName: user.firstName || "",
+                        lastName: user.lastName || "",
+                        phoneNumber: user.phoneNumber || "",
+                        email: user.email || "",
+                        avatar: user.avatar,
+                      }
+                    : null
+                }
+              />
+            )}
+            {activeTab === "password" && (
+              <ChangePasswordForm
+                status={feedbackStatus}
+                message={feedbackMessage}
+              />
+            )}
+            {activeTab === "addresses" && (
+              <ProfileAddresses
+                initialAddresses={initialAddresses || []}
+                showAddForm={showAddAddress}
+                editAddressId={editAddressId || null}
+                feedbackStatus={feedbackStatus}
+                feedbackMessage={feedbackMessage}
+              />
+            )}
           </div>
-
-          {/* Navigation Tabs - Server Component */}
-          <ProfileNavigationTabs activeTab={activeTab} />
-
-          {/* Account Information - Server Component */}
-          <AccountInformation user={user} />
-
-          {/* Content based on active tab */}
-          {activeTab === "profile" && (
-            <EditProfile
-              initialUser={
-                user
-                  ? {
-                      firstName: user.firstName || "",
-                      lastName: user.lastName || "",
-                      phoneNumber: user.phoneNumber || "",
-                      email: user.email || "",
-                      avatar: user.avatar,
-                    }
-                  : null
-              }
-            />
-          )}
-          {activeTab === "password" && (
-            <ChangePasswordForm
-              status={feedbackStatus}
-              message={feedbackMessage}
-            />
-          )}
-          {activeTab === "addresses" && (
-            <ProfileAddresses
-              initialAddresses={initialAddresses || []}
-              showAddForm={showAddAddress}
-              editAddressId={editAddressId || null}
-              feedbackStatus={feedbackStatus}
-              feedbackMessage={feedbackMessage}
-            />
-          )}
         </div>
       </div>
     </ProfilePageWrapper>

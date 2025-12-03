@@ -195,6 +195,7 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
   );
 }
 
+
 export async function uploadAvatarAction(formData: FormData): Promise<void> {
   const file = formData.get('avatar');
 

@@ -2,42 +2,54 @@
 @use '../../styles/mixins.scss' as *;
 
 .pageContainer {
-  min-height: 100vh;
+  flex: 1; // Take available space in flex layout
+  min-height: 0; // Important for flex child
   background-color: color('gray-50');
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // Prevent container from scrolling
 }
 
-.container {
-  max-width: 56rem; // max-w-4xl
-  margin-left: auto;
-  margin-right: auto;
-  padding-top: 2rem; // py-8
-  padding-bottom: 2rem;
-  padding-left: 1rem; // px-4
-  padding-right: 1rem;
+.layout {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden; // Prevent layout from scrolling
+  min-height: 0; // Important for flex child
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto; // Allow content to scroll
+  overflow-x: hidden;
   
-  @include respond-to('sm') {
-    padding-left: 1.5rem; // sm:px-6
-    padding-right: 1.5rem;
+  // Custom scrollbar styling
+  scrollbar-width: thin;
+  scrollbar-color: color('gray-400') color('gray-100');
+  
+  &::-webkit-scrollbar {
+    width: 8px;
   }
   
-  @include respond-to('lg') {
-    padding-left: 2rem; // lg:px-8
-    padding-right: 2rem;
+  &::-webkit-scrollbar-track {
+    background: color('gray-100');
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: color('gray-400');
+    border-radius: 4px;
+    
+    &:hover {
+      background: color('gray-500');
+    }
   }
 }
 
-.header {
-  margin-bottom: 1.5rem; // mb-6
-}
-
-.title {
-  font-size: font-size('3xl');
-  font-weight: font-weight('bold');
-  color: color('gray-900');
-}
-
-.subtitle {
-  color: color('gray-600');
-  margin-top: 0.5rem; // mt-2
+.sidebarSkeleton {
+  width: 16rem;
+  flex-shrink: 0;
+  background-color: color('white');
+  border-right: 1px solid color('gray-200');
+  height: 100%;
 }
 

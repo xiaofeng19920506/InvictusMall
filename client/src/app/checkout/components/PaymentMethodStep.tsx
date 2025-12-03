@@ -27,6 +27,7 @@ interface PaymentMethodStepProps {
     items: CartItem[],
     shippingAddress: ShippingAddress | CheckoutShippingAddressInput | null
   ) => Promise<{ clientSecret: string; paymentIntentId: string; orderIds: string[] }>;
+  onError?: (error: string) => void;
 }
 
 function PaymentForm({
@@ -34,6 +35,7 @@ function PaymentForm({
   shippingAddress,
   onContinue,
   onCreatePaymentIntent,
+  onError,
 }: Omit<PaymentMethodStepProps, "onBack">) {
   const stripe = useStripe();
   const elements = useElements();
@@ -66,7 +68,11 @@ function PaymentForm({
         setClientSecret(result.clientSecret);
         setPaymentIntentId(result.paymentIntentId);
       } catch (err: any) {
-        setError(err.message || "Failed to initialize payment");
+        const errorMessage = err.message || "Failed to initialize payment";
+        setError(errorMessage);
+        if (onError) {
+          onError(errorMessage);
+        }
         // Reset ref on error so user can retry
         hasCreatedIntentRef.current = false;
       } finally {
@@ -107,7 +113,11 @@ function PaymentForm({
       );
 
       if (confirmError) {
-        setError(confirmError.message || "Payment failed");
+        const errorMessage = confirmError.message || "Payment failed";
+        setError(errorMessage);
+        if (onError) {
+          onError(errorMessage);
+        }
         setIsProcessing(false);
         return;
       }
@@ -121,15 +131,24 @@ function PaymentForm({
         onContinue(paymentIntentId, clientSecret);
       } else {
         // Payment is still processing or requires action (3D Secure, etc.)
+        let errorMessage = "";
         if (paymentIntent?.status === "requires_action") {
-          setError("Additional authentication required. Please complete the verification.");
+          errorMessage = "Additional authentication required. Please complete the verification.";
         } else {
-          setError("Payment was not authorized. Please try again.");
+          errorMessage = "Payment was not authorized. Please try again.";
+        }
+        setError(errorMessage);
+        if (onError) {
+          onError(errorMessage);
         }
         setIsProcessing(false);
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred during payment");
+      const errorMessage = err.message || "An error occurred during payment";
+      setError(errorMessage);
+      if (onError) {
+        onError(errorMessage);
+      }
       setIsProcessing(false);
     }
   };
@@ -217,6 +236,7 @@ export default function PaymentMethodStep({
   onContinue,
   onBack,
   onCreatePaymentIntent,
+  onError,
 }: PaymentMethodStepProps) {
   const elementsOptions: StripeElementsOptions = {
     appearance: {
@@ -236,6 +256,7 @@ export default function PaymentMethodStep({
           shippingAddress={shippingAddress}
           onContinue={onContinue}
           onCreatePaymentIntent={onCreatePaymentIntent}
+          onError={onError}
         />
       </Elements>
     </div>

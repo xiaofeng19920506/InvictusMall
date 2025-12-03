@@ -1,5 +1,6 @@
+// Server Component - No client-side interactivity needed
 import { Store } from "@/services/api";
-import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
+import { getImageUrl, getPlaceholderImage } from "@/utils/imageUtils";
 import Link from "next/link";
 import styles from "./StoreCard.module.scss";
 
@@ -18,7 +19,7 @@ export default function StoreCard({ store }: StoreCardProps) {
           src={getImageUrl(store.imageUrl) || getPlaceholderImage()}
           alt={store.name}
           className={styles.storeImage}
-          onError={handleImageError}
+          loading="lazy"
         />
       </div>
 

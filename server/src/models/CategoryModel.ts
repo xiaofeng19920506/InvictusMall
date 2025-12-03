@@ -438,22 +438,147 @@ export class CategoryModel {
   }
 
   /**
-   * Find categories by level
+   * Helper method to find top-level ancestor of a category
+   * @param categoryName - The category name to find ancestor for
+   * @param connection - Optional database connection to reuse
    */
-  async findByLevel(level: number): Promise<Category[]> {
-    const query = `
-      SELECT 
-        id, name, slug, description, parent_id, level,
-        display_order, is_active, created_at, updated_at
-      FROM categories
-      WHERE level = ? AND is_active = TRUE
-      ORDER BY display_order ASC, name ASC
-    `;
+  private async findTopLevelAncestor(
+    categoryName: string, 
+    connection?: any
+  ): Promise<string | null> {
+    const useConnection = connection || await this.pool.getConnection();
+    const shouldRelease = !connection;
+    
+    try {
+      // Find the category by name
+      const [categoryRows] = await useConnection.execute(
+        'SELECT id, parent_id, level FROM categories WHERE name = ? LIMIT 1',
+        [categoryName]
+      );
+      
+      const categoryRow = (categoryRows as any[])[0];
+      if (!categoryRow) {
+        return null;
+      }
 
-    const [rows] = await this.pool.execute(query, [level]);
-    const categories = rows as any[];
+      // If already level 1, return the name
+      if (categoryRow.level === 1) {
+        return categoryName;
+      }
 
-    return categories.map((row) => this.mapRowToCategory(row));
+      // Recursively find the top-level ancestor
+      let currentId = categoryRow.id;
+      let currentParentId = categoryRow.parent_id;
+      let currentLevel = categoryRow.level;
+
+      while (currentLevel > 1 && currentParentId) {
+        const [parentRows] = await useConnection.execute(
+          'SELECT id, parent_id, level, name FROM categories WHERE id = ? LIMIT 1',
+          [currentParentId]
+        );
+        
+        const parentRow = (parentRows as any[])[0];
+        if (!parentRow) {
+          break;
+        }
+
+        currentId = parentRow.id;
+        currentParentId = parentRow.parent_id;
+        currentLevel = parentRow.level;
+
+        if (currentLevel === 1) {
+          return parentRow.name;
+        }
+      }
+
+      return null;
+    } finally {
+      if (shouldRelease) {
+        useConnection.release();
+      }
+    }
+  }
+
+  /**
+   * Find categories by level
+   * @param level - The category level (1, 2, 3, or 4)
+   * @param onlyWithStores - If true, only return categories that have stores (directly or via descendants)
+   */
+  async findByLevel(level: number, onlyWithStores: boolean = false): Promise<Category[]> {
+    if (!onlyWithStores || level !== 1) {
+      // For non-level-1 or when not filtering by stores, use simple query
+      let query = `
+        SELECT DISTINCT
+          c.id, c.name, c.slug, c.description, c.parent_id, c.level,
+          c.display_order, c.is_active, c.created_at, c.updated_at
+        FROM categories c
+      `;
+
+      const params: any[] = [level];
+
+      if (onlyWithStores) {
+        query += `
+          INNER JOIN store_categories sc ON c.name = sc.category
+        `;
+      }
+
+      query += `
+        WHERE c.level = ? AND c.is_active = TRUE
+        ORDER BY c.display_order ASC, c.name ASC
+      `;
+
+      const [rows] = await this.pool.execute(query, params);
+      const categories = rows as any[];
+
+      return categories.map((row) => this.mapRowToCategory(row));
+    }
+
+    // For level 1 with onlyWithStores, we need to include parent categories
+    // that have stores in any of their descendant categories
+    const connection = await this.pool.getConnection();
+    try {
+      // Get all distinct category names from store_categories
+      const [storeCategoryRows] = await connection.execute(
+        'SELECT DISTINCT category FROM store_categories'
+      );
+      
+      const storeCategories = (storeCategoryRows as any[]).map(row => row.category);
+      
+      // Find top-level ancestors for each store category
+      const topLevelCategoryNames = new Set<string>();
+      
+      for (const storeCategoryName of storeCategories) {
+        const topLevelName = await this.findTopLevelAncestor(storeCategoryName, connection);
+        if (topLevelName) {
+          topLevelCategoryNames.add(topLevelName);
+        }
+      }
+
+      // If no store categories found, return empty array
+      if (topLevelCategoryNames.size === 0) {
+        return [];
+      }
+
+      // Get all level 1 categories that match
+      const placeholders = Array(topLevelCategoryNames.size).fill('?').join(',');
+      const query = `
+        SELECT 
+          id, name, slug, description, parent_id, level,
+          display_order, is_active, created_at, updated_at
+        FROM categories
+        WHERE level = 1 
+          AND is_active = TRUE
+          AND name IN (${placeholders})
+        ORDER BY display_order ASC, name ASC
+      `;
+
+      const [rows] = await connection.execute(query, Array.from(topLevelCategoryNames));
+      const categories = rows as any[];
+
+      return categories.map((row) => this.mapRowToCategory(row));
+    } finally {
+      connection.release();
+    }
   }
 
   /**

@@ -1,0 +1,35 @@
+@use "../../../styles/variables.scss" as *;
+@use "../../../styles/mixins.scss" as *;
+
+.avatarSection {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem; // mb-8
+}
+
+.avatar {
+  position: relative;
+  border-radius: border-radius("full");
+  border: 3px solid color("gray-200");
+  box-shadow: shadow("md");
+  overflow: hidden;
+
+  &.sm {
+    width: 4rem; // w-16
+    height: 4rem; // h-16
+  }
+
+  &.md {
+    width: 6rem; // w-24
+    height: 6rem; // h-24
+  }
+
+  &.lg {
+    width: 8rem; // w-32
+    height: 8rem; // h-32
+  }
+}
+
+.avatarImage {
+  object-fit: cover;
+}

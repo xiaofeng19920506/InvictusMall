@@ -7,6 +7,10 @@ import Header from '@/components/common/Header';
 import StoreCard from '../stores/components/StoreCard';
 import styles from './page.module.scss';
 
+// Note: This is a client component due to favorites context
+// Metadata cannot be exported from client components
+// Consider moving favorites fetching to server component wrapper
+
 export default function FavoritesPage() {
   const { favorites, removeFavorite } = useFavorites();
   const [stores, setStores] = useState<Store[]>([]);
@@ -89,4 +93,3 @@ export default function FavoritesPage() {
     </div>
   );
 }
-

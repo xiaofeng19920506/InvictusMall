@@ -2,8 +2,6 @@ import AddressManager from "./AddressManager";
 import {
   createAddressAction,
   updateAddressAction,
-  deleteAddressAction,
-  setDefaultAddressAction,
 } from "./addressActions";
 import { ShippingAddress } from "@/lib/server-api";
 import styles from "./ProfileAddresses.module.scss";
@@ -47,8 +45,6 @@ export default function ProfileAddresses({
         getEditHref={getEditHref}
         createAddressAction={createAddressAction}
         updateAddressAction={updateAddressAction}
-        deleteAddressAction={deleteAddressAction}
-        setDefaultAddressAction={setDefaultAddressAction}
         errorMessage={errorMessage}
       />
     </div>

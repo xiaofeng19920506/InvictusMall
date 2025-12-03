@@ -1,3 +1,9 @@
-// This page only renders HomeContent and Footer components which already have their own SCSS modules
-// No additional styles needed here
+@use '../styles/variables.scss' as *;
+@use '../styles/mixins.scss' as *;
 
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}

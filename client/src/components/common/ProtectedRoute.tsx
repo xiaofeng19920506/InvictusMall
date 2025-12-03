@@ -83,5 +83,6 @@ export default function ProtectedRoute({
   }
 
   // User is authenticated and has required role
-  return <>{children}</>;
+  // Wrap children in flex container to support fixed header/footer layout
+  return <div className={styles.protectedRouteWrapper}>{children}</div>;
 }

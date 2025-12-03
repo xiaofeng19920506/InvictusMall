@@ -68,7 +68,10 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
 
     if (level) {
       // Filter by level
-      const categories = await categoryModel.findByLevel(parseInt(level as string));
+      // For level 1 (top-level categories), only show categories that have stores
+      const levelNum = parseInt(level as string);
+      const onlyWithStores = levelNum === 1;
+      const categories = await categoryModel.findByLevel(levelNum, onlyWithStores);
       return ApiResponseHelper.success(res, categories);
     }
 

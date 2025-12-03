@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback, memo } from "react";
 import { useCart } from "@/contexts/CartContext";
 import Header from "@/components/common/Header";
 import Link from "next/link";
 import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
 import type { ShippingAddress } from "@/lib/server-api";
+import type { CartItem } from "@/contexts/CartContext";
 import styles from "./CartContent.module.scss";
 
 interface CartContentProps {
@@ -13,6 +14,138 @@ interface CartContentProps {
   defaultAddressId?: string;
   beginCheckout: (payload: any) => Promise<any>;
 }
+
+// Memoized cart item component for better performance
+const CartItemCard = memo(function CartItemCard({
+  item,
+  onUpdateQuantity,
+  onRemoveItem,
+}: {
+  item: CartItem;
+  onUpdateQuantity: (id: string, quantity: number) => void;
+  onRemoveItem: (id: string) => void;
+}) {
+  const handleDecrease = useCallback(() => {
+    onUpdateQuantity(item.id, item.quantity - 1);
+  }, [item.id, item.quantity, onUpdateQuantity]);
+
+  const handleIncrease = useCallback(() => {
+    onUpdateQuantity(item.id, item.quantity + 1);
+  }, [item.id, onUpdateQuantity]);
+
+  const handleRemove = useCallback(() => {
+    onRemoveItem(item.id);
+  }, [item.id, onRemoveItem]);
+
+  const reservationDateFormatted = useMemo(() => {
+    if (!item.reservationDate) return null;
+    return new Date(item.reservationDate).toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }, [item.reservationDate]);
+
+  const reservationTimeFormatted = useMemo(() => {
+    if (!item.reservationTime) return null;
+    return new Date(`2000-01-01T${item.reservationTime}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  }, [item.reservationTime]);
+
+  const itemTotal = useMemo(() => {
+    return (item.price * item.quantity).toFixed(2);
+  }, [item.price, item.quantity]);
+
+  return (
+    <div className={styles.cartItem}>
+      <div className={styles.itemContent}>
+        {item.productImage ? (
+          <img
+            src={getImageUrl(item.productImage) || getPlaceholderImage()}
+            alt={item.productName}
+            className={styles.itemImage}
+            onError={handleImageError}
+          />
+        ) : (
+          <div className={styles.itemImagePlaceholder}>
+            <span className={styles.placeholderText}>No Image</span>
+          </div>
+        )}
+        <div className={styles.itemDetails}>
+          <div className={styles.itemHeader}>
+            <div className={styles.itemInfo}>
+              <div className={styles.itemNameRow}>
+                <h3 className={styles.itemName}>
+                  {item.productName}
+                </h3>
+                {item.isReservation && (
+                  <span className={styles.reservationBadge}>
+                    Reservation
+                  </span>
+                )}
+              </div>
+              <p className={styles.storeName}>{item.storeName}</p>
+              {item.isReservation && reservationDateFormatted && reservationTimeFormatted && (
+                <div className={styles.reservationInfo}>
+                  <p className={styles.reservationDate}>
+                    📅 {reservationDateFormatted}
+                  </p>
+                  <p className={styles.reservationTime}>
+                    🕐 {reservationTimeFormatted}
+                  </p>
+                  {item.reservationNotes && (
+                    <p className={styles.reservationNote}>
+                      Note: {item.reservationNotes}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleRemove}
+              className={styles.removeButton}
+            >
+              ✕
+            </button>
+          </div>
+          <div className={styles.itemFooter}>
+            {!item.isReservation && (
+              <div className={styles.quantityControls}>
+                <button
+                  onClick={handleDecrease}
+                  className={styles.quantityButton}
+                >
+                  −
+                </button>
+                <span className={styles.quantityValue}>
+                  {item.quantity}
+                </span>
+                <button
+                  onClick={handleIncrease}
+                  className={styles.quantityButton}
+                >
+                  +
+                </button>
+              </div>
+            )}
+            {item.isReservation && (
+              <div className={styles.quantityText}>
+                Quantity: {item.quantity}
+              </div>
+            )}
+            <span className={styles.itemPrice}>
+              ${itemTotal}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default function CartContent({
   addresses,
@@ -34,6 +167,18 @@ export default function CartContent({
     () => items.reduce((count, item) => count + item.quantity, 0),
     [items]
   );
+
+  const handleUpdateQuantity = useCallback((id: string, quantity: number) => {
+    updateQuantity(id, quantity);
+  }, [updateQuantity]);
+
+  const handleRemoveItem = useCallback((id: string) => {
+    removeItem(id);
+  }, [removeItem]);
+
+  const handleClearCart = useCallback(() => {
+    clearCart();
+  }, [clearCart]);
 
   return (
     <>
@@ -61,102 +206,12 @@ export default function CartContent({
           <div className={styles.cartGrid}>
             <div className={styles.itemsList}>
               {items.map((item) => (
-                <div key={item.id} className={styles.cartItem}>
-                  <div className={styles.itemContent}>
-                    {item.productImage ? (
-                      <img
-                        src={getImageUrl(item.productImage) || getPlaceholderImage()}
-                        alt={item.productName}
-                        className={styles.itemImage}
-                        onError={handleImageError}
-                      />
-                    ) : (
-                      <div className={styles.itemImagePlaceholder}>
-                        <span className={styles.placeholderText}>No Image</span>
-                      </div>
-                    )}
-                    <div className={styles.itemDetails}>
-                      <div className={styles.itemHeader}>
-                        <div className={styles.itemInfo}>
-                          <div className={styles.itemNameRow}>
-                            <h3 className={styles.itemName}>
-                              {item.productName}
-                            </h3>
-                            {item.isReservation && (
-                              <span className={styles.reservationBadge}>
-                                Reservation
-                              </span>
-                            )}
-                          </div>
-                          <p className={styles.storeName}>{item.storeName}</p>
-                          {item.isReservation && item.reservationDate && item.reservationTime && (
-                            <div className={styles.reservationInfo}>
-                              <p className={styles.reservationDate}>
-                                📅 {new Date(item.reservationDate).toLocaleDateString('en-US', {
-                                  weekday: 'short',
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric'
-                                })}
-                              </p>
-                              <p className={styles.reservationTime}>
-                                🕐 {new Date(`2000-01-01T${item.reservationTime}`).toLocaleTimeString('en-US', {
-                                  hour: 'numeric',
-                                  minute: '2-digit',
-                                  hour12: true
-                                })}
-                              </p>
-                              {item.reservationNotes && (
-                                <p className={styles.reservationNote}>
-                                  Note: {item.reservationNotes}
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => removeItem(item.id)}
-                          className={styles.removeButton}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className={styles.itemFooter}>
-                        {!item.isReservation && (
-                          <div className={styles.quantityControls}>
-                            <button
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity - 1)
-                              }
-                              className={styles.quantityButton}
-                            >
-                              −
-                            </button>
-                            <span className={styles.quantityValue}>
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 1)
-                              }
-                              className={styles.quantityButton}
-                            >
-                              +
-                            </button>
-                          </div>
-                        )}
-                        {item.isReservation && (
-                          <div className={styles.quantityText}>
-                            Quantity: {item.quantity}
-                          </div>
-                        )}
-                        <span className={styles.itemPrice}>
-                          ${(item.price * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <CartItemCard
+                  key={item.id}
+                  item={item}
+                  onUpdateQuantity={handleUpdateQuantity}
+                  onRemoveItem={handleRemoveItem}
+                />
               ))}
             </div>
 
@@ -202,7 +257,7 @@ export default function CartContent({
                 </Link>
 
                 <button
-                  onClick={clearCart}
+                  onClick={handleClearCart}
                   disabled={items.length === 0}
                   className={styles.clearCartButton}
                 >

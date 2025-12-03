@@ -119,6 +119,65 @@ export async function fetchStoresServer(params?: {
 }
 
 /**
+ * Server-side function to fetch a product by ID
+ */
+export async function fetchProductByIdServer(
+  id: string
+): Promise<ApiResponse<{
+  id: string;
+  storeId: string;
+  name: string;
+  description?: string;
+  price: number;
+  imageUrl?: string;
+  imageUrls?: string[];
+  stockQuantity: number;
+  category?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}>> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const url = `${baseUrl}/api/products/${id}`;
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      next: { revalidate: 60 }, // Revalidate every 60 seconds
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Product not found: ${id}`);
+      }
+      throw new Error(`Failed to fetch product: ${response.statusText}`);
+    }
+
+    const data: ApiResponse<{
+      id: string;
+      storeId: string;
+      name: string;
+      description?: string;
+      price: number;
+      imageUrl?: string;
+      imageUrls?: string[];
+      stockQuantity: number;
+      category?: string;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+    }> = await response.json();
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching product on server:", error);
+    throw error;
+  }
+}
+
+/**
  * Server-side function to fetch a single store by ID
  */
 export async function fetchStoreByIdServer(
