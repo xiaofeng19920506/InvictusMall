@@ -5,6 +5,7 @@ import Image from "next/image";
 import { getAvatarUrl } from "@/utils/imageUtils";
 import { uploadAvatarAction } from "../actions";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import styles from "./AvatarPreview.module.scss";
 
 interface AvatarPreviewProps {
@@ -36,6 +37,8 @@ export default function AvatarPreview({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { refreshUser } = useAuth();
+  const hasRefreshedRef = useRef(false);
   const initials = buildInitials(firstName, lastName, email);
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -76,12 +79,25 @@ export default function AvatarPreview({
       
       // Note: uploadAvatarAction will redirect on success, so we won't reach here
       // If we do reach here, it means no redirect happened (unlikely but handle it)
+      if (!hasRefreshedRef.current) {
+        hasRefreshedRef.current = true;
+        refreshUser(); // Refresh user data in context
+      }
       router.refresh();
     } catch (error: any) {
       // Next.js redirects throw errors with digest starting with "NEXT_REDIRECT"
       // We should treat these as success, not errors
       if (error?.digest && typeof error.digest === 'string' && error.digest.startsWith('NEXT_REDIRECT')) {
         // This is a redirect from the server action, which means success
+        // Refresh user data in context so header updates immediately (only once)
+        if (!hasRefreshedRef.current) {
+          hasRefreshedRef.current = true;
+          refreshUser();
+          // Reset the flag after a delay
+          setTimeout(() => {
+            hasRefreshedRef.current = false;
+          }, 2000);
+        }
         // The redirect will handle showing the success message
         // We just need to clear the preview URL since the page will refresh
         setPreviewUrl(null);

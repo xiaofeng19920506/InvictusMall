@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { authService } from '@/services/auth';
 import { User, LoginUserRequest, CreateUserRequest, AuthResponse, ForgotPasswordRequest, ResetPasswordRequest, UpdateUserRequest } from '@/models/User';
 
@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await authService.logout();
     } catch (error) {
@@ -151,9 +151,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Clear the login flag on logout
       sessionStorage.removeItem('has_logged_in');
     }
-  };
+  }, []);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const response = await authService.getCurrentUser();
       if (response.success && response.user) {
@@ -170,7 +170,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logout();
       }
     }
-  };
+  }, [logout]);
 
   const updateUser = async (data: UpdateUserRequest): Promise<AuthResponse> => {
     try {

@@ -47,6 +47,7 @@ export default function ProductDetailContent({
       isActive: initialProduct.isActive,
     } : null
   );
+  const [store, setStore] = useState<Store | null>(initialStore || null);
   const [loading, setLoading] = useState(!initialProduct);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [added, setAdded] = useState(false);
@@ -63,6 +64,14 @@ export default function ProductDetailContent({
         const response = await productService.getProductById(productId);
         if (response.success && response.data) {
           setProduct(response.data);
+          // Also fetch store if not provided
+          if (!initialStore && response.data.storeId) {
+            const { apiService } = await import("@/services/api");
+            const storeResponse = await apiService.getStoreById(response.data.storeId);
+            if (storeResponse.success && storeResponse.data) {
+              setStore(storeResponse.data);
+            }
+          }
         }
       } catch (error) {
         console.error("Failed to fetch product:", error);
@@ -74,7 +83,7 @@ export default function ProductDetailContent({
     if (productId) {
       fetchProduct();
     }
-  }, [productId, initialProduct]);
+  }, [productId, initialProduct, initialStore]);
 
   // Memoize image URLs to avoid recalculation
   const productImage = useMemo(() => {

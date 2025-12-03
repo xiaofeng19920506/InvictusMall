@@ -29,7 +29,6 @@ export default function ProfileAddresses({
   const basePath = "/profile?tab=addresses";
   const addHref = `${basePath}&showAdd=1`;
   const closeHref = basePath;
-  const getEditHref = (id: string) => `${basePath}&showAdd=1&edit=${id}`;
 
   const errorMessage =
     feedbackStatus === "error" && feedbackMessage ? feedbackMessage : undefined;
@@ -42,7 +41,7 @@ export default function ProfileAddresses({
         editingAddress={editingAddress}
         addHref={addHref}
         closeHref={closeHref}
-        getEditHref={getEditHref}
+        basePath={basePath}
         createAddressAction={createAddressAction}
         updateAddressAction={updateAddressAction}
         errorMessage={errorMessage}

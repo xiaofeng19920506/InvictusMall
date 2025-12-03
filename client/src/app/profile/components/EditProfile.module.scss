@@ -3,7 +3,9 @@
 
 .container {
   @include card;
-  padding: 2rem; // Add padding to container
+  padding: 2rem;
+  width: 100%;
+  min-height: 100%;
   
   @include respond-to('sm') {
     padding: 2.5rem;

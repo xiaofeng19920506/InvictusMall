@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { deleteAddressAction, setDefaultAddressAction } from "./addressActions";
+import { deleteAddressAction } from "./addressActions";
+import { shippingAddressService } from "@/services/shippingAddress";
 import styles from "./AddressActionButtons.module.scss";
 
 interface AddressActionButtonsProps {
@@ -7,6 +11,7 @@ interface AddressActionButtonsProps {
   isDefault: boolean;
   editHref: string;
   addressLabel?: string;
+  onDefaultChanged?: (addressId: string) => void;
 }
 
 export default function AddressActionButtons({
@@ -14,7 +19,34 @@ export default function AddressActionButtons({
   isDefault,
   editHref,
   addressLabel,
+  onDefaultChanged,
 }: AddressActionButtonsProps) {
+  const [isSettingDefault, setIsSettingDefault] = useState(false);
+
+  const handleSetDefault = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSettingDefault(true);
+
+    try {
+      const response = await shippingAddressService.setDefaultAddress(addressId);
+      if (response.success) {
+        // Call callback to update parent component state without page refresh
+        if (onDefaultChanged) {
+          onDefaultChanged(addressId);
+        }
+        // Optionally reload the page data silently using router.refresh()
+        // But we skip it to avoid UI changes as requested
+      } else {
+        alert(response.message || "Failed to set default address");
+      }
+    } catch (error) {
+      console.error("Error setting default address:", error);
+      alert("Failed to set default address. Please try again.");
+    } finally {
+      setIsSettingDefault(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <Link
@@ -25,13 +57,13 @@ export default function AddressActionButtons({
         Edit
       </Link>
       {!isDefault && (
-        <form action={setDefaultAddressAction} className={styles.form}>
-          <input type="hidden" name="addressId" value={addressId} />
+        <form onSubmit={handleSetDefault} className={styles.form}>
           <button
             type="submit"
             className={`${styles.button} ${styles.setDefault}`}
+            disabled={isSettingDefault}
           >
-            Set Default
+            {isSettingDefault ? "Setting..." : "Set Default"}
           </button>
         </form>
       )}

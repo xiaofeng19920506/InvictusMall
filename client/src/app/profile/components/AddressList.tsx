@@ -1,16 +1,35 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import AddressActionButtons from "./AddressActionButtons";
 import { ShippingAddress } from "@/lib/server-api";
 import styles from "./AddressList.module.scss";
 
 interface AddressListProps {
   addresses: ShippingAddress[];
-  getEditHref: (id: string) => string;
+  basePath: string;
 }
 
 export default function AddressList({
-  addresses,
-  getEditHref,
+  addresses: initialAddresses,
+  basePath,
 }: AddressListProps) {
+  const [addresses, setAddresses] = useState<ShippingAddress[]>(initialAddresses);
+
+  // Update addresses when initialAddresses prop changes
+  useEffect(() => {
+    setAddresses(initialAddresses);
+  }, [initialAddresses]);
+
+  const handleDefaultChanged = (newDefaultId: string) => {
+    // Update local state: set the new default and unset the old one
+    setAddresses((prev) =>
+      prev.map((addr) => ({
+        ...addr,
+        isDefault: addr.id === newDefaultId,
+      }))
+    );
+  };
   if (addresses.length === 0) {
     return (
       <div className={styles.emptyState}>
@@ -23,7 +42,7 @@ export default function AddressList({
   return (
     <div className={styles.list}>
       {addresses.map((address) => {
-        const editHref = getEditHref(address.id);
+        const editHref = `${basePath}&showAdd=1&edit=${address.id}`;
         const addressLabelForModal = [
           address.label ? `${address.label} -` : null,
           address.fullName,
@@ -72,6 +91,7 @@ export default function AddressList({
               isDefault={address.isDefault}
               editHref={editHref}
               addressLabel={addressLabelForModal}
+              onDefaultChanged={handleDefaultChanged}
             />
           </div>
         );

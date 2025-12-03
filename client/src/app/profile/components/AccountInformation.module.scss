@@ -5,14 +5,16 @@
   background-color: color("white");
   border-radius: border-radius("lg");
   box-shadow: shadow("md");
-  padding: 2rem; // Add padding to container
+  padding: 2rem;
+  width: 100%;
+  min-height: 100%;
 
   @include respond-to("sm") {
     padding: 2.5rem;
   }
 
   @include respond-to("lg") {
-    padding: 3rem; // p-12 on larger screens
+    padding: 3rem;
   }
 }
 

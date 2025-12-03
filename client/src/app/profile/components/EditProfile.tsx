@@ -1,5 +1,5 @@
 import EditProfileClient from "./EditProfileClient";
-import ProfileForm from "./ProfileForm";
+import ProfileFormWrapper from "./ProfileFormWrapper";
 import styles from "./EditProfile.module.scss";
 
 interface EditProfileProps {
@@ -39,8 +39,8 @@ export default function EditProfile({ initialUser }: EditProfileProps) {
         email={initialUser.email}
       />
 
-      {/* Profile Form - Server Component */}
-      <ProfileForm initialUser={initialUser} />
+      {/* Profile Form - Wrapped in Client Component to refresh user state */}
+      <ProfileFormWrapper initialUser={initialUser} />
     </div>
   );
 }

@@ -1,7 +1,9 @@
 import {
   fetchUserServer,
   fetchShippingAddressesServer,
+  fetchOrdersServer,
   ShippingAddress,
+  Order,
 } from "@/lib/server-api";
 import { User } from "@/models/User";
 import { cookies } from "next/headers";
@@ -13,6 +15,7 @@ import AccountInformation from "./components/AccountInformation";
 import EditProfile from "./components/EditProfile";
 import ChangePasswordForm from "./components/ChangePasswordForm";
 import ProfileAddresses from "./components/ProfileAddresses";
+import ProfileOrders from "./components/ProfileOrders";
 import ProfilePageWrapper from "./components/ProfilePageWrapper";
 import ProfileToast from "./components/ProfileToast";
 import styles from "./page.module.scss";
@@ -32,7 +35,7 @@ interface ProfilePageProps {
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const params = await searchParams;
   const activeTab =
-    (params.tab as "account" | "profile" | "password" | "addresses") || "account";
+    (params.tab as "account" | "profile" | "password" | "addresses" | "orders") || "account";
   const feedbackStatus =
     params.status === "success" || params.status === "error"
       ? params.status
@@ -155,6 +158,9 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
                 feedbackStatus={feedbackStatus}
                 feedbackMessage={feedbackMessage}
               />
+            )}
+            {activeTab === "orders" && (
+              <ProfileOrders initialOrders={initialOrders || []} />
             )}
           </div>
         </div>

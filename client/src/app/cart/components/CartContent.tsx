@@ -31,7 +31,7 @@ const CartItemCard = memo(function CartItemCard({
 
   const handleIncrease = useCallback(() => {
     onUpdateQuantity(item.id, item.quantity + 1);
-  }, [item.id, onUpdateQuantity]);
+  }, [item.id, item.quantity, onUpdateQuantity]);
 
   const handleRemove = useCallback(() => {
     onRemoveItem(item.id);

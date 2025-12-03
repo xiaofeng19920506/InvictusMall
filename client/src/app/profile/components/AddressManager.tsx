@@ -10,7 +10,7 @@ interface AddressManagerProps {
   editingAddress?: ShippingAddress | null;
   addHref: string;
   closeHref: string;
-  getEditHref: (id: string) => string;
+  basePath: string;
   createAddressAction: (formData: FormData) => Promise<void>;
   updateAddressAction: (formData: FormData) => Promise<void>;
   errorMessage?: string;
@@ -22,7 +22,7 @@ export default function AddressManager({
   editingAddress = null,
   addHref,
   closeHref,
-  getEditHref,
+  basePath,
   createAddressAction,
   updateAddressAction,
   errorMessage,
@@ -30,7 +30,7 @@ export default function AddressManager({
   const isEditing = Boolean(editingAddress);
   const successRedirect = closeHref;
   const errorRedirect =
-    isEditing && editingAddress ? getEditHref(editingAddress.id) : addHref;
+    isEditing && editingAddress ? `${basePath}&showAdd=1&edit=${editingAddress.id}` : addHref;
 
   return (
     <>
@@ -45,7 +45,7 @@ export default function AddressManager({
         <div className={styles.content}>
           <AddressList
             addresses={addresses}
-            getEditHref={getEditHref}
+            basePath={basePath}
           />
         </div>
       </section>

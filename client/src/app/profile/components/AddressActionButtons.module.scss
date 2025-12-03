@@ -19,6 +19,11 @@
   border: none;
   font-size: font-size('sm');
   color: color('white');
+  min-width: 6.5rem; // Ensure consistent minimum width for all buttons (to fit "Set Default" text)
+  width: 100%; // Make all buttons take full width of container
+  text-align: center;
+  white-space: nowrap; // Prevent text wrapping
+  display: inline-block;
   
   &.edit {
     background-color: color('blue-500');
