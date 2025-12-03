@@ -1,4 +1,6 @@
 @use "sass:map";
+@use "sass:string";
+@use "sass:meta";
 
 // Color Variables
 $colors: (
@@ -114,9 +116,9 @@ $breakpoints: (
 
 @function shadow($size) {
   $shadow-value: map.get($shadows, $size);
-  @if type-of($shadow-value) == 'string' {
+  @if meta.type-of($shadow-value) == 'string' {
     // Remove quotes from string and return as unquoted string
-    @return unquote($shadow-value);
+    @return string.unquote($shadow-value);
   }
   @return $shadow-value;
 }

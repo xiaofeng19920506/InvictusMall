@@ -3,19 +3,30 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 1.5rem; // gap-6 = 1.5rem = 24px
+  grid-template-columns: repeat(2, minmax(0, 1fr)); // Start with 2 columns on mobile like Amazon
+  gap: 0.75rem; // Tighter gap like Amazon (12px)
+  padding: 0 spacing(2);
+  
+  @include respond-to('sm') {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem; // 16px
+    padding: 0 spacing(3);
+  }
   
   @include respond-to('md') {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
   }
   
   @include respond-to('lg') {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr)); // More columns like Amazon
+    gap: 1rem;
+    padding: 0 spacing(4);
   }
   
   @include respond-to('xl') {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr)); // Even more columns on large screens
+    gap: 1.25rem; // 20px
   }
 }
 

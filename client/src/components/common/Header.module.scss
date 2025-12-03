@@ -7,24 +7,25 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: shadow('lg');
+  box-shadow: none; // Amazon doesn't use shadow on header
+  border-bottom: 1px solid color('gray-800');
 }
 
 .headerContent {
-  max-width: 80rem; // max-w-7xl = 80rem = 1280px
+  max-width: 100%; // Full width like Amazon
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1rem; // px-4
-  padding-right: 1rem;
+  padding-left: 0.75rem; // Reduced padding
+  padding-right: 0.75rem;
   
   @include respond-to('sm') {
-    padding-left: 1.5rem; // sm:px-6
-    padding-right: 1.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
   
   @include respond-to('lg') {
-    padding-left: 2rem; // lg:px-8
-    padding-right: 2rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 }
 
@@ -60,100 +61,236 @@
 
 .searchForm {
   flex: 1;
-  max-width: 42rem;
-  margin: 0 spacing(8);
+  max-width: 35rem; // Further reduced max-width
+  margin: 0 spacing(2); // Reduced margin
+  
+  @include respond-to('sm') {
+    margin: 0 spacing(3);
+    max-width: 38rem;
+  }
+  
+  @include respond-to('lg') {
+    margin: 0 spacing(4);
+    max-width: 40rem;
+  }
 }
 
 .searchControls {
   @include flex;
-  gap: spacing(2);
+  height: 2.5rem; // Fixed height like Amazon (h-10)
+  border-radius: border-radius('md'); // Smaller radius
+  overflow: visible; // Allow dropdown to show outside
+  background-color: color('white');
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+  position: relative;
+  isolation: isolate; // Create new stacking context
+  
+  &:focus-within {
+    border-color: color('orange-500');
+    z-index: 10; // Bring to front when focused
+  }
 }
 
-.searchTypeSelect {
-  padding: spacing(2) spacing(3);
-  color: color('gray-900');
-  background-color: color('white');
-  border: 1px solid color('gray-300');
-  border-radius: border-radius('lg');
+.searchTypeDropdown {
+  position: relative;
+  z-index: 20; // Higher z-index for dropdown
+}
+
+.searchTypeButton {
+  padding: 0 spacing(2.5);
+  color: color('gray-700');
+  background-color: color('gray-100'); // Light gray background like Amazon
+  border: none;
+  border-right: 1px solid color('gray-300');
+  border-radius: 0;
+  border-top-left-radius: border-radius('md'); // Rounded left side
+  border-bottom-left-radius: border-radius('md');
   font-size: font-size('sm');
+  cursor: pointer;
+  min-width: 6rem; // Reduced width
+  max-width: 7rem; // Limit maximum width
+  transition: background-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
   
   &:focus {
     outline: none;
-    border-color: color('orange-500');
-    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+    background-color: color('gray-200');
   }
   
   &:hover {
-    border-color: color('orange-500');
+    background-color: color('gray-200');
+  }
+  
+  span {
+    flex: 1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.dropdownIcon {
+  width: 1rem;
+  height: 1rem;
+  color: color('gray-600');
+  transition: transform 0.2s;
+  margin-left: spacing(2);
+  
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+.searchTypeDropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: color('white');
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('md');
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin-top: 0.25rem;
+  overflow: hidden;
+  z-index: 21;
+  width: 100%; // Match button width
+  min-width: auto; // Remove min-width constraint
+}
+
+.searchTypeOption {
+  width: 100%;
+  padding: spacing(2) spacing(3);
+  text-align: left;
+  background-color: color('white');
+  color: color('gray-900');
+  border: none;
+  cursor: pointer;
+  font-size: font-size('sm');
+  transition: background-color 0.15s;
+  
+  &:hover {
+    background-color: color('gray-100');
+  }
+  
+  &.active {
+    background-color: color('orange-50');
+    color: color('orange-600');
+    font-weight: font-weight('medium');
+  }
+  
+  &:first-child {
+    border-top-left-radius: border-radius('md');
+    border-top-right-radius: border-radius('md');
+  }
+  
+  &:last-child {
+    border-bottom-left-radius: border-radius('md');
+    border-bottom-right-radius: border-radius('md');
   }
 }
 
 .searchInputWrapper {
   position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .searchInput {
   width: 100%;
-  padding: spacing(2) spacing(4);
-  padding-right: spacing(10);
+  padding: 0 spacing(2); // Further reduced padding
   color: color('gray-900');
   background-color: color('white');
-  border: 1px solid color('gray-300');
-  border-radius: border-radius('lg');
-  font-size: font-size('base');
+  border: none;
+  border-radius: 0;
+  font-size: font-size('xs'); // Even smaller font size
   
   &:focus {
     outline: none;
-    border-color: color('orange-500');
-    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1);
+  }
+  
+  &::placeholder {
+    color: color('gray-400');
+    font-size: font-size('xs');
   }
 }
 
 .searchButton {
-  position: absolute;
-  right: spacing(2);
-  top: 50%;
-  transform: translateY(-50%);
-  color: color('gray-400');
-  background: none;
+  background-color: color('orange-500'); // Orange button like Amazon
+  color: color('white');
   border: none;
   cursor: pointer;
-  padding: spacing(1);
+  padding: 0 spacing(5); // Increased padding for larger button
+  height: 100%;
+  min-width: 3rem; // Minimum width for button
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  border-top-right-radius: border-radius('md'); // Rounded right side only
+  border-bottom-right-radius: border-radius('md');
+  font-size: font-size('xl'); // Larger icon size
   
   &:hover {
-    color: color('gray-600');
+    background-color: color('orange-600');
+  }
+  
+  &:active {
+    background-color: color('orange-700');
   }
 }
 
 .headerActions {
-  @include flex;
-  @include items-center;
-  gap: spacing(4);
+  display: flex;
+  align-items: center;
+  gap: 1rem !important; // Force gap between button groups (Sign In/Sign Up group and Cart)
+  
+  @include respond-to('sm') {
+    gap: 1.25rem !important;
+  }
+  
+  @include respond-to('lg') {
+    gap: 1.5rem !important;
+  }
 }
 
 .userActions {
-  @include flex;
-  @include items-center;
-  gap: spacing(4);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem !important; // Force gap between Sign In and Sign Up buttons
+  
+  @include respond-to('sm') {
+    gap: 1rem !important;
+  }
+  
+  @include respond-to('lg') {
+    gap: 1.25rem !important;
+  }
 }
 
 // Common button styles for consistent height
 .headerButton {
-  @include flex;
-  @include items-center;
+  display: flex;
+  align-items: center;
+  justify-content: center; // Center content horizontally
   gap: spacing(2);
-  padding: spacing(2) spacing(4);
+  padding: spacing(2.5) spacing(6); // Increased horizontal padding for longer buttons
   font-size: font-size('sm');
   font-weight: font-weight('medium');
   color: color('white');
   background-color: color('gray-800');
-  border-radius: border-radius('lg');
+  border-radius: border-radius('md'); // Smaller radius
   border: none;
   cursor: pointer;
   transition: background-color 0.2s;
   text-decoration: none;
-  height: 2.5rem; // h-10 = 2.5rem = 40px - Fixed height for consistency
+  height: 2.75rem; // Increased height (h-11 = 2.75rem = 44px)
+  min-width: 6rem; // Minimum width to make buttons longer
+  white-space: nowrap;
   
   &:hover {
     background-color: color('gray-700');
@@ -186,13 +323,14 @@
 .cartButton {
   @extend .headerButton;
   position: relative;
-  height: 2.5rem; // h-10 - Ensure same height as user dropdown button
+  height: 2.75rem; // Match increased height
 }
 
 .userDropdownButton {
   @extend .headerButton;
-  padding: spacing(2) spacing(3);
-  height: 2.5rem; // h-10 - Ensure same height as cart button
+  padding: spacing(2.5) spacing(5); // Increased padding for longer button
+  height: 2.75rem; // Match increased height
+  min-width: 8rem; // Longer minimum width for user button
 }
 
 .userDropdown {
@@ -298,34 +436,34 @@
 .categoryNav {
   background-color: color('gray-800');
   border-top: 1px solid color('gray-700');
-  min-height: 3.5rem; // Increased height for better appearance
+  min-height: 2.5rem; // Reduced height like Amazon
   display: flex;
   align-items: center; // Vertically center the content
 }
 
 .categoryNavContent {
-  max-width: 80rem; // max-w-7xl = 80rem = 1280px
+  max-width: 100%; // Full width like Amazon
   margin-left: auto;
   margin-right: auto;
-  padding-left: 1rem; // px-4
-  padding-right: 1rem;
+  padding-left: 0.75rem; // Reduced padding
+  padding-right: 0.75rem;
   width: 100%;
   
   @include respond-to('sm') {
-    padding-left: 1.5rem; // sm:px-6
-    padding-right: 1.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
   
   @include respond-to('lg') {
-    padding-left: 2rem; // lg:px-8
-    padding-right: 2rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
   }
 }
 
 .categoryList {
   @include flex;
   @include items-center; // Vertically center buttons
-  gap: spacing(2); // Horizontal gap between buttons
+  gap: spacing(4); // Increased horizontal gap between buttons
   overflow-x: auto;
   padding: 0; // Remove vertical padding since we're centering with align-items
   
@@ -352,28 +490,31 @@
 }
 
 .categoryButton {
-  padding: spacing(2.5) spacing(4); // Increased vertical padding
-  font-size: font-size('base'); // Increased from 'sm' to 'base' (16px)
-  font-weight: font-weight('medium');
-  border-radius: border-radius('md');
+  padding: spacing(1.5) spacing(3); // More compact padding like Amazon
+  font-size: font-size('sm'); // Smaller font like Amazon
+  font-weight: font-weight('normal'); // Normal weight
+  border-radius: border-radius('sm'); // Smaller radius
   white-space: nowrap;
-  transition: all 0.2s;
+  transition: all 0.15s;
   cursor: pointer;
   border: none;
   background: none;
   flex-shrink: 0; // Prevent buttons from shrinking
+  text-decoration: none; // Remove underline from Link
+  display: inline-block; // Make Link behave like button
   
   &.active {
-    background-color: color('orange-500');
+    background-color: transparent; // No background for active
     color: color('white');
+    font-weight: font-weight('medium'); // Slightly bolder when active
   }
   
   &.inactive {
     color: color('gray-300');
     
     &:hover {
-      background-color: color('orange-500');
       color: color('white');
+      background-color: rgba(255, 255, 255, 0.1); // Subtle hover effect
     }
   }
 }

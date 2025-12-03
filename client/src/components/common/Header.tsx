@@ -16,24 +16,42 @@ interface HeaderProps {
 }
 
 export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange }: HeaderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchType, setSearchType] = useState('All');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showSearchTypeDropdown, setShowSearchTypeDropdown] = useState(false);
   const [categories, setCategories] = useState<string[]>(['All']);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchTypeDropdownRef = useRef<HTMLDivElement>(null);
   
   const { user, logout, isAuthenticated } = useAuth();
   const { getItemCount } = useCart();
-  const router = useRouter();
-  const pathname = usePathname();
 
-  // Close dropdown when clicking outside
+  // Read category from URL on mount and when pathname changes
+  useEffect(() => {
+    if (pathname === '/') {
+      const params = new URLSearchParams(window.location.search);
+      const category = params.get('category') || 'All';
+      setSelectedCategory(category);
+      const search = params.get('search') || '';
+      setSearchQuery(search);
+      const type = params.get('searchType') || 'All';
+      setSearchType(type);
+    }
+  }, [pathname]);
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
+      }
+      if (searchTypeDropdownRef.current && !searchTypeDropdownRef.current.contains(event.target as Node)) {
+        setShowSearchTypeDropdown(false);
       }
     }
 
@@ -99,6 +117,16 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
     }
   };
 
+  // Build URL for category link
+  const getCategoryUrl = (category: string) => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set('search', searchQuery);
+    if (category && category !== 'All') params.set('category', category);
+    if (searchType && searchType !== 'All') params.set('searchType', searchType);
+    const queryString = params.toString();
+    return queryString ? `/?${queryString}` : '/';
+  };
+
   const handleSearchTypeChange = (type: string) => {
     setSearchType(type);
     if (onSearchTypeChange) {
@@ -138,18 +166,48 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
           
           <form onSubmit={handleSearch} className={styles.searchForm}>
             <div className={styles.searchControls}>
-              {/* Search Type Selector */}
-              <select
-                value={searchType}
-                onChange={(e) => handleSearchTypeChange(e.target.value)}
-                className={`${styles.searchTypeSelect} search-type-dropdown`}
-              >
-                {searchTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
+              {/* Search Type Selector - Custom Dropdown */}
+              <div className={styles.searchTypeDropdown} ref={searchTypeDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowSearchTypeDropdown(!showSearchTypeDropdown)}
+                  className={styles.searchTypeButton}
+                >
+                  <span>{searchType}</span>
+                  <svg
+                    className={`${styles.dropdownIcon} ${showSearchTypeDropdown ? styles.open : ''}`}
+                    fill="none"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      stroke="currentColor"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M6 8l4 4 4-4"
+                    />
+                  </svg>
+                </button>
+                {showSearchTypeDropdown && (
+                  <div className={styles.searchTypeDropdownMenu}>
+                    {searchTypes.map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          handleSearchTypeChange(type);
+                          setShowSearchTypeDropdown(false);
+                        }}
+                        className={`${styles.searchTypeOption} ${
+                          searchType === type ? styles.active : ''
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               
               {/* Search Input */}
               <div className={styles.searchInputWrapper}>
@@ -297,8 +355,9 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
               <div className={styles.loadingCategories}>Loading categories...</div>
             ) : (
               categories.map((category) => (
-                <button
+                <Link
                   key={category}
+                  href={getCategoryUrl(category)}
                   className={`${styles.categoryButton} category-button ${
                     selectedCategory === category
                       ? styles.active
@@ -307,7 +366,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                   onClick={() => handleCategoryChange(category)}
                 >
                   {category}
-                </button>
+                </Link>
               ))
             )}
           </div>
