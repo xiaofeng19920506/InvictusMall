@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { ORDER_STATUS_FILTERS, type OrderStatusTabValue } from "../../orders/orderStatusConfig";
 import styles from "./ProfileSidebar.module.scss";
 
 interface ProfileSidebarProps {
@@ -15,15 +16,28 @@ export default function ProfileSidebar({
 }: ProfileSidebarProps) {
   // Build URLs while preserving other query parameters (like edit, showAdd, etc.)
   // but removing feedback-related params when switching tabs
-  const buildUrl = (tab: string) => {
+  const buildUrl = (tab: string, orderStatus?: string) => {
     const params = new URLSearchParams();
     
     // Set the tab parameter
     params.set("tab", tab);
     
+    // For orders tab, always set orderStatus (default to "all" if not provided)
+    if (tab === "orders") {
+      const statusToUse = orderStatus !== undefined ? orderStatus : (searchParams?.orderStatus as string) || "all";
+      if (statusToUse && statusToUse !== "all") {
+        params.set("orderStatus", statusToUse);
+      }
+    } else {
+      // For non-orders tabs, preserve orderStatus if it exists, but don't add it
+      if (searchParams?.orderStatus && searchParams.orderStatus !== "all") {
+        // Don't preserve orderStatus for non-orders tabs
+      }
+    }
+    
     // Preserve other relevant parameters (edit, showAdd) but exclude status/message
     Object.entries(searchParams).forEach(([key, value]) => {
-      if (key !== "tab" && key !== "status" && key !== "message" && value) {
+      if (key !== "tab" && key !== "status" && key !== "message" && key !== "orderStatus" && value) {
         if (Array.isArray(value)) {
           value.forEach(v => params.append(key, v));
         } else {
@@ -34,6 +48,9 @@ export default function ProfileSidebar({
     
     return `/profile?${params.toString()}`;
   };
+
+  // Get current order status from search params (default to "all")
+  const currentOrderStatus = (searchParams?.orderStatus as string) || "all";
 
   // Determine which main category is active
   const isAccountCategory = activeTab === "account" || activeTab === "profile" || activeTab === "password" || activeTab === "addresses";
@@ -77,9 +94,6 @@ export default function ProfileSidebar({
 
   return (
     <aside className={styles.sidebar}>
-      <div className={styles.sidebarHeader}>
-        <h2 className={styles.sidebarTitle}>My Account</h2>
-      </div>
       <nav className={styles.nav}>
         {/* Account Category */}
         <div className={styles.categorySection}>
@@ -201,14 +215,18 @@ export default function ProfileSidebar({
           </div>
           {expandedCategories.has("orders") && (
             <div className={styles.subNav}>
-              <Link
-                href={buildUrl("orders")}
-                className={`${styles.navItem} ${
-                  activeTab === "orders" ? styles.active : ""
-                }`}
-              >
-                All Orders
-              </Link>
+              {ORDER_STATUS_FILTERS.map((filter) => {
+                const isActive = activeTab === "orders" && currentOrderStatus === filter.value;
+                return (
+                  <Link
+                    key={filter.value}
+                    href={buildUrl("orders", filter.value)}
+                    className={`${styles.navItem} ${isActive ? styles.active : ""}`}
+                  >
+                    {filter.label}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

@@ -88,12 +88,20 @@ export default function CheckoutSuccessClient({
             </div>
           )}
 
-          <Link
-            href="/"
-            className={styles.homeButton}
-          >
-            Return to Home
-          </Link>
+          <div className={styles.buttonGroup}>
+            <Link
+              href="/profile?tab=orders&orderStatus=all"
+              className={styles.viewOrdersButton}
+            >
+              View My Orders
+            </Link>
+            <Link
+              href="/"
+              className={styles.homeButton}
+            >
+              Return to Home
+            </Link>
+          </div>
         </div>
       </div>
       {completionResult.success ? (

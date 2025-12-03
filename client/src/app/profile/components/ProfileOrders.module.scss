@@ -34,3 +34,41 @@
   color: color('gray-600');
 }
 
+.loadingContainer {
+  @include flex;
+  @include flex-col;
+  @include items-center;
+  @include justify-center;
+  padding: 3rem;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid color('gray-200');
+  border-top-color: color('orange-500');
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  font-size: font-size('base');
+  color: color('gray-600');
+}
+
+.errorMessage {
+  padding: 1rem;
+  background-color: color('red-50');
+  color: color('red-700');
+  border-radius: border-radius('md');
+  border: 1px solid color('red-200');
+  font-size: font-size('sm');
+}
+

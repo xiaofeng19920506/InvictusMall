@@ -1,3 +1,5 @@
+"use client";
+
 import { Order } from "@/lib/server-api";
 import Link from "next/link";
 import {
@@ -14,9 +16,25 @@ interface OrdersListProps {
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
     year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
   });
+}
+
+function formatShortDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+}
+
+function formatOrderId(orderId: string): string {
+  // Show first 8 characters for better readability
+  if (orderId.length > 12) {
+    return orderId.substring(0, 12) + '...';
+  }
+  return orderId;
 }
 
 export default function OrdersList({ orders }: OrdersListProps) {
@@ -42,12 +60,34 @@ export default function OrdersList({ orders }: OrdersListProps) {
     <div className={styles.container}>
       {orders.map((order) => (
         <div key={order.id} className={styles.orderCard}>
+          {/* Order Header Section */}
           <div className={styles.orderHeader}>
-            <div className={styles.orderInfoLeft}>
-              <div className={styles.orderTitleRow}>
-                <h3 className={styles.orderTitle}>
-                  Order #{order.id}
-                </h3>
+            <div className={styles.orderHeaderTop}>
+              <div className={styles.orderInfoLeft}>
+                <p className={styles.orderDateLabel}>Order Date: {formatShortDate(order.orderDate)}</p>
+              </div>
+              <div className={styles.orderHeaderRight}>
+                <Link
+                  href={`/orders/${order.id}`}
+                  className={styles.orderDetailsButton}
+                >
+                  ORDER DETAILS / INVOICE
+                </Link>
+              </div>
+            </div>
+
+            <div className={styles.orderHeaderBottom}>
+              <div className={styles.orderTotal}>
+                <span className={styles.orderTotalLabel}>Order Total: </span>
+                <span className={styles.totalAmount}>
+                  ${order.totalAmount.toFixed(2)}
+                </span>
+              </div>
+              <div className={styles.orderNumber}>
+                <span className={styles.orderNumberLabel}>ORDER # </span>
+                <span className={styles.orderNumberValue}>{formatOrderId(order.id)}</span>
+              </div>
+              <div className={styles.orderStatus}>
                 <span
                   className={`${styles.statusBadge} ${getOrderStatusBadgeStyle(
                     order.status
@@ -56,79 +96,87 @@ export default function OrdersList({ orders }: OrdersListProps) {
                   {getOrderStatusLabel(order.status)}
                 </span>
               </div>
-              <p className={styles.orderDate}>
-                Placed on {formatDate(order.orderDate)}
+            </div>
+          </div>
+
+          {/* Products Section */}
+          <div className={styles.productsSection}>
+            {order.items.map((item) => (
+              <div key={item.id} className={styles.productCard}>
+                <div className={styles.productMain}>
+                  <div className={styles.productImageWrapper}>
+                    {item.productImage ? (
+                      <img
+                        src={getImageUrl(item.productImage) || getPlaceholderImage()}
+                        alt={item.productName}
+                        className={styles.productImage}
+                        onError={handleImageError}
+                      />
+                    ) : (
+                      <div className={styles.productImagePlaceholder}>
+                        <span>No Image</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.productInfo}>
+                    <h4 className={styles.productName}>{item.productName}</h4>
+                    <p className={styles.productStore}>
+                      Sold and Shipped by {order.storeName}
+                    </p>
+                    <div className={styles.productQuantity}>
+                      Quantity: {item.quantity}
+                    </div>
+                  </div>
+                  <div className={styles.productPrice}>
+                    ${item.subtotal.toFixed(2)}
+                  </div>
+                </div>
+                <div className={styles.productActions}>
+                  <Link
+                    href={`/orders/${order.id}`}
+                    className={styles.productActionButton}
+                  >
+                    VIEW DETAILS
+                  </Link>
+                  <button
+                    type="button"
+                    className={styles.productActionButton}
+                    onClick={() => {
+                      // TODO: Implement buy again functionality
+                    }}
+                  >
+                    BUY AGAIN
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tracking Section */}
+          {order.trackingNumber && (
+            <div className={styles.trackingSection}>
+              <p className={styles.trackingText}>
+                <span className={styles.trackingLabel}>Tracking Number:</span>{" "}
+                {order.trackingNumber}
               </p>
+            </div>
+          )}
+
+          {/* Order Dates */}
+          {(order.shippedDate || order.deliveredDate) && (
+            <div className={styles.orderDates}>
               {order.shippedDate && (
-                <p className={styles.orderDate}>
+                <p className={styles.orderDateInfo}>
                   Shipped on {formatDate(order.shippedDate)}
                 </p>
               )}
               {order.deliveredDate && (
-                <p className={styles.orderDate}>
+                <p className={styles.orderDateInfo}>
                   Delivered on {formatDate(order.deliveredDate)}
                 </p>
               )}
             </div>
-            <div className={styles.orderTotal}>
-              <p className={styles.totalAmount}>
-                ${order.totalAmount.toFixed(2)}
-              </p>
-              <p className={styles.itemCount}>{order.items.length} item(s)</p>
-            </div>
-          </div>
-
-          <div className={styles.divider}>
-            <div className={styles.storeInfo}>
-              <p className={styles.storeLabel}>
-                From: {order.storeName}
-              </p>
-              <div className={styles.itemsList}>
-                {order.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className={styles.orderItem}
-                  >
-                    <div className={styles.itemLeft}>
-                      {item.productImage && (
-                        <img
-                          src={getImageUrl(item.productImage) || getPlaceholderImage()}
-                          alt={item.productName}
-                          className={styles.itemImage}
-                          onError={handleImageError}
-                        />
-                      )}
-                      <div className={styles.itemInfo}>
-                        <p className={styles.itemName}>{item.productName}</p>
-                        <p className={styles.itemQuantity}>Qty: {item.quantity}</p>
-                      </div>
-                    </div>
-                    <p className={styles.itemPrice}>
-                      ${item.subtotal.toFixed(2)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {order.trackingNumber && (
-              <div className={styles.trackingSection}>
-                <p className={styles.trackingText}>
-                  <span className={styles.trackingLabel}>Tracking Number:</span>{" "}
-                  {order.trackingNumber}
-                </p>
-              </div>
-            )}
-
-            <div>
-              <Link
-                href={`/orders/${order.id}`}
-                className={styles.viewDetailsLink}
-              >
-                View Details
-              </Link>
-            </div>
-          </div>
+          )}
         </div>
       ))}
     </div>

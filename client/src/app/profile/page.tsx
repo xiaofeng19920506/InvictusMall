@@ -16,6 +16,8 @@ import EditProfile from "./components/EditProfile";
 import ChangePasswordForm from "./components/ChangePasswordForm";
 import ProfileAddresses from "./components/ProfileAddresses";
 import ProfileOrders from "./components/ProfileOrders";
+import { parseOrderStatusQuery } from "../orders/orderStatusConfig";
+import type { OrderStatusTabValue } from "../orders/orderStatusConfig";
 import ProfilePageWrapper from "./components/ProfilePageWrapper";
 import ProfileToast from "./components/ProfileToast";
 import styles from "./page.module.scss";
@@ -26,6 +28,7 @@ interface ProfileSearchParams {
   message?: string;
   showAdd?: string;
   edit?: string;
+  orderStatus?: string;
 }
 
 interface ProfilePageProps {
@@ -43,16 +46,25 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const feedbackMessage = feedbackStatus ? params.message : undefined;
   const showAddAddress = params.showAdd === "1";
   const editAddressId = params.edit ? String(params.edit) : undefined;
+  const orderStatus: OrderStatusTabValue = parseOrderStatusQuery(params.orderStatus);
 
   const paramsWithoutFeedback = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (!value || key === "status" || key === "message") {
       return;
     }
+    // For orders tab, preserve orderStatus if it exists
+    if (key === "orderStatus" && activeTab !== "orders") {
+      return; // Don't preserve orderStatus for non-orders tabs
+    }
     paramsWithoutFeedback.set(key, value);
   });
   if (!paramsWithoutFeedback.has("tab")) {
     paramsWithoutFeedback.set("tab", activeTab === "account" ? "account" : activeTab);
+  }
+  // For orders tab, ensure orderStatus is set (default to "all")
+  if (activeTab === "orders" && !paramsWithoutFeedback.has("orderStatus")) {
+    paramsWithoutFeedback.set("orderStatus", orderStatus === "all" ? "all" : String(orderStatus));
   }
   const toastClearHref = `/profile${
     paramsWithoutFeedback.toString()
@@ -70,6 +82,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
 
   let user: User | null = null;
   let initialAddresses: ShippingAddress[] = [];
+  let initialOrders: Order[] = [];
 
   try {
     const response = await fetchUserServer(cookieHeader || undefined);
@@ -90,7 +103,7 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
     redirect("/login");
   }
 
-  // Fetch addresses if user is authenticated
+  // Fetch addresses and orders if user is authenticated
   if (user) {
     try {
       const addressesResponse = await fetchShippingAddressesServer(
@@ -107,6 +120,23 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
       });
       // Continue with empty addresses array - the client component will handle fetching
       initialAddresses = [];
+    }
+
+    // Fetch orders if user is on orders tab
+    if (activeTab === "orders") {
+      try {
+        const ordersResponse = await fetchOrdersServer(cookieHeader || undefined, {
+          status: orderStatus !== "all" ? orderStatus : undefined,
+          limit: 50,
+        });
+        if (ordersResponse.success && ordersResponse.data) {
+          initialOrders = ordersResponse.data;
+        }
+      } catch (error) {
+        // Log the error but continue - the client component can handle fetching orders
+        console.error("Failed to fetch orders on server:", error);
+        initialOrders = [];
+      }
     }
   }
 
@@ -160,7 +190,10 @@ export default async function ProfilePage({ searchParams }: ProfilePageProps) {
               />
             )}
             {activeTab === "orders" && (
-              <ProfileOrders initialOrders={initialOrders || []} />
+              <ProfileOrders 
+                initialOrders={initialOrders || []} 
+                initialStatus={orderStatus}
+              />
             )}
           </div>
         </div>

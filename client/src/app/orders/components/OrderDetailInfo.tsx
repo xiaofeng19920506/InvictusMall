@@ -189,7 +189,7 @@ export default function OrderDetailInfo({ order }: OrderDetailInfoProps) {
 
       {/* Actions */}
       <div className={styles.actions}>
-        <Link href="/orders" className={styles.backButton}>
+        <Link href="/profile?tab=orders&orderStatus=all" className={styles.backButton}>
           Back to Orders
         </Link>
         {order.status === "delivered" && (

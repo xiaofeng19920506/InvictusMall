@@ -1,6 +1,7 @@
 "use client";
 
 import ProtectedRoute from "@/components/common/ProtectedRoute";
+import Header from "@/components/common/Header";
 import { Order } from "@/lib/server-api";
 import Link from "next/link";
 import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
@@ -42,12 +43,14 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
   const order = initialOrder;
   return (
     <ProtectedRoute>
-      <div className={styles.pageContainer}>
+      <div className={styles.wrapper}>
+        <Header />
+        <div className={styles.pageContainer}>
         <div className={styles.container}>
           {/* Header */}
           <div className={styles.header}>
             <Link
-              href="/orders"
+              href="/profile?tab=orders&orderStatus=all"
               className={styles.backLink}
             >
               ← Back to Orders
@@ -218,6 +221,7 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
               )}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </ProtectedRoute>

@@ -293,7 +293,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                         </div>
                       </Link>
                       <Link
-                        href="/orders"
+                        href="/profile?tab=orders&orderStatus=all"
                         onClick={() => setShowDropdown(false)}
                         className={styles.dropdownItem}
                       >

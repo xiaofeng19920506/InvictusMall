@@ -1,9 +1,41 @@
 @use '../../../styles/variables.scss' as *;
 @use '../../../styles/mixins.scss' as *;
 
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
 .pageContainer {
-  min-height: 100vh;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: color('gray-50');
+  padding-bottom: 2rem;
+  min-height: 0; // Important for flex child
+  
+  // Custom scrollbar styling
+  scrollbar-width: thin;
+  scrollbar-color: color('gray-400') color('gray-100');
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: color('gray-100');
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: color('gray-400');
+    border-radius: 4px;
+    
+    &:hover {
+      background: color('gray-500');
+    }
+  }
 }
 
 .container {
