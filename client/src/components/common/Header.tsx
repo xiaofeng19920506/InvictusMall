@@ -92,7 +92,6 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
         console.error('Error fetching categories:', error);
         // Fallback on error
         setCategories(['All']);
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       } finally {
         setLoadingCategories(false);
       }
