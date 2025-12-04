@@ -248,7 +248,6 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
               });
             }
           }
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         }
       } catch (error) {
         console.error("Error fetching owners:", error);
@@ -286,7 +285,6 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       });
     }
   }, [isEditing, store?.owner?.id, availableOwners.length, loadingOwners]);
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   const updateLocationField = (field: keyof Location, value: string) => {
     setFormData((prev) => ({

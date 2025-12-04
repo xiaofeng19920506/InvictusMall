@@ -135,7 +135,6 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-<<<<<<< HEAD
                 className={`${styles.tabButton} ${
                   activeTab === tab.id ? styles.active : styles.inactive
                 }`}
@@ -193,7 +192,6 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                               ${product.price.toFixed(2)}
                             </span>
                             <span className={styles.productStock}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                               Stock: {product.stockQuantity}
                             </span>
                           </div>
