@@ -75,21 +75,17 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
         }
         
         const response = await apiService.getTopLevelCategories();
-        console.log('Categories API response:', response);
         
         if (response.success && response.data && Array.isArray(response.data)) {
           // Map category names and prepend 'All'
           // API already filters to only include categories with stores (directly or via descendants)
           const categoryNames = ['All', ...response.data.map((cat: Category) => cat.name)];
-          console.log('Setting categories (filtered by stores):', categoryNames);
           setCategories(categoryNames);
         } else {
-          console.warn('Invalid response structure:', response);
           // Fallback if response structure is invalid
           setCategories(['All']);
         }
       } catch (error) {
-        console.error('Error fetching categories:', error);
         // Fallback on error
         setCategories(['All']);
       } finally {

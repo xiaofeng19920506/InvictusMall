@@ -42,15 +42,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         // Try to get current user from server using HTTP-only cookie
         const response = await authService.getCurrentUser();
-        console.log('Restore auth state - getCurrentUser response:', response);
         if (response.success && response.user) {
           // Server confirms user is authenticated, restore user state
-          console.log('User authenticated, setting user state:', response.user);
           setUser(response.user);
           setIsAuthenticated(true);
         } else {
           // Server says user is not authenticated
-          console.log('User not authenticated, clearing state');
           setUser(null);
           setIsAuthenticated(false);
           sessionStorage.removeItem('has_logged_in');
@@ -60,13 +57,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const authError = error as { isAuthError?: boolean; status?: number };
         if (authError?.isAuthError || authError?.status === 401) {
           // User is not authenticated, which is fine - just set state
-          console.log('User not authenticated (401), clearing state');
           setUser(null);
           setIsAuthenticated(false);
           sessionStorage.removeItem('has_logged_in');
         } else {
-          // Only log actual errors (network failures, etc.)
-          console.error('Failed to restore auth state:', error);
+          // Only handle actual errors (network failures, etc.)
           setUser(null);
           setIsAuthenticated(false);
         }
@@ -81,16 +76,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       const response = await authService.login(credentials);
-      console.log('Login response:', response);
       if (response.success && response.user) {
-        console.log('Login successful, setting user state:', response.user);
         setUser(response.user);
         setIsAuthenticated(true);
         // Mark that user has logged in (for future session restores)
         sessionStorage.setItem('has_logged_in', 'true');
       } else {
         // Login failed - return the error response from server
-        console.log('Login failed:', response.message);
         setUser(null);
         setIsAuthenticated(false);
         return response; // Already contains success: false and message
@@ -99,7 +91,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err: unknown) {
       // Network or other unexpected errors
       const error = err as { message?: string };
-      console.error('Login error:', err);
       setUser(null);
       setIsAuthenticated(false);
       return { success: false, message: error?.message || 'Login failed. Please check your connection and try again.' };
@@ -144,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await authService.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      // Logout error handled silently
     } finally {
       setUser(null);
       setIsAuthenticated(false);
@@ -166,8 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error?.isAuthError || error?.status === 401) {
         logout();
       } else {
-      console.error('Failed to refresh user data:', error);
-      logout();
+        logout();
       }
     }
   }, [logout]);
