@@ -17,7 +17,7 @@ import { handleGetStoreById } from "../services/store/storeDetailService";
 import { handleCreateStore } from "../services/store/storeCreateService";
 import { handleUpdateStore } from "../services/store/storeUpdateService";
 import { handleDeleteStore } from "../services/store/storeDeleteService";
-import { handleVerifyStore } from "../services/store/storeVerifyService";
+import { handleVerifyStore, handleUnverifyStore } from "../services/store/storeVerifyService";
 import { handleUploadStoreImage } from "../services/store/storeImageService";
 
 const router = Router();
@@ -289,6 +289,35 @@ router.delete("/:id", authenticateStaffToken, async (req: Request, res: Response
  */
 router.put("/:id/verify", authenticateStaffToken, async (req: AuthenticatedRequest, res: Response) => {
   await handleVerifyStore(req, res, storeService);
+});
+
+/**
+ * @swagger
+ * /api/stores/{id}/unverify:
+ *   put:
+ *     summary: Unverify a store (Admin only)
+ *     tags: [Stores]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Store ID
+ *     responses:
+ *       200:
+ *         description: Store unverified successfully
+ *       403:
+ *         description: Only administrators can unverify stores
+ *       404:
+ *         description: Store not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put("/:id/unverify", authenticateStaffToken, async (req: AuthenticatedRequest, res: Response) => {
+  await handleUnverifyStore(req, res, storeService);
 });
 
 /**

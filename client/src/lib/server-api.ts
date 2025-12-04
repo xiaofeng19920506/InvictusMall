@@ -44,7 +44,7 @@ function transformStore(serverStore: ServerStore): Store {
     id: serverStore.id,
     name: serverStore.name,
     description: serverStore.description,
-    category: serverStore.category[0] || "Other",
+    category: serverStore.category.length > 0 ? serverStore.category : ["Other"], // Preserve all categories
     rating: serverStore.rating,
     reviewCount: serverStore.reviewCount,
     imageUrl: serverStore.imageUrl,

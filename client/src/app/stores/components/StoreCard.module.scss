@@ -3,11 +3,11 @@
 
 .storeCard {
   background-color: color('white');
-  border-radius: border-radius('md'); // Smaller radius like Amazon
-  box-shadow: none; // No shadow initially like Amazon
+  border-radius: border-radius('lg');
+  box-shadow: none;
   transition: all 0.2s;
   cursor: pointer;
-  border: 1px solid transparent; // No border initially
+  border: 1px solid color('gray-400'); // Clear visible border - always visible
   position: relative;
   overflow: hidden;
   display: block;
@@ -15,26 +15,16 @@
   color: inherit;
   
   &:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); // Subtle shadow on hover
-    border-color: color('gray-300');
-    transform: translateY(-2px); // Slight lift effect
+    box-shadow: shadow('lg');
+    border-color: color('gray-500'); // Darker border on hover for better visibility
   }
 }
 
 .imageContainer {
   position: relative;
-  height: 10rem; // Slightly smaller like Amazon product images
+  height: 12rem; // h-48 - same as product cards
   overflow: hidden;
-  background-color: color('gray-100'); // Lighter background
-  margin-bottom: spacing(2);
-  
-  @include respond-to('sm') {
-    height: 11rem;
-  }
-  
-  @include respond-to('md') {
-    height: 12rem;
-  }
+  background-color: color('gray-200');
 }
 
 .storeImage {
@@ -49,29 +39,74 @@
 }
 
 .content {
-  padding: spacing(2) spacing(3); // More compact padding like Amazon
+  padding: 1rem; // p-4 - same as product cards
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem; // mb-2
 }
 
 .title {
-  font-size: font-size('sm'); // Smaller font like Amazon product titles
-  font-weight: font-weight('normal'); // Normal weight instead of semibold
+  font-size: font-size('base');
+  font-weight: font-weight('semibold');
   color: color('gray-900');
-  margin-bottom: spacing(1);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2; // Limit to 2 lines
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.8em; // Consistent height for titles
+  flex: 1;
+  margin: 0;
+}
+
+.categoryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem; // gap-1.5
+  margin-bottom: 0.5rem; // mb-2
+}
+
+.verifiedBadge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem; // px-2 py-0.5 - same as category
+  font-size: font-size('xs');
+  font-weight: font-weight('medium');
+  border-radius: border-radius('sm'); // same as category
+  white-space: nowrap;
+  
+  &.verified {
+    background-color: color('orange-500');
+    color: color('white');
+  }
+  
+  &.unverified {
+    background-color: color('gray-300');
+    color: color('black');
+  }
+}
+
+.category {
+  display: inline-block;
+  padding: 0.125rem 0.5rem; // px-2 py-0.5
+  background-color: color('gray-50');
+  color: color('gray-700');
+  font-size: font-size('xs');
+  font-weight: font-weight('medium');
+  border-radius: border-radius('sm');
 }
 
 .description {
   color: color('gray-600');
-  font-size: font-size('xs'); // Smaller description
+  font-size: font-size('sm');
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.4;
+  margin-bottom: 0; // No margin bottom for stores (no price/stock)
 }
 

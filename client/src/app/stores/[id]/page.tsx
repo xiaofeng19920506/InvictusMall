@@ -47,19 +47,21 @@ export async function generateMetadata({ params }: StorePageProps): Promise<Meta
     const response = await fetchStoreByIdServer(id);
     if (response.success && response.data) {
       const store = response.data;
+      const primaryCategory = store.category.length > 0 ? store.category[0] : 'Products';
+      const allCategories = store.category.length > 0 ? store.category.join(', ') : 'Products';
       return {
-        title: `${store.name} - Invictus Mall | Shop ${store.category} Products`,
-        description: store.description || `Shop at ${store.name}. ${store.category} store with ${store.productsCount || 0} products. ${store.isVerified ? 'Verified store. ' : ''}Rated ${store.rating?.toFixed(1) || '5.0'} stars.`,
+        title: `${store.name} - Invictus Mall | Shop ${primaryCategory} Products`,
+        description: store.description || `Shop at ${store.name}. ${allCategories} store with ${store.productsCount || 0} products. ${store.isVerified ? 'Verified store. ' : ''}Rated ${store.rating?.toFixed(1) || '5.0'} stars.`,
         keywords: [
           store.name,
-          store.category,
+          ...store.category,
           "online shopping",
           "Invictus Mall",
           store.isVerified ? "verified store" : "",
         ].filter(Boolean),
         openGraph: {
           title: `${store.name} - Invictus Mall`,
-          description: store.description || `Shop at ${store.name} - ${store.category} store`,
+          description: store.description || `Shop at ${store.name} - ${allCategories} store`,
           type: "website",
           images: store.imageUrl ? [store.imageUrl] : [],
           url: `https://invictusmall.com/stores/${id}`,
@@ -101,11 +103,12 @@ export default async function StoreDetailPage({ params }: StorePageProps) {
   }
 
   // Generate structured data for SEO (JSON-LD)
+  const allCategories = store.category.length > 0 ? store.category.join(', ') : 'Products';
   const structuredData = {
     "@context": "https://schema.org/",
     "@type": "Store",
     "name": store.name,
-    "description": store.description || `${store.name} - ${store.category} store on Invictus Mall`,
+    "description": store.description || `${store.name} - ${allCategories} store on Invictus Mall`,
     "image": store.imageUrl || undefined,
     "address": {
       "@type": "PostalAddress",

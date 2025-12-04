@@ -76,12 +76,12 @@ export default function StoreHeader({ store, storeId }: StoreHeaderProps) {
             </div>
           </div>
 
-          <p className={styles.description}>{store.description}</p>
-
           <div className={styles.stats}>
             <div className={styles.statItem}>
-              <span className={styles.statLabel}>Category:</span>
-              <span className={styles.statValue}>{store.category}</span>
+              <span className={styles.statLabel}>Categories:</span>
+              <span className={styles.statValue}>
+                {store.category.join(', ')}
+              </span>
             </div>
             {!isLoadingCounts && (
               <>

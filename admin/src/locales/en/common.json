@@ -68,9 +68,14 @@
     "allCategories": "All Categories",
     "confirmDelete": "Are you sure you want to delete this store?",
     "confirmVerify": "Are you sure you want to verify this store?",
-    "deleteError": "Failed to delete store",
+    "verifySuccess": "Store verified successfully",
     "verifyError": "Failed to verify store",
     "verifyForbidden": "Only administrators can verify stores",
+    "confirmUnverify": "Are you sure you want to unverify this store?",
+    "unverifySuccess": "Store unverified successfully",
+    "unverifyError": "Failed to unverify store",
+    "unverifyForbidden": "Only administrators can unverify stores",
+    "deleteError": "Failed to delete store",
     "empty": "No stores found",
     "loading": "Loading stores...",
     "table": {
@@ -88,6 +93,7 @@
     },
     "actions": {
       "verify": "Verify Store",
+      "unverify": "Unverify Store",
       "edit": "Edit Store",
       "delete": "Delete Store"
     }

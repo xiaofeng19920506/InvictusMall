@@ -7,6 +7,7 @@ import {
   Star,
   RefreshCw,
   CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { storeApi } from "../../services/api";
@@ -106,6 +107,32 @@ const StoresManagement: React.FC = () => {
             showError(t("stores.verifyForbidden"));
           } else {
             showError(t("stores.verifyError"));
+          }
+          setConfirmModal({ ...confirmModal, isOpen: false });
+        }
+      },
+    });
+  };
+
+  const handleUnverifyStore = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: t("stores.confirmUnverify"),
+      message: t("stores.confirmUnverify"),
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          await storeApi.unverifyStore(id);
+          refetch();
+          showSuccess(t("stores.unverifySuccess") || "Store unverified successfully");
+          setConfirmModal({ ...confirmModal, isOpen: false });
+        } catch (error: any) {
+          console.error("Error unverifying store:", error);
+          const errorMessage = error.response?.data?.message;
+          if (errorMessage?.includes("Only administrators")) {
+            showError(t("stores.unverifyForbidden"));
+          } else {
+            showError(t("stores.unverifyError"));
           }
           setConfirmModal({ ...confirmModal, isOpen: false });
         }
@@ -300,6 +327,15 @@ const StoresManagement: React.FC = () => {
                           title={t("stores.actions.verify")}
                         >
                           <CheckCircle className="w-4 h-4" />
+                        </button>
+                      )}
+                      {isAdmin && store.isVerified && (
+                        <button
+                          onClick={() => handleUnverifyStore(store.id)}
+                          className="btn btn-warning btn-sm"
+                          title={t("stores.actions.unverify")}
+                        >
+                          <XCircle className="w-4 h-4" />
                         </button>
                       )}
                       <button

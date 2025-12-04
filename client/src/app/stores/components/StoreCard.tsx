@@ -24,9 +24,24 @@ export default function StoreCard({ store }: StoreCardProps) {
       </div>
 
       <div className={styles.content}>
-        <h3 className={styles.title}>
-          {store.name}
-        </h3>
+        <div className={styles.headerRow}>
+          <h3 className={styles.title}>
+            {store.name}
+          </h3>
+          <span className={`${styles.verifiedBadge} ${
+            store.isVerified ? styles.verified : styles.unverified
+          }`}>
+            {store.isVerified ? '✓ Verified' : 'Unverified'}
+          </span>
+        </div>
+
+        <div className={styles.categoryRow}>
+          {store.category.map((cat, index) => (
+            <span key={index} className={styles.category}>
+              {cat}
+            </span>
+          ))}
+        </div>
 
         <p className={styles.description}>
           {store.description}

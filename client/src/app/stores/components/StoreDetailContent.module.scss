@@ -155,20 +155,22 @@
 }
 
 .productCard {
-  border: 1px solid color('gray-200');
+  border: 1px solid color('gray-400'); // Same border as store cards
   border-radius: border-radius('lg');
   overflow: hidden;
   transition: box-shadow 0.2s;
   cursor: pointer;
+  background-color: color('white');
   
   &:hover {
     box-shadow: shadow('lg');
+    border-color: color('gray-500');
   }
 }
 
 .productImage {
   width: 100%;
-  height: 12rem; // h-48
+  height: 12rem; // h-48 - same as store cards
   object-fit: cover;
 }
 
@@ -183,13 +185,19 @@
 }
 
 .productContent {
-  padding: 1rem; // p-4
+  padding: 1rem; // p-4 - same as store cards
 }
 
 .productName {
+  font-size: font-size('base');
   font-weight: font-weight('semibold');
   color: color('gray-900');
   margin-bottom: 0.25rem; // mb-1
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .productDescription {
@@ -200,6 +208,7 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-height: 1.4;
 }
 
 .productFooter {

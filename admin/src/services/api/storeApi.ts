@@ -89,6 +89,12 @@ export const storeApi = {
     return response.data;
   },
 
+  // Unverify store (admin only)
+  unverifyStore: async (id: string): Promise<ApiResponse<Store>> => {
+    const response = await api.put(`/api/stores/${id}/unverify`);
+    return response.data;
+  },
+
   // Upload store image
   uploadStoreImage: async (
     file: File,

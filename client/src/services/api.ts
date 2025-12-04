@@ -29,7 +29,7 @@ export interface Store {
   id: string;
   name: string;
   description: string;
-  category: string;
+  category: string[];
   rating: number;
   reviewCount: number;
   imageUrl: string;
@@ -73,7 +73,7 @@ class ApiService {
       id: serverStore.id,
       name: serverStore.name,
       description: serverStore.description,
-      category: serverStore.category[0] || 'Other', // Use first category
+      category: serverStore.category.length > 0 ? serverStore.category : ['Other'], // Preserve all categories
       rating: serverStore.rating,
       reviewCount: serverStore.reviewCount,
       imageUrl: serverStore.imageUrl,
