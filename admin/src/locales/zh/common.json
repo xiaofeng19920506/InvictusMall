@@ -828,13 +828,9 @@
       "processing": "处理中",
       "shipped": "已发货",
       "delivered": "已送达",
-<<<<<<< HEAD
-      "cancelled": "已取消"
-=======
       "cancelled": "已取消",
       "return_processing": "退货处理中",
       "returned": "已退货"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "未找到订单"

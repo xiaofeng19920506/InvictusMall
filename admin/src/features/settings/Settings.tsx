@@ -1,28 +1,18 @@
-<<<<<<< HEAD
-import React, { useMemo, useState } from "react";
-=======
 import React, { useMemo, useState, useEffect } from "react";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import {
   Save,
   User,
   Bell,
   Shield,
   Globe,
-<<<<<<< HEAD
-=======
   X,
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import { useTheme, type ThemeOption } from "../../contexts/ThemeContext";
 import { useNotification } from "../../contexts/NotificationContext";
 import { SUPPORTED_LANGUAGES } from "../../i18n/config";
-<<<<<<< HEAD
-=======
 import { staffApi } from "../../services/api";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import styles from "./Settings.module.css";
 
 type TimezoneOption =
@@ -41,11 +31,7 @@ const timezoneOptions: TimezoneOption[] = [
 const themeOptions: ThemeOption[] = ["light", "dark", "auto"];
 
 const Settings: React.FC = () => {
-<<<<<<< HEAD
-  const { user } = useAuth();
-=======
   const { user, refreshUser } = useAuth();
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   const { theme, setTheme } = useTheme();
   const { t, i18n } = useTranslation();
   const { showSuccess, showError } = useNotification();
@@ -54,8 +40,6 @@ const Settings: React.FC = () => {
     return lang.split("-")[0];
   }, [i18n.resolvedLanguage, i18n.language]);
 
-<<<<<<< HEAD
-=======
   // Track original profile data for comparison
   const originalProfileData = useMemo(() => ({
     firstName: user?.firstName || "",
@@ -104,7 +88,6 @@ const Settings: React.FC = () => {
     );
   }, [profileData, originalProfileData, user]);
 
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -120,11 +103,6 @@ const Settings: React.FC = () => {
       sessionTimeout: 30,
     },
   });
-<<<<<<< HEAD
-  const [saving, setSaving] = useState(false);
-=======
-
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   const languageOptions = useMemo(
     () =>
@@ -134,18 +112,6 @@ const Settings: React.FC = () => {
       })),
     [t]
   );
-
-<<<<<<< HEAD
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      showSuccess(t("settings.feedback.success"));
-    } catch (error) {
-      showError(t("settings.feedback.error"));
-    } finally {
-      setSaving(false);
-=======
 
   const handleResetProfile = () => {
     setProfileData(originalProfileData);
@@ -180,24 +146,17 @@ const Settings: React.FC = () => {
       showError(error?.message || t("settings.profile.updateError"));
     } finally {
       setSavingProfile(false);
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     }
   };
 
   return (
     <div className={styles.container}>
       <section className="card">
-<<<<<<< HEAD
-        <div className="card-header">
-=======
         <div className={styles.profileHeader}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
           <div className={styles.sectionHeader}>
             <User className="w-5 h-5 text-gray-600" />
             <h3 className={styles.sectionTitle}>{t("settings.profile.title")}</h3>
           </div>
-<<<<<<< HEAD
-=======
           <div className={styles.profileActions}>
             <button
               onClick={handleSaveProfile}
@@ -227,7 +186,6 @@ const Settings: React.FC = () => {
               {t("settings.profile.actions.cancel")}
             </button>
           </div>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         </div>
         <div className={styles.sectionBody}>
           <div className={styles.gridTwo}>
@@ -238,15 +196,9 @@ const Settings: React.FC = () => {
               <input
                 id="firstName"
                 type="text"
-<<<<<<< HEAD
-                defaultValue={user?.firstName}
-                className={styles.input}
-                disabled
-=======
                 value={profileData.firstName}
                 onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
                 className={styles.input}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               />
             </div>
             <div className={styles.formGroup}>
@@ -256,21 +208,13 @@ const Settings: React.FC = () => {
               <input
                 id="lastName"
                 type="text"
-<<<<<<< HEAD
-                defaultValue={user?.lastName}
-                className={styles.input}
-                disabled
-=======
                 value={profileData.lastName}
                 onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
                 className={styles.input}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               />
             </div>
           </div>
           <div className={styles.formGroup}>
-<<<<<<< HEAD
-=======
             <label className={styles.label} htmlFor="phoneNumber">
               {t("settings.profile.phoneNumber")}
             </label>
@@ -283,7 +227,6 @@ const Settings: React.FC = () => {
             />
           </div>
           <div className={styles.formGroup}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             <label className={styles.label} htmlFor="email">
               {t("settings.profile.email")}
             </label>
@@ -481,11 +424,7 @@ const Settings: React.FC = () => {
                   },
                 }))
               }
-<<<<<<< HEAD
-              className={`${styles.select} ${styles.timezoneOptions}`}
-=======
               className={styles.select}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             >
               {timezoneOptions.map((option) => (
                 <option key={option} value={option}>
@@ -564,19 +503,6 @@ const Settings: React.FC = () => {
         </section>
       )}
 
-<<<<<<< HEAD
-      <div className={styles.saveRow}>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className={`btn btn-primary ${styles.saveButton}`}
-        >
-          {saving ? <span className={styles.spinner} aria-hidden /> : <Save className="w-4 h-4" />}
-          {saving ? t("settings.actions.saving") : t("settings.actions.save")}
-        </button>
-      </div>
-=======
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     </div>
   );
 };
