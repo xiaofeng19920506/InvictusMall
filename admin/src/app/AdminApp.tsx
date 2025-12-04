@@ -44,20 +44,24 @@ const ProtectedRoute = ({
   const { user } = useAuth();
   const location = useLocation();
 
+  // If user is not authenticated, redirect to root which will trigger AuthGuard to show login
+  // This should rarely happen since AuthGuard wraps AdminApp, but handles edge cases
   if (!user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   // Check role requirement
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     if (!roles.includes(user.role)) {
+      // Redirect to dashboard if user doesn't have required role
       return <Navigate to="/dashboard" replace />;
     }
   }
 
   // Check permission requirement
   if (requiredPermission && !authService.hasPermission(user, requiredPermission as any)) {
+    // Redirect to dashboard if user doesn't have required permission
     return <Navigate to="/dashboard" replace />;
   }
 

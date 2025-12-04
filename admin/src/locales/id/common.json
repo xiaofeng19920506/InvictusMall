@@ -284,14 +284,6 @@
       "error": "Failed to save settings."
     },
     "profile": {
-<<<<<<< HEAD
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
-=======
       "title": "Informasi Profil",
       "firstName": "Nama Depan",
       "lastName": "Nama Belakang",
@@ -306,7 +298,6 @@
       },
       "updateSuccess": "Profil berhasil diperbarui",
       "updateError": "Gagal memperbarui profil"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "notifications": {
       "title": "Notifications",
