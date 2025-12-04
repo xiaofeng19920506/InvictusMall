@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: __dirname,
+  },
   env: {
     // Use environment variable for server IP, or default to localhost
     // Set NEXT_PUBLIC_API_URL=http://[server-ip]:3001 to connect to server on another machine
