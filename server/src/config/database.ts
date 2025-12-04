@@ -727,7 +727,7 @@ const createTables = async (): Promise<void> => {
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS activity_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created') NOT NULL,
+        type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created', 'order_status_updated', 'system') NOT NULL,
         message TEXT NOT NULL,
         store_name VARCHAR(255) NULL,
         store_id VARCHAR(36) NULL,
@@ -743,7 +743,7 @@ const createTables = async (): Promise<void> => {
     try {
       await connection.execute(`
                 ALTER TABLE activity_logs 
-                MODIFY COLUMN type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created') NOT NULL
+                MODIFY COLUMN type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created', 'order_status_updated', 'system') NOT NULL
               `);
     } catch (error) {
       // Table might not exist or already have the correct enum values

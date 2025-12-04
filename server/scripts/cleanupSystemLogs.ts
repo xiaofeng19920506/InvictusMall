@@ -13,6 +13,23 @@ async function cleanupSystemLogs() {
     
     console.log('🧹 Starting system logs cleanup...');
     
+    // First, update the ENUM to include 'system' and 'order_status_updated' if not already present
+    console.log('📝 Updating activity_logs table schema...');
+    try {
+      await connection.execute(`
+        ALTER TABLE activity_logs 
+        MODIFY COLUMN type ENUM('store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created', 'order_status_updated', 'system') NOT NULL
+      `);
+      console.log('✅ Database schema updated successfully');
+    } catch (error: any) {
+      // If the enum already has these values, that's fine
+      if (error.code !== 'ER_DUP_FIELDNAME' && !error.message.includes('Duplicate')) {
+        console.warn('⚠️  Schema update warning (may already be updated):', error.message);
+      } else {
+        console.log('✅ Schema already up to date');
+      }
+    }
+    
     // Update logs with cleanup-related messages to 'system' type
     const cleanupMessages = [
       'Expired verification tokens and staff invitations cleaned up',
