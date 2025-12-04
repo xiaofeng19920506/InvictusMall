@@ -1032,8 +1032,6 @@
       "productNotFound": "未找到产品",
       "loadError": "加载库存失败",
       "loadStoresError": "加载商店失败"
-<<<<<<< HEAD
-=======
     },
     "tabs": {
       "products": "商品",

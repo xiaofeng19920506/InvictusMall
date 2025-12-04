@@ -791,13 +791,9 @@
       "processing": "Procesando",
       "shipped": "Enviado",
       "delivered": "Entregado",
-<<<<<<< HEAD
-      "cancelled": "Cancelado"
-=======
       "cancelled": "Cancelado",
       "return_processing": "Procesando Devolución",
       "returned": "Devuelto"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No se encontraron pedidos"

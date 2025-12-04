@@ -773,13 +773,9 @@
       "processing": "処理中",
       "shipped": "発送済み",
       "delivered": "配達済み",
-<<<<<<< HEAD
-      "cancelled": "キャンセル済み"
-=======
       "cancelled": "キャンセル済み",
       "return_processing": "返品処理中",
       "returned": "返品済み"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "注文が見つかりません"
