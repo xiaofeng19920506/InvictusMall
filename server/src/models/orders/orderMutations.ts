@@ -236,10 +236,8 @@ export class OrderMutations {
       'shipped',
       'delivered',
       'cancelled',
-=======
       'return_processing',
       'returned',
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     ];
 
     if (!validStatuses.includes(status)) {

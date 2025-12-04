@@ -472,7 +472,6 @@ export class ProductModel {
           stockQuantity: productData.stockQuantity,
         },
       });
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       await connection.rollback();
       throw error;
     } finally {

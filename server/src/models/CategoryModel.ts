@@ -500,68 +500,6 @@ export class CategoryModel {
   }
 
   /**
-   * Helper method to find top-level ancestor of a category
-   * @param categoryName - The category name to find ancestor for
-   * @param connection - Optional database connection to reuse
-   */
-  private async findTopLevelAncestor(
-    categoryName: string, 
-    connection?: any
-  ): Promise<string | null> {
-    const useConnection = connection || await this.pool.getConnection();
-    const shouldRelease = !connection;
-    
-    try {
-      // Find the category by name
-      const [categoryRows] = await useConnection.execute(
-        'SELECT id, parent_id, level FROM categories WHERE name = ? LIMIT 1',
-        [categoryName]
-      );
-      
-      const categoryRow = (categoryRows as any[])[0];
-      if (!categoryRow) {
-        return null;
-      }
-
-      // If already level 1, return the name
-      if (categoryRow.level === 1) {
-        return categoryName;
-      }
-
-      // Recursively find the top-level ancestor
-      let currentId = categoryRow.id;
-      let currentParentId = categoryRow.parent_id;
-      let currentLevel = categoryRow.level;
-
-      while (currentLevel > 1 && currentParentId) {
-        const [parentRows] = await useConnection.execute(
-          'SELECT id, parent_id, level, name FROM categories WHERE id = ? LIMIT 1',
-          [currentParentId]
-        );
-        
-        const parentRow = (parentRows as any[])[0];
-        if (!parentRow) {
-          break;
-        }
-
-        currentId = parentRow.id;
-        currentParentId = parentRow.parent_id;
-        currentLevel = parentRow.level;
-
-        if (currentLevel === 1) {
-          return parentRow.name;
-        }
-      }
-
-      return null;
-    } finally {
-      if (shouldRelease) {
-        useConnection.release();
-      }
-    }
-  }
-
-  /**
    * Find categories by level
    * @param level - The category level (1, 2, 3, or 4)
    * @param onlyWithStores - If true, only return categories that have stores (directly or via descendants)
@@ -641,7 +579,6 @@ export class CategoryModel {
     } finally {
       connection.release();
     }
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   }
 
   /**
