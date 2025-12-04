@@ -102,7 +102,7 @@ const UsersManagement: React.FC = () => {
     } else {
       setHeaderActions(null);
     }
-  }, [canRegisterStaff, showRegisterForm, setHeaderActions, t, dispatch]);
+  }, [currentUser, showRegisterForm, setHeaderActions, t, dispatch]);
 
   const handlePageChange = (page: number) => {
     dispatch(setCurrentPage(page));
