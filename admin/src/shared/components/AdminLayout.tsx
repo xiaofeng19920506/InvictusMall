@@ -1,8 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, type ReactNode } from "react";
-<<<<<<< HEAD
-=======
 import { Link, useLocation, useNavigate } from "react-router-dom";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import {
   Store,
   BarChart3,
@@ -24,19 +21,12 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import { authService, type Permission } from "../../services/auth";
 import type { AdminPageKey } from "../../app/types";
-<<<<<<< HEAD
-=======
 import { ROUTE_PATHS } from "../../app/AdminApp";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import styles from "./AdminLayout.module.css";
 
 interface AdminLayoutProps {
   children: ReactNode;
   currentPage: AdminPageKey;
-<<<<<<< HEAD
-  onPageChange: (page: AdminPageKey) => void;
-=======
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 }
 
 type NavigationItem = {
@@ -116,20 +106,13 @@ const NAV_ITEMS: NavigationItem[] = [
 const AdminLayout = ({
   children,
   currentPage,
-<<<<<<< HEAD
-  onPageChange,
-=======
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 }: AdminLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [headerActions, setHeaderActionsState] = useState<ReactNode>(null);
   const { user, logout } = useAuth();
   const { t } = useTranslation();
-<<<<<<< HEAD
-=======
   const location = useLocation();
   const navigate = useNavigate();
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   // Provide setHeaderActions function via context-like pattern
   // We'll use a ref to share state between this component and pages
@@ -150,13 +133,10 @@ const AdminLayout = ({
           if (item.id === "categories" && user.role !== "admin") {
             return false;
           }
-<<<<<<< HEAD
-=======
           // Hide stores management for manager role
           if (item.id === "stores" && user.role === "manager") {
             return false;
           }
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
           return authService.hasPermission(user, item.permission);
         })
       : [];
@@ -197,15 +177,6 @@ const AdminLayout = ({
     [user?.role, t]
   );
 
-  // Memoized current page title
-<<<<<<< HEAD
-  const currentPageTitle = useMemo(
-    () =>
-      navigationItems.find((item) => item.id === currentPage)?.pageTitleKey ||
-      "pages.dashboard",
-    [navigationItems, currentPage]
-  );
-=======
   // Include settings in the search even if it's not in navigationItems (it's in sidebar footer)
   const currentPageTitle = useMemo(() => {
     // First check navigationItems
@@ -221,17 +192,10 @@ const AdminLayout = ({
     // Default fallback
     return "pages.dashboard";
   }, [navigationItems, currentPage]);
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   // Memoized navigation handler
   const handleNavigate = useCallback(
     (page: AdminPageKey) => {
-<<<<<<< HEAD
-      onPageChange(page);
-      setSidebarOpen(false);
-    },
-    [onPageChange]
-=======
       const routePath = ROUTE_PATHS[page];
       if (routePath) {
         navigate(routePath);
@@ -239,7 +203,6 @@ const AdminLayout = ({
       setSidebarOpen(false);
     },
     [navigate]
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   );
 
   return (
@@ -253,40 +216,6 @@ const AdminLayout = ({
       )}
       <aside className={sidebarClasses} aria-label={t("brand")}>
         <div className={styles.sidebarContent}>
-<<<<<<< HEAD
-          <div>
-            <div className={styles.sidebarHeader}>
-              <h2 className={styles.brand}>{t("brand")}</h2>
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(false)}
-                className={styles.sidebarCloseButton}
-                aria-label={t("nav.close")}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <nav>
-              <ul className={styles.navList}>
-                {navigationItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentPage === item.id;
-                  return (
-                    <li key={item.id} className={styles.navItem}>
-                      <button
-                        type="button"
-                        onClick={() => handleNavigate(item.id)}
-                        className={
-                          isActive
-                            ? `${styles.navButton} ${styles.navButtonActive}`
-                            : styles.navButton
-                        }
-                      >
-                        <Icon size={20} />
-                        {t(item.translationKey)}
-                      </button>
-=======
           <div className={styles.sidebarHeader}>
             <h2 className={styles.brand}>{t("brand")}</h2>
             <button
@@ -321,16 +250,11 @@ const AdminLayout = ({
                         <Icon size={20} />
                         {t(item.translationKey)}
                       </Link>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                     </li>
                   );
                 })}
               </ul>
             </nav>
-<<<<<<< HEAD
-          </div>
-=======
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
           <div className={styles.sidebarFooter}>
             <div className={styles.sidebarUser}>
@@ -353,17 +277,6 @@ const AdminLayout = ({
                     {user?.role === "employee" && <Store size={12} />}
                     {roleLabel}
                   </span>
-<<<<<<< HEAD
-                  <button
-                    type="button"
-                    onClick={logout}
-                    className={styles.logoutButton}
-                    title={t("header.logout")}
-                    aria-label={t("header.logout")}
-                  >
-                    <LogOut size={20} />
-                  </button>
-=======
                   <div className={styles.sidebarActions}>
                     <button
                       type="button"
@@ -375,7 +288,6 @@ const AdminLayout = ({
                       <LogOut size={20} />
                     </button>
                   </div>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                 </div>
               </div>
             </div>
