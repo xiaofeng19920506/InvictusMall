@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || 
+    process.env.NEXT_PUBLIC_BASE_URL || 
+    'http://localhost:3000'
+  ),
   title: "Invictus Mall - Your Ultimate Shopping Destination",
   description: "Discover amazing stores and products at Invictus Mall. Shop from verified stores with great deals and excellent customer service.",
 };
