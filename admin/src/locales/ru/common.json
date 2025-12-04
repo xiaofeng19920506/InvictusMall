@@ -118,17 +118,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-<<<<<<< HEAD
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
-=======
       "owner": "Владелец/Администратор",
       "selectOwner": "-- Выберите владельца/администратора --",
       "loadingOwners": "Загрузка владельцев/администраторов...",
       "noOwnersAvailable": "Нет доступных владельцев или администраторов. Пожалуйста, сначала создайте учетную запись владельца или администратора."
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "invalidImageType": "Please select an image file.",
@@ -291,14 +284,6 @@
       "error": "Failed to save settings."
     },
     "profile": {
-<<<<<<< HEAD
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
-=======
       "title": "Информация профиля",
       "firstName": "Имя",
       "lastName": "Фамилия",
@@ -313,7 +298,6 @@
       },
       "updateSuccess": "Профиль успешно обновлен",
       "updateError": "Не удалось обновить профиль"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "notifications": {
       "title": "Notifications",
@@ -839,13 +823,9 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
-<<<<<<< HEAD
-      "cancelled": "Cancelled"
-=======
       "cancelled": "Cancelled",
       "return_processing": "Обработка Возврата",
       "returned": "Возвращено"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No orders found"
