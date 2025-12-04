@@ -192,9 +192,14 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.levelCell {
+  text-align: center;
+}
+
 .levelBadge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 0.7rem;

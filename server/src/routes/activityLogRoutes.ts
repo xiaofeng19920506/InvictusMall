@@ -131,7 +131,7 @@ router.get('/type/:type', authenticateStaffToken, async (req: Request, res: Resp
     }
     const limit = parseInt(req.query.limit as string) || 10;
     
-    if (!['store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created', 'order_status_updated'].includes(type)) {
+    if (!['store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created', 'order_status_updated', 'system'].includes(type)) {
       return ApiResponseHelper.validationError(res, 'Invalid activity type');
     }
     

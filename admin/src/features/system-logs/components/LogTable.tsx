@@ -84,7 +84,7 @@ const LogTable: React.FC = () => {
             return (
               <tr key={log.id} className={styles.tableRow}>
                 <td className={styles.tableCell}>{timestamp}</td>
-                <td className={styles.tableCell}>
+                <td className={`${styles.tableCell} ${styles.levelCell}`}>
                   <span
                     className={`${styles.levelBadge} ${getLevelStyles(logLevel)}`}
                   >

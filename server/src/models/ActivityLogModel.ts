@@ -2,7 +2,7 @@ import { pool } from '../config/database';
 
 export interface ActivityLog {
   id: string;
-  type: 'store_created' | 'store_updated' | 'store_deleted' | 'store_verified' | 'user_registered' | 'user_login' | 'password_reset_requested' | 'password_reset_completed' | 'password_changed' | 'staff_registered' | 'staff_invited' | 'staff_login' | 'profile_updated' | 'avatar_uploaded' | 'order_created' | 'order_status_updated';
+  type: 'store_created' | 'store_updated' | 'store_deleted' | 'store_verified' | 'user_registered' | 'user_login' | 'password_reset_requested' | 'password_reset_completed' | 'password_changed' | 'staff_registered' | 'staff_invited' | 'staff_login' | 'profile_updated' | 'avatar_uploaded' | 'order_created' | 'order_status_updated' | 'system';
   message: string;
   timestamp: Date;
   storeName?: string;

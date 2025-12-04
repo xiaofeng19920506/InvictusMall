@@ -63,11 +63,12 @@ class TokenCleanupService {
       const duration = Date.now() - startTime;
       console.log(`✅ Token cleanup completed in ${duration}ms`);
 
-      // Log the cleanup activity
+      // Log the cleanup activity as a system action
       try {
         await ActivityLogModel.createLog({
-          type: 'user_registered',
+          type: 'system',
           message: 'Expired verification tokens and staff invitations cleaned up',
+          userName: 'System',
           metadata: {
             cleanupTime: new Date().toISOString(),
           },
