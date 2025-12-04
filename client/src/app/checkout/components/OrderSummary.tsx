@@ -15,73 +15,119 @@ interface OrderSummaryProps {
   shippingAddress?: ShippingAddress | CheckoutShippingAddressInput | null;
 }
 
+interface PricingBreakdown {
+  subtotal: number;
+  taxAmount: number;
+  taxRate: number;
+  shippingAmount: number;
+  total: number;
+}
+
 export default function OrderSummary({
   items,
   subtotal,
   itemCount,
   shippingAddress,
 }: OrderSummaryProps) {
-  const [taxData, setTaxData] = useState<{
-    taxAmount: number;
-    taxRate: number;
-  } | null>(null);
-  const [isCalculatingTax, setIsCalculatingTax] = useState(false);
+  const [pricing, setPricing] = useState<PricingBreakdown | null>(null);
+  const [isCalculatingPricing, setIsCalculatingPricing] = useState(false);
 
-  // Calculate tax when address changes
+  // Create a stable items key for dependency tracking
+  const itemsKey = useMemo(() => {
+    return items.map((i) => `${i.id}-${i.quantity}-${i.price}`).join(',');
+  }, [items]);
+
+  // Extract address properties for dependency tracking
+  const addressId = (shippingAddress as any)?.id;
+  const addressZipCode = shippingAddress?.zipCode;
+  const addressStateProvince = shippingAddress?.stateProvince;
+  const addressCountry = shippingAddress?.country || 'US';
+
+  // Create a stable address key that changes when any address field changes
+  const addressKey = useMemo(() => {
+    if (!shippingAddress) return null;
+    // Create a unique key from all address fields that affect tax calculation
+    return JSON.stringify({
+      id: addressId || null,
+      zipCode: addressZipCode || '',
+      stateProvince: addressStateProvince || '',
+      country: addressCountry || 'US',
+    });
+  }, [addressId, addressZipCode, addressStateProvince, addressCountry]);
+
+  // Calculate complete pricing from backend when address or items change
   useEffect(() => {
-    const calculateTaxFromBackend = async () => {
-      if (!shippingAddress || !subtotal || subtotal <= 0) {
-        setTaxData(null);
+    const calculatePricingFromBackend = async () => {
+      if (!shippingAddress || !items || items.length === 0 || subtotal <= 0) {
+        setPricing(null);
         return;
       }
 
-      // Both ShippingAddress and CheckoutShippingAddressInput have these fields
-      const zipCode = (shippingAddress as any).zipCode;
-      const stateProvince = (shippingAddress as any).stateProvince;
-      const country = (shippingAddress as any).country || 'US';
+      // Use the extracted address properties
+      console.log('OrderSummary: Calculating pricing for address:', {
+        addressId: addressId,
+        zipCode: addressZipCode,
+        stateProvince: addressStateProvince,
+        country: addressCountry,
+        addressKey,
+      });
 
-      if (!zipCode || zipCode.trim() === '') {
-        setTaxData(null);
+      if (!addressZipCode || addressZipCode.trim() === '') {
+        setPricing(null);
         return;
       }
 
-      setIsCalculatingTax(true);
+      setIsCalculatingPricing(true);
       try {
-        const result = await apiService.calculateTax({
-          subtotal,
-          zipCode: zipCode.trim(),
-          stateProvince: stateProvince?.trim(),
-          country: country?.trim() || 'US',
+        const result = await apiService.calculatePricing({
+          items: items.map((item) => ({
+            price: item.price,
+            quantity: item.quantity,
+          })),
+          shippingAddress: {
+            zipCode: addressZipCode.trim(),
+            stateProvince: addressStateProvince?.trim(),
+            country: addressCountry?.trim() || 'US',
+          },
         });
 
         if (result.success && result.data) {
-          setTaxData({
+          console.log('OrderSummary: Pricing calculated:', result.data);
+          setPricing({
+            subtotal: result.data.subtotal,
             taxAmount: result.data.taxAmount,
             taxRate: result.data.taxRate,
+            shippingAmount: result.data.shippingAmount,
+            total: result.data.total,
           });
         } else {
-          setTaxData(null);
+          console.warn('OrderSummary: Pricing calculation failed:', result);
+          setPricing(null);
         }
       } catch (error) {
-        console.error('Failed to calculate tax:', error);
-        setTaxData(null);
+        console.error('Failed to calculate pricing:', error);
+        setPricing(null);
       } finally {
-        setIsCalculatingTax(false);
+        setIsCalculatingPricing(false);
       }
     };
 
-    calculateTaxFromBackend();
-  }, [subtotal, shippingAddress]);
+    calculatePricingFromBackend();
+  }, [
+    itemsKey,
+    addressKey, // This will change when any address field changes
+    addressId, // Explicitly include address ID to catch address selection changes
+    addressZipCode,
+    addressStateProvince,
+    addressCountry,
+    subtotal,
+  ]);
 
-  const estimatedTax = taxData?.taxAmount || 0;
-  const estimatedShipping = useMemo(() => {
-    // Free shipping over $50, otherwise $5.99
-    return subtotal >= 50 ? 0 : 5.99;
-  }, [subtotal]);
-  const total = useMemo(
-    () => subtotal + estimatedTax + estimatedShipping,
-    [subtotal, estimatedTax, estimatedShipping]
-  );
+  // Use backend pricing if available, otherwise fallback to local calculations
+  const displaySubtotal = pricing?.subtotal ?? subtotal;
+  const estimatedTax = pricing?.taxAmount ?? 0;
+  const estimatedShipping = pricing?.shippingAmount ?? (subtotal >= 50 ? 0 : 5.99);
+  const total = pricing?.total ?? (subtotal + estimatedTax + estimatedShipping);
 
   return (
     <div className={styles.container}>
@@ -122,7 +168,7 @@ export default function OrderSummary({
           <span className={styles.priceLabel}>
             Subtotal ({itemCount} {itemCount === 1 ? "item" : "items"})
           </span>
-          <span className={styles.priceValue}>${subtotal.toFixed(2)}</span>
+          <span className={styles.priceValue}>${displaySubtotal.toFixed(2)}</span>
         </div>
         <div className={styles.priceRow}>
           <span className={styles.priceLabel}>Shipping & handling</span>
@@ -138,12 +184,12 @@ export default function OrderSummary({
           <div className={styles.priceRow}>
             <span className={styles.priceLabel}>
               Estimated tax
-              {isCalculatingTax && (
+              {isCalculatingPricing && (
                 <span className={styles.calculatingTax}>(calculating...)</span>
               )}
             </span>
             <span className={styles.priceValue}>
-              {isCalculatingTax ? '...' : `$${estimatedTax.toFixed(2)}`}
+              {isCalculatingPricing ? '...' : `$${estimatedTax.toFixed(2)}`}
             </span>
           </div>
         ) : (
@@ -152,9 +198,9 @@ export default function OrderSummary({
             <span className={styles.estimatedTaxPlaceholder}>Enter address</span>
           </div>
         )}
-        {subtotal < 50 && (
+        {displaySubtotal < 50 && (
           <p className={styles.freeShippingNotice}>
-            Add ${(50 - subtotal).toFixed(2)} more for FREE shipping
+            Add ${(50 - displaySubtotal).toFixed(2)} more for FREE shipping
           </p>
         )}
       </div>

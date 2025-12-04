@@ -6,6 +6,7 @@ import {
 } from "../middleware/auth";
 import { ShippingAddressModel } from "../models/ShippingAddressModel";
 import { OrderModel, Order } from "../models/OrderModel";
+import { calculatePricing } from "../services/pricingService";
 import { ApiResponseHelper } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 
@@ -159,13 +160,20 @@ router.post(
         return ApiResponseHelper.validationError(res, "Shipping address is required");
       }
 
-      // Calculate total amount
-      const totalAmount = items.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
+      // Calculate complete pricing breakdown (subtotal, tax, shipping, total)
+      const pricing = await calculatePricing({
+        items: items.map((item) => ({
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        shippingAddress: {
+          zipCode: resolvedAddress.zipCode,
+          stateProvince: resolvedAddress.stateProvince,
+          country: resolvedAddress.country,
+        },
+      });
 
-      if (totalAmount <= 0) {
+      if (pricing.total <= 0) {
         return ApiResponseHelper.validationError(res, "Invalid order total");
       }
 
@@ -189,14 +197,18 @@ router.post(
       // Create Payment Intent with manual capture
       // Amazon-style: Payment Intent is created with manual capture
       // This allows for authorization (pending charge) at checkout, and actual charge when order is delivered
+      // Total includes subtotal + tax + shipping
       const paymentIntent = await stripeClient.paymentIntents.create({
-        amount: Math.round(totalAmount * 100), // Convert to cents
+        amount: Math.round(pricing.total * 100), // Convert to cents, includes tax and shipping
         currency: "usd",
         capture_method: "manual", // Manual capture - authorize now, capture later
         metadata: {
           userId: req.user.id,
           shippingAddress: JSON.stringify(resolvedAddress),
           itemsCount: items.length.toString(),
+          subtotal: pricing.subtotal.toString(),
+          taxAmount: pricing.taxAmount.toString(),
+          shippingAmount: pricing.shippingAmount.toString(),
         },
         // Use automatic_payment_methods for card payments
         // This allows manual confirmation on the frontend using confirmCardPayment
@@ -245,6 +257,7 @@ router.post(
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
         orderIds,
+        pricing, // Include pricing breakdown in response
       });
     } catch (error: any) {
       logger.error("Failed to create payment intent", error, {

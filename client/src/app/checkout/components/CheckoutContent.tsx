@@ -105,7 +105,17 @@ export default function CheckoutContent({
   // Get current shipping address for tax calculation
   const currentShippingAddress = useMemo(() => {
     if (useExistingAddress && isAuthenticated && addresses.length > 0 && selectedAddressId) {
-      return addresses.find((a) => a.id === selectedAddressId) || null;
+      const address = addresses.find((a) => a.id === selectedAddressId) || null;
+      console.log('CheckoutContent: Selected address changed:', {
+        selectedAddressId,
+        address: address ? {
+          id: address.id,
+          zipCode: address.zipCode,
+          stateProvince: address.stateProvince,
+          country: address.country,
+        } : null,
+      });
+      return address;
     }
     // Check if new address has required fields filled
     if (
@@ -116,7 +126,17 @@ export default function CheckoutContent({
       return newAddress;
     }
     return null;
-  }, [useExistingAddress, isAuthenticated, addresses, selectedAddressId, newAddress]);
+  }, [
+    useExistingAddress,
+    isAuthenticated,
+    addresses,
+    selectedAddressId,
+    // Depend on specific newAddress fields to ensure updates when state changes
+    newAddress.stateProvince,
+    newAddress.city,
+    newAddress.zipCode,
+    newAddress.country,
+  ]);
 
   const validateDeliveryStep = (): string | null => {
     // User must be authenticated to checkout

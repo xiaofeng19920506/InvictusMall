@@ -327,7 +327,7 @@ class ApiService {
     return await this.cachedRequest<ApiResponse<Category[]>>(endpoint);
   }
 
-  // Tax calculation
+  // Tax calculation (deprecated - use calculatePricing instead)
   async calculateTax(params: {
     subtotal: number;
     zipCode: string;
@@ -343,6 +343,34 @@ class ApiService {
     message?: string;
   }> {
     return this.request('/api/tax/calculate', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
+  // Calculate complete pricing breakdown (subtotal, tax, shipping, total)
+  async calculatePricing(params: {
+    items: Array<{
+      price: number;
+      quantity: number;
+    }>;
+    shippingAddress: {
+      zipCode: string;
+      stateProvince?: string;
+      country?: string;
+    };
+  }): Promise<{
+    success: boolean;
+    data?: {
+      subtotal: number;
+      taxAmount: number;
+      taxRate: number;
+      shippingAmount: number;
+      total: number;
+    };
+    message?: string;
+  }> {
+    return this.request('/api/tax/calculate-pricing', {
       method: 'POST',
       body: JSON.stringify(params),
     });
@@ -377,6 +405,13 @@ class ApiService {
       clientSecret: string;
       paymentIntentId: string;
       orderIds: string[];
+      pricing?: {
+        subtotal: number;
+        taxAmount: number;
+        taxRate: number;
+        shippingAmount: number;
+        total: number;
+      };
     };
     message?: string;
   }> {
