@@ -122,11 +122,9 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
       if (response.success) {
         setAllItems(response.data || []);
       } else {
-        console.error("Failed to fetch products:", response.message);
         setAllItems([]);
       }
     } catch (err: any) {
-      console.error("Error fetching products:", err);
       setAllItems([]);
     } finally {
       setProductsLoading(false);

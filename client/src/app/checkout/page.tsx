@@ -40,7 +40,7 @@ export default async function CheckoutPage() {
       addresses = response.data;
     }
   } catch (error) {
-    console.warn("Unable to load shipping addresses for checkout:", error);
+    // Failed to load shipping addresses
   }
 
   return (

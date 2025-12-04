@@ -64,13 +64,6 @@ export default function OrderSummary({
       }
 
       // Use the extracted address properties
-      console.log('OrderSummary: Calculating pricing for address:', {
-        addressId: addressId,
-        zipCode: addressZipCode,
-        stateProvince: addressStateProvince,
-        country: addressCountry,
-        addressKey,
-      });
 
       if (!addressZipCode || addressZipCode.trim() === '') {
         setPricing(null);
@@ -92,7 +85,7 @@ export default function OrderSummary({
         });
 
         if (result.success && result.data) {
-          console.log('OrderSummary: Pricing calculated:', result.data);
+                // Pricing calculated successfully
           setPricing({
             subtotal: result.data.subtotal,
             taxAmount: result.data.taxAmount,
@@ -101,11 +94,11 @@ export default function OrderSummary({
             total: result.data.total,
           });
         } else {
-          console.warn('OrderSummary: Pricing calculation failed:', result);
+                // Pricing calculation failed
           setPricing(null);
         }
       } catch (error) {
-        console.error('Failed to calculate pricing:', error);
+              // Failed to calculate pricing
         setPricing(null);
       } finally {
         setIsCalculatingPricing(false);

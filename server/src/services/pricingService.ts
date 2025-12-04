@@ -69,22 +69,6 @@ export async function calculatePricing(
     total: Math.round(total * 100) / 100,
   };
 
-  // Log calculation for debugging
-  console.log('PricingService: Calculated pricing breakdown:', {
-    input: {
-      items: request.items,
-      address: request.shippingAddress,
-    },
-    calculation: {
-      subtotal,
-      taxAmount,
-      taxRate,
-      shippingAmount,
-      total,
-    },
-    result,
-  });
-
   return result;
 }
 

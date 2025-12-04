@@ -106,15 +106,6 @@ export default function CheckoutContent({
   const currentShippingAddress = useMemo(() => {
     if (useExistingAddress && isAuthenticated && addresses.length > 0 && selectedAddressId) {
       const address = addresses.find((a) => a.id === selectedAddressId) || null;
-      console.log('CheckoutContent: Selected address changed:', {
-        selectedAddressId,
-        address: address ? {
-          id: address.id,
-          zipCode: address.zipCode,
-          stateProvince: address.stateProvince,
-          country: address.country,
-        } : null,
-      });
       return address;
     }
     // Check if new address has required fields filled
@@ -269,7 +260,7 @@ export default function CheckoutContent({
         result.message || "Unable to complete order. Please try again."
       );
     } catch (error) {
-      console.error("Failed to complete order:", error);
+      // Error handled below
       setStatusError(
         error instanceof Error
           ? error.message

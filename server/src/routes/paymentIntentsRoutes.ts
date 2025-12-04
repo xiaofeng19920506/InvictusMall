@@ -209,6 +209,7 @@ router.post(
           subtotal: pricing.subtotal.toString(),
           taxAmount: pricing.taxAmount.toString(),
           shippingAmount: pricing.shippingAmount.toString(),
+          pricingBreakdown: JSON.stringify(pricing), // Store full pricing breakdown
         },
         // Use automatic_payment_methods for card payments
         // This allows manual confirmation on the frontend using confirmCardPayment
