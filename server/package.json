@@ -10,15 +10,6 @@
     "test": "jest",
     "create-admin": "ts-node scripts/createAdmin.ts",
     "seed-categories": "ts-node src/scripts/seedCategories.ts",
-    "add-common-categories": "ts-node scripts/addCommonEcommerceCategories.ts",
-    "add-english-categories": "ts-node scripts/addEnglishCategories.ts",
-    "delete-chinese-categories": "ts-node scripts/deleteChineseCategories.ts",
-    "cleanup-chinese-categories": "ts-node scripts/cleanupRemainingChineseCategories.ts",
-    "force-delete-chinese-categories": "ts-node scripts/forceDeleteChineseCategories.ts",
-    "delete-remaining-chinese": "ts-node scripts/deleteRemainingChineseCategory.ts",
-    "delete-specific-categories": "ts-node scripts/deleteSpecificCategories.ts",
-    "update-home-category": "ts-node scripts/updateHomeCategory.ts",
-    "add-food-beverage": "ts-node scripts/addFoodBeverageCategory.ts",
     "cleanup-system-logs": "ts-node scripts/cleanupSystemLogs.ts"
   },
   "dependencies": {

@@ -108,6 +108,21 @@ async function cleanupSystemLogs() {
       console.log(`✅ Updated ${affectedRows4} log(s) with type 'store_updated' that are system alerts`);
     }
     
+    // Check for store_updated logs missing user information (report only, don't update)
+    const [missingUserLogs] = await connection.execute(
+      `SELECT COUNT(*) as count 
+       FROM activity_logs 
+       WHERE type = 'store_updated' 
+       AND (user_name IS NULL OR user_name = '')
+       AND message NOT LIKE '%Low stock alert%'`
+    );
+    
+    const missingUserCount = (missingUserLogs as any[])[0]?.count || 0;
+    if (missingUserCount > 0) {
+      console.log(`\n⚠️  Warning: Found ${missingUserCount} store_updated log(s) missing user information`);
+      console.log('   These are likely old logs. All new store updates will include user information.');
+    }
+    
     await connection.commit();
     
     console.log(`\n✅ System logs cleanup completed! Total logs updated: ${totalUpdated}`);
