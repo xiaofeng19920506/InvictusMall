@@ -1,4 +1,5 @@
 import Link from "next/link";
+import styles from "./ProfileNavigationTabs.module.scss";
 
 interface ProfileNavigationTabsProps {
   activeTab: "profile" | "password" | "addresses";
@@ -6,34 +7,28 @@ interface ProfileNavigationTabsProps {
 
 export default function ProfileNavigationTabs({ activeTab }: ProfileNavigationTabsProps) {
   return (
-    <div className="mb-6 border-b border-gray-200">
-      <nav className="flex space-x-8">
+    <div className={styles.container}>
+      <nav className={styles.nav}>
         <Link
           href="/profile?tab=profile"
-          className={`border-b-2 py-4 px-1 text-sm font-medium cursor-pointer ${
-            activeTab === "profile"
-              ? "border-orange-500 text-orange-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          className={`${styles.tab} ${
+            activeTab === "profile" ? styles.active : styles.inactive
           }`}
         >
           Profile
         </Link>
         <Link
           href="/profile?tab=password"
-          className={`border-b-2 py-4 px-1 text-sm font-medium cursor-pointer ${
-            activeTab === "password"
-              ? "border-orange-500 text-orange-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          className={`${styles.tab} ${
+            activeTab === "password" ? styles.active : styles.inactive
           }`}
         >
           Password
         </Link>
         <Link
           href="/profile?tab=addresses"
-          className={`border-b-2 py-4 px-1 text-sm font-medium cursor-pointer ${
-            activeTab === "addresses"
-              ? "border-orange-500 text-orange-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          className={`${styles.tab} ${
+            activeTab === "addresses" ? styles.active : styles.inactive
           }`}
         >
           Addresses

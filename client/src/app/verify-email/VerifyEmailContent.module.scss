@@ -1,0 +1,72 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: color('gray-50');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  max-width: 28rem; // max-w-md
+  width: 100%;
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+  padding: 1.5rem; // p-6
+  text-align: center;
+}
+
+.icon {
+  color: color('orange-500');
+  font-size: 3.75rem; // text-6xl
+  margin-bottom: 1rem; // mb-4
+}
+
+.title {
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+  margin-bottom: 1rem; // mb-4
+}
+
+.message {
+  color: color('gray-600');
+  margin-bottom: 1rem; // mb-4
+}
+
+.spinnerContainer {
+  margin-top: 1rem; // mt-4
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  border-radius: border-radius('full');
+  width: 2rem; // h-8 w-8
+  height: 2rem;
+  border: 2px solid color('orange-500');
+  border-top-color: transparent;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.countdownText {
+  font-size: font-size('sm');
+  color: color('gray-500');
+  margin-top: 1rem; // mt-4
+}
+
+.countdownNumber {
+  font-weight: font-weight('bold');
+  color: color('orange-500');
+  font-size: font-size('lg');
+}
+

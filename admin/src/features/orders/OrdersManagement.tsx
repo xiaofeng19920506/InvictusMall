@@ -1,15 +1,41 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Filter, Edit2, Eye, Package } from "lucide-react";
 import { orderApi, type Order, type OrderStatus } from "../../services/api";
+=======
+import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { Package } from "lucide-react";
+import { useAppSelector, useAppDispatch } from "../../store/hooks";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import { useNotification } from "../../contexts/NotificationContext";
 import Pagination from "../../shared/components/Pagination";
 import OrderStatusModal from "./OrderStatusModal";
 import OrderDetailModal from "./OrderDetailModal";
+<<<<<<< HEAD
+=======
+import OrderFilters from "./components/OrderFilters";
+import OrderTable from "./components/OrderTable";
+import {
+  useGetAllOrdersQuery,
+  useGetMyStoresForOrdersQuery,
+} from "../../store/api/ordersApi";
+import {
+  setSelectedOrder,
+  setIsStatusModalOpen,
+  setIsDetailModalOpen,
+  setCurrentPage,
+  setItemsPerPage,
+  setAccessibleStores,
+} from "../../store/slices/ordersSlice";
+import { useGetAllStoresQuery } from "../../store/api/storesApi";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import styles from "./OrdersManagement.module.css";
 
 const OrdersManagement: React.FC = () => {
   const { t } = useTranslation();
+<<<<<<< HEAD
   const { showSuccess, showError } = useNotification();
 
   const [orders, setOrders] = useState<Order[]>([]);
@@ -76,10 +102,78 @@ const OrdersManagement: React.FC = () => {
     if (selectedOrder && selectedOrder.id === updatedOrder.id) {
       setSelectedOrder(updatedOrder);
     }
+=======
+  const dispatch = useAppDispatch();
+  const { showSuccess, showError } = useNotification();
+
+  const {
+    searchQuery,
+    statusFilter,
+    selectedStoreId,
+    currentPage,
+    itemsPerPage,
+    selectedOrder,
+    isStatusModalOpen,
+    isDetailModalOpen,
+    accessibleStores,
+  } = useAppSelector((state) => state.orders);
+  const currentUser = useAppSelector((state) => state.auth.user);
+
+  // RTK Query hooks
+  const {
+    data: ordersData,
+    isLoading: loading,
+    refetch: refetchOrders,
+  } = useGetAllOrdersQuery({
+    status: statusFilter || undefined,
+    limit: itemsPerPage,
+    offset: (currentPage - 1) * itemsPerPage,
+  });
+
+  const { data: myStores } = useGetMyStoresForOrdersQuery(undefined, {
+    skip: currentUser?.role === "admin",
+  });
+
+  const { data: allStores } = useGetAllStoresQuery(undefined, {
+    skip: currentUser?.role !== "admin",
+  });
+
+  const orders = ordersData?.orders || [];
+  const totalItems = ordersData?.total || 0;
+
+  // Update accessible stores in Redux
+  useEffect(() => {
+    const stores = currentUser?.role === "admin" ? allStores || [] : myStores || [];
+    if (stores.length > 0) {
+      dispatch(setAccessibleStores(stores));
+    }
+  }, [dispatch, allStores, myStores, currentUser?.role]);
+
+  const handleUpdateStatus = (order: any) => {
+    dispatch(setSelectedOrder(order));
+    dispatch(setIsStatusModalOpen(true));
+  };
+
+  const handleViewDetails = (order: any) => {
+    dispatch(setSelectedOrder(order));
+    dispatch(setIsDetailModalOpen(true));
+  };
+
+  const handleStatusUpdate = () => {
+    refetchOrders();
+    dispatch(setIsStatusModalOpen(false));
+    dispatch(setSelectedOrder(null));
+    showSuccess(t("orders.success.statusUpdated") || "Order status updated successfully");
+  };
+
+  const handleOrderUpdate = () => {
+    refetchOrders();
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     showSuccess(t("orders.success.orderUpdated") || "Order updated successfully");
   };
 
   const handlePageChange = (page: number) => {
+<<<<<<< HEAD
     setCurrentPage(page);
   };
 
@@ -192,18 +286,62 @@ const OrdersManagement: React.FC = () => {
           </select>
         </div>
       </div>
+=======
+    dispatch(setCurrentPage(page));
+  };
+
+  const handleItemsPerPageChange = (itemsPerPage: number) => {
+    dispatch(setItemsPerPage(itemsPerPage));
+  };
+
+  const handleModalClose = () => {
+    dispatch(setIsStatusModalOpen(false));
+    dispatch(setIsDetailModalOpen(false));
+    dispatch(setSelectedOrder(null));
+  };
+
+  // Calculate filtered orders count
+  const filteredOrdersCount = orders.filter((order) => {
+    if (selectedStoreId !== "all") {
+      if (order.storeId !== selectedStoreId) {
+        return false;
+      }
+    }
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      return (
+        order.id.toLowerCase().includes(query) ||
+        order.storeName.toLowerCase().includes(query) ||
+        order.userId.toLowerCase().includes(query) ||
+        order.items.some((item) => item.productName.toLowerCase().includes(query))
+      );
+    }
+    return true;
+  }).length;
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  return (
+    <div className={styles.container}>
+      <OrderFilters />
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
       {loading ? (
         <div className={styles.loading}>
           <div className={styles.spinner}></div>
           <p>{t("orders.loading") || "Loading orders..."}</p>
         </div>
+<<<<<<< HEAD
       ) : filteredOrders.length === 0 ? (
+=======
+      ) : filteredOrdersCount === 0 ? (
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         <div className={styles.empty}>
           <Package className={styles.emptyIcon} />
           <p>{t("orders.empty.noOrders") || "No orders found"}</p>
         </div>
       ) : (
+<<<<<<< HEAD
         <div className={styles.tableContainer}>
           <table className={styles.table}>
             <thead>
@@ -275,6 +413,10 @@ const OrdersManagement: React.FC = () => {
               ))}
             </tbody>
           </table>
+=======
+        <>
+          <OrderTable onUpdateStatus={handleUpdateStatus} onViewDetails={handleViewDetails} />
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -283,7 +425,11 @@ const OrdersManagement: React.FC = () => {
             onPageChange={handlePageChange}
             onItemsPerPageChange={handleItemsPerPageChange}
           />
+<<<<<<< HEAD
         </div>
+=======
+        </>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       )}
 
       {isStatusModalOpen && selectedOrder && (
@@ -306,4 +452,7 @@ const OrdersManagement: React.FC = () => {
 };
 
 export default OrdersManagement;
+<<<<<<< HEAD
 
+=======
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009

@@ -4,8 +4,8 @@ import { body, validationResult } from 'express-validator';
 export const validateStore = [
   body('name').notEmpty().withMessage('Name is required'),
   body('description').notEmpty().withMessage('Description is required'),
-  body('category').optional().isArray().withMessage('Category must be an array'),
-  body('category.*').optional().isString().withMessage('Each category must be a string'),
+  body('category').isArray({ min: 1 }).withMessage('At least one category is required'),
+  body('category.*').notEmpty().isString().withMessage('Each category must be a non-empty string'),
   body('rating').optional().isFloat({ min: 0, max: 5 }).withMessage('Rating must be between 0 and 5'),
   body('reviewCount').optional().isInt({ min: 0 }).withMessage('Review count must be a positive integer'),
   body('imageUrl')

@@ -80,6 +80,23 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+/* Warning Alert Card - Override card styles in dark mode */
+:root.dark .card[class*="alertCard"] {
+  background-color: var(--bg-primary) !important;
+  border: 2px solid var(--primary-color) !important;
+  border-left: 6px solid var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color), 0 4px 6px -1px rgba(251, 146, 60, 0.2) !important;
+}
+
+:root.dark .card[class*="alertCard"] strong {
+  color: var(--primary-color) !important;
+  font-weight: 700 !important;
+}
+
+:root.dark .card[class*="alertCard"] svg {
+  color: var(--primary-color) !important;
+}
+
 .card-header {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
@@ -286,6 +303,29 @@ body {
 
 .stat-change.negative {
   color: var(--danger-color);
+}
+
+/* Notification Warning Messages - Dark Mode */
+:root.dark .warning-notification,
+:root.dark .bg-yellow-50.border-yellow-200 {
+  background-color: var(--bg-primary) !important;
+  border: 2px solid var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color), 0 4px 6px -1px rgba(251, 146, 60, 0.2) !important;
+}
+
+:root.dark .warning-notification .text-gray-900,
+:root.dark .warning-notification h4 {
+  color: var(--primary-color) !important;
+  font-weight: 600;
+}
+
+:root.dark .warning-notification .text-gray-600,
+:root.dark .warning-notification p {
+  color: var(--text-secondary) !important;
+}
+
+:root.dark .warning-notification .text-yellow-500 {
+  color: var(--primary-color) !important;
 }
 
 /* Utilities */

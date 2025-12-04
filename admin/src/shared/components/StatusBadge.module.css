@@ -1,0 +1,107 @@
+.statusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Variant Styles */
+.success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.info {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.default {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.active {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.inactive {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.verified {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.unverified {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.processing {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.shipped {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.delivered {
+  background-color: #dcfce7;
+  color: #047857;
+}
+
+.cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.pending_payment {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.sizeSm {
+  padding: 2px 8px;
+  font-size: 0.7rem;
+}
+
+.sizeMd {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+}
+
+.sizeLg {
+  padding: 6px 16px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  .statusBadge {
+    padding: 2px 8px;
+    font-size: 0.75rem;
+  }
+}
+

@@ -1,0 +1,91 @@
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover:not(:disabled) {
+  background-color: var(--bg-secondary);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sizeSm {
+  width: 28px;
+  height: 28px;
+}
+
+.sizeMd {
+  width: 32px;
+  height: 32px;
+}
+
+.sizeLg {
+  width: 36px;
+  height: 36px;
+}
+
+.layoutFlex {
+  flex-wrap: wrap;
+}
+
+.layoutInline {
+  flex-wrap: nowrap;
+}
+
+.variantDanger:hover:not(:disabled) {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
+.variantSuccess:hover:not(:disabled) {
+  color: #059669;
+  border-color: #059669;
+}
+
+.variantWarning:hover:not(:disabled) {
+  color: #d97706;
+  border-color: #d97706;
+}
+
+@media (max-width: 480px) {
+  .actionButton {
+    width: 28px;
+    height: 28px;
+  }
+}
+

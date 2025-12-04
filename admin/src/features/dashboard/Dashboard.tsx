@@ -1,4 +1,8 @@
 import React, { useEffect, useState, useCallback } from "react";
+<<<<<<< HEAD
+=======
+import { useNavigate } from "react-router-dom";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import {
   Store,
   TrendingUp,
@@ -7,12 +11,12 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { storeApi, healthApi } from "../../services/api";
+<<<<<<< HEAD
 import type { AdminPageKey } from "../../app/types";
+=======
+import { ROUTE_PATHS } from "../../app/AdminApp";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import styles from "./Dashboard.module.css";
-
-interface DashboardProps {
-  onNavigate: (page: AdminPageKey) => void;
-}
 
 interface DashboardStats {
   totalStores: number;
@@ -23,7 +27,12 @@ interface DashboardStats {
   serverUptime?: number;
 }
 
+<<<<<<< HEAD
 const Dashboard: React.FC<DashboardProps> = () => {
+=======
+const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats>({
     totalStores: 0,
@@ -174,6 +183,7 @@ const Dashboard: React.FC<DashboardProps> = () => {
               <span className={styles.changeLabel}>{t("analytics.stats.changeLabel") || "vs last period"}</span>
             </div>
           </div>
+<<<<<<< HEAD
 
           <div className={styles.statCard}>
             <div className={styles.statHeader}>
@@ -236,6 +246,54 @@ const Dashboard: React.FC<DashboardProps> = () => {
             <h3 className={styles.chartTitle}>{t("analytics.charts.stores") || "Store Growth"}</h3>
             <div className={styles.chartPlaceholder}>
               {t("analytics.charts.storesPlaceholder") || "Chart visualization coming soon"}
+=======
+
+          <div className={styles.statCard}>
+            <div className={styles.statHeader}>
+              <div>
+                <div className={styles.statLabel}>{t("analytics.stats.stores.title") || "Total Stores"}</div>
+                <div className={styles.statValue}>{stats.totalStores}</div>
+              </div>
+              <div className={`${styles.statIcon} ${styles.iconBlue}`}>
+                <Store />
+              </div>
+            </div>
+            <div className={styles.statFooter}>
+              <span className={`${styles.statChange} ${styles.changePositive}`}>+{stats.verifiedStores}</span>
+              <span className={styles.changeLabel}>{t("analytics.stats.changeLabel") || "vs last period"}</span>
+            </div>
+          </div>
+
+          <div className={styles.statCard}>
+            <div className={styles.statHeader}>
+              <div>
+                <div className={styles.statLabel}>{t("analytics.stats.users.title") || "Users"}</div>
+                <div className={styles.statValue}>0</div>
+              </div>
+              <div className={`${styles.statIcon} ${styles.iconPurple}`}>
+                <Users />
+              </div>
+            </div>
+            <div className={styles.statFooter}>
+              <span className={`${styles.statChange} ${styles.changePositive}`}>+0</span>
+              <span className={styles.changeLabel}>{t("analytics.stats.changeLabel") || "vs last period"}</span>
+            </div>
+          </div>
+
+          <div className={styles.statCard}>
+            <div className={styles.statHeader}>
+              <div>
+                <div className={styles.statLabel}>{t("analytics.stats.growth.title") || "Growth Rate"}</div>
+                <div className={styles.statValue}>+0.0%</div>
+              </div>
+              <div className={`${styles.statIcon} ${styles.iconGreen}`}>
+                <TrendingUp />
+              </div>
+            </div>
+            <div className={styles.statFooter}>
+              <span className={`${styles.statChange} ${styles.changePositive}`}>+0%</span>
+              <span className={styles.changeLabel}>{t("analytics.stats.changeLabel") || "vs last period"}</span>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             </div>
           </div>
         </div>

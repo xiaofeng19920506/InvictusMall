@@ -7,7 +7,12 @@ export interface ServerProduct {
   name: string;
   description?: string;
   price: number;
+<<<<<<< HEAD
   imageUrl?: string;
+=======
+  imageUrl?: string; // Deprecated: kept for backward compatibility
+  imageUrls?: string[]; // Array of image URLs
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   stockQuantity: number;
   category?: string;
   isActive: boolean;
@@ -22,7 +27,12 @@ export interface Product {
   name: string;
   description?: string;
   price: number;
+<<<<<<< HEAD
   imageUrl?: string;
+=======
+  imageUrl?: string; // Deprecated: kept for backward compatibility
+  imageUrls?: string[]; // Array of image URLs
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   stockQuantity: number;
   category?: string;
   isActive: boolean;
@@ -53,7 +63,12 @@ class ProductService {
       name: serverProduct.name,
       description: serverProduct.description,
       price: serverProduct.price,
+<<<<<<< HEAD
       imageUrl: serverProduct.imageUrl,
+=======
+      imageUrl: serverProduct.imageUrl, // Backward compatibility
+      imageUrls: serverProduct.imageUrls, // New multi-image support
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       stockQuantity: serverProduct.stockQuantity,
       category: serverProduct.category,
       isActive: serverProduct.isActive,

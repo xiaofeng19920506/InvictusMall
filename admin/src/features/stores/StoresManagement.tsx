@@ -14,7 +14,11 @@ import type { Store } from "../../shared/types/store";
 import { useRealTimeStores } from "../../shared/hooks/useRealTimeStores";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNotification } from "../../contexts/NotificationContext";
+<<<<<<< HEAD
 import { getImageUrl } from "../../shared/utils/imageUtils";
+=======
+import { getImageUrl, getPlaceholderImage, handleImageError } from "../../shared/utils/imageUtils";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
 import Pagination from "../../shared/components/Pagination";
 import StoreModal from "./StoreModal";
@@ -237,6 +241,7 @@ const StoresManagement: React.FC = () => {
                   <td>
                     <div className={styles.storeCell}>
                       <img
+<<<<<<< HEAD
                         src={getImageUrl(store.imageUrl) || '/images/default-store.png'}
                         alt={store.name}
                         className={styles.storeImage}
@@ -247,6 +252,12 @@ const StoresManagement: React.FC = () => {
                             target.src = '/images/default-store.png';
                           }
                         }}
+=======
+                        src={getImageUrl(store.imageUrl) || getPlaceholderImage()}
+                        alt={store.name}
+                        className={styles.storeImage}
+                        onError={handleImageError}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                       />
                       <div className={styles.storeInfo}>
                         <div className={styles.storeName}>{store.name}</div>

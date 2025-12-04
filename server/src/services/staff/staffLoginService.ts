@@ -100,16 +100,14 @@ export async function handleStaffLogin(
     // Return staff data without password
     const { password: _, ...staffWithoutPassword } = staff;
 
-    // In development, also return token in response body as fallback
+    // Always return token in response body for mobile clients (they need it)
+    // Web clients can also use cookie-based auth
     const responseData: any = {
       success: true,
       message: "Login successful",
       user: staffWithoutPassword,
+      token: token, // Always include token for mobile apps
     };
-
-    if (process.env.NODE_ENV !== "production") {
-      responseData.token = token;
-    }
 
     ApiResponseHelper.success(res, responseData, "Login successful");
   } catch (error) {

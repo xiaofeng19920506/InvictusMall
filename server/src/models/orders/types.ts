@@ -1,10 +1,11 @@
 export type OrderStatus =
-  | 'pending_payment'
   | 'pending'
   | 'processing'
   | 'shipped'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'return_processing'
+  | 'returned';
 
 export interface OrderItem {
   id: string;

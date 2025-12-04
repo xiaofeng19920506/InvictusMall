@@ -13,10 +13,34 @@ export async function handleUpdateStore(
   storeService: StoreService
 ): Promise<void> {
   try {
+    const authReq = req as AuthenticatedRequest;
+    
+    // Only admin and owner can update stores (manager cannot)
+    if (!authReq.staff) {
+      ApiResponseHelper.unauthorized(res, "Authentication required");
+      return;
+    }
+
+    const userRole = authReq.staff.role;
+    if (userRole === "manager" || userRole === "employee") {
+      ApiResponseHelper.forbidden(res, "Only administrators and store owners can update stores");
+      return;
+    }
+
     const { id } = req.params;
     if (!id) {
       ApiResponseHelper.validationError(res, "Store ID is required");
       return;
+    }
+
+    // If owner, check they have access to this store
+    if (userRole === "owner") {
+      const { hasStoreAccess } = await import("../../utils/ownerPermissions");
+      const hasAccess = await hasStoreAccess(authReq, id);
+      if (!hasAccess) {
+        ApiResponseHelper.forbidden(res, "Access denied to this store");
+        return;
+      }
     }
 
     const { ownerId, ...storeUpdateData } = req.body;
@@ -39,9 +63,9 @@ export async function handleUpdateStore(
         if (ownerId) {
           const newOwner = await staffModel.getStaffById(ownerId);
           if (newOwner) {
-            // Verify the new owner has the 'owner' role
-            if (newOwner.role !== "owner") {
-              logger.warn(`Staff member ${ownerId} is not an owner, skipping store assignment`, {
+            // Verify the new owner has the 'owner' or 'admin' role
+            if (newOwner.role !== "owner" && newOwner.role !== "admin") {
+              logger.warn(`Staff member ${ownerId} is not an owner or admin, skipping store assignment`, {
                 ownerId,
                 storeId: id,
               });

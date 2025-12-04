@@ -5,7 +5,6 @@ import { authenticateStaffToken, AuthenticatedRequest } from "../middleware/auth
 import { OrderModel } from "../models/OrderModel";
 import Stripe from "stripe";
 import { ApiResponseHelper } from "../utils/apiResponse";
-import { logger } from "../utils/logger";
 import { handleGetTransactions } from "../services/transaction/transactionListService";
 import { handleGetStoreTransactions } from "../services/transaction/transactionStoreService";
 import { handleGetStoreStats } from "../services/transaction/transactionStatsService";

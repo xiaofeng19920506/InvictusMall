@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
+<<<<<<< HEAD
 import { orderApi, type Order, type OrderStatus } from "../../services/api";
+=======
+import { useUpdateOrderStatusMutation } from "../../store/api/ordersApi";
+import type { Order, OrderStatus } from "../../services/api";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import { useNotification } from "../../contexts/NotificationContext";
 import styles from "./OrderStatusModal.module.css";
 
@@ -18,11 +23,18 @@ const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const { showError, showSuccess } = useNotification();
+<<<<<<< HEAD
+=======
+  const [updateOrderStatus, { isLoading: saving }] = useUpdateOrderStatusMutation();
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   const [status, setStatus] = useState<OrderStatus>(order.status);
   const [trackingNumber, setTrackingNumber] = useState(
     order.trackingNumber || ""
   );
+<<<<<<< HEAD
   const [saving, setSaving] = useState(false);
+=======
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +44,7 @@ const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
       return;
     }
 
+<<<<<<< HEAD
     setSaving(true);
     try {
       const response = await orderApi.updateOrderStatus(order.id, {
@@ -52,6 +65,24 @@ const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
       showError(errorMessage);
     } finally {
       setSaving(false);
+=======
+    try {
+      await updateOrderStatus({
+        orderId: order.id,
+        data: {
+          status,
+          trackingNumber: trackingNumber.trim() || undefined,
+        },
+      }).unwrap();
+
+      showSuccess(t("orders.success.statusUpdated") || "Order status updated successfully");
+      onUpdate();
+    } catch (error: any) {
+      console.error("Error updating order status:", error);
+      const errorMessage =
+        error?.data?.message || error?.message || t("orders.error.updateFailed") || "Failed to update order status";
+      showError(errorMessage);
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     }
   };
 
@@ -122,6 +153,15 @@ const OrderStatusModal: React.FC<OrderStatusModalProps> = ({
                 <option value="cancelled">
                   {t("orders.status.cancelled") || "Cancelled"}
                 </option>
+<<<<<<< HEAD
+=======
+                <option value="return_processing">
+                  {t("orders.status.return_processing") || "Return Processing"}
+                </option>
+                <option value="returned">
+                  {t("orders.status.returned") || "Returned"}
+                </option>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               </select>
             </div>
 

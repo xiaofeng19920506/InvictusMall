@@ -68,7 +68,10 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
 
     if (level) {
       // Filter by level
-      const categories = await categoryModel.findByLevel(parseInt(level as string));
+      // For level 1 (top-level categories), only show categories that have stores
+      const levelNum = parseInt(level as string);
+      const onlyWithStores = levelNum === 1;
+      const categories = await categoryModel.findByLevel(levelNum, onlyWithStores);
       return ApiResponseHelper.success(res, categories);
     }
 
@@ -191,6 +194,12 @@ router.post(
   authenticateAnyToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
+      // Only admin can create categories
+      const userRole = req.staff?.role || req.user?.role;
+      if (userRole !== 'admin') {
+        return ApiResponseHelper.error(res, 'Only admin can create categories', 403);
+      }
+
       const { name, slug, description, parentId, displayOrder, isActive } = req.body;
 
       if (!name || !name.trim()) {
@@ -262,6 +271,12 @@ router.put(
   authenticateAnyToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
+      // Only admin can update categories
+      const userRole = req.staff?.role || req.user?.role;
+      if (userRole !== 'admin') {
+        return ApiResponseHelper.error(res, 'Only admin can update categories', 403);
+      }
+
       const { id } = req.params;
       if (!id) {
         return ApiResponseHelper.validationError(res, 'Category ID is required');
@@ -320,6 +335,12 @@ router.delete(
   authenticateAnyToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
+      // Only admin can delete categories
+      const userRole = req.staff?.role || req.user?.role;
+      if (userRole !== 'admin') {
+        return ApiResponseHelper.error(res, 'Only admin can delete categories', 403);
+      }
+
       const { id } = req.params;
       if (!id) {
         return ApiResponseHelper.validationError(res, 'Category ID is required');

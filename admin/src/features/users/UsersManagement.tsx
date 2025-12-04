@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect } from "react";
 import {
   Users,
@@ -298,6 +299,66 @@ const UsersManagement: React.FC = () => {
         return styles.roleDefault;
     }
   };
+=======
+import React, { useEffect } from "react";
+import { Users, Plus, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useAppSelector, useAppDispatch } from "../../store/hooks";
+import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
+import Pagination from "../../shared/components/Pagination";
+import EditUserModal from "./EditUserModal";
+import UserFilters from "./components/UserFilters";
+import UserTable from "./components/UserTable";
+import RegisterStaffForm from "./components/RegisterStaffForm";
+import {
+  useGetAllStaffQuery,
+  useGetMyStoresQuery,
+} from "../../store/api/staffApi";
+import { useGetAllStoresQuery } from "../../store/api/storesApi";
+import {
+  setShowRegisterForm,
+  setEditingUser,
+  setCurrentPage,
+  setItemsPerPage,
+  setAccessibleStores,
+} from "../../store/slices/usersSlice";
+import styles from "./UsersManagement.module.css";
+
+const UsersManagement: React.FC = () => {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const { setHeaderActions } = useAdminHeader();
+
+  const { currentPage, itemsPerPage, showRegisterForm, editingUser } =
+    useAppSelector((state) => state.users);
+  const currentUser = useAppSelector((state) => state.auth.user);
+
+  // RTK Query hooks
+  const {
+    data: usersData,
+    isLoading: loadingUsers,
+    refetch: refetchUsers,
+  } = useGetAllStaffQuery({
+    limit: itemsPerPage,
+    offset: (currentPage - 1) * itemsPerPage,
+  });
+
+  const { data: myStores, isLoading: loadingStores } = useGetMyStoresQuery(
+    undefined,
+    {
+      skip: currentUser?.role === "admin", // Skip for admin, they use getAllStores
+    }
+  );
+
+  // For admin, fetch all stores
+  const { data: allStores } = useGetAllStoresQuery(undefined, {
+    skip: currentUser?.role !== "admin",
+  });
+
+  const users = usersData?.staff || [];
+  const totalItems = usersData?.total || 0;
+  const loading = loadingUsers || loadingStores;
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   const canRegisterStaff =
     currentUser &&
@@ -305,6 +366,7 @@ const UsersManagement: React.FC = () => {
       currentUser.role === "owner" ||
       currentUser.role === "manager");
 
+<<<<<<< HEAD
   // Set header actions - must be before early return to maintain hook order
   useEffect(() => {
     if (canRegisterStaff) {
@@ -316,12 +378,40 @@ const UsersManagement: React.FC = () => {
             role: getInitialRole(),
           }));
         }
+=======
+  // Update accessible stores in Redux
+  useEffect(() => {
+    const stores =
+      currentUser?.role === "admin" ? allStores || [] : myStores || [];
+    if (stores.length > 0) {
+      dispatch(setAccessibleStores(stores));
+    }
+  }, [dispatch, allStores, myStores, currentUser?.role]);
+
+  // Set header actions
+  useEffect(() => {
+    const canRegisterStaff =
+      currentUser &&
+      (currentUser.role === "admin" ||
+        currentUser.role === "owner" ||
+        currentUser.role === "manager");
+
+    if (canRegisterStaff) {
+      const handleToggleRegister = () => {
+        dispatch(setShowRegisterForm(!showRegisterForm));
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       };
 
       setHeaderActions(
         <button
           onClick={handleToggleRegister}
+<<<<<<< HEAD
           className={`btn ${showRegisterForm ? "btn-secondary" : "btn-primary"}`}
+=======
+          className={`btn ${
+            showRegisterForm ? "btn-secondary" : "btn-primary"
+          }`}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         >
           {showRegisterForm ? (
             <>
@@ -339,8 +429,55 @@ const UsersManagement: React.FC = () => {
     } else {
       setHeaderActions(null);
     }
+<<<<<<< HEAD
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canRegisterStaff, showRegisterForm, setHeaderActions, t]);
+=======
+  }, [canRegisterStaff, showRegisterForm, setHeaderActions, t, dispatch]);
+
+  const handlePageChange = (page: number) => {
+    dispatch(setCurrentPage(page));
+  };
+
+  const handleItemsPerPageChange = (itemsPerPage: number) => {
+    dispatch(setItemsPerPage(itemsPerPage));
+  };
+
+  const handleEditUser = (user: any) => {
+    dispatch(setEditingUser(user));
+  };
+
+  const handleCloseEditModal = () => {
+    dispatch(setEditingUser(null));
+  };
+
+  const handleSaveUser = () => {
+    refetchUsers();
+    dispatch(setEditingUser(null));
+  };
+
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  // Calculate filtered users count for display
+  const { searchTerm, filterRole, selectedStoreId } = useAppSelector(
+    (state) => state.users
+  );
+  const filteredUsersCount = users.filter((user) => {
+    if (user.id === currentUser?.id) return false;
+    if (selectedStoreId !== "all") {
+      const userStoreId = (user as any).storeId;
+      if (userStoreId !== selectedStoreId) return false;
+    }
+    const matchesSearch =
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      `${user.firstName} ${user.lastName}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      user.phoneNumber.includes(searchTerm);
+    const matchesFilter = filterRole === "all" || user.role === filterRole;
+    return matchesSearch && matchesFilter;
+  }).length;
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   if (loading) {
     return (
@@ -353,6 +490,7 @@ const UsersManagement: React.FC = () => {
 
   return (
     <div className={styles.container}>
+<<<<<<< HEAD
 
       {showRegisterForm && canRegisterStaff && (
         <div className="card">
@@ -570,11 +708,18 @@ const UsersManagement: React.FC = () => {
             </select>
           </div>
         </div>
+=======
+      <RegisterStaffForm />
+
+      <div className="card">
+        <UserFilters />
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       </div>
 
       <div className="card">
         <div className="card-header">
           <h3 className="card-title">
+<<<<<<< HEAD
             {t("users.table.title", { count: filteredUsers.length })}
           </h3>
         </div>
@@ -718,6 +863,25 @@ const UsersManagement: React.FC = () => {
       </div>
 
       {filteredUsers.length === 0 && (
+=======
+            {t("users.table.title", { count: filteredUsersCount })}
+          </h3>
+        </div>
+
+        <UserTable onEdit={handleEditUser} />
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={handlePageChange}
+          onItemsPerPageChange={handleItemsPerPageChange}
+        />
+      </div>
+
+      {filteredUsersCount === 0 && (
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         <div className={styles.emptyState}>
           <Users className={styles.emptyIcon} />
           <h3 className={styles.emptyTitle}>{t("users.empty.title")}</h3>
@@ -739,11 +903,16 @@ const UsersManagement: React.FC = () => {
       {editingUser && (
         <EditUserModal
           user={editingUser}
+<<<<<<< HEAD
           onClose={() => setEditingUser(null)}
           onSave={() => {
             loadUsers();
             setEditingUser(null);
           }}
+=======
+          onClose={handleCloseEditModal}
+          onSave={handleSaveUser}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         />
       )}
     </div>
@@ -751,4 +920,7 @@ const UsersManagement: React.FC = () => {
 };
 
 export default UsersManagement;
+<<<<<<< HEAD
 
+=======
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009

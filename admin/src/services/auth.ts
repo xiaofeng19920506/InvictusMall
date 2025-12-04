@@ -48,7 +48,6 @@ export const ROLE_PERMISSIONS = {
     'stores',
     'users',
     'settings',
-    'analytics',
     'system_logs',
     'user_management',
     'store_management',
@@ -59,20 +58,17 @@ export const ROLE_PERMISSIONS = {
     'stores',
     'users',
     'settings',
-    'analytics',
     'user_management',
     'store_management'
   ],
   manager: [
     'dashboard',
-    'stores',
     'users',
-    'analytics',
-    'store_management'
   ],
   employee: [
     'dashboard',
-    'stores'
+    'stores',
+    'settings'
   ]
 } as const;
 
@@ -110,7 +106,30 @@ class AuthService {
       const response = await axios.post('/api/staff/login', credentials);
       const data = response.data;
       
+<<<<<<< HEAD
       // Store token in localStorage if provided (fallback for when cookies don't work)
+=======
+      // The server returns { success: true, data: { success: true, user: {...}, token: "..." } }
+      // We need to extract the inner data object
+      if (data.success && data.data) {
+        const innerData = data.data;
+        
+        // Store token in localStorage if provided (fallback for when cookies don't work)
+        if (innerData.token) {
+          localStorage.setItem('staff_auth_token', innerData.token);
+        }
+        
+        // Return the format expected by AuthContext
+        return {
+          success: true,
+          user: innerData.user,
+          message: innerData.message || data.message || 'Login successful',
+          token: innerData.token,
+        };
+      }
+      
+      // Fallback to direct data if structure is different
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       if (data.token) {
         localStorage.setItem('staff_auth_token', data.token);
       }
@@ -127,7 +146,19 @@ class AuthService {
   async getCurrentUser(): Promise<AuthResponse> {
     try {
       const response = await axios.get('/api/staff/me');
-      return response.data;
+      const data = response.data;
+      
+      // Server returns { success: true, data: { user: {...} } }
+      if (data.success && data.data && data.data.user) {
+        return {
+          success: true,
+          user: data.data.user,
+          message: data.message || 'User retrieved successfully',
+        };
+      }
+      
+      // Fallback: handle direct format
+      return data;
     } catch (error: any) {
       if (error.response?.data) {
         return error.response.data;

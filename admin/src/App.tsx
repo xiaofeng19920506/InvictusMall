@@ -1,4 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from "./store";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { NotificationProvider, useNotification } from "./contexts/NotificationContext";
@@ -33,6 +35,7 @@ function AppContent() {
 
 function App() {
   return (
+<<<<<<< HEAD
     <ThemeProvider>
       <Router>
         <AuthProvider>
@@ -42,6 +45,19 @@ function App() {
         </AuthProvider>
       </Router>
     </ThemeProvider>
+=======
+    <Provider store={store}>
+      <ThemeProvider>
+        <Router>
+          <AuthProvider>
+            <NotificationProvider>
+              <AppContent />
+            </NotificationProvider>
+          </AuthProvider>
+        </Router>
+      </ThemeProvider>
+    </Provider>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   );
 }
 

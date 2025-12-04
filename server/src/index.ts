@@ -27,10 +27,18 @@ import wishlistRoutes from "./routes/wishlistRoutes";
 import browseHistoryRoutes from "./routes/browseHistoryRoutes";
 import taxRoutes from "./routes/taxRoutes";
 import reservationRoutes from "./routes/reservationRoutes";
+import stockOperationRoutes from "./routes/stockOperationRoutes";
+import ocrRoutes from "./routes/ocrRoutes";
+import productSerialNumberRoutes from "./routes/productSerialNumberRoutes";
+import storeProductInventoryRoutes from "./routes/storeProductInventoryRoutes";
+import barcodeLookupRoutes from "./routes/barcodeLookupRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
 import { accountCleanupService } from "./services/accountCleanupService";
+import { orderCleanupService } from "./services/orderCleanupService";
+import { tokenCleanupService } from "./services/tokenCleanupService";
+import { lowStockAlertService } from "./services/lowStockAlertService";
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3001", 10);
@@ -47,14 +55,16 @@ app.use(
   })
 );
 
-// Rate limiting
+// Rate limiting - 100 requests per minute per IP address
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // limit each IP to 100 requests per minute
   message: {
     success: false,
     message: "Too many requests from this IP, please try again later.",
   },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 app.use(limiter);
 
@@ -77,6 +87,7 @@ app.use(cookieParser());
 
 // Static file serving for uploaded avatars
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 
 // Proxy route for images from external storage service
 app.get("/images/*", async (req, res) => {
@@ -187,6 +198,11 @@ app.use("/api/wishlists", wishlistRoutes);
 app.use("/api/browse-history", browseHistoryRoutes);
 app.use("/api/tax", taxRoutes);
 app.use("/api/reservations", reservationRoutes);
+app.use("/api/stock-operations", stockOperationRoutes);
+app.use("/api/ocr", ocrRoutes);
+app.use("/api/product-serial-numbers", productSerialNumberRoutes);
+app.use("/api/store-product-inventory", storeProductInventoryRoutes);
+app.use("/api/barcode-lookup", barcodeLookupRoutes);
 
 /**
  * @swagger
@@ -259,16 +275,36 @@ const startServer = async () => {
         `📡 Accessible at http://localhost:${PORT} or http://[your-ip]:${PORT}`
       );
 
-      // Start account cleanup service (runs daily)
-      // Only start if database is connected
+      // Start automated services (only if database is connected)
       if (isConnected) {
+        // Start account cleanup service (runs daily)
         const cleanupIntervalHours = parseInt(
           process.env.ACCOUNT_CLEANUP_INTERVAL_HOURS || "24"
         );
         accountCleanupService.start(cleanupIntervalHours);
+
+        // Start order cleanup service (runs every 6 hours)
+        const orderCleanupIntervalHours = parseInt(
+          process.env.ORDER_CLEANUP_INTERVAL_HOURS || "6"
+        );
+        orderCleanupService.start(orderCleanupIntervalHours);
+
+        // Start token cleanup service (runs daily)
+        const tokenCleanupIntervalHours = parseInt(
+          process.env.TOKEN_CLEANUP_INTERVAL_HOURS || "24"
+        );
+        tokenCleanupService.start(tokenCleanupIntervalHours);
+
+        // Start low stock alert service (runs every 12 hours)
+        const lowStockAlertIntervalHours = parseInt(
+          process.env.LOW_STOCK_ALERT_INTERVAL_HOURS || "12"
+        );
+        lowStockAlertService.start(lowStockAlertIntervalHours);
+
+        console.log("✅ All automated services started successfully");
       } else {
         console.log(
-          "⚠️ Account cleanup service disabled (database not connected)"
+          "⚠️ Automated services disabled (database not connected)"
         );
       }
     });
@@ -279,21 +315,18 @@ const startServer = async () => {
 };
 
 // Graceful shutdown
-process.on("SIGTERM", () => {
-  console.log(
-    "SIGTERM signal received: closing HTTP server and cleanup scheduler"
-  );
+const gracefulShutdown = () => {
+  console.log("🛑 Shutdown signal received, stopping automated services...");
   accountCleanupService.stop();
+  orderCleanupService.stop();
+  tokenCleanupService.stop();
+  lowStockAlertService.stop();
+  console.log("✅ All automated services stopped");
   process.exit(0);
-});
+};
 
-process.on("SIGINT", () => {
-  console.log(
-    "SIGINT signal received: closing HTTP server and cleanup scheduler"
-  );
-  accountCleanupService.stop();
-  process.exit(0);
-});
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
 
 startServer();
 

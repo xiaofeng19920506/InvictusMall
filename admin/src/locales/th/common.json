@@ -118,10 +118,17 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
+<<<<<<< HEAD
       "owner": "Store Owner",
       "selectOwner": "-- Select owner --",
       "loadingOwners": "Loading owners...",
       "noOwnersAvailable": "No owners available. Please create an owner account first."
+=======
+      "owner": "เจ้าของร้าน/ผู้ดูแลระบบ",
+      "selectOwner": "-- เลือกเจ้าของร้าน/ผู้ดูแลระบบ --",
+      "loadingOwners": "กำลังโหลดเจ้าของร้าน/ผู้ดูแลระบบ...",
+      "noOwnersAvailable": "ไม่มีเจ้าของร้านหรือผู้ดูแลระบบที่พร้อมใช้งาน กรุณาสร้างบัญชีเจ้าของร้านหรือผู้ดูแลระบบก่อน"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "invalidImageType": "Please select an image file.",
@@ -284,12 +291,29 @@
       "error": "Failed to save settings."
     },
     "profile": {
+<<<<<<< HEAD
       "title": "Profile Information",
       "firstName": "First Name",
       "lastName": "Last Name",
       "email": "Email",
       "role": "Role",
       "note": "Profile information can be updated through your account settings."
+=======
+      "title": "ข้อมูลโปรไฟล์",
+      "firstName": "ชื่อ",
+      "lastName": "นามสกุล",
+      "phoneNumber": "หมายเลขโทรศัพท์",
+      "email": "อีเมล",
+      "role": "บทบาท",
+      "note": "ข้อมูลโปรไฟล์สามารถอัปเดตได้ผ่านการตั้งค่าบัญชีของคุณ",
+      "actions": {
+        "save": "บันทึก",
+        "saving": "กำลังบันทึก...",
+        "cancel": "ยกเลิก"
+      },
+      "updateSuccess": "อัปเดตโปรไฟล์สำเร็จ",
+      "updateError": "อัปเดตโปรไฟล์ล้มเหลว"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "notifications": {
       "title": "Notifications",
@@ -815,7 +839,13 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
+<<<<<<< HEAD
       "cancelled": "Cancelled"
+=======
+      "cancelled": "Cancelled",
+      "return_processing": "กำลังประมวลผลการคืนสินค้า",
+      "returned": "คืนสินค้าแล้ว"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No orders found"

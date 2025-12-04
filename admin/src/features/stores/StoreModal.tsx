@@ -11,7 +11,11 @@ import type {
   UpdateStoreRequest,
   Location,
 } from "../../shared/types/store";
+<<<<<<< HEAD
 import { getImageUrl } from "../../shared/utils/imageUtils";
+=======
+import { getImageUrl, getPlaceholderImage, handleImageError } from "../../shared/utils/imageUtils";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import styles from "./StoreModal.module.css";
 
 export interface StoreModalProps {
@@ -86,6 +90,29 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     imagePreview: store?.imageUrl ?? "",
     ownerId: store?.owner?.id ?? "",
   }));
+
+  // Update formData when store prop changes (e.g., when store data is loaded asynchronously)
+  useEffect(() => {
+    if (store) {
+      setFormData(prev => ({
+        ...prev,
+        name: store.name ?? prev.name,
+        description: store.description ?? prev.description,
+        establishedYear: store.establishedYear ?? prev.establishedYear,
+        location: store.location?.[0] ? { ...store.location[0] } : prev.location,
+        category: store.category ?? prev.category,
+        rating: store.rating ?? prev.rating,
+        reviewCount: store.reviewCount ?? prev.reviewCount,
+        productsCount: store.productsCount ?? prev.productsCount,
+        discount: store.discount ?? prev.discount,
+        isVerified: store.isVerified ?? prev.isVerified,
+        isActive: store.isActive ?? prev.isActive,
+        imageUrl: store.imageUrl ?? prev.imageUrl,
+        imagePreview: store.imageUrl ?? prev.imagePreview,
+        ownerId: store.owner?.id ?? prev.ownerId,
+      }));
+    }
+  }, [store?.id, store?.owner?.id]);
 
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -165,6 +192,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     const fetchOwners = async () => {
       setLoadingOwners(true);
       try {
+<<<<<<< HEAD
         const response = await staffApi.getAllStaff();
         if (response.success && response.data) {
           // Filter to only show staff with 'owner' role
@@ -172,6 +200,68 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
             (staff) => staff.role === "owner" && staff.isActive
           );
           setAvailableOwners(owners);
+=======
+        // Pass forStoreCreation=true to get all available owners and admins for store creation
+        // For editing, only pass it if user can edit the owner
+        const response = await staffApi.getAllStaff({ 
+          forStoreCreation: !isEditing || (isEditing && canEditOwner)
+        });
+        if (response.success && response.data) {
+          // Filter to show staff with 'owner' or 'admin' role
+          const owners = response.data.filter(
+            (staff) => (staff.role === "owner" || staff.role === "admin") && staff.isActive
+          );
+          
+          // If editing a store with an owner, ensure the current owner is in the list
+          if (isEditing && store?.owner) {
+            const currentOwnerId = store.owner.id;
+            const ownerExists = owners.some(owner => owner.id === currentOwnerId);
+            
+            // If current owner is not in the available list, add it
+            if (!ownerExists) {
+              const currentOwner: Staff = {
+                id: store.owner.id,
+                email: store.owner.email,
+                firstName: store.owner.firstName,
+                lastName: store.owner.lastName,
+                phoneNumber: store.owner.phoneNumber || "",
+                role: store.owner.role as 'admin' | 'owner' | 'manager' | 'employee',
+                isActive: true,
+                emailVerified: true,
+                createdAt: "",
+                updatedAt: "",
+              };
+              owners.unshift(currentOwner); // Add current owner at the beginning
+            }
+          }
+          
+          setAvailableOwners(owners);
+          console.log("Available owners/admins loaded:", owners.length);
+          
+          // If editing a store with an owner, immediately set the ownerId after loading owners
+          if (isEditing && store?.owner?.id && owners.length > 0) {
+            const currentOwnerId = store.owner.id;
+            // Check if current owner exists in the list (should always be true after our logic above)
+            const ownerExists = owners.some(owner => owner.id === currentOwnerId);
+            if (ownerExists) {
+              // Set ownerId immediately after owners are loaded
+              setFormData(prev => {
+                if (prev.ownerId !== currentOwnerId) {
+                  console.log("Auto-selecting store owner immediately after loading:", {
+                    currentOwnerId,
+                    previousOwnerId: prev.ownerId,
+                    storeOwner: store.owner
+                  });
+                  return {
+                    ...prev,
+                    ownerId: currentOwnerId
+                  };
+                }
+                return prev;
+              });
+            }
+          }
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         }
       } catch (error) {
         console.error("Error fetching owners:", error);
@@ -182,7 +272,37 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     };
 
     fetchOwners();
+<<<<<<< HEAD
   }, [showError]);
+=======
+  }, [showError, isEditing, canEditOwner, store]);
+
+  // Ensure owner is selected when editing a store with an owner
+  // This is a backup to ensure ownerId is set even if it wasn't set in the fetchOwners callback
+  useEffect(() => {
+    if (isEditing && store?.owner?.id && availableOwners.length > 0 && !loadingOwners) {
+      const currentOwnerId = store.owner.id;
+      
+      // Always set the ownerId to match the current store owner
+      // This ensures the dropdown shows the selected value even if it was reset
+      setFormData(prev => {
+        if (prev.ownerId !== currentOwnerId) {
+          console.log("Auto-selecting store owner (backup useEffect):", {
+            currentOwnerId,
+            previousOwnerId: prev.ownerId,
+            storeOwner: store.owner,
+            availableOwnersCount: availableOwners.length
+          });
+          return {
+            ...prev,
+            ownerId: currentOwnerId
+          };
+        }
+        return prev;
+      });
+    }
+  }, [isEditing, store?.owner?.id, availableOwners.length, loadingOwners]);
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   const updateLocationField = (field: keyof Location, value: string) => {
     setFormData((prev) => ({
@@ -309,9 +429,17 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           isActive: formData.isActive,
         };
         
+<<<<<<< HEAD
         // Only include ownerId if user can edit owner and it's different from current
         if (canEditOwner && formData.ownerId !== store.owner?.id) {
           updateData.ownerId = formData.ownerId || undefined;
+=======
+        // Always include ownerId if user can edit owner
+        // This ensures the owner relationship is preserved and updated correctly on the backend
+        if (canEditOwner) {
+          // Use formData.ownerId if set, otherwise preserve the current owner
+          updateData.ownerId = formData.ownerId || store?.owner?.id || undefined;
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         }
         
         await storeApi.updateStore(store.id, updateData);
@@ -534,12 +662,13 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
                   className="form-input"
                   disabled={uploadingImage}
                 />
-                {formData.imagePreview && (
+                {formData.imagePreview ? (
                   <>
                     <div className={styles.imagePreview}>
                       <img
-                        src={getImageUrl(formData.imagePreview)}
+                        src={getImageUrl(formData.imagePreview) || getPlaceholderImage()}
                         alt={t("storeModal.fields.storeImage")}
+                        onError={handleImageError}
                       />
                     </div>
                     {uploadingImage && (
@@ -548,6 +677,14 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
                       </p>
                     )}
                   </>
+                ) : (
+                  <div className={styles.imagePreview}>
+                    <img
+                      src={getPlaceholderImage()}
+                      alt={t("storeModal.fields.storeImage")}
+                      onError={handleImageError}
+                    />
+                  </div>
                 )}
               </div>
             ) : (

@@ -50,14 +50,8 @@ router.get(
       const userId = req.user.id;
       const addresses = await shippingAddressModel.getAddressesByUserId(userId);
 
-      // Ensure default address is always first in the array
-      const sortedAddresses = addresses.sort((a, b) => {
-        if (a.isDefault && !b.isDefault) return -1;
-        if (!a.isDefault && b.isDefault) return 1;
-        return 0;
-      });
-
-      return ApiResponseHelper.success(res, sortedAddresses);
+      // Return addresses in original order (no sorting)
+      return ApiResponseHelper.success(res, addresses);
     } catch (error: any) {
       logger.error("Error fetching shipping addresses", error, { userId: req.user?.id });
       return ApiResponseHelper.error(res, "Failed to fetch shipping addresses", 500, error);
@@ -250,16 +244,11 @@ router.post(
 
       await shippingAddressModel.createAddress(userId, finalAddressData);
 
-      // Return updated list with default address first
+      // Return updated list in original order (no sorting)
       const addresses = await shippingAddressModel.getAddressesByUserId(userId);
-      const sortedAddresses = addresses.sort((a, b) => {
-        if (a.isDefault && !b.isDefault) return -1;
-        if (!a.isDefault && b.isDefault) return 1;
-        return 0;
-      });
 
       return ApiResponseHelper.success(res, {
-        addresses: sortedAddresses,
+        addresses: addresses,
         validation: {
           validated: validationResult.success,
           normalized: !!validationResult.normalizedAddress,
@@ -381,15 +370,10 @@ router.put(
 
       await shippingAddressModel.updateAddress(id, userId, addressData);
 
-      // Return updated list with default address first
+      // Return updated list in original order (no sorting)
       const addresses = await shippingAddressModel.getAddressesByUserId(userId);
-      const sortedAddresses = addresses.sort((a, b) => {
-        if (a.isDefault && !b.isDefault) return -1;
-        if (!a.isDefault && b.isDefault) return 1;
-        return 0;
-      });
 
-      return ApiResponseHelper.success(res, sortedAddresses, "Shipping address updated successfully");
+      return ApiResponseHelper.success(res, addresses, "Shipping address updated successfully");
     } catch (error: any) {
       if (error.message === "Shipping address not found") {
         return ApiResponseHelper.notFound(res, "Shipping address");
@@ -441,15 +425,10 @@ router.post(
 
       await shippingAddressModel.setDefaultAddress(id, userId);
 
-      // Return updated list with default address first
+      // Return updated list in original order (no sorting)
       const addresses = await shippingAddressModel.getAddressesByUserId(userId);
-      const sortedAddresses = addresses.sort((a, b) => {
-        if (a.isDefault && !b.isDefault) return -1;
-        if (!a.isDefault && b.isDefault) return 1;
-        return 0;
-      });
 
-      return ApiResponseHelper.success(res, sortedAddresses, "Shipping address set as default successfully");
+      return ApiResponseHelper.success(res, addresses, "Shipping address set as default successfully");
     } catch (error: any) {
       if (error.message === "Shipping address not found") {
         return ApiResponseHelper.notFound(res, "Shipping address");
@@ -501,18 +480,13 @@ router.delete(
 
       await shippingAddressModel.deleteAddress(id, userId);
 
-      // Return updated list with default address first
+      // Return updated list in original order (no sorting)
       const addresses = await shippingAddressModel.getAddressesByUserId(userId);
-      const sortedAddresses = addresses.sort((a, b) => {
-        if (a.isDefault && !b.isDefault) return -1;
-        if (!a.isDefault && b.isDefault) return 1;
-        return 0;
-      });
 
       return res.json({
         success: true,
         message: "Shipping address deleted successfully",
-        data: sortedAddresses,
+        data: addresses,
       });
     } catch (error: any) {
       if (error.message === "Shipping address not found or unauthorized") {

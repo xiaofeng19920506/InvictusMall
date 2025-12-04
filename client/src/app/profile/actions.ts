@@ -195,6 +195,7 @@ export async function updateProfileAction(formData: FormData): Promise<void> {
   );
 }
 
+
 export async function uploadAvatarAction(formData: FormData): Promise<void> {
   const file = formData.get('avatar');
 
@@ -226,19 +227,31 @@ export async function uploadAvatarAction(formData: FormData): Promise<void> {
       'error',
       'Failed to upload avatar. Please try again.'
     );
+    // This return is unreachable due to redirect, but TypeScript needs it
+    return;
+  }
+
+  // Ensure response is initialized before use
+  if (!response) {
+    redirectToTab(
+      PROFILE_PROFILE_TAB,
+      'error',
+      'Failed to upload avatar. No response received.'
+    );
+    return;
   }
 
   let payload: AuthResponse | undefined;
   try {
-    payload = (await response!.json()) as AuthResponse;
+    payload = (await response.json()) as AuthResponse;
   } catch {
     // Ignore JSON parse errors; handled below
   }
 
-  if (!response!.ok || !payload?.success) {
+  if (!response.ok || !payload?.success) {
     const message =
       payload?.message ||
-      `Failed to upload avatar (status ${response!.status}).`;
+      `Failed to upload avatar (status ${response.status}).`;
     redirectToTab(PROFILE_PROFILE_TAB, 'error', message);
   }
 

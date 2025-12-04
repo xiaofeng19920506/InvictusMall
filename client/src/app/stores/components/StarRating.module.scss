@@ -1,0 +1,35 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.container {
+  display: flex;
+}
+
+.star {
+  font-size: font-size('lg'); // default size
+  
+  &.sm {
+    font-size: font-size('sm');
+  }
+  
+  &.base {
+    font-size: font-size('base');
+  }
+  
+  &.lg {
+    font-size: font-size('lg');
+  }
+  
+  &.xl {
+    font-size: font-size('xl');
+  }
+  
+  &.filled {
+    color: #facc15; // yellow-400
+  }
+  
+  &.empty {
+    color: color('gray-300');
+  }
+}
+

@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { ActivityLogModel, ActivityLog } from '../models/ActivityLogModel';
 import { ApiResponseHelper } from '../utils/apiResponse';
 import { logger } from '../utils/logger';
+import { authenticateStaffToken, AuthenticatedRequest } from '../middleware/auth';
+import { getAccessibleStoreIds } from '../utils/ownerPermissions';
 
 const router = Router();
 
@@ -22,11 +24,23 @@ const router = Router();
  *       200:
  *         description: Activity logs retrieved successfully
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', authenticateStaffToken, async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthenticatedRequest;
     const limitParam = req.query.limit as string;
     const limit = limitParam && !isNaN(parseInt(limitParam)) ? parseInt(limitParam) : 20;
-    const logs = await ActivityLogModel.getRecentLogs(limit);
+    
+    // Get accessible store IDs for owner filtering
+    const accessibleStoreIds = await getAccessibleStoreIds(authReq);
+    
+    // If owner has no accessible stores, return empty
+    if (accessibleStoreIds !== null && accessibleStoreIds.length === 0) {
+      return ApiResponseHelper.successWithCount(res, [], 0);
+    }
+    
+    // Filter logs by accessible stores (null means all stores for admin)
+    const storeIds = accessibleStoreIds !== null ? accessibleStoreIds : undefined;
+    const logs = await ActivityLogModel.getRecentLogs(limit, storeIds);
     
     return ApiResponseHelper.successWithCount(res, logs, logs.length);
   } catch (error) {
@@ -58,12 +72,22 @@ router.get('/', async (req: Request, res: Response) => {
  *       200:
  *         description: Store activity logs retrieved successfully
  */
-router.get('/store/:storeId', async (req: Request, res: Response) => {
+router.get('/store/:storeId', authenticateStaffToken, async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthenticatedRequest;
     const { storeId } = req.params;
     if (!storeId) {
       return ApiResponseHelper.validationError(res, 'Store ID is required');
     }
+    
+    // Check if owner has access to this store
+    const accessibleStoreIds = await getAccessibleStoreIds(authReq);
+    if (accessibleStoreIds !== null) {
+      if (accessibleStoreIds.length === 0 || !accessibleStoreIds.includes(storeId)) {
+        return ApiResponseHelper.error(res, 'Access denied to this store', 403);
+      }
+    }
+    
     const limit = parseInt(req.query.limit as string) || 10;
     const logs = await ActivityLogModel.getLogsByStoreId(storeId, limit);
     
@@ -98,19 +122,30 @@ router.get('/store/:storeId', async (req: Request, res: Response) => {
  *       200:
  *         description: Activity logs by type retrieved successfully
  */
-router.get('/type/:type', async (req: Request, res: Response) => {
+router.get('/type/:type', authenticateStaffToken, async (req: Request, res: Response) => {
   try {
+    const authReq = req as AuthenticatedRequest;
     const { type } = req.params;
     if (!type) {
       return ApiResponseHelper.validationError(res, 'Activity type is required');
     }
     const limit = parseInt(req.query.limit as string) || 10;
     
-    if (!['store_created', 'store_updated', 'store_deleted', 'store_verified'].includes(type)) {
+    if (!['store_created', 'store_updated', 'store_deleted', 'store_verified', 'user_registered', 'user_login', 'password_reset_requested', 'password_reset_completed', 'password_changed', 'staff_registered', 'staff_invited', 'staff_login', 'profile_updated', 'avatar_uploaded', 'order_created', 'order_status_updated'].includes(type)) {
       return ApiResponseHelper.validationError(res, 'Invalid activity type');
     }
     
-    const logs = await ActivityLogModel.getLogsByType(type as ActivityLog['type'], limit);
+    // Get accessible store IDs for owner filtering
+    const accessibleStoreIds = await getAccessibleStoreIds(authReq);
+    
+    // If owner has no accessible stores, return empty
+    if (accessibleStoreIds !== null && accessibleStoreIds.length === 0) {
+      return ApiResponseHelper.successWithCount(res, [], 0);
+    }
+    
+    // Filter logs by accessible stores (null means all stores for admin)
+    const storeIds = accessibleStoreIds !== null ? accessibleStoreIds : undefined;
+    const logs = await ActivityLogModel.getLogsByType(type as ActivityLog['type'], limit, storeIds);
     
     return ApiResponseHelper.successWithCount(res, logs, logs.length);
   } catch (error) {

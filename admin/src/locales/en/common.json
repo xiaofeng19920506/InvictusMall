@@ -6,6 +6,10 @@
       "products": "Products",
       "categories": "Categories",
       "orders": "Orders",
+<<<<<<< HEAD
+=======
+      "shipments": "Shipments",
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       "inventory": "Inventory Management",
       "users": "Users",
       "settings": "Settings",
@@ -51,6 +55,10 @@
       "products": "Products",
       "categories": "Categories",
       "orders": "Orders",
+<<<<<<< HEAD
+=======
+      "shipments": "Shipments",
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       "inventory": "Inventory Management",
       "users": "Users",
       "settings": "Settings",
@@ -118,10 +126,17 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
+<<<<<<< HEAD
       "owner": "Store Owner",
       "selectOwner": "-- Select owner --",
       "loadingOwners": "Loading owners...",
       "noOwnersAvailable": "No owners available. Please create an owner account first."
+=======
+      "owner": "Store Owner/Admin",
+      "selectOwner": "-- Select owner/admin --",
+      "loadingOwners": "Loading owners/admins...",
+      "noOwnersAvailable": "No owners or admins available. Please create an owner or admin account first."
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "invalidImageType": "Please select an image file.",
@@ -147,6 +162,7 @@
     "searchPlaceholder": "Search users by name, email, or phone...",
     "filters": {
       "allRoles": "All Roles",
+      "allStores": "All Stores",
       "admin": "Admin",
       "owner": "Owner",
       "manager": "Manager",
@@ -287,9 +303,17 @@
       "title": "Profile Information",
       "firstName": "First Name",
       "lastName": "Last Name",
+      "phoneNumber": "Phone Number",
       "email": "Email",
       "role": "Role",
-      "note": "Profile information can be updated through your account settings."
+      "note": "Profile information can be updated through your account settings.",
+      "actions": {
+        "save": "Save",
+        "saving": "Saving...",
+        "cancel": "Cancel"
+      },
+      "updateSuccess": "Profile updated successfully",
+      "updateError": "Failed to update profile"
     },
     "notifications": {
       "title": "Notifications",
@@ -351,6 +375,7 @@
     "searchPlaceholder": "Search logs...",
     "filters": {
       "all": "All Levels",
+      "allStores": "All Stores",
       "levels": {
         "info": "Info",
         "warning": "Warning",
@@ -693,7 +718,12 @@
       "allLevels": "All Levels",
       "level1": "Level 1 (Top Level)",
       "level2": "Level 2 (Subcategory)",
+<<<<<<< HEAD
       "level3": "Level 3 (Sub-subcategory)"
+=======
+      "level3": "Level 3 (Sub-subcategory)",
+      "level4": "Level 4 (Sub-sub-subcategory)"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "table": {
       "name": "Name",
@@ -752,7 +782,11 @@
       "activeHelp": "Inactive categories won't appear in selection dropdowns"
     },
     "warning": {
+<<<<<<< HEAD
       "maxLevel": "Maximum level (3) reached - cannot have children"
+=======
+      "maxLevel": "Maximum level (4) reached - cannot have children"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "create": "Create Category",
@@ -772,6 +806,147 @@
       "saveFailed": "Failed to save category"
     }
   },
+<<<<<<< HEAD
+=======
+  "shipments": {
+    "searchPlaceholder": "Search by tracking number, order ID, or carrier...",
+    "filters": {
+      "allStatuses": "All Statuses",
+      "allCarriers": "All Carriers"
+    },
+    "status": {
+      "pending": "Pending",
+      "label_created": "Label Created",
+      "in_transit": "In Transit",
+      "out_for_delivery": "Out for Delivery",
+      "delivered": "Delivered",
+      "exception": "Exception",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
+    "carriers": {
+      "usps": "USPS",
+      "ups": "UPS",
+      "fedex": "FedEx",
+      "dhl": "DHL",
+      "other": "Other"
+    },
+    "table": {
+      "trackingNumber": "Tracking Number",
+      "orderId": "Order ID",
+      "carrier": "Carrier",
+      "status": "Status",
+      "shippedAt": "Shipped At",
+      "estimatedDelivery": "Estimated Delivery",
+      "actions": "Actions"
+    },
+    "empty": "No shipments found",
+    "actions": {
+      "create": "Create Shipment",
+      "view": "View Details",
+      "edit": "Edit",
+      "downloadLabel": "Download Label",
+      "printLabel": "Print Label",
+      "generateLabel": "Generate Label",
+      "generating": "Generating..."
+    },
+    "success": {
+      "created": "Shipment created successfully",
+      "updated": "Shipment updated successfully",
+      "labelGenerated": "Shipping label generated successfully"
+    },
+    "error": {
+      "loadFailed": "Failed to load shipments",
+      "createFailed": "Failed to create shipment",
+      "updateFailed": "Failed to update shipment",
+      "labelGenerationFailed": "Failed to generate shipping label"
+    },
+    "modal": {
+      "details": "Shipment Details",
+      "createTitle": "Create New Shipment",
+      "updateTitle": "Update Shipment",
+      "shipmentInfo": "Shipment Information",
+      "trackingHistory": "Tracking History",
+      "dates": "Important Dates",
+      "shippingLabel": "Shipping Label",
+      "notes": "Notes",
+      "shippingMethod": "Shipping Method",
+      "weight": "Weight",
+      "shippingCost": "Shipping Cost",
+      "actualDelivery": "Actual Delivery"
+    },
+    "form": {
+      "orderId": "Order ID",
+      "carrier": "Carrier",
+      "carrierName": "Carrier Name",
+      "shippingMethod": "Shipping Method",
+      "weight": "Weight (kg)",
+      "shippingCost": "Shipping Cost ($)",
+      "notes": "Notes"
+    }
+  },
+  "fulfillmentCenters": {
+    "table": {
+      "name": "Name",
+      "code": "Code",
+      "address": "Address",
+      "status": "Status",
+      "capacity": "Capacity",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": "No fulfillment centers found",
+    "error": {
+      "loadFailed": "Failed to load fulfillment centers",
+      "createFailed": "Failed to create fulfillment center",
+      "updateFailed": "Failed to update fulfillment center",
+      "deleteFailed": "Failed to delete fulfillment center"
+    },
+    "success": {
+      "created": "Fulfillment center created successfully",
+      "updated": "Fulfillment center updated successfully",
+      "deleted": "Fulfillment center deleted successfully"
+    },
+    "actions": {
+      "create": "Create Fulfillment Center",
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "modal": {
+      "details": "Fulfillment Center Details",
+      "createTitle": "Create Fulfillment Center",
+      "updateTitle": "Update Fulfillment Center",
+      "deleteTitle": "Delete Fulfillment Center",
+      "deleteMessage": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "basicInfo": "Basic Information",
+      "address": "Address",
+      "contactInfo": "Contact Information",
+      "operatingHours": "Operating Hours",
+      "capacity": "Capacity",
+      "maxOrdersPerDay": "Max Orders Per Day",
+      "currentOrders": "Current Orders"
+    },
+    "form": {
+      "name": "Name",
+      "code": "Code",
+      "address": "Address",
+      "streetAddress": "Street Address",
+      "city": "City",
+      "stateProvince": "State/Province",
+      "zipCode": "Zip Code",
+      "country": "Country",
+      "contactInfo": "Contact Information",
+      "phone": "Phone",
+      "email": "Email",
+      "maxOrdersPerDay": "Max Orders Per Day",
+      "isActive": "Active"
+    }
+  },
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
@@ -783,6 +958,14 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
+<<<<<<< HEAD
+=======
+    "refresh": "Refresh",
+    "create": "Create",
+    "update": "Update",
+    "creating": "Creating...",
+    "updating": "Updating...",
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     "pagination": {
       "showing": "Showing",
       "to": "to",
@@ -802,7 +985,12 @@
       "placeholder": "Search orders..."
     },
     "filter": {
+<<<<<<< HEAD
       "allStatuses": "All Statuses"
+=======
+      "allStatuses": "All Statuses",
+      "allStores": "All Stores"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "table": {
       "orderId": "Order ID",
@@ -819,7 +1007,13 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
+<<<<<<< HEAD
       "cancelled": "Cancelled"
+=======
+      "cancelled": "Cancelled",
+      "return_processing": "Return Processing",
+      "returned": "Returned"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No orders found"
@@ -1022,6 +1216,31 @@
       "productNotFound": "Product not found",
       "loadError": "Failed to load inventory",
       "loadStoresError": "Failed to load stores"
+<<<<<<< HEAD
+=======
+    },
+    "tabs": {
+      "products": "Products",
+      "history": "Stock Operations History"
+    },
+    "history": {
+      "title": "Stock Operations History",
+      "allProducts": "All Products",
+      "allTypes": "All Types",
+      "typeIn": "Stock In",
+      "typeOut": "Stock Out",
+      "empty": "No stock operations found",
+      "table": {
+        "date": "Date",
+        "product": "Product",
+        "type": "Type",
+        "quantity": "Quantity",
+        "before": "Before",
+        "after": "After",
+        "reason": "Reason",
+        "order": "Order"
+      }
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     }
   }
 }

@@ -1,0 +1,28 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.pageContainer {
+  min-height: 100vh;
+  background-color: color('gray-50');
+}
+
+.container {
+  max-width: 80rem; // max-w-7xl
+  margin-left: auto;
+  margin-right: auto;
+  padding-top: 2rem; // py-8
+  padding-bottom: 2rem;
+  padding-left: 1rem; // px-4
+  padding-right: 1rem;
+  
+  @include respond-to('sm') {
+    padding-left: 1.5rem; // sm:px-6
+    padding-right: 1.5rem;
+  }
+  
+  @include respond-to('lg') {
+    padding-left: 2rem; // lg:px-8
+    padding-right: 2rem;
+  }
+}
+

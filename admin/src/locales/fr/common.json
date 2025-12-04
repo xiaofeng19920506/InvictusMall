@@ -121,7 +121,11 @@
       "discount": "Promotion",
       "discountPlaceholder": "Ex. : -20%",
       "verified": "Boutique vérifiée",
-      "active": "Boutique active"
+      "active": "Boutique active",
+      "owner": "Propriétaire/Administrateur",
+      "selectOwner": "-- Sélectionner propriétaire/administrateur --",
+      "loadingOwners": "Chargement des propriétaires/administrateurs...",
+      "noOwnersAvailable": "Aucun propriétaire ou administrateur disponible. Veuillez d'abord créer un compte propriétaire ou administrateur."
     },
     "actions": {
       "invalidImageType": "Veuillez sélectionner un fichier image.",
@@ -308,9 +312,17 @@
       "title": "Informations du profil",
       "firstName": "Prénom",
       "lastName": "Nom",
+      "phoneNumber": "Numéro de téléphone",
       "email": "Adresse e-mail",
       "role": "Rôle",
-      "note": "Les informations du profil peuvent être mises à jour via les paramètres du compte."
+      "note": "Les informations du profil peuvent être mises à jour via les paramètres du compte.",
+      "actions": {
+        "save": "Enregistrer",
+        "saving": "Enregistrement...",
+        "cancel": "Annuler"
+      },
+      "updateSuccess": "Profil mis à jour avec succès",
+      "updateError": "Échec de la mise à jour du profil"
     },
     "notifications": {
       "title": "Notifications",
@@ -761,7 +773,13 @@
       "processing": "En Traitement",
       "shipped": "Expédié",
       "delivered": "Livré",
+<<<<<<< HEAD
       "cancelled": "Annulé"
+=======
+      "cancelled": "Annulé",
+      "return_processing": "Traitement du Retour",
+      "returned": "Retourné"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "Aucune commande trouvée"

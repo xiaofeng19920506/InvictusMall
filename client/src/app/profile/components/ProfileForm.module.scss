@@ -1,0 +1,85 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; // gap-6
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem; // gap-6
+
+  @include respond-to('sm') {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.formField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; // gap-2
+}
+
+.formLabel {
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  color: color('gray-700');
+}
+
+.formInput {
+  padding: 0.75rem 1rem; // px-4 py-3
+  border: 1px solid color('gray-300');
+  border-radius: border-radius('md');
+  font-size: font-size('base');
+  color: color('gray-900');
+  background-color: color('white');
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: color('blue-500');
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  &:disabled {
+    background-color: color('gray-100');
+    color: color('gray-500');
+    cursor: not-allowed;
+  }
+
+  &::placeholder {
+    color: color('gray-400');
+  }
+}
+
+.helpText {
+  font-size: font-size('xs');
+  color: color('gray-500');
+  margin: 0;
+}
+
+.submitButton {
+  align-self: flex-start;
+  padding: 0.75rem 2rem; // px-8 py-3
+  background-color: color('blue-600');
+  color: color('white');
+  border: none;
+  border-radius: border-radius('md');
+  font-size: font-size('base');
+  font-weight: font-weight('medium');
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover:not(:disabled) {
+    background-color: color('blue-700');
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+

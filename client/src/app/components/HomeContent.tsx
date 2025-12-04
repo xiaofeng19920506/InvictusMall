@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useDeferredValue, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/common/Header";
 import StoreGrid from "../stores/components/StoreGrid";
+import StoreGridSkeleton from "@/components/shared/StoreGridSkeleton";
 import { useRealTimeStores } from "@/hooks/useRealTimeStores";
 import { Store } from "@/services/api";
+import styles from "./HomeContent.module.scss";
 
 interface HomeContentProps {
   initialStores: Store[];
@@ -21,71 +23,107 @@ export default function HomeContent({
   initialSearchType,
 }: HomeContentProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [searchType, setSearchType] = useState(initialSearchType);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+<<<<<<< HEAD
   // Use stores hook - fetches on initial load and when search params change
+=======
+  // Defer search query updates for smoother typing experience
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  
+  // Use stores hook - fetches on initial load and when search params change
+  // Use deferred value for search to avoid blocking UI during typing
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   const { stores: realTimeStores, loading, error, refetch, lastUpdated } = useRealTimeStores(
-    searchQuery,
+    deferredSearchQuery,
     selectedCategory,
     searchType
   );
 
   // Use initial stores on first load, then switch to real-time stores
-  const stores = isInitialLoad && initialStores.length > 0 ? initialStores : realTimeStores;
+  const stores = useMemo(() => {
+    return isInitialLoad && initialStores.length > 0 ? initialStores : realTimeStores;
+  }, [isInitialLoad, initialStores, realTimeStores]);
+  
   // Show loading only if we don't have initial data and we're loading
-  const isLoading = !isInitialLoad && loading;
+  const isLoading = useMemo(() => !isInitialLoad && loading, [isInitialLoad, loading]);
 
-  // Update URL when search params change
+  // Memoize computed title and subtitle
+  const title = useMemo(() => {
+    if (searchType === "All") {
+      return selectedCategory === "All" ? "All Stores" : `${selectedCategory} Stores`;
+    }
+    return `${searchType} Search Results`;
+  }, [searchType, selectedCategory]);
+
+  const subtitle = useMemo(() => {
+    const count = stores.length;
+    const unit = searchType === "All" ? "store" : searchType.toLowerCase();
+    const plural = count !== 1 ? "s" : "";
+    const searchText = deferredSearchQuery ? ` for "${deferredSearchQuery}"` : "";
+    const typeText = searchType !== "All" ? ` in ${searchType.toLowerCase()}` : "";
+    return `${count} ${unit}${plural} found${searchText}${typeText}`;
+  }, [stores.length, searchType, deferredSearchQuery]);
+
+  // Update URL when search params change (non-urgent update)
   const updateURL = useCallback((search: string, category: string, type: string) => {
-    const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (category && category !== 'All') params.set('category', category);
-    if (type && type !== 'All') params.set('searchType', type);
-    
-    const queryString = params.toString();
-    const newURL = queryString ? `/?${queryString}` : '/';
-    router.push(newURL, { scroll: false });
-  }, [router]);
+    startTransition(() => {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (category && category !== 'All') params.set('category', category);
+      if (type && type !== 'All') params.set('searchType', type);
+      
+      const queryString = params.toString();
+      const newURL = queryString ? `/?${queryString}` : '/';
+      router.push(newURL, { scroll: false });
+    });
+  }, [router, startTransition]);
 
   // Update URL when search params change
   useEffect(() => {
     if (!isInitialLoad) {
-      updateURL(searchQuery, selectedCategory, searchType);
+      updateURL(deferredSearchQuery, selectedCategory, searchType);
     }
-  }, [searchQuery, selectedCategory, searchType, isInitialLoad, updateURL]);
+  }, [deferredSearchQuery, selectedCategory, searchType, isInitialLoad, updateURL]);
 
   // Mark initial load as complete after first render
   useEffect(() => {
     setIsInitialLoad(false);
   }, []);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-  };
+  }, []);
 
-  const handleCategoryFilter = (category: string) => {
+  const handleCategoryFilter = useCallback((category: string) => {
     setSelectedCategory(category);
-  };
+  }, []);
 
-  const handleSearchTypeChange = (type: string) => {
+  const handleSearchTypeChange = useCallback((type: string) => {
     setSearchType(type);
-  };
+  }, []);
 
+<<<<<<< HEAD
   const handleRetry = () => {
+=======
+  const handleRetry = useCallback(() => {
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     refetch();
-  };
+  }, [refetch]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className={styles.homeContainer}>
       <Header
         onSearch={handleSearch}
         onCategoryFilter={handleCategoryFilter}
         onSearchTypeChange={handleSearchTypeChange}
       />
+<<<<<<< HEAD
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex items-center gap-4 flex-wrap">
           <h2 className="text-3xl font-bold text-gray-900">
@@ -102,15 +140,21 @@ export default function HomeContent({
             {searchQuery && ` for "${searchQuery}"`}
             {searchType !== "All" && ` in ${searchType.toLowerCase()}`}
           </p>
+=======
+      <main className={styles.main}>
+        <div className={styles.headerSection}>
+          <h2 className={styles.title}>{title}</h2>
+          <p className={styles.subtitle}>{subtitle}</p>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         </div>
 
         {/* Error State */}
         {error && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
+          <div className={styles.errorContainer}>
+            <div className={styles.errorContent}>
+              <div className={styles.errorLeft}>
                 <svg
-                  className="h-5 w-5 text-red-400 mr-2"
+                  className={styles.errorIcon}
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -120,11 +164,11 @@ export default function HomeContent({
                     clipRule="evenodd"
                   />
                 </svg>
-                <span className="text-red-700">{error}</span>
+                <span className={styles.errorMessage}>{error}</span>
               </div>
               <button
                 onClick={handleRetry}
-                className="ml-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors cursor-pointer"
+                className={styles.retryButton}
               >
                 Retry
               </button>
@@ -132,10 +176,20 @@ export default function HomeContent({
           </div>
         )}
 
+<<<<<<< HEAD
         <StoreGrid
           stores={stores}
           loading={isLoading}
         />
+=======
+        <div className={styles.storeGridContainer}>
+          {isLoading ? (
+            <StoreGridSkeleton />
+          ) : (
+            <StoreGrid stores={stores} />
+          )}
+        </div>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       </main>
     </div>
   );

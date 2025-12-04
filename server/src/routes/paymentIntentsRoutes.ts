@@ -186,12 +186,13 @@ router.post(
         itemsByStore.get(item.storeId)!.items.push(item);
       }
 
-      // Create Payment Intent
-      // Amazon-style: Payment Intent is created but payment is confirmed on frontend
-      // This allows for immediate card validation and processing before order review
+      // Create Payment Intent with manual capture
+      // Amazon-style: Payment Intent is created with manual capture
+      // This allows for authorization (pending charge) at checkout, and actual charge when order is delivered
       const paymentIntent = await stripeClient.paymentIntents.create({
         amount: Math.round(totalAmount * 100), // Convert to cents
         currency: "usd",
+        capture_method: "manual", // Manual capture - authorize now, capture later
         metadata: {
           userId: req.user.id,
           shippingAddress: JSON.stringify(resolvedAddress),
@@ -234,7 +235,7 @@ router.post(
           shippingAddress: resolvedAddress,
           paymentMethod: `stripe_payment_intent:${paymentIntent.id}`,
           paymentIntentId: paymentIntent.id,
-          status: "pending_payment",
+          status: "pending",
         });
 
         orderIds.push(order.id);
@@ -311,11 +312,12 @@ router.post(
       }
 
       // Amazon-style checkout flow:
-      // Payment is already confirmed on frontend (in PaymentMethodStep)
-      // This endpoint just finalizes the order after payment confirmation
-      // Check payment status - must be succeeded (confirmed on frontend)
-      if (paymentIntent.status !== "succeeded") {
-        return ApiResponseHelper.error(res, `Payment has not been completed. Status: ${paymentIntent.status}. Please complete payment first.`, 400);
+      // Payment is authorized (not captured) on frontend (in PaymentMethodStep)
+      // This endpoint just finalizes the order after payment authorization
+      // Check payment status - must be requires_capture (authorized but not captured) or succeeded
+      // With manual capture, status will be "requires_capture" after authorization
+      if (paymentIntent.status !== "requires_capture" && paymentIntent.status !== "succeeded") {
+        return ApiResponseHelper.error(res, `Payment has not been authorized. Status: ${paymentIntent.status}. Please complete payment authorization first.`, 400);
       }
 
       // Update orders to processing status (Amazon-style: payment done, now finalize order)

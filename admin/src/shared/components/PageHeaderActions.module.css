@@ -1,0 +1,111 @@
+.headerActions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.primaryButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.variantPrimary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.variantPrimary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.variantSecondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.variantSecondary:hover {
+  background-color: var(--bg-hover);
+}
+
+.variantDanger {
+  background-color: #dc2626;
+  color: white;
+}
+
+.variantDanger:hover {
+  background-color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.primaryButton:active {
+  transform: translateY(0);
+}
+
+.secondaryButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.secondaryButton:hover {
+  background-color: var(--bg-hover);
+}
+
+.secondaryVariant {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.refreshButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.refreshButton:hover {
+  background-color: var(--bg-hover);
+  transform: rotate(90deg);
+}
+
+@media (max-width: 768px) {
+  .headerActions {
+    justify-content: stretch;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    flex: 1;
+    justify-content: center;
+  }
+}
+

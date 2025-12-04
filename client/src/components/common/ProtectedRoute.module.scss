@@ -1,0 +1,104 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+// Ensure ProtectedRoute wrapper uses flex layout to support fixed header/footer
+.protectedRouteWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.loadingContainer {
+  @include flex;
+  @include items-center;
+  @include justify-center;
+  min-height: 100vh;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  border-radius: border-radius('full');
+  height: 8rem; // h-32
+  width: 8rem;
+  border-bottom: 2px solid color('orange-500');
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.authRequiredContainer {
+  @include flex;
+  @include items-center;
+  @include justify-center;
+  min-height: 100vh;
+  background-color: color('gray-50');
+}
+
+.authRequiredContent {
+  @include text-center;
+}
+
+.authRequiredTitle {
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+  margin-bottom: spacing(4);
+}
+
+.authRequiredText {
+  color: color('gray-600');
+  margin-bottom: spacing(6);
+}
+
+.authRequiredButton {
+  background-color: color('orange-500');
+  color: color('white');
+  padding: spacing(2) spacing(6);
+  border-radius: border-radius('md');
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: none;
+  font-size: font-size('base');
+  font-weight: font-weight('medium');
+  
+  &:hover {
+    background-color: color('orange-600');
+  }
+}
+
+.accessDeniedContainer {
+  @include flex;
+  @include items-center;
+  @include justify-center;
+  min-height: 100vh;
+  background-color: color('gray-50');
+}
+
+.accessDeniedContent {
+  @include text-center;
+}
+
+.accessDeniedTitle {
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+  margin-bottom: spacing(4);
+}
+
+.accessDeniedText {
+  color: color('gray-600');
+  margin-bottom: spacing(6);
+}
+
+.accessDeniedRoleText {
+  font-size: font-size('sm');
+  color: color('gray-500');
+}
+

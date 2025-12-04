@@ -121,7 +121,11 @@
       "discount": "割引",
       "discountPlaceholder": "例：20% OFF",
       "verified": "認証済み店舗",
-      "active": "有効な店舗"
+      "active": "有効な店舗",
+      "owner": "店舗オーナー/管理者",
+      "selectOwner": "-- オーナー/管理者を選択 --",
+      "loadingOwners": "オーナー/管理者を読み込み中...",
+      "noOwnersAvailable": "利用可能なオーナーまたは管理者がいません。まずオーナーまたは管理者アカウントを作成してください。"
     },
     "actions": {
       "invalidImageType": "画像ファイルを選択してください。",
@@ -308,9 +312,17 @@
       "title": "プロフィール情報",
       "firstName": "名",
       "lastName": "姓",
+      "phoneNumber": "電話番号",
       "email": "メールアドレス",
       "role": "役割",
-      "note": "プロフィール情報はアカウント設定から更新できます。"
+      "note": "プロフィール情報はアカウント設定から更新できます。",
+      "actions": {
+        "save": "保存",
+        "saving": "保存中...",
+        "cancel": "キャンセル"
+      },
+      "updateSuccess": "プロフィールが正常に更新されました",
+      "updateError": "プロフィールの更新に失敗しました"
     },
     "notifications": {
       "title": "通知",
@@ -761,7 +773,13 @@
       "processing": "処理中",
       "shipped": "発送済み",
       "delivered": "配達済み",
+<<<<<<< HEAD
       "cancelled": "キャンセル済み"
+=======
+      "cancelled": "キャンセル済み",
+      "return_processing": "返品処理中",
+      "returned": "返品済み"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "注文が見つかりません"

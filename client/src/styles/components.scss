@@ -1,0 +1,128 @@
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+
+// Common component styles that can be reused
+
+// Button variants
+.btn {
+  @include button-base;
+  
+  &.btn-primary {
+    background-color: color('orange-500');
+    color: color('white');
+    
+    &:hover {
+      background-color: color('orange-600');
+    }
+  }
+  
+  &.btn-secondary {
+    background-color: color('gray-800');
+    color: color('white');
+    
+    &:hover {
+      background-color: color('gray-700');
+    }
+  }
+  
+  &.btn-danger {
+    background-color: color('red-600');
+    color: color('white');
+    
+    &:hover {
+      background-color: color('red-700');
+    }
+  }
+}
+
+// Card component
+.card {
+  @include card;
+}
+
+// Input component
+.input {
+  @include input-base;
+}
+
+// Grid layouts
+.grid {
+  display: grid;
+  
+  &.grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+  
+  &.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  &.grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  
+  &.grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  
+  @include respond-to('md') {
+    &.md\:grid-cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  
+  @include respond-to('lg') {
+    &.lg\:grid-cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  
+  @include respond-to('xl') {
+    &.xl\:grid-cols-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+}
+
+.gap-6 {
+  gap: spacing(6);
+}
+
+// Loading skeleton
+.skeleton {
+  background-color: color('gray-200');
+  border-radius: border-radius('md');
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+// Empty state
+.empty-state {
+  text-align: center;
+  padding: spacing(12) spacing(4);
+  
+  .empty-icon {
+    font-size: 3.75rem;
+    margin-bottom: spacing(4);
+  }
+  
+  .empty-title {
+    font-size: font-size('xl');
+    font-weight: font-weight('semibold');
+    color: color('gray-900');
+    margin-bottom: spacing(2);
+  }
+  
+  .empty-message {
+    color: color('gray-600');
+  }
+}
+

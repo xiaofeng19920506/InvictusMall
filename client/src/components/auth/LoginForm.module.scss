@@ -1,0 +1,123 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.container {
+  max-width: 28rem;
+  margin: 0 auto;
+  @include card;
+}
+
+.title {
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+  margin-bottom: spacing(6);
+  text-align: center;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: spacing(4);
+}
+
+.formGroup {
+  @include flex-col;
+}
+
+.label {
+  display: block;
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  color: color('gray-700');
+  margin-bottom: spacing(1);
+}
+
+.input {
+  @include input-base;
+}
+
+.errorMessage {
+  background-color: color('red-50');
+  border: 1px solid color('red-200');
+  color: color('red-700');
+  padding: spacing(3) spacing(4);
+  border-radius: border-radius('md');
+}
+
+.submitButton {
+  width: 100%;
+  background-color: color('orange-500');
+  color: color('white');
+  padding: spacing(2) spacing(4);
+  border-radius: border-radius('md');
+  border: none;
+  font-weight: font-weight('medium');
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover:not(:disabled) {
+    background-color: color('orange-600');
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.divider {
+  @include flex;
+  @include items-center;
+  margin: spacing(6) 0;
+  
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: color('gray-300');
+  }
+  
+  .dividerText {
+    padding: 0 spacing(4);
+    color: color('gray-500');
+    font-size: font-size('sm');
+  }
+}
+
+.switchLink {
+  text-align: center;
+  margin-top: spacing(4);
+  font-size: font-size('sm');
+  color: color('gray-600');
+  
+  .link {
+    color: color('orange-500');
+    cursor: pointer;
+    text-decoration: none;
+    
+    &:hover {
+      color: color('orange-600');
+      text-decoration: underline;
+    }
+  }
+}
+
+.forgotPasswordLink {
+  text-align: right;
+  margin-top: spacing(2);
+  
+  .link {
+    font-size: font-size('sm');
+    color: color('orange-500');
+    cursor: pointer;
+    text-decoration: none;
+    
+    &:hover {
+      color: color('orange-600');
+      text-decoration: underline;
+    }
+  }
+}
+

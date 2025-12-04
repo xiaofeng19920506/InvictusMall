@@ -121,7 +121,11 @@
       "discount": "Descuento",
       "discountPlaceholder": "Ej.: 20% OFF",
       "verified": "Tienda verificada",
-      "active": "Tienda activa"
+      "active": "Tienda activa",
+      "owner": "Propietario/Administrador",
+      "selectOwner": "-- Seleccionar propietario/administrador --",
+      "loadingOwners": "Cargando propietarios/administradores...",
+      "noOwnersAvailable": "No hay propietarios o administradores disponibles. Por favor, cree primero una cuenta de propietario o administrador."
     },
     "actions": {
       "invalidImageType": "Seleccione un archivo de imagen.",
@@ -326,9 +330,17 @@
       "title": "Información del perfil",
       "firstName": "Nombre",
       "lastName": "Apellido",
+      "phoneNumber": "Número de teléfono",
       "email": "Correo electrónico",
       "role": "Rol",
-      "note": "La información del perfil se puede actualizar desde la configuración de tu cuenta."
+      "note": "La información del perfil se puede actualizar desde la configuración de tu cuenta.",
+      "actions": {
+        "save": "Guardar",
+        "saving": "Guardando...",
+        "cancel": "Cancelar"
+      },
+      "updateSuccess": "Perfil actualizado correctamente",
+      "updateError": "Error al actualizar el perfil"
     },
     "notifications": {
       "title": "Notificaciones",
@@ -779,7 +791,13 @@
       "processing": "Procesando",
       "shipped": "Enviado",
       "delivered": "Entregado",
+<<<<<<< HEAD
       "cancelled": "Cancelado"
+=======
+      "cancelled": "Cancelado",
+      "return_processing": "Procesando Devolución",
+      "returned": "Devuelto"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No se encontraron pedidos"

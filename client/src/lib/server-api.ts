@@ -119,6 +119,65 @@ export async function fetchStoresServer(params?: {
 }
 
 /**
+ * Server-side function to fetch a product by ID
+ */
+export async function fetchProductByIdServer(
+  id: string
+): Promise<ApiResponse<{
+  id: string;
+  storeId: string;
+  name: string;
+  description?: string;
+  price: number;
+  imageUrl?: string;
+  imageUrls?: string[];
+  stockQuantity: number;
+  category?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}>> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const url = `${baseUrl}/api/products/${id}`;
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      next: { revalidate: 60 }, // Revalidate every 60 seconds
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Product not found: ${id}`);
+      }
+      throw new Error(`Failed to fetch product: ${response.statusText}`);
+    }
+
+    const data: ApiResponse<{
+      id: string;
+      storeId: string;
+      name: string;
+      description?: string;
+      price: number;
+      imageUrl?: string;
+      imageUrls?: string[];
+      stockQuantity: number;
+      category?: string;
+      isActive: boolean;
+      createdAt: string;
+      updatedAt: string;
+    }> = await response.json();
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching product on server:", error);
+    throw error;
+  }
+}
+
+/**
  * Server-side function to fetch a single store by ID
  */
 export async function fetchStoreByIdServer(
@@ -511,5 +570,54 @@ export async function fetchUserServer(
   } catch (error) {
     console.error("Error fetching user on server:", error);
     throw error;
+  }
+}
+
+// Category type
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  parentId?: string;
+  level: number;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  children?: Category[];
+}
+
+/**
+ * Server-side function to fetch level 1 categories for navigation
+ * This runs on the server and can be cached for better performance
+ */
+export async function fetchCategoriesServer(): Promise<ApiResponse<Category[]>> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const url = `${baseUrl}/api/categories?level=1`;
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      // Cache categories for 5 minutes since they don't change frequently
+      next: { revalidate: 300 },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch categories: ${response.statusText}`);
+    }
+
+    const data: ApiResponse<Category[]> = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching categories on server:", error);
+    // Return empty array on error to prevent page crashes
+    return {
+      success: false,
+      data: [],
+      message: error instanceof Error ? error.message : "Failed to fetch categories",
+    };
   }
 }

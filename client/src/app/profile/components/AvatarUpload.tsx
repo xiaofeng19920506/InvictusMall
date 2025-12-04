@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { getAvatarUrl } from "@/utils/imageUtils";
 import { uploadAvatarAction } from "../actions";
+import styles from "./AvatarUpload.module.scss";
 
 interface AvatarUploadProps {
   currentAvatar?: string | null;
@@ -31,34 +32,34 @@ export default function AvatarUpload({
   const initials = buildInitials(firstName, lastName, email);
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="relative">
-        <div className="relative w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center border-4 border-white shadow-lg">
+    <div className={styles.container}>
+      <div className={styles.avatarWrapper}>
+        <div className={styles.avatar}>
           {avatarUrl ? (
             <Image
               src={avatarUrl}
               alt={`${firstName ?? "User"} ${lastName ?? ""}`.trim()}
               fill
               sizes="128px"
-              className="object-cover"
+              className={styles.avatarImage}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 text-white text-3xl font-bold">
+            <div className={styles.avatarPlaceholder}>
               {initials}
             </div>
           )}
         </div>
-          </div>
+      </div>
 
       <form
         action={uploadAvatarAction}
-        className="flex w-full max-w-xs flex-col items-center gap-3"
+        className={styles.form}
       >
         <label
           htmlFor="avatar"
-          className="w-full cursor-pointer text-sm font-medium text-gray-700"
+          className={styles.fileLabel}
         >
-          <span className="block text-center rounded-md border border-dashed border-gray-300 px-4 py-2 hover:border-orange-400 hover:text-orange-600 transition-colors">
+          <span className={styles.fileInputWrapper}>
             Choose Image
           </span>
           <input
@@ -67,18 +68,18 @@ export default function AvatarUpload({
             type="file"
             accept="image/*"
             required
-            className="sr-only"
+            className={styles.fileInput}
           />
         </label>
         <button
           type="submit"
-          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors cursor-pointer"
+          className={styles.uploadButton}
         >
           Upload Avatar
         </button>
       </form>
 
-      <p className="text-xs text-gray-500 text-center">
+      <p className={styles.helpText}>
         Supported formats: JPG, PNG. Maximum size 5MB.
       </p>
     </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+<<<<<<< HEAD
 
 export default function Footer() {
   return (
@@ -10,24 +11,50 @@ export default function Footer() {
             <Link
               href="/about"
               className="text-gray-300 hover:text-white transition-colors"
+=======
+import styles from "./Footer.module.scss";
+
+export default function Footer() {
+  return (
+    <footer className={styles.footer}>
+      <div className={styles.footerContent}>
+        <div className={styles.footerInner}>
+          <p className={styles.copyright}>&copy; 2024 Invictus Mall. All rights reserved.</p>
+          <div className={styles.links}>
+            <Link
+              href="/about"
+              className={styles.link}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             >
               About
             </Link>
             <Link
               href="/contact"
+<<<<<<< HEAD
               className="text-gray-300 hover:text-white transition-colors"
+=======
+              className={styles.link}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             >
               Contact
             </Link>
             <Link
               href="/privacy"
+<<<<<<< HEAD
               className="text-gray-300 hover:text-white transition-colors"
+=======
+              className={styles.link}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             >
               Privacy
             </Link>
             <Link
               href="/terms"
+<<<<<<< HEAD
               className="text-gray-300 hover:text-white transition-colors"
+=======
+              className={styles.link}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             >
               Terms
             </Link>

@@ -118,10 +118,17 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
+<<<<<<< HEAD
       "owner": "Store Owner",
       "selectOwner": "-- Select owner --",
       "loadingOwners": "Loading owners...",
       "noOwnersAvailable": "No owners available. Please create an owner account first."
+=======
+      "owner": "مالك المتجر/المسؤول",
+      "selectOwner": "-- اختر المالك/المسؤول --",
+      "loadingOwners": "جارٍ تحميل المالكين/المسؤولين...",
+      "noOwnersAvailable": "لا يوجد مالكون أو مسؤولون متاحون. يرجى إنشاء حساب مالك أو مسؤول أولاً."
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "invalidImageType": "Please select an image file.",
@@ -284,12 +291,29 @@
       "error": "Failed to save settings."
     },
     "profile": {
+<<<<<<< HEAD
       "title": "Profile Information",
       "firstName": "First Name",
       "lastName": "Last Name",
       "email": "Email",
       "role": "Role",
       "note": "Profile information can be updated through your account settings."
+=======
+      "title": "معلومات الملف الشخصي",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "phoneNumber": "رقم الهاتف",
+      "email": "البريد الإلكتروني",
+      "role": "الدور",
+      "note": "يمكن تحديث معلومات الملف الشخصي من خلال إعدادات حسابك.",
+      "actions": {
+        "save": "حفظ",
+        "saving": "جاري الحفظ...",
+        "cancel": "إلغاء"
+      },
+      "updateSuccess": "تم تحديث الملف الشخصي بنجاح",
+      "updateError": "فشل تحديث الملف الشخصي"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "notifications": {
       "title": "Notifications",
@@ -815,7 +839,13 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
+<<<<<<< HEAD
       "cancelled": "Cancelled"
+=======
+      "cancelled": "Cancelled",
+      "return_processing": "معالجة الإرجاع",
+      "returned": "تم الإرجاع"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No orders found"

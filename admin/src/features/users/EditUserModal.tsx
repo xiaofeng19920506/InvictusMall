@@ -2,7 +2,12 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNotification } from "../../contexts/NotificationContext";
+<<<<<<< HEAD
 import { staffApi, type Staff, type UpdateStaffRequest } from "../../services/api";
+=======
+import { useUpdateStaffMutation } from "../../store/api/staffApi";
+import type { Staff, UpdateStaffRequest } from "../../services/api";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import { useAuth } from "../../contexts/AuthContext";
 import styles from "./EditUserModal.module.css";
 
@@ -16,6 +21,10 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
   const { t } = useTranslation();
   const { showError, showSuccess } = useNotification();
   const { user: currentUser } = useAuth();
+<<<<<<< HEAD
+=======
+  const [updateStaff, { isLoading: isUpdating }] = useUpdateStaffMutation();
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   const [formData, setFormData] = useState<UpdateStaffRequest>({
     firstName: "",
     lastName: "",
@@ -91,6 +100,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
         return;
       }
 
+<<<<<<< HEAD
       const response = await staffApi.updateStaff(user.id, updateData);
       if (response.success) {
         showSuccess(t("users.edit.success") || "User updated successfully");
@@ -103,6 +113,17 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ user, onClose, onSave }) 
       console.error("Error updating user:", error);
       showError(
         error.response?.data?.message ||
+=======
+      await updateStaff({ id: user.id, data: updateData }).unwrap();
+      showSuccess(t("users.edit.success") || "User updated successfully");
+      onSave();
+      onClose();
+    } catch (error: any) {
+      console.error("Error updating user:", error);
+      showError(
+        error?.data?.message ||
+          error?.message ||
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
           t("users.edit.error") ||
           "Failed to update user"
       );

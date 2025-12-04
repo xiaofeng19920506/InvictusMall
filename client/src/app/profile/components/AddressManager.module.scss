@@ -1,0 +1,41 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.section {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+  padding: 2rem;
+  width: 100%;
+  min-height: 100%;
+  
+  @include respond-to('sm') {
+    padding: 2.5rem;
+  }
+  
+  @include respond-to('lg') {
+    padding: 3rem;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid color('gray-100');
+  padding-bottom: 1.5rem; // pb-6
+  margin-bottom: 1.5rem; // mb-6
+}
+
+.title {
+  font-size: font-size('2xl');
+  font-weight: font-weight('bold');
+  color: color('gray-900');
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; // space-y-4
+}
+

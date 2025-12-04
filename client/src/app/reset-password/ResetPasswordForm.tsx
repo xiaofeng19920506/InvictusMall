@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { resetPasswordAction } from './actions';
+import styles from './ResetPasswordForm.module.scss';
 
 interface ResetPasswordFormProps {
   token?: string | null;
@@ -61,30 +62,30 @@ export default function ResetPasswordForm({ token }: ResetPasswordFormProps) {
 
   if (success) {
     return (
-      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-        <div className="text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-            <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className={styles.formCard}>
+        <div className={styles.successCard}>
+          <div className={styles.successIcon}>
+            <svg className={styles.successIconSvg} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Password Reset Successful</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className={styles.successTitle}>Password Reset Successful</h2>
+          <p className={styles.successMessage}>
             Your password has been successfully reset. You will be redirected to the home page shortly.
           </p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+          <div className={styles.redirectSpinner}></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Reset Your Password</h2>
+    <div className={styles.formCard}>
+      <h2 className={styles.formTitle}>Reset Your Password</h2>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.formField}>
+          <label htmlFor="password" className={styles.formLabel}>
             New Password
           </label>
           <input
@@ -93,14 +94,14 @@ export default function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className={styles.formInput}
             placeholder="Enter your new password"
             minLength={6}
           />
         </div>
 
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+        <div className={styles.formField}>
+          <label htmlFor="confirmPassword" className={styles.formLabel}>
             Confirm New Password
           </label>
           <input
@@ -109,14 +110,14 @@ export default function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className={styles.formInput}
             placeholder="Confirm your new password"
             minLength={6}
           />
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          <div className={styles.errorMessage}>
             {error}
           </div>
         )}
@@ -124,19 +125,19 @@ export default function ResetPasswordForm({ token }: ResetPasswordFormProps) {
         <button
           type="submit"
           disabled={isLoading || !token}
-          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className={styles.submitButton}
         >
           {isLoading ? 'Resetting Password...' : 'Reset Password'}
         </button>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
+      <div className={styles.loginLink}>
+        <p className={styles.loginText}>
           Remember your password?{' '}
           <button
             type="button"
             onClick={() => router.push('/')}
-            className="text-orange-500 hover:text-orange-600 font-medium"
+            className={styles.loginLinkText}
           >
             Sign in
           </button>

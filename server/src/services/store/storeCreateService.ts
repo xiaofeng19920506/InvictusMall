@@ -13,13 +13,30 @@ export async function handleCreateStore(
   storeService: StoreService
 ): Promise<void> {
   try {
-    // Only admins can create stores
-    if (!req.user || req.user.role !== "admin") {
+    // Only admins can create stores (manager cannot)
+    if (!req.staff) {
+      ApiResponseHelper.unauthorized(res, "Authentication required");
+      return;
+    }
+
+    if (req.staff.role !== "admin") {
       ApiResponseHelper.forbidden(res, "Only administrators can create stores");
       return;
     }
 
     const { ownerId, ...storeData } = req.body;
+
+    // Validate category is provided and not empty
+    if (!storeData.category || !Array.isArray(storeData.category) || storeData.category.length === 0) {
+      ApiResponseHelper.validationError(res, "At least one category is required");
+      return;
+    }
+
+    // Validate that all categories are non-empty strings
+    if (storeData.category.some((cat: any) => !cat || typeof cat !== 'string' || cat.trim().length === 0)) {
+      ApiResponseHelper.validationError(res, "All categories must be non-empty strings");
+      return;
+    }
 
     // Validate owner exists and has the 'owner' role before creating store
     const staffModel = new StaffModel();
@@ -30,8 +47,8 @@ export async function handleCreateStore(
       return;
     }
 
-    if (owner.role !== "owner") {
-      ApiResponseHelper.validationError(res, "Selected staff member must have the 'owner' role");
+    if (owner.role !== "owner" && owner.role !== "admin") {
+      ApiResponseHelper.validationError(res, "Selected staff member must have the 'owner' or 'admin' role");
       return;
     }
 

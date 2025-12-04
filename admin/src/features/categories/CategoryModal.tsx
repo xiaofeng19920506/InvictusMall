@@ -52,10 +52,17 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   const loadParentCategories = async () => {
     setLoadingParentCategories(true);
     try {
+<<<<<<< HEAD
       // Get categories that can be parents (level 1 or 2, and not the current category or its descendants)
       let availableParents = allCategories.filter((cat) => {
         if (!cat.isActive) return false;
         if (cat.level >= 3) return false; // Level 3 can't have children (max 3 levels)
+=======
+      // Get categories that can be parents (level 1, 2, or 3, and not the current category or its descendants)
+      let availableParents = allCategories.filter((cat) => {
+        if (!cat.isActive) return false;
+        if (cat.level >= 4) return false; // Level 4 can't have children (max 4 levels)
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         if (isEditing && category) {
           if (cat.id === category.id) return false; // Can't be its own parent
           // Check if cat is a descendant of the current category
@@ -204,7 +211,11 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
   };
 
   const maxLevel = getMaxLevel();
+<<<<<<< HEAD
   const canHaveChildren = maxLevel < 3;
+=======
+  const canHaveChildren = maxLevel < 4;
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   return (
     <div className={styles.backdropContainer}>
@@ -306,7 +317,11 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
                 {!canHaveChildren && formData.parentId && (
                   <span className={styles.warning}>
                     {" "}
+<<<<<<< HEAD
                     ({t("categoryModal.warning.maxLevel") || "Maximum level (3) reached - cannot have children"})
+=======
+                    ({t("categoryModal.warning.maxLevel") || "Maximum level (4) reached - cannot have children"})
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                   </span>
                 )}
               </small>

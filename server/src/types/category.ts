@@ -4,7 +4,7 @@ export interface Category {
   slug: string;
   description?: string;
   parentId?: string;
-  level: number; // 1, 2, or 3
+  level: number; // 1, 2, 3, or 4
   displayOrder: number;
   isActive: boolean;
   createdAt: string;

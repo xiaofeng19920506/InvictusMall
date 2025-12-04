@@ -5,6 +5,17 @@ import {
   ShippingAddress,
 } from "@/lib/server-api";
 import { createStripeCheckoutSessionAction } from "./actions";
+import type { Metadata } from "next";
+import styles from "./page.module.scss";
+
+export const metadata: Metadata = {
+  title: "Shopping Cart - Invictus Mall",
+  description: "Review your shopping cart and proceed to checkout at Invictus Mall.",
+  robots: {
+    index: false, // Cart page should not be indexed
+    follow: false,
+  },
+};
 
 export default async function CartPage() {
   const cookieStore = await cookies();
@@ -33,7 +44,7 @@ export default async function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={styles.pageContainer}>
       <CartContent
         addresses={addresses}
         defaultAddressId={addresses.find((address) => address.isDefault)?.id}

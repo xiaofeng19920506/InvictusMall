@@ -25,10 +25,19 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     if (response.success && response.data) {
       initialOrder = response.data;
     } else {
+      console.error('Order fetch failed:', response);
       notFound();
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to fetch order on server:', error);
+    // If it's an authentication error, redirect to login
+    if (error?.message?.includes('Authentication')) {
+      throw error; // Let Next.js handle redirect
+    }
+    notFound();
+  }
+
+  if (!initialOrder) {
     notFound();
   }
 

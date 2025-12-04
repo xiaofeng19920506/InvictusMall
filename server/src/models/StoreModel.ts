@@ -60,13 +60,24 @@ export class StoreModel {
   }
 
   // Get all stores with pagination
-  static async findAllWithPagination(options?: { limit?: number; offset?: number }): Promise<{ stores: Store[]; total: number }> {
+  static async findAllWithPagination(options?: { limit?: number; offset?: number; storeIds?: string[] }): Promise<{ stores: Store[]; total: number }> {
     let connection;
     try {
       connection = await pool.getConnection();
       
+      // Build WHERE clause for store filtering
+      let whereClause = '';
+      const queryParams: any[] = [];
+      
+      if (options?.storeIds && options.storeIds.length > 0) {
+        const placeholders = options.storeIds.map(() => '?').join(',');
+        whereClause = `WHERE s.id IN (${placeholders})`;
+        queryParams.push(...options.storeIds);
+      }
+      
       // Get total count
-      const [countResult] = await connection.execute(`SELECT COUNT(*) as total FROM stores`);
+      const countQuery = `SELECT COUNT(*) as total FROM stores s ${whereClause}`;
+      const [countResult] = await connection.execute(countQuery, queryParams);
       const total = (countResult as any[])[0]?.total || 0;
 
       let query = `
@@ -89,6 +100,7 @@ export class StoreModel {
         FROM stores s
         LEFT JOIN store_categories sc ON s.id COLLATE utf8mb4_unicode_ci = sc.store_id COLLATE utf8mb4_unicode_ci
         LEFT JOIN store_locations sl ON s.id COLLATE utf8mb4_unicode_ci = sl.store_id COLLATE utf8mb4_unicode_ci
+        ${whereClause}
         GROUP BY s.id
         ORDER BY s.created_at DESC
       `;
@@ -103,7 +115,7 @@ export class StoreModel {
         }
       }
 
-      const [stores] = await connection.execute(query);
+      const [stores] = await connection.execute(query, queryParams);
 
       const storesArray = stores as any[];
       if (!storesArray || storesArray.length === 0) {

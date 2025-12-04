@@ -1,0 +1,80 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.footer {
+  background-color: color('gray-900');
+  color: color('white');
+  padding-top: spacing(8); // py-8 = 2rem = 32px
+  padding-bottom: spacing(8);
+  margin-top: auto;
+}
+
+.footerContent {
+  max-width: 100%; // Full width like Amazon, match HomeContent
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 0.75rem; // Match HomeContent padding
+  padding-right: 0.75rem;
+  
+  @include respond-to('sm') {
+    padding-left: 1rem; // Match HomeContent padding
+    padding-right: 1rem;
+  }
+  
+  @include respond-to('lg') {
+    padding-left: 1.5rem; // Match HomeContent padding
+    padding-right: 1.5rem;
+  }
+  
+  @include respond-to('xl') {
+    padding-left: 2rem; // Match HomeContent padding
+    padding-right: 2rem;
+  }
+}
+
+.footerInner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  
+  @include respond-to('md') {
+    flex-direction: row;
+  }
+}
+
+.copyright {
+  margin: 0;
+  color: color('white');
+}
+
+.links {
+  display: flex;
+  gap: 1.5rem; // Base gap between links - 24px
+  margin-top: spacing(4); // mt-4
+  
+  @include respond-to('sm') {
+    gap: 2rem; // Increased gap on larger screens - 32px
+  }
+  
+  @include respond-to('md') {
+    margin-top: 0;
+    gap: 2.5rem; // Even larger gap on medium screens - 40px
+  }
+  
+  @include respond-to('lg') {
+    gap: 3rem; // Maximum gap on large screens - 48px
+  }
+}
+
+.link {
+  color: color('gray-300');
+  transition: color 0.2s;
+  text-decoration: none;
+  font-size: font-size('base'); // Increased font size (1rem = 16px)
+  
+  &:hover {
+    color: color('white');
+  }
+}
+

@@ -8,21 +8,33 @@
   width: 260px;
   background-color: var(--bg-primary);
   border-right: 1px solid var(--border-color);
-  padding: 24px 24px 32px;
+  padding: 0;
   position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
-  overflow-y: auto;
+  height: 100vh;
+  overflow: hidden;
   transition: transform 0.3s ease;
   z-index: 200;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    width: 100%;
+    max-width: 280px;
+    padding: 20px 16px 24px;
+  }
 }
 
 .sidebarContent {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
-  gap: 24px;
+  height: 100%;
+  overflow: hidden;
+  padding: 24px;
 }
 
 .sidebarClosed {
@@ -48,6 +60,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 32px;
+  flex-shrink: 0;
 }
 
 .brand {
@@ -78,6 +91,15 @@
   }
 }
 
+.navContainer {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  margin: 0 -24px;
+  padding: 0 24px;
+}
+
 .navList {
   list-style: none;
   margin: 0;
@@ -85,14 +107,15 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1;
 }
 
 .navItem {
   width: 100%;
 }
 
-.navButton {
+.navButton,
+.navButton:link,
+.navButton:visited {
   width: 100%;
   display: flex;
   align-items: center;
@@ -105,16 +128,25 @@
   color: var(--text-secondary);
   font-size: 0.95rem;
   transition: background-color 0.2s ease, color 0.2s ease;
+  text-align: left;
+  justify-content: flex-start;
+  white-space: nowrap;
+  text-decoration: none;
 }
 
 .navButton svg {
   width: 20px;
   height: 20px;
+  flex-shrink: 0;
 }
 
 .navButton:hover {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
+  background-color: var(--primary-color);
+  color: #000000;
+}
+
+:root.dark .navButton:hover {
+  color: #ffffff;
 }
 
 .navButtonActive {
@@ -125,12 +157,16 @@
 .content {
   flex: 1;
   margin-left: 260px;
-  padding: 32px;
+  padding: 0 32px;
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+<<<<<<< HEAD
   overflow: hidden;
+=======
+  overflow-x: hidden;
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 }
 
 .content > main {
@@ -138,20 +174,31 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+<<<<<<< HEAD
   overflow: hidden;
+=======
+  overflow-y: auto;
+  overflow-x: hidden;
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 }
 
 @media (max-width: 960px) {
   .content {
     margin-left: 0;
-    padding: 24px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding: 12px;
   }
 }
 
 .header {
   background-color: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
-  margin: -32px -32px 32px -32px;
+  margin: -32px -32px 40px -32px;
   padding: 20px 32px;
   box-shadow: var(--shadow-sm);
   display: flex;
@@ -160,14 +207,30 @@
   gap: 16px;
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
+  width: calc(100% + 64px);
 }
 
 @media (max-width: 960px) {
   .header {
-    margin: -24px -24px 24px -24px;
-    padding: 20px 24px;
-    position: static;
+    margin: -16px -16px 16px -16px;
+    padding: 16px 24px;
+    position: sticky;
+    width: calc(100% + 32px);
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    margin: -12px -12px 16px -12px;
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    position: sticky;
+    width: calc(100% + 24px);
+  }
+
+  .title {
+    font-size: 1.25rem;
   }
 }
 
@@ -205,6 +268,18 @@
   color: var(--text-primary);
 }
 
+@media (max-width: 768px) {
+  .title {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .title {
+    font-size: 1.1rem;
+  }
+}
+
 .headerRight {
   display: flex;
   align-items: center;
@@ -234,6 +309,7 @@
   justify-content: space-between;
   gap: 12px;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .sidebarUser {
@@ -347,6 +423,39 @@
   width: 100%;
   flex: 1;
   justify-content: space-between;
+}
+
+.sidebarActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settingsButton {
+  width: auto;
+  padding: 8px;
+  min-width: auto;
+  border: none;
+  background: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.settingsButton:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.settingsButton.navButtonActive {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.settingsButton.navButtonActive:hover {
+  background-color: var(--primary-hover);
+  color: #ffffff;
 }
 
 .languageSelect {

@@ -115,6 +115,7 @@ export class ShippingAddressModel {
 
   /**
    * Get all shipping addresses for a user
+   * Returns addresses in creation order (oldest first)
    */
   async getAddressesByUserId(userId: string): Promise<ShippingAddress[]> {
     const query = `
@@ -124,7 +125,7 @@ export class ShippingAddressModel {
         is_default, created_at, updated_at
       FROM shipping_addresses
       WHERE user_id = ?
-      ORDER BY is_default DESC, created_at DESC
+      ORDER BY created_at ASC
     `;
 
     const [rows] = await this.pool.execute(query, [userId]);

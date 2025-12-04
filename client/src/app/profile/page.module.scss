@@ -1,0 +1,55 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.pageContainer {
+  flex: 1; // Take available space in flex layout
+  min-height: 0; // Important for flex child
+  background-color: color('gray-50');
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; // Prevent container from scrolling
+}
+
+.layout {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden; // Prevent layout from scrolling
+  min-height: 0; // Important for flex child
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto; // Allow content to scroll
+  overflow-x: hidden;
+  
+  // Custom scrollbar styling
+  scrollbar-width: thin;
+  scrollbar-color: color('gray-400') color('gray-100');
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: color('gray-100');
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: color('gray-400');
+    border-radius: 4px;
+    
+    &:hover {
+      background: color('gray-500');
+    }
+  }
+}
+
+.sidebarSkeleton {
+  width: 16rem;
+  flex-shrink: 0;
+  background-color: color('white');
+  border-right: 1px solid color('gray-200');
+  height: 100%;
+}
+

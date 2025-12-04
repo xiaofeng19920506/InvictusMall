@@ -118,10 +118,17 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
+<<<<<<< HEAD
       "owner": "Store Owner",
       "selectOwner": "-- Select owner --",
       "loadingOwners": "Loading owners...",
       "noOwnersAvailable": "No owners available. Please create an owner account first."
+=======
+      "owner": "Proprietario/Amministratore",
+      "selectOwner": "-- Seleziona proprietario/amministratore --",
+      "loadingOwners": "Caricamento proprietari/amministratori...",
+      "noOwnersAvailable": "Nessun proprietario o amministratore disponibile. Si prega di creare prima un account proprietario o amministratore."
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "invalidImageType": "Please select an image file.",
@@ -284,12 +291,29 @@
       "error": "Failed to save settings."
     },
     "profile": {
+<<<<<<< HEAD
       "title": "Profile Information",
       "firstName": "First Name",
       "lastName": "Last Name",
       "email": "Email",
       "role": "Role",
       "note": "Profile information can be updated through your account settings."
+=======
+      "title": "Informazioni Profilo",
+      "firstName": "Nome",
+      "lastName": "Cognome",
+      "phoneNumber": "Numero di Telefono",
+      "email": "Email",
+      "role": "Ruolo",
+      "note": "Le informazioni del profilo possono essere aggiornate tramite le impostazioni dell'account.",
+      "actions": {
+        "save": "Salva",
+        "saving": "Salvataggio...",
+        "cancel": "Annulla"
+      },
+      "updateSuccess": "Profilo aggiornato con successo",
+      "updateError": "Impossibile aggiornare il profilo"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "notifications": {
       "title": "Notifications",
@@ -815,7 +839,13 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
+<<<<<<< HEAD
       "cancelled": "Cancelled"
+=======
+      "cancelled": "Cancelled",
+      "return_processing": "Elaborazione Reso",
+      "returned": "Reso"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No orders found"

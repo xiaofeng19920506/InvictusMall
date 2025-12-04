@@ -155,7 +155,7 @@ class AuthService {
         throw new Error(`Expected JSON but received ${contentType}`);
       }
 
-      const data: AuthResponse = await response.json();
+      const responseData: any = await response.json();
 
       // For login, we want to return the response even if status is 401 (invalid credentials)
       // This allows the UI to show the error message to the user
@@ -163,12 +163,21 @@ class AuthService {
         // Return the error response from server
         return {
           success: false,
-          message: data.message || "Login failed",
+          message: responseData.message || "Login failed",
         };
       }
 
+      // Server returns { success: true, data: user, message: "..." }
+      // But client expects { success: true, user: user, message: "..." }
+      // Convert data to user field
+      const authResponse: AuthResponse = {
+        success: responseData.success,
+        user: responseData.data || responseData.user,
+        message: responseData.message,
+      };
+
       // Token is now stored in HTTP-only cookie, no need to save it
-      return data;
+      return authResponse;
     } catch (error: any) {
       // If it's a network error or parsing error, throw it
       if (error.message && !error.message.includes("JSON")) {
@@ -200,17 +209,36 @@ class AuthService {
 
   async getCurrentUser(): Promise<AuthResponse> {
     try {
-      return await this.request<AuthResponse>("/api/auth/me", {
+      const responseData: any = await this.request<any>("/api/auth/me", {
         method: "GET",
       });
+      
+      // Server returns { success: true, user: user } or { success: true, data: user }
+      // Convert to consistent format
+      const authResponse: AuthResponse = {
+        success: responseData.success,
+        user: responseData.user || responseData.data,
+        message: responseData.message,
+      };
+      
+      return authResponse;
     } catch (error: any) {
       if (error?.isAuthError || error?.status === 401) {
         try {
           const refreshResult = await this.refreshToken();
           if (refreshResult.success) {
-            return await this.request<AuthResponse>("/api/auth/me", {
+            const responseData: any = await this.request<any>("/api/auth/me", {
               method: "GET",
             });
+            
+            // Convert to consistent format
+            const authResponse: AuthResponse = {
+              success: responseData.success,
+              user: responseData.user || responseData.data,
+              message: responseData.message,
+            };
+            
+            return authResponse;
           }
         } catch (refreshError) {
           throw refreshError;
@@ -241,10 +269,18 @@ class AuthService {
   }
 
   async updateProfile(data: UpdateUserRequest): Promise<AuthResponse> {
-    return this.request<AuthResponse>("/api/auth/profile", {
+    const responseData: any = await this.request<any>("/api/auth/profile", {
       method: "PUT",
       body: JSON.stringify(data),
     });
+    
+    // Server returns { success: true, data: user, message: "..." }
+    // Convert to consistent format
+    return {
+      success: responseData.success,
+      user: responseData.data || responseData.user,
+      message: responseData.message,
+    };
   }
 
   async uploadAvatar(file: File): Promise<AuthResponse> {
@@ -269,8 +305,15 @@ class AuthService {
         );
       }
 
-      const data: AuthResponse = await response.json();
-      return data;
+      const responseData: any = await response.json();
+      
+      // Server returns { success: true, data: user, message: "..." }
+      // Convert to consistent format
+      return {
+        success: responseData.success,
+        user: responseData.data || responseData.user,
+        message: responseData.message,
+      };
     } catch (error) {
       console.error("Avatar upload failed:", error);
       throw error;

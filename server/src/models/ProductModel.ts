@@ -1,19 +1,50 @@
 import { pool } from '../config/database';
-import { Product, CreateProductRequest, UpdateProductRequest } from '../types/product';
+import { Product, CreateProductRequest, UpdateProductRequest, StoreProductInventory } from '../types/product';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger';
+import { ProductSerialNumberModel } from './ProductSerialNumberModel';
+import { StoreProductInventoryModel } from './StoreProductInventoryModel';
 
 export class ProductModel {
   // Map database row to Product object
   private static mapRowToProduct(row: any): Product {
+    // Parse image_urls JSON if it exists, otherwise fall back to image_url
+    let imageUrls: string[] | undefined;
+    let imageUrl: string | undefined;
+    
+    if (row.image_urls) {
+      try {
+        // If it's already an array (from JSON column), use it directly
+        if (Array.isArray(row.image_urls)) {
+          imageUrls = row.image_urls;
+        } else if (typeof row.image_urls === 'string') {
+          // If it's a JSON string, parse it
+          imageUrls = JSON.parse(row.image_urls);
+        }
+        // Set imageUrl to first image for backward compatibility
+        imageUrl = imageUrls && imageUrls.length > 0 ? imageUrls[0] : undefined;
+      } catch (e) {
+        // If parsing fails, fall back to image_url
+        imageUrl = row.image_url || undefined;
+      }
+    } else if (row.image_url) {
+      // Legacy: single image_url
+      imageUrl = row.image_url;
+      imageUrls = [row.image_url];
+    }
+
     return {
       id: row.id,
       storeId: row.store_id,
       name: row.name,
       description: row.description || undefined,
       price: parseFloat(row.price),
-      imageUrl: row.image_url || undefined,
+      imageUrl, // For backward compatibility
+      imageUrls, // New multi-image support
       stockQuantity: parseInt(row.stock_quantity, 10),
       category: row.category || undefined,
+      barcode: row.barcode || undefined,
+      serialNumber: row.serial_number || undefined,
       isActive: Boolean(row.is_active),
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
@@ -112,10 +143,54 @@ export class ProductModel {
     }
   }
 
+  /**
+   * Load serial numbers and store inventories for a product
+   */
+  private static async enrichProductWithDetails(product: Product): Promise<Product> {
+    try {
+      const serialNumberModel = new ProductSerialNumberModel();
+      const inventoryModel = new StoreProductInventoryModel();
+
+      // Load serial numbers for the product's store
+      const serialNumbers = await serialNumberModel.getSerialNumbersByProductAndStore(
+        product.id,
+        product.storeId
+      );
+      product.serialNumbers = serialNumbers.map(sn => sn.serialNumber);
+
+      // Load all store inventories for this product
+      const storeInventories = await inventoryModel.getInventoryByProduct(product.id);
+      product.storeInventories = await Promise.all(
+        storeInventories.map(async (inventory) => {
+          // Load serial numbers for each store
+          const storeSerialNumbers = await serialNumberModel.getSerialNumbersByProductAndStore(
+            product.id,
+            inventory.storeId
+          );
+          return {
+            storeId: inventory.storeId,
+            quantity: inventory.quantity,
+            serialNumbers: storeSerialNumbers.map(sn => sn.serialNumber),
+          } as StoreProductInventory;
+        })
+      );
+
+      return product;
+    } catch (error: any) {
+      logger.error('[ProductModel] Error enriching product with details', {
+        productId: product.id,
+        error: error.message,
+      });
+      // Return product without enrichment if there's an error
+      return product;
+    }
+  }
+
   // Get product by ID
-  static async findById(id: string): Promise<Product | null> {
+  static async findById(id: string, includeDetails: boolean = false): Promise<Product | null> {
     let connection;
     try {
+      logger.debug('[ProductModel] Finding product by ID', { productId: id, includeDetails });
       connection = await pool.getConnection();
       const [rows] = await connection.execute(
         `SELECT * FROM products WHERE id = ?`,
@@ -124,12 +199,98 @@ export class ProductModel {
       
       const products = rows as any[];
       if (!products || products.length === 0) {
+        logger.debug('[ProductModel] Product not found', { productId: id });
         return null;
       }
       
+      let product = this.mapRowToProduct(products[0]);
+      logger.debug('[ProductModel] Product found', {
+        productId: product.id,
+        name: product.name,
+        stockQuantity: product.stockQuantity,
+        rawStockQuantity: products[0].stock_quantity,
+        storeId: product.storeId,
+      });
+
+      // Optionally enrich with serial numbers and store inventories
+      if (includeDetails) {
+        product = await this.enrichProductWithDetails(product);
+      }
+
+      return product;
+    } catch (error: any) {
+      logger.error('[ProductModel] Database error in findById', {
+        productId: id,
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
+
+  // Search products by name or description
+  static async search(query: string, options?: { limit?: number }): Promise<Product[]> {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      const searchTerm = `%${query}%`;
+      const limit = options?.limit || 100;
+      
+      const [rows] = await connection.execute(
+        `SELECT DISTINCT p.* FROM products p
+         WHERE (p.name LIKE ? OR p.description LIKE ?)
+         AND p.is_active = TRUE
+         ORDER BY p.name ASC
+         LIMIT ?`,
+        [searchTerm, searchTerm, limit]
+      );
+      
+      const products = rows as any[];
+      if (!products || products.length === 0) {
+        return [];
+      }
+      
+      return products.map(this.mapRowToProduct);
+    } catch (error: any) {
+      console.error('Database error in search:', error);
+      throw error;
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
+
+  // Get product by barcode
+  static async findByBarcode(barcode: string): Promise<Product | null> {
+    let connection;
+    try {
+      console.log(`[ProductModel] 🔍 Searching for product with barcode: ${barcode}`);
+      connection = await pool.getConnection();
+      const [rows] = await connection.execute(
+        `SELECT * FROM products WHERE barcode = ? AND is_active = TRUE LIMIT 1`,
+        [barcode]
+      );
+      
+      const products = rows as any[];
+      if (!products || products.length === 0) {
+        console.log(`[ProductModel] ❌ No product found with barcode: ${barcode}`);
+        return null;
+      }
+      
+      console.log(`[ProductModel] ✅ Product found: ${products[0].name} (ID: ${products[0].id})`);
       return this.mapRowToProduct(products[0]);
     } catch (error: any) {
-      console.error('Database error in findById:', error);
+      console.error('[ProductModel] Database error in findByBarcode:', error);
+      console.error('[ProductModel] Error details:', {
+        message: error.message,
+        code: error.code,
+        sqlState: error.sqlState,
+      });
       throw error;
     } finally {
       if (connection) {
@@ -149,37 +310,169 @@ export class ProductModel {
       const stockQuantity = productData.stockQuantity ?? 0;
       const isActive = productData.isActive ?? true;
 
-      await connection.execute(
+      logger.debug('[ProductModel] Creating product in database', {
+        productId,
+        storeId: productData.storeId,
+        name: productData.name,
+        stockQuantity,
+        barcode: productData.barcode,
+        serialNumber: productData.serialNumber,
+      });
+
+      // Handle imageUrls: prefer imageUrls over imageUrl
+      const imageUrls = productData.imageUrls || (productData.imageUrl ? [productData.imageUrl] : []);
+      const imageUrlsJson = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
+      const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null; // Keep for backward compatibility
+
+      const [insertResult] = await connection.execute(
         `INSERT INTO products (
-          id, store_id, name, description, price, image_url,
-          stock_quantity, category, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          id, store_id, name, description, price, image_url, image_urls,
+          stock_quantity, category, barcode, serial_number, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           productId,
           productData.storeId,
           productData.name,
           productData.description || null,
           productData.price,
-          productData.imageUrl || null,
+          imageUrl, // Backward compatibility
+          imageUrlsJson, // New JSON column
           stockQuantity,
           productData.category || null,
+          productData.barcode || null,
+          productData.serialNumber || null,
           isActive,
           now,
           now,
         ]
       );
 
+      const insertAffectedRows = (insertResult as any).affectedRows;
+      logger.debug('[ProductModel] Product inserted', {
+        productId,
+        affectedRows: insertAffectedRows,
+        insertedStockQuantity: stockQuantity,
+      });
+
       // Update store's products_count
-      await connection.execute(
+      const [updateResult] = await connection.execute(
         `UPDATE stores 
          SET products_count = products_count + 1 
          WHERE id = ?`,
         [productData.storeId]
       );
 
+      const updateAffectedRows = (updateResult as any).affectedRows;
+      logger.debug('[ProductModel] Store products_count updated', {
+        storeId: productData.storeId,
+        affectedRows: updateAffectedRows,
+      });
+
+      // Handle serial numbers if provided
+      if (productData.serialNumbers && productData.serialNumbers.length > 0) {
+        const serialNumberModel = new ProductSerialNumberModel();
+        await serialNumberModel.addSerialNumbers(
+          productData.serialNumbers.map(sn => ({
+            productId,
+            storeId: productData.storeId,
+            serialNumber: sn,
+          }))
+        );
+        logger.debug('[ProductModel] Serial numbers added', {
+          productId,
+          count: productData.serialNumbers.length,
+        });
+      }
+
+      // Handle store inventory if quantity is provided
+      if (stockQuantity > 0) {
+        const inventoryModel = new StoreProductInventoryModel();
+        await inventoryModel.upsertInventory({
+          productId,
+          storeId: productData.storeId,
+          quantity: stockQuantity,
+        });
+        logger.debug('[ProductModel] Store inventory created', {
+          productId,
+          storeId: productData.storeId,
+          quantity: stockQuantity,
+        });
+      }
+
       await connection.commit();
-      return this.findById(productId) as Promise<Product>;
-    } catch (error) {
+      logger.info('[ProductModel] Transaction committed successfully', { productId });
+
+      // Handle serial numbers and inventory after product is created
+      // (These use their own transactions)
+      if (productData.serialNumbers && productData.serialNumbers.length > 0) {
+        try {
+          const serialNumberModel = new ProductSerialNumberModel();
+          await serialNumberModel.addSerialNumbers(
+            productData.serialNumbers.map(sn => ({
+              productId,
+              storeId: productData.storeId,
+              serialNumber: sn,
+            }))
+          );
+          logger.debug('[ProductModel] Serial numbers added', {
+            productId,
+            count: productData.serialNumbers.length,
+          });
+        } catch (error: any) {
+          logger.error('[ProductModel] Error adding serial numbers', {
+            productId,
+            error: error.message,
+          });
+          // Don't fail product creation if serial numbers fail
+        }
+      }
+
+      // Handle store inventory
+      if (stockQuantity > 0) {
+        try {
+          const inventoryModel = new StoreProductInventoryModel();
+          await inventoryModel.upsertInventory({
+            productId,
+            storeId: productData.storeId,
+            quantity: stockQuantity,
+          });
+          logger.debug('[ProductModel] Store inventory created', {
+            productId,
+            storeId: productData.storeId,
+            quantity: stockQuantity,
+          });
+        } catch (error: any) {
+          logger.error('[ProductModel] Error creating store inventory', {
+            productId,
+            error: error.message,
+          });
+          // Don't fail product creation if inventory fails
+        }
+      }
+
+      const createdProduct = await this.findById(productId);
+      if (!createdProduct) {
+        logger.error('[ProductModel] Product not found after creation', { productId });
+        throw new Error(`Failed to retrieve created product with ID: ${productId}`);
+      }
+      
+      logger.info('[ProductModel] Product retrieved after creation', {
+        productId: createdProduct.id,
+        name: createdProduct.name,
+        stockQuantity: createdProduct.stockQuantity,
+      });
+      return createdProduct;
+    } catch (error: any) {
+      logger.error('[ProductModel] Error creating product, rolling back transaction', {
+        error: error.message,
+        stack: error.stack,
+        productData: {
+          storeId: productData.storeId,
+          name: productData.name,
+          stockQuantity: productData.stockQuantity,
+        },
+      });
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       await connection.rollback();
       throw error;
     } finally {
@@ -209,9 +502,23 @@ export class ProductModel {
         updates.push('price = ?');
         params.push(productData.price);
       }
-      if (productData.imageUrl !== undefined) {
+      // Handle imageUrls: prefer imageUrls over imageUrl
+      if (productData.imageUrls !== undefined) {
+        const imageUrls = productData.imageUrls;
+        const imageUrlsJson = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null;
+        const imageUrl = imageUrls.length > 0 ? imageUrls[0] : null;
+        
+        updates.push('image_urls = ?');
+        params.push(imageUrlsJson);
+        updates.push('image_url = ?'); // Keep for backward compatibility
+        params.push(imageUrl);
+      } else if (productData.imageUrl !== undefined) {
+        // Legacy: single imageUrl
+        const imageUrl = productData.imageUrl || null;
         updates.push('image_url = ?');
-        params.push(productData.imageUrl || null);
+        params.push(imageUrl);
+        updates.push('image_urls = ?');
+        params.push(imageUrl ? JSON.stringify([imageUrl]) : null);
       }
       if (productData.stockQuantity !== undefined) {
         updates.push('stock_quantity = ?');
@@ -220,6 +527,14 @@ export class ProductModel {
       if (productData.category !== undefined) {
         updates.push('category = ?');
         params.push(productData.category || null);
+      }
+      if (productData.barcode !== undefined) {
+        updates.push('barcode = ?');
+        params.push(productData.barcode || null);
+      }
+      if (productData.serialNumber !== undefined) {
+        updates.push('serial_number = ?');
+        params.push(productData.serialNumber || null);
       }
       if (productData.isActive !== undefined) {
         updates.push('is_active = ?');

@@ -169,6 +169,72 @@
   border: 1px solid #e5e7eb;
 }
 
+<<<<<<< HEAD
+=======
+.imageGallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.imageItem {
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  aspect-ratio: 1;
+}
+
+.imageItem .imagePreview {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  margin: 0;
+  border: none;
+}
+
+.removeImageButton {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background-color: rgba(239, 68, 68, 0.9);
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  padding: 0.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.removeImageButton:hover {
+  background-color: rgba(220, 38, 38, 1);
+}
+
+.primaryBadge {
+  position: absolute;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  background-color: rgba(34, 197, 94, 0.9);
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+.imageCount {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: normal;
+  margin-left: 0.5rem;
+}
+
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 .actions {
   display: flex;
   justify-content: flex-end;

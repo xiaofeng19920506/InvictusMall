@@ -1,5 +1,30 @@
-import axios from "axios";
+// ============================================
+// API MODULE - Central Export Point
+// ============================================
+// All APIs have been refactored into separate modules in ./api/ directory
+// This file acts as a compatibility layer, re-exporting all APIs from the modular structure
+//
+// Organized by page/feature:
+//   - storeApi.ts - Stores page
+//   - productApi.ts - Products/Inventory pages
+//   - categoryApi.ts - Categories page
+//   - orderApi.ts - Orders page
+//   - refundApi.ts - Orders page
+//   - returnApi.ts - Orders page
+//   - transactionApi.ts - Transactions page
+//   - staffApi.ts - Users page
+//   - activityLogApi.ts - Dashboard/System Logs pages
+//   - healthApi.ts - Dashboard page
+//   - stockOperationApi.ts - Inventory page
+//
+// You can import from this file (backward compatible):
+//   import { productApi, Order } from './services/api';
+//
+// Or directly from modules (recommended):
+//   import { productApi } from './services/api/productApi';
+// ============================================
 
+<<<<<<< HEAD
 // API base URL - pointing to your backend server
 // Use VITE_API_URL environment variable or default to localhost:3001
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -980,3 +1005,10 @@ export type {
 } from "../shared/types/store";
 
 export default api;
+=======
+// Re-export everything from the modular API structure
+export * from "./api/index";
+
+// Re-export axios instance as default for backward compatibility
+export { default } from "./api/client";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009

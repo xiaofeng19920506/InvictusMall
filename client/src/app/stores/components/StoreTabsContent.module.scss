@@ -1,0 +1,226 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.tabsContainer {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+  margin-bottom: 1.5rem; // mb-6
+}
+
+.tabsHeader {
+  border-bottom: 1px solid color('gray-200');
+}
+
+.tabsNav {
+  display: flex;
+  gap: 2rem; // space-x-8
+  padding: 0 1.5rem; // px-6
+}
+
+.tabButton {
+  padding: 1rem 0.25rem; // py-4 px-1
+  border-bottom: 2px solid transparent;
+  font-weight: font-weight('medium');
+  font-size: font-size('sm');
+  cursor: pointer;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  transition: all 0.2s;
+  
+  &.active {
+    border-bottom-color: color('orange-500');
+    color: color('orange-600');
+  }
+  
+  &.inactive {
+    color: color('gray-500');
+    
+    &:hover {
+      color: color('gray-700');
+      border-bottom-color: color('gray-300');
+    }
+  }
+}
+
+.tabsContent {
+  padding: 1.5rem; // p-6
+}
+
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 3rem; // py-12
+  padding-bottom: 3rem;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  border-radius: border-radius('full');
+  width: 3rem; // h-12 w-12
+  height: 3rem;
+  border: 2px solid color('orange-500');
+  border-top-color: transparent;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.productsGrid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1.5rem; // gap-6
+  
+  @include respond-to('sm') {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  @include respond-to('lg') {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.productCard {
+  border: 1px solid color('gray-200');
+  border-radius: border-radius('lg');
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  cursor: pointer;
+  
+  &:hover {
+    box-shadow: shadow('lg');
+  }
+}
+
+.productImage {
+  width: 100%;
+  height: 12rem; // h-48
+  object-fit: cover;
+}
+
+.productImagePlaceholder {
+  width: 100%;
+  height: 12rem; // h-48
+  background-color: color('gray-200');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color('gray-400');
+}
+
+.productContent {
+  padding: 1rem; // p-4
+}
+
+.productName {
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: 0.25rem; // mb-1
+}
+
+.productDescription {
+  font-size: font-size('sm');
+  color: color('gray-600');
+  margin-bottom: 0.5rem; // mb-2
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.productFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem; // mb-3
+}
+
+.productPrice {
+  font-size: font-size('xl');
+  font-weight: font-weight('bold');
+  color: color('orange-500');
+}
+
+.productStock {
+  font-size: font-size('sm');
+  color: color('gray-500');
+}
+
+.addToCartButton {
+  width: 100%;
+  padding: 0.5rem 0; // py-2
+  border-radius: border-radius('md');
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: none;
+  font-size: font-size('base');
+  
+  &.added {
+    background-color: color('green-500');
+    color: color('white');
+  }
+  
+  &.normal {
+    background-color: color('orange-500');
+    color: color('white');
+    
+    &:hover {
+      background-color: color('orange-600');
+    }
+  }
+}
+
+.serviceCard {
+  border: 1px solid color('gray-200');
+  border-radius: border-radius('lg');
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  
+  &:hover {
+    box-shadow: shadow('lg');
+  }
+}
+
+.reservationButton {
+  width: 100%;
+  padding: 0.5rem 0; // py-2
+  border-radius: border-radius('md');
+  background-color: color('orange-500');
+  color: color('white');
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: none;
+  
+  &:hover {
+    background-color: color('orange-600');
+  }
+}
+
+.emptyState {
+  text-align: center;
+  padding-top: 3rem; // py-12
+  padding-bottom: 3rem;
+}
+
+.emptyText {
+  color: color('gray-600');
+}
+
+.emptyTextSmall {
+  font-size: font-size('sm');
+  color: color('gray-500');
+  margin-top: 0.5rem; // mt-2
+}
+
+.reviewsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; // space-y-4
+}
+

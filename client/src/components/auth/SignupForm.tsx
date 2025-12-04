@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import styles from './SignupForm.module.scss';
 
 interface SignupFormProps {
   onSuccess?: () => void;
@@ -51,13 +52,13 @@ export default function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormPro
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Create Account</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title}>Create Account</h2>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.nameGrid}>
+          <div className={styles.formGroup}>
+            <label htmlFor="firstName" className={styles.label}>
               First Name
             </label>
             <input
@@ -67,13 +68,13 @@ export default function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormPro
               value={formData.firstName}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className={styles.input}
               placeholder="First name"
             />
           </div>
 
-          <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+          <div className={styles.formGroup}>
+            <label htmlFor="lastName" className={styles.label}>
               Last Name
             </label>
             <input
@@ -83,14 +84,14 @@ export default function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormPro
               value={formData.lastName}
               onChange={handleChange}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className={styles.input}
               placeholder="Last name"
             />
           </div>
         </div>
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+        <div className={styles.formGroup}>
+          <label htmlFor="email" className={styles.label}>
             Email Address
           </label>
           <input
@@ -100,13 +101,13 @@ export default function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormPro
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className={styles.input}
             placeholder="Enter your email"
           />
         </div>
 
-        <div>
-          <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
+        <div className={styles.formGroup}>
+          <label htmlFor="phoneNumber" className={styles.label}>
             Phone Number
           </label>
           <input
@@ -116,13 +117,13 @@ export default function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormPro
             value={formData.phoneNumber}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className={styles.input}
             placeholder="Enter your phone number"
           />
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+          <div className={styles.errorMessage}>
             {error}
           </div>
         )}
@@ -130,19 +131,19 @@ export default function SignupForm({ onSuccess, onSwitchToLogin }: SignupFormPro
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className={styles.submitButton}
         >
           {isLoading ? 'Creating Account...' : 'Create Account'}
         </button>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
+      <div className={styles.switchLink}>
+        <p>
           Already have an account?{' '}
           <button
             type="button"
             onClick={onSwitchToLogin}
-            className="text-orange-500 hover:text-orange-600 font-medium cursor-pointer"
+            className={styles.link}
           >
             Sign in
           </button>

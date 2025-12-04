@@ -17,6 +17,10 @@ import DeliveryAddressStep from "./DeliveryAddressStep";
 import PaymentMethodStep from "./PaymentMethodStep";
 import ReviewOrderStep from "./ReviewOrderStep";
 import OrderSummary from "./OrderSummary";
+<<<<<<< HEAD
+=======
+import styles from "./CheckoutContent.module.scss";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
 interface CheckoutContentProps {
   addresses: ShippingAddress[];
@@ -261,14 +265,24 @@ export default function CheckoutContent({
     return (
       <>
         <Header />
+<<<<<<< HEAD
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">
+=======
+        <div className={styles.emptyCartContainer}>
+          <div className={styles.emptyCartContent}>
+            <h2 className={styles.emptyCartTitle}>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               Your cart is empty
             </h2>
             <Link
               href="/"
+<<<<<<< HEAD
               className="inline-block bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors"
+=======
+              className={styles.continueShoppingButton}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             >
               Continue Shopping
             </Link>
@@ -278,6 +292,7 @@ export default function CheckoutContent({
     );
   }
 
+<<<<<<< HEAD
   return (
     <>
       <Header />
@@ -307,10 +322,72 @@ export default function CheckoutContent({
                   </div>
                   <span className="ml-2 font-medium">Review</span>
                 </div>
+=======
+  const getStepClass = (step: string) => {
+    if (currentStep === step) return styles.active;
+    if (
+      (step === "delivery" && (currentStep === "payment" || currentStep === "review")) ||
+      (step === "payment" && currentStep === "review")
+    ) {
+      return styles.completed;
+    }
+    return styles.inactive;
+  };
+
+  const getCircleClass = (step: string) => {
+    if (currentStep === step) return styles.active;
+    if (
+      (step === "delivery" && (currentStep === "payment" || currentStep === "review")) ||
+      (step === "payment" && currentStep === "review")
+    ) {
+      return styles.completed;
+    }
+    return styles.inactive;
+  };
+
+  const getConnectorClass = (step: string) => {
+    if (
+      (step === "delivery" && (currentStep === "payment" || currentStep === "review")) ||
+      (step === "payment" && currentStep === "review")
+    ) {
+      return styles.completed;
+    }
+    return styles.inactive;
+  };
+
+  return (
+    <>
+      <Header />
+      <div className={styles.pageContainer}>
+        <div className={styles.container}>
+          {/* Progress Indicator */}
+          <div className={styles.progressContainer}>
+            <div className={styles.progressBar}>
+              <div className={`${styles.stepGroup} ${getStepClass("delivery")}`}>
+                <div className={`${styles.stepCircle} ${getCircleClass("delivery")}`}>
+                  {currentStep === "payment" || currentStep === "review" ? "✓" : "1"}
+                </div>
+                <span className={styles.stepLabel}>Delivery</span>
+              </div>
+              <div className={`${styles.stepConnector} ${getConnectorClass("delivery")}`} />
+              <div className={`${styles.stepGroup} ${getStepClass("payment")}`}>
+                <div className={`${styles.stepCircle} ${getCircleClass("payment")}`}>
+                  {currentStep === "review" ? "✓" : "2"}
+                </div>
+                <span className={styles.stepLabel}>Payment</span>
+              </div>
+              <div className={`${styles.stepConnector} ${getConnectorClass("payment")}`} />
+              <div className={`${styles.stepGroup} ${getStepClass("review")}`}>
+                <div className={`${styles.stepCircle} ${getCircleClass("review")}`}>
+                  3
+                </div>
+                <span className={styles.stepLabel}>Review</span>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               </div>
             </div>
           </div>
 
+<<<<<<< HEAD
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Checkout Content */}
             <div className="lg:col-span-2">
@@ -318,6 +395,15 @@ export default function CheckoutContent({
                 {statusError && (
                   <div className="border-b border-red-200 bg-red-50 p-4">
                     <p className="text-sm text-red-700">{statusError}</p>
+=======
+          <div className={styles.contentGrid}>
+            {/* Main Checkout Content */}
+            <div className={styles.mainContent}>
+              <div className={styles.stepCard}>
+                {statusError && (
+                  <div className={styles.errorBanner}>
+                    <p className={styles.errorMessage}>{statusError}</p>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                   </div>
                 )}
 
@@ -344,6 +430,10 @@ export default function CheckoutContent({
                     onContinue={handleContinueToReview}
                     onBack={handleBackToDelivery}
                     onCreatePaymentIntent={handleCreatePaymentIntent}
+<<<<<<< HEAD
+=======
+                    onError={(error) => setStatusError(error)}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                   />
                 )}
 
@@ -375,7 +465,11 @@ export default function CheckoutContent({
             </div>
 
             {/* Order Summary Sidebar */}
+<<<<<<< HEAD
             <div className="lg:col-span-1">
+=======
+            <div className={styles.sidebar}>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               <OrderSummary
                 items={items}
                 subtotal={subtotal}

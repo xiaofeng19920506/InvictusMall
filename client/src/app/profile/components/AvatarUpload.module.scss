@@ -1,0 +1,114 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem; // gap-4
+}
+
+.avatarWrapper {
+  position: relative;
+}
+
+.avatar {
+  position: relative;
+  width: 8rem; // w-32
+  height: 8rem; // h-32
+  border-radius: border-radius('full');
+  overflow: hidden;
+  background-color: color('gray-200');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid color('white');
+  box-shadow: shadow('lg');
+}
+
+.avatarImage {
+  object-fit: cover;
+}
+
+.avatarPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom right, color('orange-400'), color('orange-600'));
+  color: color('white');
+  font-size: 1.875rem; // text-3xl
+  font-weight: font-weight('bold');
+}
+
+.form {
+  display: flex;
+  width: 100%;
+  max-width: 20rem; // max-w-xs
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem; // gap-3
+}
+
+.fileLabel {
+  width: 100%;
+  cursor: pointer;
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  color: color('gray-700');
+}
+
+.fileInputWrapper {
+  display: block;
+  text-align: center;
+  border-radius: border-radius('md');
+  border: 1px dashed color('gray-300');
+  padding: 0.5rem 1rem; // px-4 py-2
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: color('orange-400');
+    color: color('orange-600');
+  }
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.uploadButton {
+  width: 100%;
+  background-color: color('orange-500');
+  color: color('white');
+  padding: 0.5rem 1rem; // py-2 px-4
+  border-radius: border-radius('md');
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  font-size: font-size('sm');
+  
+  &:hover {
+    background-color: color('orange-600');
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color('orange-500');
+  }
+}
+
+.helpText {
+  font-size: font-size('xs');
+  color: color('gray-500');
+  text-align: center;
+}
+

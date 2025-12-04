@@ -1,12 +1,17 @@
 "use client";
 
+<<<<<<< HEAD
 import { useState, useEffect, useRef } from "react";
+=======
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import { useParams, useRouter } from "next/navigation";
 import { apiService, Store } from "@/services/api";
 import { productService, Product } from "@/services/product";
 import { useCart } from "@/contexts/CartContext";
 import Header from "@/components/common/Header";
 import Link from "next/link";
+<<<<<<< HEAD
 import { getImageUrl } from "@/utils/imageUtils";
 import ReservationModal from "./ReservationModal";
 
@@ -17,6 +22,22 @@ function StarRating({ rating, size = "text-lg" }: { rating: number; size?: strin
       <div className="flex">
         {[...Array(5)].map((_, i) => (
           <span key={i} className={`${size} text-gray-300`}>
+=======
+import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
+import ReservationModal from "./ReservationModal";
+import StoreHeader from "./StoreHeader";
+import styles from "./StoreDetailContent.module.scss";
+
+import starRatingStyles from "./StarRating.module.scss";
+
+function StarRating({ rating, size = "lg" }: { rating: number; size?: "sm" | "base" | "lg" | "xl" }) {
+  // If no rating or rating is 0, show all empty stars
+  if (!rating || rating === 0) {
+    return (
+      <div className={starRatingStyles.container}>
+        {[...Array(5)].map((_, i) => (
+          <span key={i} className={`${starRatingStyles.star} ${starRatingStyles.empty} ${starRatingStyles[size]}`}>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             ☆
           </span>
         ))}
@@ -25,7 +46,11 @@ function StarRating({ rating, size = "text-lg" }: { rating: number; size?: strin
   }
 
   return (
+<<<<<<< HEAD
     <div className="flex">
+=======
+    <div className={starRatingStyles.container}>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       {[...Array(5)].map((_, i) => {
         const starValue = i + 1;
         const filled = rating >= starValue;
@@ -34,9 +59,15 @@ function StarRating({ rating, size = "text-lg" }: { rating: number; size?: strin
         return (
           <span
             key={i}
+<<<<<<< HEAD
             className={`${size} ${
               filled || halfFilled ? "text-yellow-400" : "text-gray-300"
             }`}
+=======
+            className={`${starRatingStyles.star} ${
+              filled || halfFilled ? starRatingStyles.filled : starRatingStyles.empty
+            } ${starRatingStyles[size]}`}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
           >
             {filled ? "⭐" : halfFilled ? "⭐" : "☆"}
           </span>
@@ -61,7 +92,9 @@ function AddToCartButton({
     addItem({
       productId: product.id,
       productName: product.name,
-      productImage: product.imageUrl,
+      productImage: (product.imageUrls && product.imageUrls.length > 0) 
+        ? product.imageUrls[0] 
+        : product.imageUrl,
       price: product.price,
       quantity: 1,
       storeId: store.id,
@@ -106,20 +139,40 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const initialTabSet = useRef(false);
 
+<<<<<<< HEAD
   // Separate products and services
   const products = allItems.filter(item => item.category === "product" || !item.category);
   const services = allItems.filter(item => item.category === "service");
+=======
+  // Memoize filtered products and services to avoid recalculation
+  const products = useMemo(
+    () => allItems.filter(item => item.category === "product" || !item.category),
+    [allItems]
+  );
+  const services = useMemo(
+    () => allItems.filter(item => item.category === "service"),
+    [allItems]
+  );
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   useEffect(() => {
     if (storeId && !initialStore) {
       fetchStoreDetails();
     } else {
       setLoading(false);
+<<<<<<< HEAD
     }
     if (storeId) {
       fetchProducts();
     }
   }, [storeId]);
+=======
+    }
+    if (storeId) {
+      fetchProducts();
+    }
+  }, [storeId, initialStore, fetchStoreDetails, fetchProducts]);
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   // Set initial tab and handle tab switching when content is unavailable
   useEffect(() => {
@@ -147,7 +200,11 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     }
   }, [products.length, services.length, productsLoading, activeTab]);
 
+<<<<<<< HEAD
   const fetchStoreDetails = async () => {
+=======
+  const fetchStoreDetails = useCallback(async () => {
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     try {
       const response = await apiService.getStoreById(storeId);
       if (response.success) {
@@ -160,9 +217,13 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     } finally {
       setLoading(false);
     }
-  };
+  }, [storeId]);
 
+<<<<<<< HEAD
   const fetchProducts = async () => {
+=======
+  const fetchProducts = useCallback(async () => {
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     try {
       setProductsLoading(true);
       const response = await productService.getProductsByStoreId(storeId, { isActive: true });
@@ -178,14 +239,18 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     } finally {
       setProductsLoading(false);
     }
+<<<<<<< HEAD
   };
+=======
+  }, [storeId]);
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   if (loading) {
     return (
       <>
         <Header />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-orange-500"></div>
+        <div className={styles.loadingContainer}>
+          <div className={styles.spinner}></div>
         </div>
       </>
     );
@@ -195,17 +260,17 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     return (
       <>
         <Header />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        <div className={styles.errorContainer}>
+          <div className={styles.errorContent}>
+            <h2 className={styles.errorTitle}>
               Store Not Found
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className={styles.errorMessage}>
               {error || "The store you are looking for does not exist."}
             </p>
             <Link
               href="/"
-              className="bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors cursor-pointer"
+              className={styles.backButton}
             >
               Back to Stores
             </Link>
@@ -219,6 +284,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     <>
       <Header />
 
+<<<<<<< HEAD
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Store Header */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -305,11 +371,16 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             </div>
           </div>
         </div>
+=======
+      <div className={styles.container}>
+        {/* Store Header - Using StoreHeader component */}
+        <StoreHeader store={store} storeId={storeId} />
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-md mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
+        <div className={styles.tabsCard}>
+          <div className={styles.tabsNav}>
+            <nav className={styles.tabsList} aria-label="Tabs">
               {[
                 ...(products.length > 0 ? [{ id: "products", label: `Products (${products.length})` }] : []),
                 ...(services.length > 0 ? [{ id: "services", label: `Services (${services.length})` }] : []),
@@ -318,11 +389,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm cursor-pointer ${
-                    activeTab === tab.id
-                      ? "border-orange-500 text-orange-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
+                  className={`${styles.tabButton} ${activeTab === tab.id ? styles.active : ''}`}
                 >
                   {tab.label}
                 </button>
@@ -330,11 +397,16 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             </nav>
           </div>
 
+<<<<<<< HEAD
           <div className="p-6">
+=======
+          <div className={styles.tabContent}>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             {/* Products Tab */}
             {activeTab === "products" && (
               <div>
                 {productsLoading ? (
+<<<<<<< HEAD
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
                   </div>
@@ -378,6 +450,50 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                                 ${product.price.toFixed(2)}
                               </span>
                               <span className="text-sm text-gray-500">
+=======
+                  <div className={styles.loadingSpinner}>
+                    <div className={styles.smallSpinner}></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.productsGrid}>
+                      {products.map((product) => (
+                        <div
+                          key={product.id}
+                          className={styles.productCard}
+                          onClick={() => router.push(`/products/${product.id}`)}
+                        >
+                          {(product.imageUrls && product.imageUrls.length > 0) || product.imageUrl ? (
+                            <img
+                              src={getImageUrl(
+                                product.imageUrls && product.imageUrls.length > 0
+                                  ? product.imageUrls[0]
+                                  : product.imageUrl
+                              ) || getPlaceholderImage()}
+                              alt={product.name}
+                              className={styles.productImage}
+                              onError={handleImageError}
+                            />
+                          ) : (
+                            <div className={styles.productImagePlaceholder}>
+                              <span>No Image</span>
+                            </div>
+                          )}
+                          <div className={styles.productContent}>
+                            <h4 className={styles.productName}>
+                              {product.name}
+                            </h4>
+                            {product.description && (
+                              <p className={styles.productDescription}>
+                                {product.description}
+                              </p>
+                            )}
+                            <div className={styles.productFooter}>
+                              <span className={styles.productPrice}>
+                                ${product.price.toFixed(2)}
+                              </span>
+                              <span className={styles.productStock}>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                                 Stock: {product.stockQuantity}
                               </span>
                             </div>
@@ -388,8 +504,13 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                     </div>
 
                     {products.length === 0 && !productsLoading && (
+<<<<<<< HEAD
                       <div className="text-center py-12">
                         <p className="text-gray-600">No products available yet.</p>
+=======
+                      <div className={styles.emptyState}>
+                        <p>No products available yet.</p>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                       </div>
                     )}
                   </>
@@ -401,6 +522,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             {activeTab === "services" && (
               <div>
                 {productsLoading ? (
+<<<<<<< HEAD
                   <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
                   </div>
@@ -441,6 +563,46 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                             )}
                             <div className="flex items-center justify-between mb-3">
                               <span className="text-xl font-bold text-orange-500">
+=======
+                  <div className={styles.loadingSpinner}>
+                    <div className={styles.smallSpinner}></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className={styles.productsGrid}>
+                      {services.map((service) => (
+                        <div
+                          key={service.id}
+                          className={styles.productCard}
+                        >
+                          {((service.imageUrls && service.imageUrls.length > 0) || service.imageUrl) ? (
+                            <img
+                              src={getImageUrl(
+                                service.imageUrls && service.imageUrls.length > 0
+                                  ? service.imageUrls[0]
+                                  : service.imageUrl
+                              ) || getPlaceholderImage()}
+                              alt={service.name}
+                              className={styles.productImage}
+                              onError={handleImageError}
+                            />
+                          ) : (
+                            <div className={styles.productImagePlaceholder}>
+                              <span>No Image</span>
+                            </div>
+                          )}
+                          <div className={styles.productContent}>
+                            <h4 className={styles.productName}>
+                              {service.name}
+                            </h4>
+                            {service.description && (
+                              <p className={styles.productDescription}>
+                                {service.description}
+                              </p>
+                            )}
+                            <div className={styles.productFooter}>
+                              <span className={styles.productPrice}>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                                 ${service.price.toFixed(2)}
                               </span>
                             </div>
@@ -449,7 +611,11 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                                 setSelectedService(service);
                                 setIsReservationModalOpen(true);
                               }}
+<<<<<<< HEAD
                               className="w-full py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors cursor-pointer"
+=======
+                              className={styles.reservationButton}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                             >
                               Make Reservation
                             </button>
@@ -459,8 +625,13 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                     </div>
 
                     {services.length === 0 && !productsLoading && (
+<<<<<<< HEAD
                       <div className="text-center py-12">
                         <p className="text-gray-600">No services available yet.</p>
+=======
+                      <div className={styles.emptyState}>
+                        <p>No services available yet.</p>
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                       </div>
                     )}
                   </>
@@ -470,10 +641,10 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
 
             {/* Reviews Tab */}
             {activeTab === "reviews" && (
-              <div className="space-y-4">
-                <div className="text-center py-12">
-                  <p className="text-gray-600">Review system coming soon...</p>
-                  <p className="text-sm text-gray-500 mt-2">
+              <div className={styles.reviewsSection}>
+                <div className={styles.emptyState}>
+                  <p>Review system coming soon...</p>
+                  <p className={styles.emptySubtext}>
                     Reviews feature will be implemented in the next update.
                   </p>
                 </div>

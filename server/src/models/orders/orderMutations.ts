@@ -131,7 +131,7 @@ export class OrderMutations {
       await connection.beginTransaction();
 
       const [rows] = await connection.execute(
-        `SELECT id FROM orders WHERE stripe_session_id = ? AND status = 'pending_payment'`,
+        `SELECT id FROM orders WHERE stripe_session_id = ? AND status = 'pending'`,
         [sessionId]
       );
 
@@ -231,12 +231,15 @@ export class OrderMutations {
     }
 
     const validStatuses: OrderStatus[] = [
-      'pending_payment',
       'pending',
       'processing',
       'shipped',
       'delivered',
       'cancelled',
+=======
+      'return_processing',
+      'returned',
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     ];
 
     if (!validStatuses.includes(status)) {

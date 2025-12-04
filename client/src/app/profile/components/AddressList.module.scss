@@ -1,0 +1,81 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.emptyState {
+  text-align: center;
+  padding-top: 2.5rem; // py-10
+  padding-bottom: 2.5rem;
+  color: color('gray-500');
+}
+
+.emptyTitle {
+  font-size: font-size('base');
+  font-weight: font-weight('medium');
+}
+
+.emptyMessage {
+  font-size: font-size('sm');
+  margin-top: 0.5rem; // mt-2
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem; // space-y-4
+}
+
+.addressCard {
+  border: 1px solid color('gray-200');
+  border-radius: border-radius('lg');
+  padding: 1rem; // p-4
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem; // gap-4
+}
+
+.addressContent {
+  flex: 1;
+}
+
+.addressHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; // gap-2
+  margin-bottom: 0.5rem; // mb-2
+}
+
+.addressLabel {
+  padding: 0.25rem 0.5rem; // px-2 py-1
+  background-color: color('gray-100');
+  color: color('gray-700');
+  font-size: font-size('xs');
+  font-weight: font-weight('medium');
+  border-radius: border-radius('md');
+}
+
+.addressName {
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+}
+
+.defaultBadge {
+  padding: 0.25rem 0.5rem; // px-2 py-1
+  background-color: color('orange-100');
+  color: color('orange-800');
+  font-size: font-size('xs');
+  font-weight: font-weight('medium');
+  border-radius: border-radius('md');
+}
+
+.phoneNumber {
+  font-size: font-size('sm');
+  color: color('gray-600');
+  margin-bottom: 0.25rem; // mb-1
+}
+
+.addressLine {
+  font-size: font-size('sm');
+  color: color('gray-700');
+}
+

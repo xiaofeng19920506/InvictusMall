@@ -63,6 +63,10 @@ export class OrderModel {
     return this.queries.getOrderById(orderId);
   }
 
+  async getOrderByIdAndUserId(orderId: string, userId: string): Promise<Order> {
+    return this.queries.getOrderByIdAndUserId(orderId, userId);
+  }
+
   async getOrdersByGuestEmail(email: string): Promise<Order[]> {
     return this.queries.getOrdersByGuestEmail(email);
   }
@@ -71,6 +75,7 @@ export class OrderModel {
     options?: {
       status?: string;
       storeId?: string;
+      storeIds?: string[]; // For filtering by multiple store IDs (owner access)
       userId?: string;
       limit?: number;
       offset?: number;

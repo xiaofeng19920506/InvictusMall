@@ -6,6 +6,10 @@
       "products": "商品管理",
       "categories": "分类管理",
       "orders": "订单管理",
+<<<<<<< HEAD
+=======
+      "shipments": "物流管理",
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       "inventory": "库存管理",
       "users": "用户管理",
       "settings": "设置",
@@ -50,9 +54,16 @@
     "stores": "商店管理",
     "products": "商品管理",
     "categories": "分类管理",
+<<<<<<< HEAD
     "orders": "订单管理",
     "inventory": "库存管理",
     "users": "用户管理",
+=======
+      "orders": "订单管理",
+      "shipments": "物流管理",
+      "inventory": "库存管理",
+      "users": "用户管理",
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     "settings": "设置",
     "systemLogs": "系统日志",
     "transactions": "交易记录"
@@ -117,7 +128,11 @@
       "discount": "优惠信息",
       "discountPlaceholder": "例如：8折优惠",
       "verified": "已认证门店",
-      "active": "启用门店"
+      "active": "启用门店",
+      "owner": "店主/管理员",
+      "selectOwner": "-- 选择店主/管理员 --",
+      "loadingOwners": "正在加载店主/管理员...",
+      "noOwnersAvailable": "没有可用的店主或管理员。请先创建一个店主或管理员账户。"
     },
     "actions": {
       "invalidImageType": "请选择图片文件。",
@@ -282,9 +297,17 @@
       "title": "个人信息",
       "firstName": "名字",
       "lastName": "姓氏",
+      "phoneNumber": "电话号码",
       "email": "邮箱",
       "role": "角色",
-      "note": "个人信息可在账户设置中更新。"
+      "note": "个人信息可在账户设置中更新。",
+      "actions": {
+        "save": "保存",
+        "saving": "保存中...",
+        "cancel": "取消"
+      },
+      "updateSuccess": "个人信息更新成功",
+      "updateError": "更新个人信息失败"
     },
     "notifications": {
       "title": "通知设置",
@@ -814,7 +837,13 @@
       "processing": "处理中",
       "shipped": "已发货",
       "delivered": "已送达",
+<<<<<<< HEAD
       "cancelled": "已取消"
+=======
+      "cancelled": "已取消",
+      "return_processing": "退货处理中",
+      "returned": "已退货"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "未找到订单"
@@ -1016,6 +1045,169 @@
       "productNotFound": "未找到产品",
       "loadError": "加载库存失败",
       "loadStoresError": "加载商店失败"
+<<<<<<< HEAD
+=======
+    },
+    "tabs": {
+      "products": "商品",
+      "history": "库存操作历史"
+    },
+    "history": {
+      "title": "库存操作历史",
+      "allProducts": "所有商品",
+      "allTypes": "所有类型",
+      "typeIn": "入库",
+      "typeOut": "出库",
+      "empty": "未找到库存操作记录",
+      "table": {
+        "date": "日期",
+        "product": "商品",
+        "type": "类型",
+        "quantity": "数量",
+        "before": "操作前",
+        "after": "操作后",
+        "reason": "原因",
+        "order": "订单"
+      }
+    }
+  },
+  "shipments": {
+    "searchPlaceholder": "按追踪号码、订单ID或承运商搜索...",
+    "filters": {
+      "allStatuses": "所有状态",
+      "allCarriers": "所有承运商"
+    },
+    "status": {
+      "pending": "待处理",
+      "label_created": "标签已创建",
+      "in_transit": "运输中",
+      "out_for_delivery": "派送中",
+      "delivered": "已送达",
+      "exception": "异常",
+      "returned": "已退回",
+      "cancelled": "已取消"
+    },
+    "carriers": {
+      "usps": "USPS",
+      "ups": "UPS",
+      "fedex": "FedEx",
+      "dhl": "DHL",
+      "other": "其他"
+    },
+    "table": {
+      "trackingNumber": "追踪号码",
+      "orderId": "订单ID",
+      "carrier": "承运商",
+      "status": "状态",
+      "shippedAt": "发货时间",
+      "estimatedDelivery": "预计送达",
+      "actions": "操作"
+    },
+    "empty": "未找到物流记录",
+    "actions": {
+      "create": "创建物流",
+      "view": "查看详情",
+      "edit": "编辑",
+      "downloadLabel": "下载标签",
+      "printLabel": "打印标签",
+      "generateLabel": "生成标签",
+      "generating": "生成中..."
+    },
+    "success": {
+      "created": "物流创建成功",
+      "updated": "物流更新成功",
+      "labelGenerated": "运输标签生成成功"
+    },
+    "error": {
+      "loadFailed": "加载物流失败",
+      "createFailed": "创建物流失败",
+      "updateFailed": "更新物流失败",
+      "labelGenerationFailed": "生成运输标签失败"
+    },
+    "modal": {
+      "details": "物流详情",
+      "createTitle": "创建新物流",
+      "updateTitle": "更新物流",
+      "shipmentInfo": "物流信息",
+      "trackingHistory": "追踪历史",
+      "dates": "重要日期",
+      "shippingLabel": "运输标签",
+      "notes": "备注",
+      "shippingMethod": "运输方式",
+      "weight": "重量",
+      "shippingCost": "运输费用",
+      "actualDelivery": "实际送达"
+    },
+    "form": {
+      "orderId": "订单ID",
+      "carrier": "承运商",
+      "carrierName": "承运商名称",
+      "shippingMethod": "运输方式",
+      "weight": "重量（公斤）",
+      "shippingCost": "运输费用（美元）",
+      "notes": "备注"
+    }
+  },
+  "fulfillmentCenters": {
+    "table": {
+      "name": "名称",
+      "code": "代码",
+      "address": "地址",
+      "status": "状态",
+      "capacity": "容量",
+      "actions": "操作"
+    },
+    "status": {
+      "active": "启用",
+      "inactive": "停用"
+    },
+    "empty": "未找到配送中心",
+    "error": {
+      "loadFailed": "加载配送中心失败",
+      "createFailed": "创建配送中心失败",
+      "updateFailed": "更新配送中心失败",
+      "deleteFailed": "删除配送中心失败"
+    },
+    "success": {
+      "created": "配送中心创建成功",
+      "updated": "配送中心更新成功",
+      "deleted": "配送中心删除成功"
+    },
+    "actions": {
+      "create": "创建配送中心",
+      "view": "查看",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "modal": {
+      "details": "配送中心详情",
+      "createTitle": "创建配送中心",
+      "updateTitle": "更新配送中心",
+      "deleteTitle": "删除配送中心",
+      "deleteMessage": "确定要删除 \"{{name}}\" 吗？此操作无法撤销。",
+      "basicInfo": "基本信息",
+      "address": "地址",
+      "contactInfo": "联系信息",
+      "operatingHours": "营业时间",
+      "capacity": "容量",
+      "maxOrdersPerDay": "每日最大订单数",
+      "currentOrders": "当前订单数"
+    },
+    "form": {
+      "name": "名称",
+      "code": "代码",
+      "address": "地址",
+      "streetAddress": "街道地址",
+      "city": "城市",
+      "stateProvince": "州/省",
+      "zipCode": "邮政编码",
+      "country": "国家",
+      "contactInfo": "联系信息",
+      "phone": "电话",
+      "email": "邮箱",
+      "maxOrdersPerDay": "每日最大订单数",
+      "isActive": "启用"
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     }
   }
 }

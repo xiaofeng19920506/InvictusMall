@@ -8,6 +8,12 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 // Must be set via VITE_STORAGE_URL environment variable for security
 const STORAGE_URL = import.meta.env.VITE_STORAGE_URL || 'http://localhost:9000';
 
+<<<<<<< HEAD
+=======
+// 1x1 transparent PNG as data URI - prevents network requests
+const PLACEHOLDER_DATA_URI = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiNlNWU3ZWIiLz48L3N2Zz4=';
+
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 // Warn if storage URL is using default (should be set via env var)
 if (import.meta.env.DEV && !import.meta.env.VITE_STORAGE_URL) {
   console.warn('⚠️ VITE_STORAGE_URL is not set. Using default localhost:9000. Please set it in .env file for production.');
@@ -56,6 +62,29 @@ export function getAvatarUrl(avatarUrl?: string | null): string | undefined {
 }
 
 /**
+<<<<<<< HEAD
+=======
+ * Get a placeholder image URL that won't cause network requests
+ * Returns a data URI that can be used as a fallback
+ */
+export function getPlaceholderImage(): string {
+  return PLACEHOLDER_DATA_URI;
+}
+
+/**
+ * Handle image error and prevent infinite loading loops
+ * Sets the image to a data URI placeholder that won't trigger network requests
+ */
+export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event>): void {
+  const target = e.target as HTMLImageElement;
+  // Prevent infinite loop by removing error handler
+  target.onerror = null;
+  // Use data URI instead of a file path to prevent network requests
+  target.src = PLACEHOLDER_DATA_URI;
+}
+
+/**
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
  * Get the current storage URL being used
  * Useful for debugging
  */

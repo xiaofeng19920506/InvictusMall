@@ -125,16 +125,16 @@ router.get(
     }
     const userId = req.user!.id;
 
-    const order = await orderModel.getOrderById(orderId);
-
-    // Verify that the order belongs to the user
-    if (order.userId !== userId) {
-      return ApiResponseHelper.forbidden(res, 'Access denied');
-    }
+    // Use getOrderByIdAndUserId to ensure user can only access their own orders
+    // This is more secure - the database query filters by both orderId AND userId
+    // This prevents information leakage (user can't tell if order exists but belongs to someone else)
+    const order = await orderModel.getOrderByIdAndUserId(orderId, userId);
 
     return ApiResponseHelper.success(res, order);
   } catch (error) {
     if (error instanceof Error && error.message === 'Order not found') {
+      // Don't reveal whether order exists or not - just return not found
+      // This prevents information leakage (user can't tell if order exists but belongs to someone else)
       return ApiResponseHelper.notFound(res, 'Order');
     }
 

@@ -1,4 +1,5 @@
 import { changePasswordAction } from "../actions";
+import styles from "./ChangePasswordForm.module.scss";
 
 interface ChangePasswordFormProps {
   status?: "success" | "error";
@@ -10,19 +11,19 @@ export default function ChangePasswordForm({
   message,
 }: ChangePasswordFormProps) {
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Change Password</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title}>Change Password</h2>
 
-      <p className="mb-4 text-sm text-gray-600">
-        Enter your current password and choose a new one that’s at least 6
+      <p className={styles.description}>
+        Enter your current password and choose a new one that's at least 6
         characters long.
       </p>
 
-      <form action={changePasswordAction} className="space-y-4">
-        <div>
+      <form action={changePasswordAction} className={styles.form}>
+        <div className={styles.formField}>
           <label
             htmlFor="currentPassword"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className={styles.formLabel}
           >
             Current Password
           </label>
@@ -31,15 +32,15 @@ export default function ChangePasswordForm({
             id="currentPassword"
             name="currentPassword"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className={styles.formInput}
             placeholder="Enter your current password"
           />
         </div>
 
-        <div>
+        <div className={styles.formField}>
           <label
             htmlFor="newPassword"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className={styles.formLabel}
           >
             New Password
           </label>
@@ -49,15 +50,15 @@ export default function ChangePasswordForm({
             name="newPassword"
             required
             minLength={6}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className={styles.formInput}
             placeholder="Enter your new password (min 6 characters)"
           />
         </div>
 
-        <div>
+        <div className={styles.formField}>
           <label
             htmlFor="confirmPassword"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className={styles.formLabel}
           >
             Confirm New Password
           </label>
@@ -67,14 +68,14 @@ export default function ChangePasswordForm({
             name="confirmPassword"
             required
             minLength={6}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            className={styles.formInput}
             placeholder="Confirm your new password"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors cursor-pointer"
+          className={styles.submitButton}
         >
           Change Password
         </button>

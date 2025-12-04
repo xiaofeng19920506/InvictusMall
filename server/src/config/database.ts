@@ -71,6 +71,9 @@ export const initializeDatabase = async (): Promise<void> => {
 
     // Create tables
     await createTables();
+
+    // Assign orphaned stores to admin
+    await assignOrphanedStoresToAdmin();
   } catch (error) {
     console.error("❌ Database initialization failed:", error);
     throw error;
@@ -500,6 +503,80 @@ const createTables = async (): Promise<void> => {
           "Skipping foreign key constraint for staff (missing REFERENCES permission)"
         );
       }
+    }
+
+    // Create staff_stores table for many-to-many relationship (staff can work at multiple stores)
+    try {
+      const [storeColumns]: any = await connection.execute(`
+        SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'stores'
+        AND COLUMN_NAME = 'id'
+      `);
+
+      let storeIdType = "VARCHAR(36)";
+      let charsetClause = "";
+
+      if (storeColumns && storeColumns.length > 0) {
+        const storeIdCol = storeColumns[0];
+        storeIdType = storeIdCol.COLUMN_TYPE;
+        if (storeIdCol.CHARACTER_SET_NAME) {
+          charsetClause = ` CHARACTER SET ${storeIdCol.CHARACTER_SET_NAME}`;
+          if (storeIdCol.COLLATION_NAME) {
+            charsetClause += ` COLLATE ${storeIdCol.COLLATION_NAME}`;
+          }
+        }
+      }
+
+      await connection.execute(`
+        CREATE TABLE IF NOT EXISTS staff_stores (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          staff_id VARCHAR(36) NOT NULL,
+          store_id ${storeIdType}${charsetClause} NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE KEY unique_staff_store (staff_id, store_id),
+          INDEX idx_staff_id (staff_id),
+          INDEX idx_store_id (store_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+
+      // Try to add foreign keys
+      try {
+        await connection.execute(`
+          ALTER TABLE staff_stores
+          ADD CONSTRAINT fk_staff_stores_staff
+          FOREIGN KEY (staff_id) REFERENCES staff(id) ON DELETE CASCADE
+        `);
+      } catch (error: any) {
+        if (
+          error?.code !== "ER_DUP_KEY" &&
+          error?.code !== "ER_FK_DUP_NAME" &&
+          error?.errno !== 1142 &&
+          error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+        ) {
+          console.warn("Could not add foreign key to staff_stores (staff):", error.message);
+        }
+      }
+
+      try {
+        await connection.execute(`
+          ALTER TABLE staff_stores
+          ADD CONSTRAINT fk_staff_stores_store
+          FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+        `);
+      } catch (error: any) {
+        if (
+          error?.code !== "ER_DUP_KEY" &&
+          error?.code !== "ER_FK_DUP_NAME" &&
+          error?.errno !== 1142 &&
+          error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+        ) {
+          console.warn("Could not add foreign key to staff_stores (store):", error.message);
+        }
+      }
+    } catch (error: any) {
+      console.warn("Could not create staff_stores table:", error.message);
     }
 
     // Create staff_invitations table (without foreign key first)
@@ -1015,6 +1092,11 @@ const createTables = async (): Promise<void> => {
     const orderModel = new OrderModel();
     await orderModel.createOrdersTable();
 
+    // Initialize StockOperationModel tables
+    const { StockOperationModel } = await import("../models/StockOperationModel");
+    const stockOperationModel = new StockOperationModel();
+    await stockOperationModel.initializeTable();
+
     // Create products table
     // First check the stores.id column definition to match it exactly
     try {
@@ -1049,6 +1131,7 @@ const createTables = async (): Promise<void> => {
           description TEXT,
           price DECIMAL(10,2) NOT NULL,
           image_url VARCHAR(500),
+          image_urls JSON,
           stock_quantity INT NOT NULL DEFAULT 0,
           category VARCHAR(100),
           is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -1060,6 +1143,58 @@ const createTables = async (): Promise<void> => {
           INDEX idx_name (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
+      
+      // Add image_urls column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN image_urls JSON NULL AFTER image_url
+        `);
+        console.log("✅ Added image_urls column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add image_urls column:", error.message);
+        }
+      }
+
+      // Add barcode column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN barcode VARCHAR(255) NULL AFTER name
+        `);
+        console.log("✅ Added barcode column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add barcode column:", error.message);
+        }
+      }
+
+      // Add barcode index if it doesn't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD INDEX idx_barcode (barcode)
+        `);
+        console.log("✅ Added barcode index to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_KEYNAME") {
+          console.warn("Could not add barcode index:", error.message);
+        }
+      }
+
+      // Add serial_number column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN serial_number VARCHAR(255) NULL AFTER barcode
+        `);
+        console.log("✅ Added serial_number column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add serial_number column:", error.message);
+        }
+      }
 
       // Try to add foreign key separately (may fail if user lacks REFERENCES permission)
       try {
@@ -1102,6 +1237,7 @@ const createTables = async (): Promise<void> => {
           description TEXT,
           price DECIMAL(10,2) NOT NULL,
           image_url VARCHAR(500),
+          image_urls JSON,
           stock_quantity INT NOT NULL DEFAULT 0,
           category VARCHAR(100),
           is_active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -1113,6 +1249,160 @@ const createTables = async (): Promise<void> => {
           INDEX idx_name (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
+      
+      // Add image_urls column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN image_urls JSON NULL AFTER image_url
+        `);
+        console.log("✅ Added image_urls column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add image_urls column:", error.message);
+        }
+      }
+
+      // Add barcode column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN barcode VARCHAR(255) NULL AFTER name
+        `);
+        console.log("✅ Added barcode column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add barcode column:", error.message);
+        }
+      }
+
+      // Add barcode index if it doesn't exist
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD INDEX idx_barcode (barcode)
+        `);
+        console.log("✅ Added barcode index to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_KEYNAME") {
+          console.warn("Could not add barcode index:", error.message);
+        }
+      }
+
+      // Add serial_number column if it doesn't exist (migration)
+      try {
+        await connection.execute(`
+          ALTER TABLE products 
+          ADD COLUMN serial_number VARCHAR(255) NULL AFTER barcode
+        `);
+        console.log("✅ Added serial_number column to products table");
+      } catch (error: any) {
+        if (error.code !== "ER_DUP_FIELDNAME") {
+          console.warn("Could not add serial_number column:", error.message);
+        }
+      }
+
+    }
+
+    // Create product_serial_numbers table to store multiple serial numbers per product
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS product_serial_numbers (
+        id VARCHAR(36) PRIMARY KEY,
+        product_id VARCHAR(36) NOT NULL,
+        store_id VARCHAR(36) NOT NULL,
+        serial_number VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_product_id (product_id),
+        INDEX idx_store_id (store_id),
+        INDEX idx_serial_number (serial_number),
+        UNIQUE KEY unique_product_store_serial (product_id, store_id, serial_number)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Try to add foreign key constraints for product_serial_numbers
+    try {
+      await connection.execute(`
+        ALTER TABLE product_serial_numbers
+        ADD CONSTRAINT fk_product_serial_numbers_product
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (
+        error?.code !== "ER_DUP_KEY" &&
+        error?.code !== "ER_FK_DUP_NAME" &&
+        error?.errno !== 1142 &&
+        error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.warn("Could not add foreign key to product_serial_numbers:", error.message);
+      }
+    }
+
+    try {
+      await connection.execute(`
+        ALTER TABLE product_serial_numbers
+        ADD CONSTRAINT fk_product_serial_numbers_store
+        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (
+        error?.code !== "ER_DUP_KEY" &&
+        error?.code !== "ER_FK_DUP_NAME" &&
+        error?.errno !== 1142 &&
+        error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.warn("Could not add foreign key to product_serial_numbers for store:", error.message);
+      }
+    }
+
+    // Create store_product_inventory table to track product quantity per store
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS store_product_inventory (
+        id VARCHAR(36) PRIMARY KEY,
+        product_id VARCHAR(36) NOT NULL,
+        store_id VARCHAR(36) NOT NULL,
+        quantity INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_product_id (product_id),
+        INDEX idx_store_id (store_id),
+        UNIQUE KEY unique_product_store (product_id, store_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Try to add foreign key constraints for store_product_inventory
+    try {
+      await connection.execute(`
+        ALTER TABLE store_product_inventory
+        ADD CONSTRAINT fk_store_product_inventory_product
+        FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (
+        error?.code !== "ER_DUP_KEY" &&
+        error?.code !== "ER_FK_DUP_NAME" &&
+        error?.errno !== 1142 &&
+        error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.warn("Could not add foreign key to store_product_inventory:", error.message);
+      }
+    }
+
+    try {
+      await connection.execute(`
+        ALTER TABLE store_product_inventory
+        ADD CONSTRAINT fk_store_product_inventory_store
+        FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE
+      `);
+    } catch (error: any) {
+      if (
+        error?.code !== "ER_DUP_KEY" &&
+        error?.code !== "ER_FK_DUP_NAME" &&
+        error?.errno !== 1142 &&
+        error?.code !== "ER_TABLEACCESS_DENIED_ERROR"
+      ) {
+        console.warn("Could not add foreign key to store_product_inventory for store:", error.message);
+      }
     }
 
     // Create categories table for hierarchical categories (3 levels)
@@ -1133,9 +1423,63 @@ const createTables = async (): Promise<void> => {
         INDEX idx_slug (slug),
         INDEX idx_is_active (is_active),
         INDEX idx_display_order (display_order),
-        CONSTRAINT chk_max_level CHECK (level <= 3)
+        CONSTRAINT chk_max_level CHECK (level <= 4)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+
+    // Update existing constraint if table already exists
+    try {
+      // Check if constraint exists and update it
+      const [constraints]: any = await connection.execute(`
+        SELECT CONSTRAINT_NAME
+        FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+        WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'categories'
+        AND CONSTRAINT_NAME = 'chk_max_level'
+        AND CONSTRAINT_TYPE = 'CHECK'
+      `);
+      
+      if (constraints.length > 0) {
+        // Drop old constraint
+        await connection.execute(`
+          ALTER TABLE categories
+          DROP CHECK chk_max_level
+        `);
+        
+        // Add new constraint with level <= 4
+        await connection.execute(`
+          ALTER TABLE categories
+          ADD CONSTRAINT chk_max_level CHECK (level <= 4)
+        `);
+        
+        console.info('✅ Updated categories table constraint: max level increased to 4');
+      }
+    } catch (error: any) {
+      // MySQL version might not support CHECK constraints or ALTER TABLE DROP CHECK
+      // Try alternative approach: drop and recreate constraint
+      try {
+        await connection.execute(`
+          ALTER TABLE categories
+          DROP CHECK chk_max_level
+        `);
+      } catch (dropError: any) {
+        // Constraint might not exist or MySQL version doesn't support it
+        console.warn('Could not drop existing constraint:', dropError.message);
+      }
+      
+      try {
+        await connection.execute(`
+          ALTER TABLE categories
+          ADD CONSTRAINT chk_max_level CHECK (level <= 4)
+        `);
+        console.info('✅ Added categories table constraint: max level is 4');
+      } catch (addError: any) {
+        // Constraint might already exist or MySQL version doesn't support CHECK
+        if (addError.code !== 'ER_DUP_CONSTRAINT_NAME' && addError.code !== 'ER_CHECK_CONSTRAINT_VIOLATED') {
+          console.warn('Could not add constraint (may not be supported in this MySQL version):', addError.message);
+        }
+      }
+    }
 
     // Try to add foreign key constraint for parent_id (self-referencing)
     try {
@@ -1494,6 +1838,71 @@ const createTables = async (): Promise<void> => {
     }
 
     console.log("✅ Created all Amazon-style feature tables");
+  } finally {
+    connection.release();
+  }
+};
+
+/**
+ * Assign orphaned stores to admin users
+ * This function finds stores without any owner/admin and assigns them to the first admin found
+ */
+export const assignOrphanedStoresToAdmin = async (): Promise<void> => {
+  const connection = await pool.getConnection();
+
+  try {
+    console.log("🔍 Checking for orphaned stores (stores without owner/admin)...");
+
+    // Find stores that don't have any associated owner or admin
+    const [orphanedStores] = await connection.execute(`
+      SELECT s.id, s.name
+      FROM stores s
+      LEFT JOIN staff st ON s.id = st.store_id AND st.role IN ('owner', 'admin') AND st.is_active = true
+      WHERE st.id IS NULL
+    `);
+
+    const stores = orphanedStores as any[];
+    console.log(`📊 Found ${stores.length} orphaned stores`);
+
+    if (stores.length === 0) {
+      console.log("✅ No orphaned stores found");
+      return;
+    }
+
+    // Find the first admin user
+    const [adminUsers] = await connection.execute(`
+      SELECT id, email, first_name, last_name
+      FROM staff
+      WHERE role = 'admin' AND is_active = true
+      ORDER BY created_at ASC
+      LIMIT 1
+    `);
+
+    const admins = adminUsers as any[];
+    if (admins.length === 0) {
+      console.warn("⚠️ No admin users found to assign orphaned stores to");
+      return;
+    }
+
+    const admin = admins[0];
+    console.log(`👤 Assigning orphaned stores to admin: ${admin.email} (${admin.id})`);
+
+    // Assign each orphaned store to the admin
+    for (const store of stores) {
+      console.log(`🏪 Assigning store "${store.name}" (${store.id}) to admin ${admin.email}`);
+
+      // Update the admin's store_id to this store
+      await connection.execute(
+        `UPDATE staff SET store_id = ? WHERE id = ?`,
+        [store.id, admin.id]
+      );
+
+      console.log(`✅ Successfully assigned store "${store.name}" to admin ${admin.email}`);
+    }
+
+    console.log(`✅ Assigned ${stores.length} orphaned stores to admin ${admin.email}`);
+  } catch (error: any) {
+    console.error("❌ Error assigning orphaned stores to admin:", error);
   } finally {
     connection.release();
   }

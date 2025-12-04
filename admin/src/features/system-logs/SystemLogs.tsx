@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useCallback } from "react";
 import { FileText, Search, Filter, Download, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -78,11 +79,62 @@ const SystemLogs: React.FC = () => {
 
   const getLevelLabel = (level: LogLevel) =>
     t(`systemLogs.filters.levels.${level}`);
+=======
+import React, { useEffect } from "react";
+import { Download, RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useAppSelector, useAppDispatch } from "../../store/hooks";
+import LogFilters from "./components/LogFilters";
+import LogTable from "./components/LogTable";
+import {
+  useGetRecentLogsQuery,
+  useGetMyStoresForLogsQuery,
+} from "../../store/api/activityLogsApi";
+import { useGetAllStoresQuery } from "../../store/api/storesApi";
+import { setAccessibleStores } from "../../store/slices/systemLogsSlice";
+import styles from "./SystemLogs.module.css";
+
+const SystemLogs: React.FC = () => {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector((state) => state.auth.user);
+
+  // RTK Query hooks
+  const {
+    data: logs,
+    isLoading: loading,
+    error: queryError,
+    refetch: refetchLogs,
+  } = useGetRecentLogsQuery(100);
+
+  const { data: myStores } = useGetMyStoresForLogsQuery(undefined, {
+    skip: currentUser?.role === "admin",
+  });
+
+  const { data: allStores } = useGetAllStoresQuery(undefined, {
+    skip: currentUser?.role !== "admin",
+  });
+
+  const error = queryError ? String(queryError) : null;
+
+  // Update accessible stores in Redux
+  useEffect(() => {
+    const stores = currentUser?.role === "admin" ? allStores || [] : myStores || [];
+    if (stores.length > 0) {
+      dispatch(setAccessibleStores(stores));
+    }
+  }, [dispatch, allStores, myStores, currentUser?.role]);
+
+  const handleRefresh = () => {
+    refetchLogs();
+  };
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   return (
     <div className={styles.container}>
       <section className={styles.card}>
         <div className={styles.controls}>
+<<<<<<< HEAD
           <div className={styles.controlsRow}>
             <div className={styles.searchWrapper}>
               <Search className={styles.searchIcon} />
@@ -112,6 +164,13 @@ const SystemLogs: React.FC = () => {
           <div className={styles.actions}>
             <button
               onClick={() => loadLogs()}
+=======
+          <LogFilters />
+
+          <div className={styles.actions}>
+            <button
+              onClick={handleRefresh}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               className={`${styles.actionButton} ${styles.refreshButton}`}
               disabled={loading}
             >
@@ -130,6 +189,7 @@ const SystemLogs: React.FC = () => {
           </div>
         </div>
 
+<<<<<<< HEAD
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead className={styles.tableHead}>
@@ -221,6 +281,27 @@ const SystemLogs: React.FC = () => {
             </div>
           )}
         </div>
+=======
+        {loading && (
+          <div className={styles.loadingState}>
+            <div className={styles.loadingSpinner} aria-hidden />
+            <p className={styles.emptyDescription}>
+              {t("systemLogs.states.loading")}
+            </p>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className={styles.errorState}>
+            <p className={styles.emptyDescription}>{error}</p>
+            <button onClick={handleRefresh} className={styles.retryButton}>
+              {t("systemLogs.actions.retry")}
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && <LogTable />}
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       </section>
     </div>
   );

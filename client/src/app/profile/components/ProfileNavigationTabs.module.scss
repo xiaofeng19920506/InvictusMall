@@ -1,0 +1,38 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.container {
+  margin-bottom: 1.5rem; // mb-6
+  border-bottom: 1px solid color('gray-200');
+}
+
+.nav {
+  display: flex;
+  gap: 2rem; // space-x-8
+}
+
+.tab {
+  border-bottom: 2px solid transparent;
+  padding: 1rem 0.25rem; // py-4 px-1
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  
+  &.active {
+    border-bottom-color: color('orange-500');
+    color: color('orange-600');
+  }
+  
+  &.inactive {
+    color: color('gray-500');
+    border-bottom-color: transparent;
+    
+    &:hover {
+      color: color('gray-700');
+      border-bottom-color: color('gray-300');
+    }
+  }
+}
+

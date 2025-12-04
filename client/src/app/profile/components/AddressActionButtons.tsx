@@ -1,117 +1,93 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import ConfirmDeleteModal from "@/components/common/ConfirmDeleteModal";
+import { useState } from "react";
+import Link from "next/link";
+import { deleteAddressAction } from "./addressActions";
+import { shippingAddressService } from "@/services/shippingAddress";
+import styles from "./AddressActionButtons.module.scss";
 
 interface AddressActionButtonsProps {
   addressId: string;
   isDefault: boolean;
   editHref: string;
-  deleteAction: (formData: FormData) => Promise<void>;
-  setDefaultAction?: (formData: FormData) => Promise<void>;
   addressLabel?: string;
+  onDefaultChanged?: (addressId: string) => void;
 }
 
 export default function AddressActionButtons({
   addressId,
   isDefault,
   editHref,
-  deleteAction,
-  setDefaultAction,
   addressLabel,
+  onDefaultChanged,
 }: AddressActionButtonsProps) {
-  const router = useRouter();
-  const [isSettingDefault, startSettingDefault] = useTransition();
-  const [isDeleting, startDeleting] = useTransition();
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isSettingDefault, setIsSettingDefault] = useState(false);
 
-  const handleEditClick = () => {
-    router.push(editHref, { scroll: false });
-  };
+  const handleSetDefault = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSettingDefault(true);
 
-  const handleSetDefault = () => {
-    if (!setDefaultAction) return;
-    const formData = new FormData();
-    formData.append("addressId", addressId);
-    startSettingDefault(() => {
-      setDefaultAction(formData)
-        .then(() => {
-          router.refresh();
-        })
-        .catch((error) => {
-          console.error("Failed to set default address:", error);
-        });
-    });
-  };
-
-  const handleDelete = () => {
-    setConfirmOpen(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    const formData = new FormData();
-    formData.append("addressId", addressId);
-    startDeleting(() => {
-      deleteAction(formData)
-        .then(() => {
-          setConfirmOpen(false);
-          router.refresh();
-        })
-        .catch((error) => {
-          console.error("Failed to delete address:", error);
-        });
-    });
-  };
-
-  const handleDeleteCancel = () => {
-    if (!isDeleting) {
-      setConfirmOpen(false);
+    try {
+      const response = await shippingAddressService.setDefaultAddress(addressId);
+      if (response.success) {
+        // Call callback to update parent component state without page refresh
+        if (onDefaultChanged) {
+          onDefaultChanged(addressId);
+        }
+        // Optionally reload the page data silently using router.refresh()
+        // But we skip it to avoid UI changes as requested
+      } else {
+        alert(response.message || "Failed to set default address");
+      }
+    } catch (error) {
+      console.error("Error setting default address:", error);
+      alert("Failed to set default address. Please try again.");
+    } finally {
+      setIsSettingDefault(false);
     }
   };
 
   return (
-    <>
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={handleEditClick}
-          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors cursor-pointer text-sm"
-        >
-          Edit
-        </button>
-        {!isDefault && setDefaultAction && (
+    <div className={styles.container}>
+      <Link
+        href={editHref}
+        className={`${styles.button} ${styles.edit}`}
+        scroll={false}
+      >
+        Edit
+      </Link>
+      {!isDefault && (
+        <form onSubmit={handleSetDefault} className={styles.form}>
           <button
-            type="button"
-            onClick={handleSetDefault}
+            type="submit"
+            className={`${styles.button} ${styles.setDefault}`}
             disabled={isSettingDefault}
-            className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors cursor-pointer text-sm disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isSettingDefault ? "Setting..." : "Set Default"}
           </button>
-        )}
+        </form>
+      )}
+      <form action={deleteAddressAction} className={styles.form}>
+        <input type="hidden" name="addressId" value={addressId} />
         <button
-          type="button"
-          onClick={handleDelete}
-          className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors cursor-pointer text-sm"
+          type="submit"
+          className={`${styles.button} ${styles.delete}`}
+          onClick={(e) => {
+            if (
+              !confirm(
+                addressLabel
+                  ? `Are you sure you want to delete ${addressLabel}? This action cannot be undone.`
+                  : "Are you sure you want to delete this address? This action cannot be undone."
+              )
+            ) {
+              e.preventDefault();
+            }
+          }}
         >
           Delete
         </button>
-      </div>
-
-      <ConfirmDeleteModal
-        isOpen={confirmOpen}
-        onClose={handleDeleteCancel}
-        onConfirm={handleDeleteConfirm}
-        isLoading={isDeleting}
-        title="Delete Address"
-        message={
-          addressLabel
-            ? `Are you sure you want to delete ${addressLabel}? This action cannot be undone.`
-            : "Are you sure you want to delete this address? This action cannot be undone."
-        }
-      />
-    </>
+      </form>
+    </div>
   );
 }
 

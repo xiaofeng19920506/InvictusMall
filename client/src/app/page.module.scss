@@ -1,0 +1,9 @@
+@use '../styles/variables.scss' as *;
+@use '../styles/mixins.scss' as *;
+
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}

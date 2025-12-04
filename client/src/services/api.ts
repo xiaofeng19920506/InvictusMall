@@ -293,7 +293,18 @@ class ApiService {
   // Category-related API methods
   async getTopLevelCategories(): Promise<ApiResponse<Category[]>> {
     const endpoint = `/api/categories?level=1`;
+<<<<<<< HEAD
     return await this.cachedRequest<ApiResponse<Category[]>>(endpoint);
+=======
+    // Use regular request instead of cachedRequest to avoid stale cache
+    // Cache is handled by browser/server ETags
+    return await this.request<ApiResponse<Category[]>>(endpoint);
+  }
+
+  async getStoreCategories(): Promise<ApiResponse<string[]>> {
+    const endpoint = `/api/stores/categories`;
+    return await this.cachedRequest<ApiResponse<string[]>>(endpoint);
+>>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   }
 
   async getAllCategories(params?: {

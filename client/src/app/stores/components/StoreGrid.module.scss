@@ -1,0 +1,114 @@
+@use '../../../styles/variables.scss' as *;
+@use '../../../styles/mixins.scss' as *;
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); // Start with 2 columns on mobile like Amazon
+  gap: 0.75rem; // Tighter gap like Amazon (12px)
+  padding: 0 spacing(2);
+  
+  @include respond-to('sm') {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem; // 16px
+    padding: 0 spacing(3);
+  }
+  
+  @include respond-to('md') {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  
+  @include respond-to('lg') {
+    grid-template-columns: repeat(5, minmax(0, 1fr)); // More columns like Amazon
+    gap: 1rem;
+    padding: 0 spacing(4);
+  }
+  
+  @include respond-to('xl') {
+    grid-template-columns: repeat(6, minmax(0, 1fr)); // Even more columns on large screens
+    gap: 1.25rem; // 20px
+  }
+}
+
+.skeletonCard {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  box-shadow: shadow('md');
+  border: 1px solid color('gray-200');
+  overflow: hidden;
+}
+
+.skeletonImage {
+  height: 12rem;
+  background-color: color('gray-200');
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.skeletonContent {
+  padding: spacing(4);
+}
+
+.skeletonLine {
+  height: spacing(4);
+  background-color: color('gray-200');
+  border-radius: border-radius('md');
+  margin-bottom: spacing(2);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  &.w-3-4 {
+    width: 75%;
+  }
+  
+  &.w-1-2 {
+    width: 50%;
+    
+    &.last {
+      margin-bottom: 1rem;
+    }
+  }
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: spacing(2);
+  margin-top: spacing(4);
+}
+
+.skeletonGridLine {
+  height: spacing(3);
+  background-color: color('gray-200');
+  border-radius: border-radius('md');
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.emptyState {
+  text-align: center;
+  padding: spacing(12) spacing(4);
+}
+
+.emptyIcon {
+  font-size: 3.75rem;
+  margin-bottom: spacing(4);
+}
+
+.emptyTitle {
+  font-size: font-size('xl');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: spacing(2);
+}
+
+.emptyMessage {
+  color: color('gray-600');
+}
+

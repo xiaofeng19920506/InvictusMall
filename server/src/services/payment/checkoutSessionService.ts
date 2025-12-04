@@ -79,7 +79,7 @@ export async function preparePendingOrders(
       shippingAddress,
       paymentMethod: "stripe_checkout:pending",
       stripeSessionId: sessionId,
-      status: "pending_payment",
+      status: "pending",
     });
   }
 }

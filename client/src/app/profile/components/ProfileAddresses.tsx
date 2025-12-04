@@ -2,10 +2,9 @@ import AddressManager from "./AddressManager";
 import {
   createAddressAction,
   updateAddressAction,
-  deleteAddressAction,
-  setDefaultAddressAction,
 } from "./addressActions";
 import { ShippingAddress } from "@/lib/server-api";
+import styles from "./ProfileAddresses.module.scss";
 
 interface ProfileAddressesProps {
   initialAddresses: ShippingAddress[];
@@ -30,24 +29,21 @@ export default function ProfileAddresses({
   const basePath = "/profile?tab=addresses";
   const addHref = `${basePath}&showAdd=1`;
   const closeHref = basePath;
-  const getEditHref = (id: string) => `${basePath}&showAdd=1&edit=${id}`;
 
   const errorMessage =
     feedbackStatus === "error" && feedbackMessage ? feedbackMessage : undefined;
 
   return (
-    <div className="space-y-4">
+    <div className={styles.container}>
       <AddressManager
         addresses={initialAddresses}
         showModal={showModal}
         editingAddress={editingAddress}
         addHref={addHref}
         closeHref={closeHref}
-        getEditHref={getEditHref}
+        basePath={basePath}
         createAddressAction={createAddressAction}
         updateAddressAction={updateAddressAction}
-        deleteAddressAction={deleteAddressAction}
-        setDefaultAddressAction={setDefaultAddressAction}
         errorMessage={errorMessage}
       />
     </div>
