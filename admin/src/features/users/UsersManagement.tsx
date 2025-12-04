@@ -351,32 +351,6 @@ const UsersManagement: React.FC = () => {
         </div>
       )}
 
-      <div className="card">
-        <div className={styles.filters}>
-          <div className={styles.searchWrapper}>
-            <Search className={styles.searchIcon} />
-            <input
-              type="text"
-              placeholder={t("users.searchPlaceholder")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`form-input ${styles.searchInput}`}
-            />
-          </div>
-          <div>
-            <select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value)}
-              className={`form-input form-select ${styles.roleSelect}`}
-            >
-              <option value="all">{t("users.filters.allRoles")}</option>
-              <option value="admin">{t("users.filters.admin")}</option>
-              <option value="owner">{t("users.filters.owner") || "Owner"}</option>
-              <option value="manager">{t("users.filters.manager") || "Manager"}</option>
-              <option value="employee">{t("users.filters.employee") || "Employee"}</option>
-            </select>
-          </div>
-        </div>
       <RegisterStaffForm />
 
       <div className="card">
@@ -386,151 +360,6 @@ const UsersManagement: React.FC = () => {
       <div className="card">
         <div className="card-header">
           <h3 className="card-title">
-<<<<<<< HEAD
-            {t("users.table.title", { count: filteredUsers.length })}
-          </h3>
-        </div>
-
-        <div className={styles.tableWrapper}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t("users.table.user")}</th>
-                <th>{t("users.table.role")}</th>
-                <th>{t("users.table.contact")}</th>
-                <th>{t("users.table.status")}</th>
-                <th>{t("users.table.joined")}</th>
-                <th>{t("users.table.actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div className={styles.userCell}>
-                      <div className={styles.userAvatar}>
-                        <Users className="w-5 h-5" />
-                      </div>
-                      <div className={styles.userInfo}>
-                        <div className={styles.userName}>
-                          {user.firstName} {user.lastName}
-                        </div>
-                        <div className={styles.userEmail}>{user.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      className={`${styles.roleBadge} ${getRoleBadgeColor(
-                        user.role
-                      )}`}
-                    >
-                      {t(`users.roles.${user.role}`, {
-                        defaultValue: user.role.replace("_", " ").toUpperCase(),
-                      })}
-                    </span>
-                  </td>
-                  <td>
-                    <div className={styles.contactInfo}>
-                      <div className={styles.contactRow}>
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <span>{user.email}</span>
-                      </div>
-                      {user.phoneNumber && (
-                        <div className={styles.contactRow}>
-                          <Phone className="w-4 h-4 text-gray-400" />
-                          <span>{user.phoneNumber}</span>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.statusColumn}>
-                      <span
-                        className={`${styles.statusBadge} ${
-                          user.isActive
-                            ? styles.statusActive
-                            : styles.statusInactive
-                        }`}
-                      >
-                        {user.isActive
-                          ? t("users.status.active")
-                          : t("users.status.inactive")}
-                      </span>
-                      {user.emailVerified ? (
-                        <div className={styles.verifiedRow}>
-                          <Shield className="w-3 h-3" />
-                          {t("users.status.emailVerified")}
-                        </div>
-                      ) : (
-                        <div className={styles.unverified}>
-                          {t("users.status.emailUnverified")}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.dateRow}>
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.userActions}>
-                      <button
-                        onClick={() => setEditingUser(user)}
-                        className="btn btn-secondary btn-sm"
-                        title={t("users.actions.editTitle")}
-                        disabled={!user.canEdit && user.id !== currentUser?.id}
-                        style={{ 
-                          opacity: (user.canEdit || user.id === currentUser?.id) ? 1 : 0.5, 
-                          cursor: (user.canEdit || user.id === currentUser?.id) ? 'pointer' : 'not-allowed' 
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      {user.canEdit && currentUser?.role === "admin" &&
-                        user.id !== currentUser.id && (
-                        <button
-                          onClick={() => {
-                            showInfo(t("users.actions.toggleSoon"));
-                          }}
-                          className={`btn btn-sm ${
-                            user.isActive ? "btn-warning" : "btn-success"
-                          }`}
-                          title={
-                            user.isActive
-                              ? t("users.actions.deactivateTitle")
-                              : t("users.actions.activateTitle")
-                          }
-                        >
-                          {user.isActive
-                            ? t("users.actions.deactivate")
-                            : t("users.actions.activate")}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-            onPageChange={handlePageChange}
-            onItemsPerPageChange={handleItemsPerPageChange}
-          />
-        </div>
-
-      </div>
-
-      {filteredUsers.length === 0 && (
-=======
             {t("users.table.title", { count: filteredUsersCount })}
           </h3>
         </div>
@@ -548,7 +377,6 @@ const UsersManagement: React.FC = () => {
       </div>
 
       {filteredUsersCount === 0 && (
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         <div className={styles.emptyState}>
           <Users className={styles.emptyIcon} />
           <h3 className={styles.emptyTitle}>{t("users.empty.title")}</h3>
