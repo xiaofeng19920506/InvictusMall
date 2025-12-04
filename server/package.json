@@ -9,8 +9,7 @@
     "build": "tsc",
     "test": "jest",
     "create-admin": "ts-node scripts/createAdmin.ts",
-    "seed-categories": "ts-node src/scripts/seedCategories.ts",
-    "cleanup-system-logs": "ts-node scripts/cleanupSystemLogs.ts"
+    "seed-categories": "ts-node src/scripts/seedCategories.ts"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
