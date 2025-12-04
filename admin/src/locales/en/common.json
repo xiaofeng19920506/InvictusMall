@@ -6,10 +6,7 @@
       "products": "Products",
       "categories": "Categories",
       "orders": "Orders",
-<<<<<<< HEAD
-=======
       "shipments": "Shipments",
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       "inventory": "Inventory Management",
       "users": "Users",
       "settings": "Settings",
@@ -55,10 +52,7 @@
       "products": "Products",
       "categories": "Categories",
       "orders": "Orders",
-<<<<<<< HEAD
-=======
       "shipments": "Shipments",
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       "inventory": "Inventory Management",
       "users": "Users",
       "settings": "Settings",
@@ -126,17 +120,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-<<<<<<< HEAD
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
-=======
       "owner": "Store Owner/Admin",
       "selectOwner": "-- Select owner/admin --",
       "loadingOwners": "Loading owners/admins...",
       "noOwnersAvailable": "No owners or admins available. Please create an owner or admin account first."
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "invalidImageType": "Please select an image file.",
@@ -718,12 +705,8 @@
       "allLevels": "All Levels",
       "level1": "Level 1 (Top Level)",
       "level2": "Level 2 (Subcategory)",
-<<<<<<< HEAD
-      "level3": "Level 3 (Sub-subcategory)"
-=======
       "level3": "Level 3 (Sub-subcategory)",
       "level4": "Level 4 (Sub-sub-subcategory)"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "table": {
       "name": "Name",
@@ -782,11 +765,7 @@
       "activeHelp": "Inactive categories won't appear in selection dropdowns"
     },
     "warning": {
-<<<<<<< HEAD
-      "maxLevel": "Maximum level (3) reached - cannot have children"
-=======
       "maxLevel": "Maximum level (4) reached - cannot have children"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "create": "Create Category",
@@ -806,8 +785,6 @@
       "saveFailed": "Failed to save category"
     }
   },
-<<<<<<< HEAD
-=======
   "shipments": {
     "searchPlaceholder": "Search by tracking number, order ID, or carrier...",
     "filters": {
@@ -946,7 +923,6 @@
       "isActive": "Active"
     }
   },
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
@@ -958,14 +934,11 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
-<<<<<<< HEAD
-=======
     "refresh": "Refresh",
     "create": "Create",
     "update": "Update",
     "creating": "Creating...",
     "updating": "Updating...",
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     "pagination": {
       "showing": "Showing",
       "to": "to",
@@ -985,12 +958,8 @@
       "placeholder": "Search orders..."
     },
     "filter": {
-<<<<<<< HEAD
-      "allStatuses": "All Statuses"
-=======
       "allStatuses": "All Statuses",
       "allStores": "All Stores"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "table": {
       "orderId": "Order ID",
@@ -1007,13 +976,9 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
-<<<<<<< HEAD
-      "cancelled": "Cancelled"
-=======
       "cancelled": "Cancelled",
       "return_processing": "Return Processing",
       "returned": "Returned"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No orders found"
@@ -1216,8 +1181,6 @@
       "productNotFound": "Product not found",
       "loadError": "Failed to load inventory",
       "loadStoresError": "Failed to load stores"
-<<<<<<< HEAD
-=======
     },
     "tabs": {
       "products": "Products",
@@ -1240,7 +1203,6 @@
         "reason": "Reason",
         "order": "Order"
       }
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     }
   }
 }

@@ -118,17 +118,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-<<<<<<< HEAD
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
-=======
       "owner": "Ladenbesitzer/Administrator",
       "selectOwner": "-- Ladenbesitzer/Administrator auswählen --",
       "loadingOwners": "Ladenbesitzer/Administratoren werden geladen...",
       "noOwnersAvailable": "Keine Ladenbesitzer oder Administratoren verfügbar. Bitte erstellen Sie zuerst ein Ladenbesitzer- oder Administratorkonto."
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "invalidImageType": "Please select an image file.",
@@ -291,14 +284,6 @@
       "error": "Failed to save settings."
     },
     "profile": {
-<<<<<<< HEAD
-      "title": "Profile Information",
-      "firstName": "First Name",
-      "lastName": "Last Name",
-      "email": "Email",
-      "role": "Role",
-      "note": "Profile information can be updated through your account settings."
-=======
       "title": "Profilinformationen",
       "firstName": "Vorname",
       "lastName": "Nachname",
@@ -313,7 +298,6 @@
       },
       "updateSuccess": "Profil erfolgreich aktualisiert",
       "updateError": "Fehler beim Aktualisieren des Profils"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "notifications": {
       "title": "Notifications",
@@ -839,13 +823,9 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
-<<<<<<< HEAD
-      "cancelled": "Cancelled"
-=======
       "cancelled": "Cancelled",
       "return_processing": "Rückgabe in Bearbeitung",
       "returned": "Zurückgegeben"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No orders found"
