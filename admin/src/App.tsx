@@ -35,17 +35,6 @@ function AppContent() {
 
 function App() {
   return (
-<<<<<<< HEAD
-    <ThemeProvider>
-      <Router>
-        <AuthProvider>
-          <NotificationProvider>
-            <AppContent />
-          </NotificationProvider>
-        </AuthProvider>
-      </Router>
-    </ThemeProvider>
-=======
     <Provider store={store}>
       <ThemeProvider>
         <Router>
@@ -57,7 +46,6 @@ function App() {
         </Router>
       </ThemeProvider>
     </Provider>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   );
 }
 

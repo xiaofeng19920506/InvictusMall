@@ -7,10 +7,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { getAvatarUrl } from '@/utils/imageUtils';
 import { apiService, type Category } from '@/services/api';
-<<<<<<< HEAD
-=======
 import styles from './Header.module.scss';
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -25,10 +22,7 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchType, setSearchType] = useState('All');
   const [showDropdown, setShowDropdown] = useState(false);
-<<<<<<< HEAD
-=======
   const [showSearchTypeDropdown, setShowSearchTypeDropdown] = useState(false);
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   const [categories, setCategories] = useState<string[]>(['All']);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -67,17 +61,11 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
     };
   }, []);
 
-<<<<<<< HEAD
-  // Fetch top-level categories on mount
-=======
   // Fetch top-level categories on mount (filtered by stores at API level)
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setLoadingCategories(true);
-<<<<<<< HEAD
-=======
         // Clear any cached category data to ensure fresh fetch
         const cacheKey = 'api_cache_/api/categories?level=1';
         try {
@@ -86,32 +74,10 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
           // Ignore cache clear errors
         }
         
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         const response = await apiService.getTopLevelCategories();
         console.log('Categories API response:', response);
         
         if (response.success && response.data && Array.isArray(response.data)) {
-<<<<<<< HEAD
-          if (response.data.length > 0) {
-            // Map category names and prepend 'All'
-            const categoryNames = ['All', ...response.data.map((cat: Category) => cat.name)];
-            console.log('Setting categories:', categoryNames);
-            setCategories(categoryNames);
-          } else {
-            console.warn('Categories API returned empty array. Make sure to run: npm run seed-categories');
-            // Fallback to default categories if no categories exist
-            setCategories(['All', 'Electronics', 'Pet Supplies']);
-          }
-        } else {
-          console.warn('Invalid response structure:', response);
-          // Fallback to default categories if response structure is invalid
-          setCategories(['All', 'Electronics', 'Pet Supplies']);
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        // Fallback to default categories on error
-        setCategories(['All', 'Electronics', 'Pet Supplies']);
-=======
           // Map category names and prepend 'All'
           // API already filters to only include categories with stores (directly or via descendants)
           const categoryNames = ['All', ...response.data.map((cat: Category) => cat.name)];
@@ -131,13 +97,6 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
         setLoadingCategories(false);
       }
     };
-<<<<<<< HEAD
-
-    fetchCategories();
-  }, []);
-=======
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
-
     fetchCategories();
   }, []);
 
@@ -392,21 +351,6 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
       </div>
       
       {shouldShowCategoryNav && (
-<<<<<<< HEAD
-      <nav className="bg-gray-800 border-t border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-1 overflow-x-auto py-2">
-            {loadingCategories ? (
-              <div className="px-4 py-2 text-sm text-gray-400">Loading categories...</div>
-            ) : (
-              categories.map((category) => (
-                <button
-                  key={category}
-                  className={`px-4 py-2 text-sm font-medium rounded-md whitespace-nowrap transition-colors category-button cursor-pointer ${
-                    selectedCategory === category
-                      ? 'bg-orange-500 text-white'
-                      : 'text-gray-300'
-=======
       <nav className={styles.categoryNav}>
         <div className={styles.categoryNavContent}>
           <div className={styles.categoryList}>
@@ -421,16 +365,11 @@ export default function Header({ onSearch, onCategoryFilter, onSearchTypeChange 
                     selectedCategory === category
                       ? styles.active
                       : styles.inactive
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                   }`}
                   onClick={() => handleCategoryChange(category)}
                 >
                   {category}
-<<<<<<< HEAD
-                </button>
-=======
                 </Link>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               ))
             )}
           </div>

@@ -50,11 +50,7 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({
       case 'error':
         return 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800';
       case 'warning':
-<<<<<<< HEAD
         return 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800';
-=======
-        return 'bg-yellow-50 border-yellow-200 warning-notification';
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       default:
         return 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800';
     }

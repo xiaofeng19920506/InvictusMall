@@ -1,14 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-<<<<<<< HEAD
-import { useParams } from "next/navigation";
-import { Store } from "@/services/api";
-import { productService, Product } from "@/services/product";
-import { useCart } from "@/contexts/CartContext";
-import { getImageUrl } from "@/utils/imageUtils";
-import ReservationModal from "./ReservationModal";
-=======
 import { useParams, useRouter } from "next/navigation";
 import { Store } from "@/services/api";
 import { productService, Product } from "@/services/product";
@@ -16,7 +8,6 @@ import { useCart } from "@/contexts/CartContext";
 import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
 import ReservationModal from "./ReservationModal";
 import styles from "./StoreTabsContent.module.scss";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
 function AddToCartButton({
   product,
@@ -33,13 +24,9 @@ function AddToCartButton({
     addItem({
       productId: product.id,
       productName: product.name,
-<<<<<<< HEAD
-      productImage: product.imageUrl,
-=======
       productImage: (product.imageUrls && product.imageUrls.length > 0) 
         ? product.imageUrls[0] 
         : product.imageUrl,
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       price: product.price,
       quantity: 1,
       storeId: store.id,
@@ -52,15 +39,8 @@ function AddToCartButton({
   return (
     <button
       onClick={handleAddToCart}
-<<<<<<< HEAD
-      className={`w-full py-2 rounded-md transition-colors cursor-pointer ${
-        added
-          ? "bg-green-500 text-white"
-          : "bg-orange-500 text-white hover:bg-orange-600"
-=======
       className={`${styles.addToCartButton} ${
         added ? styles.added : styles.normal
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       }`}
     >
       {added ? "✓ Added to Cart" : "Add to Cart"}
@@ -74,10 +54,7 @@ interface StoreTabsContentProps {
 
 export default function StoreTabsContent({ store }: StoreTabsContentProps) {
   const params = useParams();
-<<<<<<< HEAD
-=======
   const router = useRouter();
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   const storeId = params.id as string;
 
   const [allItems, setAllItems] = useState<Product[]>([]);
@@ -147,15 +124,9 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
   return (
     <>
       {/* Tabs */}
-<<<<<<< HEAD
-      <div className="bg-white rounded-lg shadow-md mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
-=======
       <div className={styles.tabsContainer}>
         <div className={styles.tabsHeader}>
           <nav className={styles.tabsNav} aria-label="Tabs">
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             {[
               ...(products.length > 0 ? [{ id: "products", label: `Products (${products.length})` }] : []),
               ...(services.length > 0 ? [{ id: "services", label: `Services (${services.length})` }] : []),
@@ -165,14 +136,8 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
 <<<<<<< HEAD
-                className={`py-4 px-1 border-b-2 font-medium text-sm cursor-pointer ${
-                  activeTab === tab.id
-                    ? "border-orange-500 text-orange-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-=======
                 className={`${styles.tabButton} ${
                   activeTab === tab.id ? styles.active : styles.inactive
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                 }`}
               >
                 {tab.label}
@@ -181,59 +146,11 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
           </nav>
         </div>
 
-<<<<<<< HEAD
-        <div className="p-6">
-=======
         <div className={styles.tabsContent}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
           {/* Products Tab */}
           {activeTab === "products" && (
             <div>
               {productsLoading ? (
-<<<<<<< HEAD
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {products.map((product) => (
-                      <div
-                        key={product.id}
-                        className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                      >
-                        {product.imageUrl && (
-                          <img
-                            src={getImageUrl(product.imageUrl) || "/placeholder/product.png"}
-                            alt={product.name}
-                            className="w-full h-48 object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.onerror = null;
-                              target.src = "/placeholder/product.png";
-                            }}
-                          />
-                        )}
-                        {!product.imageUrl && (
-                          <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-400">No Image</span>
-                          </div>
-                        )}
-                        <div className="p-4">
-                          <h4 className="font-semibold text-gray-900 mb-1">
-                            {product.name}
-                          </h4>
-                          {product.description && (
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                              {product.description}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-xl font-bold text-orange-500">
-                              ${product.price.toFixed(2)}
-                            </span>
-                            <span className="text-sm text-gray-500">
-=======
                 <div className={styles.loadingContainer}>
                   <div className={styles.spinner}></div>
                 </div>
@@ -287,13 +204,8 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                   </div>
 
                   {products.length === 0 && !productsLoading && (
-<<<<<<< HEAD
-                    <div className="text-center py-12">
-                      <p className="text-gray-600">No products available yet.</p>
-=======
                     <div className={styles.emptyState}>
                       <p className={styles.emptyText}>No products available yet.</p>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                     </div>
                   )}
                 </>
@@ -305,47 +217,6 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
           {activeTab === "services" && (
             <div>
               {productsLoading ? (
-<<<<<<< HEAD
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {services.map((service) => (
-                      <div
-                        key={service.id}
-                        className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                      >
-                        {service.imageUrl && (
-                          <img
-                            src={getImageUrl(service.imageUrl) || "/placeholder/service.png"}
-                            alt={service.name}
-                            className="w-full h-48 object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.onerror = null;
-                              target.src = "/placeholder/service.png";
-                            }}
-                          />
-                        )}
-                        {!service.imageUrl && (
-                          <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                            <span className="text-gray-400">No Image</span>
-                          </div>
-                        )}
-                        <div className="p-4">
-                          <h4 className="font-semibold text-gray-900 mb-1">
-                            {service.name}
-                          </h4>
-                          {service.description && (
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                              {service.description}
-                            </p>
-                          )}
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-xl font-bold text-orange-500">
-=======
                 <div className={styles.loadingContainer}>
                   <div className={styles.spinner}></div>
                 </div>
@@ -384,7 +255,6 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                           )}
                           <div className={styles.productFooter}>
                             <span className={styles.productPrice}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                               ${service.price.toFixed(2)}
                             </span>
                           </div>
@@ -393,11 +263,7 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                               setSelectedService(service);
                               setIsReservationModalOpen(true);
                             }}
-<<<<<<< HEAD
-                            className="w-full py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors cursor-pointer"
-=======
                             className={styles.reservationButton}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                           >
                             Make Reservation
                           </button>
@@ -407,13 +273,8 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
                   </div>
 
                   {services.length === 0 && !productsLoading && (
-<<<<<<< HEAD
-                    <div className="text-center py-12">
-                      <p className="text-gray-600">No services available yet.</p>
-=======
                     <div className={styles.emptyState}>
                       <p className={styles.emptyText}>No services available yet.</p>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                     </div>
                   )}
                 </>
@@ -423,17 +284,10 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
 
           {/* Reviews Tab */}
           {activeTab === "reviews" && (
-<<<<<<< HEAD
-            <div className="space-y-4">
-              <div className="text-center py-12">
-                <p className="text-gray-600">Review system coming soon...</p>
-                <p className="text-sm text-gray-500 mt-2">
-=======
             <div className={styles.reviewsContainer}>
               <div className={styles.emptyState}>
                 <p className={styles.emptyText}>Review system coming soon...</p>
                 <p className={styles.emptyTextSmall}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                   Reviews feature will be implemented in the next update.
                 </p>
               </div>

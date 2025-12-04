@@ -106,9 +106,6 @@ class AuthService {
       const response = await axios.post('/api/staff/login', credentials);
       const data = response.data;
       
-<<<<<<< HEAD
-      // Store token in localStorage if provided (fallback for when cookies don't work)
-=======
       // The server returns { success: true, data: { success: true, user: {...}, token: "..." } }
       // We need to extract the inner data object
       if (data.success && data.data) {
@@ -129,7 +126,6 @@ class AuthService {
       }
       
       // Fallback to direct data if structure is different
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       if (data.token) {
         localStorage.setItem('staff_auth_token', data.token);
       }

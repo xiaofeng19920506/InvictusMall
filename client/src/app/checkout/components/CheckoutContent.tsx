@@ -17,10 +17,7 @@ import DeliveryAddressStep from "./DeliveryAddressStep";
 import PaymentMethodStep from "./PaymentMethodStep";
 import ReviewOrderStep from "./ReviewOrderStep";
 import OrderSummary from "./OrderSummary";
-<<<<<<< HEAD
-=======
 import styles from "./CheckoutContent.module.scss";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
 interface CheckoutContentProps {
   addresses: ShippingAddress[];
@@ -265,24 +262,14 @@ export default function CheckoutContent({
     return (
       <>
         <Header />
-<<<<<<< HEAD
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
-=======
         <div className={styles.emptyCartContainer}>
           <div className={styles.emptyCartContent}>
             <h2 className={styles.emptyCartTitle}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               Your cart is empty
             </h2>
             <Link
               href="/"
-<<<<<<< HEAD
-              className="inline-block bg-orange-500 text-white px-6 py-2 rounded-md hover:bg-orange-600 transition-colors"
-=======
               className={styles.continueShoppingButton}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             >
               Continue Shopping
             </Link>
@@ -292,37 +279,6 @@ export default function CheckoutContent({
     );
   }
 
-<<<<<<< HEAD
-  return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Progress Indicator */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between max-w-3xl">
-              <div className="flex items-center flex-1">
-                <div className={`flex items-center ${currentStep === "delivery" ? "text-orange-600" : currentStep === "payment" || currentStep === "review" ? "text-green-600" : "text-gray-400"}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${currentStep === "delivery" ? "bg-orange-600 text-white" : currentStep === "payment" || currentStep === "review" ? "bg-green-600 text-white" : "bg-gray-300 text-gray-600"}`}>
-                    {currentStep === "payment" || currentStep === "review" ? "✓" : "1"}
-                  </div>
-                  <span className="ml-2 font-medium">Delivery</span>
-                </div>
-                <div className={`flex-1 h-1 mx-4 ${currentStep === "payment" || currentStep === "review" ? "bg-green-600" : "bg-gray-300"}`} />
-                <div className={`flex items-center ${currentStep === "payment" ? "text-orange-600" : currentStep === "review" ? "text-green-600" : "text-gray-400"}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${currentStep === "payment" ? "bg-orange-600 text-white" : currentStep === "review" ? "bg-green-600 text-white" : "bg-gray-300 text-gray-600"}`}>
-                    {currentStep === "review" ? "✓" : "2"}
-                  </div>
-                  <span className="ml-2 font-medium">Payment</span>
-                </div>
-                <div className={`flex-1 h-1 mx-4 ${currentStep === "review" ? "bg-green-600" : "bg-gray-300"}`} />
-                <div className={`flex items-center ${currentStep === "review" ? "text-orange-600" : "text-gray-400"}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${currentStep === "review" ? "bg-orange-600 text-white" : "bg-gray-300 text-gray-600"}`}>
-                    3
-                  </div>
-                  <span className="ml-2 font-medium">Review</span>
-                </div>
-=======
   const getStepClass = (step: string) => {
     if (currentStep === step) return styles.active;
     if (
@@ -382,7 +338,6 @@ export default function CheckoutContent({
                   3
                 </div>
                 <span className={styles.stepLabel}>Review</span>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               </div>
             </div>
           </div>
@@ -392,10 +347,6 @@ export default function CheckoutContent({
             {/* Main Checkout Content */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg shadow-md">
-                {statusError && (
-                  <div className="border-b border-red-200 bg-red-50 p-4">
-                    <p className="text-sm text-red-700">{statusError}</p>
-=======
           <div className={styles.contentGrid}>
             {/* Main Checkout Content */}
             <div className={styles.mainContent}>
@@ -403,7 +354,6 @@ export default function CheckoutContent({
                 {statusError && (
                   <div className={styles.errorBanner}>
                     <p className={styles.errorMessage}>{statusError}</p>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                   </div>
                 )}
 
@@ -430,10 +380,7 @@ export default function CheckoutContent({
                     onContinue={handleContinueToReview}
                     onBack={handleBackToDelivery}
                     onCreatePaymentIntent={handleCreatePaymentIntent}
-<<<<<<< HEAD
-=======
                     onError={(error) => setStatusError(error)}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                   />
                 )}
 
@@ -465,11 +412,7 @@ export default function CheckoutContent({
             </div>
 
             {/* Order Summary Sidebar */}
-<<<<<<< HEAD
-            <div className="lg:col-span-1">
-=======
             <div className={styles.sidebar}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
               <OrderSummary
                 items={items}
                 subtotal={subtotal}

@@ -19,20 +19,12 @@
     "react-i18next": "^16.3.5"
   },
   "devDependencies": {
-<<<<<<< HEAD
-    "@tailwindcss/postcss": "^4",
-=======
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
-<<<<<<< HEAD
-    "tailwindcss": "^4",
-=======
     "sass": "^1.94.2",
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     "typescript": "^5"
   }
 }

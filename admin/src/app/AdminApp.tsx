@@ -1,11 +1,7 @@
-<<<<<<< HEAD
-import { useState, useMemo, useEffect } from "react";
-=======
 import { useEffect } from "react";
 import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "../store";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import AdminLayout from "../shared/components/AdminLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { authService } from "../services/auth";
@@ -22,65 +18,6 @@ import {
 } from "./routes";
 import type { AdminPageKey } from "./types";
 
-<<<<<<< HEAD
-const AdminApp = () => {
-  const [currentPage, setCurrentPage] = useState<AdminPageKey>("dashboard");
-  const { user } = useAuth();
-
-  // Redirect non-admin users away from categories page
-  // Redirect non-authenticated or unauthorized users away from protected pages
-  useEffect(() => {
-    if (!user) return;
-    
-    if (currentPage === "categories" && user.role !== "admin") {
-      setCurrentPage("dashboard");
-    }
-    
-    // Check inventory page access - requires stores permission
-    if (currentPage === "inventory" && !authService.hasPermission(user, "stores")) {
-      setCurrentPage("dashboard");
-    }
-  }, [currentPage, user]);
-
-  // Memoized page renderer to avoid unnecessary re-renders
-  const renderPage = useMemo(() => {
-    switch (currentPage) {
-      case "dashboard":
-        return <LazyDashboard onNavigate={setCurrentPage} />;
-      case "stores":
-        return <LazyStoresManagement />;
-      case "products":
-        return <LazyProductsManagement />;
-      case "categories":
-        // Only allow admin access
-        if (user && user.role === "admin") {
-          return <LazyCategoriesManagement />;
-        }
-        return <LazyDashboard onNavigate={setCurrentPage} />;
-      case "orders":
-        return <LazyOrdersManagement />;
-      case "users":
-        return <LazyUsersManagement />;
-      case "system_logs":
-        return <LazySystemLogs />;
-      case "settings":
-        return <LazySettings />;
-      case "inventory":
-        // Only allow access if user has stores permission
-        if (user && authService.hasPermission(user, "stores")) {
-          return <LazyInventoryManagement />;
-        }
-        return <LazyDashboard onNavigate={setCurrentPage} />;
-      default:
-        return <LazyDashboard onNavigate={setCurrentPage} />;
-    }
-  }, [currentPage, user]);
-
-  return (
-    <AdminLayout currentPage={currentPage} onPageChange={setCurrentPage}>
-      {renderPage}
-    </AdminLayout>
-=======
 // Route path mapping
 const ROUTE_PATHS: Record<AdminPageKey, string> = {
   dashboard: "/dashboard",
@@ -251,13 +188,9 @@ const AdminApp = () => {
         </Routes>
       </AdminLayout>
     </Provider>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   );
 };
 
 export default AdminApp;
-<<<<<<< HEAD
-=======
 export { ROUTE_PATHS };
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 

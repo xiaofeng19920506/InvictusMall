@@ -30,15 +30,11 @@ export default function HomeContent({
   const [searchType, setSearchType] = useState(initialSearchType);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-<<<<<<< HEAD
-  // Use stores hook - fetches on initial load and when search params change
-=======
   // Defer search query updates for smoother typing experience
   const deferredSearchQuery = useDeferredValue(searchQuery);
   
   // Use stores hook - fetches on initial load and when search params change
   // Use deferred value for search to avoid blocking UI during typing
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   const { stores: realTimeStores, loading, error, refetch, lastUpdated } = useRealTimeStores(
     deferredSearchQuery,
     selectedCategory,
@@ -108,11 +104,7 @@ export default function HomeContent({
     setSearchType(type);
   }, []);
 
-<<<<<<< HEAD
-  const handleRetry = () => {
-=======
   const handleRetry = useCallback(() => {
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     refetch();
   }, [refetch]);
 
@@ -123,29 +115,10 @@ export default function HomeContent({
         onCategoryFilter={handleCategoryFilter}
         onSearchTypeChange={handleSearchTypeChange}
       />
-<<<<<<< HEAD
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex items-center gap-4 flex-wrap">
-          <h2 className="text-3xl font-bold text-gray-900">
-            {searchType === "All"
-              ? selectedCategory === "All"
-                ? "All Stores"
-                : `${selectedCategory} Stores`
-              : `${searchType} Search Results`}
-          </h2>
-          <p className="text-gray-600">
-            {stores.length}{" "}
-            {searchType === "All" ? "store" : searchType.toLowerCase()}
-            {stores.length !== 1 ? "s" : ""} found
-            {searchQuery && ` for "${searchQuery}"`}
-            {searchType !== "All" && ` in ${searchType.toLowerCase()}`}
-          </p>
-=======
       <main className={styles.main}>
         <div className={styles.headerSection}>
           <h2 className={styles.title}>{title}</h2>
           <p className={styles.subtitle}>{subtitle}</p>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         </div>
 
         {/* Error State */}
@@ -176,12 +149,6 @@ export default function HomeContent({
           </div>
         )}
 
-<<<<<<< HEAD
-        <StoreGrid
-          stores={stores}
-          loading={isLoading}
-        />
-=======
         <div className={styles.storeGridContainer}>
           {isLoading ? (
             <StoreGridSkeleton />
@@ -189,7 +156,6 @@ export default function HomeContent({
             <StoreGrid stores={stores} />
           )}
         </div>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       </main>
     </div>
   );

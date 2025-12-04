@@ -1,28 +1,12 @@
 "use client";
 
-<<<<<<< HEAD
-import { useState, useEffect, useRef } from "react";
-=======
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import { useParams, useRouter } from "next/navigation";
 import { apiService, Store } from "@/services/api";
 import { productService, Product } from "@/services/product";
 import { useCart } from "@/contexts/CartContext";
 import Header from "@/components/common/Header";
 import Link from "next/link";
-<<<<<<< HEAD
-import { getImageUrl } from "@/utils/imageUtils";
-import ReservationModal from "./ReservationModal";
-
-function StarRating({ rating, size = "text-lg" }: { rating: number; size?: string }) {
-  // If no rating or rating is 0, show all empty stars
-  if (!rating || rating === 0) {
-    return (
-      <div className="flex">
-        {[...Array(5)].map((_, i) => (
-          <span key={i} className={`${size} text-gray-300`}>
-=======
 import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
 import ReservationModal from "./ReservationModal";
 import StoreHeader from "./StoreHeader";
@@ -37,7 +21,6 @@ function StarRating({ rating, size = "lg" }: { rating: number; size?: "sm" | "ba
       <div className={starRatingStyles.container}>
         {[...Array(5)].map((_, i) => (
           <span key={i} className={`${starRatingStyles.star} ${starRatingStyles.empty} ${starRatingStyles[size]}`}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             ☆
           </span>
         ))}
@@ -46,11 +29,7 @@ function StarRating({ rating, size = "lg" }: { rating: number; size?: "sm" | "ba
   }
 
   return (
-<<<<<<< HEAD
-    <div className="flex">
-=======
     <div className={starRatingStyles.container}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       {[...Array(5)].map((_, i) => {
         const starValue = i + 1;
         const filled = rating >= starValue;
@@ -59,15 +38,9 @@ function StarRating({ rating, size = "lg" }: { rating: number; size?: "sm" | "ba
         return (
           <span
             key={i}
-<<<<<<< HEAD
-            className={`${size} ${
-              filled || halfFilled ? "text-yellow-400" : "text-gray-300"
-            }`}
-=======
             className={`${starRatingStyles.star} ${
               filled || halfFilled ? starRatingStyles.filled : starRatingStyles.empty
             } ${starRatingStyles[size]}`}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
           >
             {filled ? "⭐" : halfFilled ? "⭐" : "☆"}
           </span>
@@ -139,11 +112,6 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const initialTabSet = useRef(false);
 
-<<<<<<< HEAD
-  // Separate products and services
-  const products = allItems.filter(item => item.category === "product" || !item.category);
-  const services = allItems.filter(item => item.category === "service");
-=======
   // Memoize filtered products and services to avoid recalculation
   const products = useMemo(
     () => allItems.filter(item => item.category === "product" || !item.category),
@@ -153,26 +121,17 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     () => allItems.filter(item => item.category === "service"),
     [allItems]
   );
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   useEffect(() => {
     if (storeId && !initialStore) {
       fetchStoreDetails();
     } else {
       setLoading(false);
-<<<<<<< HEAD
-    }
-    if (storeId) {
-      fetchProducts();
-    }
-  }, [storeId]);
-=======
     }
     if (storeId) {
       fetchProducts();
     }
   }, [storeId, initialStore, fetchStoreDetails, fetchProducts]);
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   // Set initial tab and handle tab switching when content is unavailable
   useEffect(() => {
@@ -200,11 +159,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     }
   }, [products.length, services.length, productsLoading, activeTab]);
 
-<<<<<<< HEAD
-  const fetchStoreDetails = async () => {
-=======
   const fetchStoreDetails = useCallback(async () => {
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     try {
       const response = await apiService.getStoreById(storeId);
       if (response.success) {
@@ -219,11 +174,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     }
   }, [storeId]);
 
-<<<<<<< HEAD
-  const fetchProducts = async () => {
-=======
   const fetchProducts = useCallback(async () => {
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     try {
       setProductsLoading(true);
       const response = await productService.getProductsByStoreId(storeId, { isActive: true });
@@ -239,11 +190,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     } finally {
       setProductsLoading(false);
     }
-<<<<<<< HEAD
-  };
-=======
   }, [storeId]);
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
   if (loading) {
     return (
@@ -284,98 +231,9 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
     <>
       <Header />
 
-<<<<<<< HEAD
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Store Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="flex-shrink-0">
-              {store.imageUrl ? (
-                <img
-                  src={getImageUrl(store.imageUrl) || "/placeholder/store.png"}
-                  alt={store.name}
-                  className="w-full md:w-64 h-64 object-cover rounded-lg"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    // Prevent infinite onError loop by removing the handler
-                    target.onerror = null;
-                    target.src = "/placeholder/store.png";
-                  }}
-                />
-              ) : (
-                <div className="w-full md:w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-400">No Image</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex-1">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-3xl font-bold text-gray-900">
-                      {store.name}
-                    </h1>
-                    {store.isVerified && (
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
-                        ✓ Verified
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <StarRating rating={store.rating} size="text-sm" />
-                      <span>{store.rating.toFixed(1)}</span>
-                    </div>
-                    <span>({store.reviewCount} reviews)</span>
-                    <span>📍 {store.location}</span>
-                  </div>
-                </div>
-              </div>
-
-              <p className="text-gray-700 mb-4">{store.description}</p>
-
-              <div className="flex flex-wrap gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Category:</span>
-                  <span className="ml-2 font-medium">{store.category}</span>
-                </div>
-                {!productsLoading && (
-                  <>
-                    {products.length > 0 && (
-                      <div>
-                        <span className="text-gray-500">Products:</span>
-                        <span className="ml-2 font-medium">{products.length}</span>
-                      </div>
-                    )}
-                    {products.length === 0 && services.length > 0 && (
-                      <div>
-                        <span className="text-gray-500">Services:</span>
-                        <span className="ml-2 font-medium">{services.length}</span>
-                      </div>
-                    )}
-                  </>
-                )}
-                <div>
-                  <span className="text-gray-500">Established:</span>
-                  <span className="ml-2 font-medium">{store.establishedYear}</span>
-                </div>
-                {store.discount && (
-                  <div>
-                    <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full font-medium">
-                      {store.discount}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-=======
       <div className={styles.container}>
         {/* Store Header - Using StoreHeader component */}
         <StoreHeader store={store} storeId={storeId} />
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
         {/* Tabs */}
         <div className={styles.tabsCard}>
@@ -397,60 +255,11 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             </nav>
           </div>
 
-<<<<<<< HEAD
-          <div className="p-6">
-=======
           <div className={styles.tabContent}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
             {/* Products Tab */}
             {activeTab === "products" && (
               <div>
                 {productsLoading ? (
-<<<<<<< HEAD
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {products.map((product) => (
-                        <div
-                          key={product.id}
-                          className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                        >
-                          {product.imageUrl && (
-                            <img
-                              src={getImageUrl(product.imageUrl) || "/placeholder/product.png"}
-                              alt={product.name}
-                              className="w-full h-48 object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                // Prevent infinite onError loop by removing the handler
-                                target.onerror = null;
-                                target.src = "/placeholder/product.png";
-                              }}
-                            />
-                          )}
-                          {!product.imageUrl && (
-                            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-400">No Image</span>
-                            </div>
-                          )}
-                          <div className="p-4">
-                            <h4 className="font-semibold text-gray-900 mb-1">
-                              {product.name}
-                            </h4>
-                            {product.description && (
-                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                                {product.description}
-                              </p>
-                            )}
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xl font-bold text-orange-500">
-                                ${product.price.toFixed(2)}
-                              </span>
-                              <span className="text-sm text-gray-500">
-=======
                   <div className={styles.loadingSpinner}>
                     <div className={styles.smallSpinner}></div>
                   </div>
@@ -493,7 +302,6 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                                 ${product.price.toFixed(2)}
                               </span>
                               <span className={styles.productStock}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                                 Stock: {product.stockQuantity}
                               </span>
                             </div>
@@ -504,13 +312,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                     </div>
 
                     {products.length === 0 && !productsLoading && (
-<<<<<<< HEAD
-                      <div className="text-center py-12">
-                        <p className="text-gray-600">No products available yet.</p>
-=======
                       <div className={styles.emptyState}>
                         <p>No products available yet.</p>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                       </div>
                     )}
                   </>
@@ -522,48 +325,6 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             {activeTab === "services" && (
               <div>
                 {productsLoading ? (
-<<<<<<< HEAD
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {services.map((service) => (
-                        <div
-                          key={service.id}
-                          className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                        >
-                          {service.imageUrl && (
-                            <img
-                              src={getImageUrl(service.imageUrl) || "/placeholder/service.png"}
-                              alt={service.name}
-                              className="w-full h-48 object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                // Prevent infinite onError loop by removing the handler
-                                target.onerror = null;
-                                target.src = "/placeholder/service.png";
-                              }}
-                            />
-                          )}
-                          {!service.imageUrl && (
-                            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                              <span className="text-gray-400">No Image</span>
-                            </div>
-                          )}
-                          <div className="p-4">
-                            <h4 className="font-semibold text-gray-900 mb-1">
-                              {service.name}
-                            </h4>
-                            {service.description && (
-                              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                                {service.description}
-                              </p>
-                            )}
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="text-xl font-bold text-orange-500">
-=======
                   <div className={styles.loadingSpinner}>
                     <div className={styles.smallSpinner}></div>
                   </div>
@@ -602,7 +363,6 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                             )}
                             <div className={styles.productFooter}>
                               <span className={styles.productPrice}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                                 ${service.price.toFixed(2)}
                               </span>
                             </div>
@@ -611,11 +371,7 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                                 setSelectedService(service);
                                 setIsReservationModalOpen(true);
                               }}
-<<<<<<< HEAD
-                              className="w-full py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 transition-colors cursor-pointer"
-=======
                               className={styles.reservationButton}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                             >
                               Make Reservation
                             </button>
@@ -625,13 +381,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
                     </div>
 
                     {services.length === 0 && !productsLoading && (
-<<<<<<< HEAD
-                      <div className="text-center py-12">
-                        <p className="text-gray-600">No services available yet.</p>
-=======
                       <div className={styles.emptyState}>
                         <p>No services available yet.</p>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                       </div>
                     )}
                   </>

@@ -47,8 +47,6 @@
   border-left: 4px solid #f59e0b;
 }
 
-<<<<<<< HEAD
-=======
 .dark .alertCard {
   background-color: var(--bg-primary) !important;
   border: 2px solid var(--primary-color) !important;
@@ -57,7 +55,6 @@
     0 4px 6px -1px rgba(251, 146, 60, 0.2) !important;
 }
 
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 .alertContent {
   display: flex;
   align-items: center;
@@ -65,8 +62,6 @@
   padding: 0.75rem;
 }
 
-<<<<<<< HEAD
-=======
 .alertContent strong {
   color: var(--text-primary);
   display: block;
@@ -89,7 +84,6 @@
   color: var(--text-secondary);
 }
 
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 .alertIcon {
   width: 1.5rem;
   height: 1.5rem;
@@ -97,13 +91,10 @@
   flex-shrink: 0;
 }
 
-<<<<<<< HEAD
-=======
 .dark .alertIcon {
   color: var(--primary-color);
 }
 
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 .alertIconSmall {
   width: 0.875rem;
   height: 0.875rem;
@@ -111,13 +102,10 @@
   color: #f59e0b;
 }
 
-<<<<<<< HEAD
-=======
 .dark .alertIconSmall {
   color: var(--primary-color);
 }
 
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 .productsContainer {
   flex: 1;
   display: flex;
@@ -164,15 +152,6 @@
 
 .productName {
   font-weight: 600;
-<<<<<<< HEAD
-  color: #111827;
-  margin-bottom: 0.25rem;
-}
-
-.productDescription {
-  font-size: 0.875rem;
-  color: #6b7280;
-=======
   color: #000000;
   margin-bottom: 0.25rem;
 }
@@ -184,17 +163,12 @@
 .productDescription {
   font-size: 0.875rem;
   color: #000000;
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-<<<<<<< HEAD
-.lowStockRow {
-  background-color: #fef3c7;
-=======
 .dark .productDescription {
   color: #ffffff !important;
 }
@@ -233,7 +207,6 @@
 
 .dark .lowStockRow .productDescription {
   color: rgba(255, 255, 255, 0.9) !important;
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 }
 
 .stockDisplay {
@@ -263,15 +236,12 @@
   font-size: 0.875rem;
 }
 
-<<<<<<< HEAD
-=======
 .dark .lowStockBadge {
   background-color: rgba(251, 146, 60, 0.2) !important;
   color: var(--primary-color) !important;
   border: 1px solid var(--primary-color);
 }
 
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 .stockEdit {
   display: flex;
   align-items: center;
@@ -315,8 +285,6 @@
   margin-bottom: 1rem;
 }
 
-<<<<<<< HEAD
-=======
 .tabs {
   display: flex;
   gap: 0.5rem;
@@ -373,7 +341,6 @@
   margin-right: 0.5rem;
 }
 
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 @media (max-width: 768px) {
   .filters {
     flex-direction: column;
@@ -392,10 +359,6 @@
   .stockInput {
     width: 100%;
   }
-<<<<<<< HEAD
-}
-
-=======
 
   .tabs {
     overflow-x: auto;

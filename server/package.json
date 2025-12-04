@@ -9,9 +9,6 @@
     "build": "tsc",
     "test": "jest",
     "create-admin": "ts-node scripts/createAdmin.ts",
-<<<<<<< HEAD
-    "seed-categories": "ts-node src/scripts/seedCategories.ts"
-=======
     "seed-categories": "ts-node src/scripts/seedCategories.ts",
     "add-common-categories": "ts-node scripts/addCommonEcommerceCategories.ts",
     "add-english-categories": "ts-node scripts/addEnglishCategories.ts",
@@ -22,7 +19,6 @@
     "delete-specific-categories": "ts-node scripts/deleteSpecificCategories.ts",
     "update-home-category": "ts-node scripts/updateHomeCategory.ts",
     "add-food-beverage": "ts-node scripts/addFoodBeverageCategory.ts"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
