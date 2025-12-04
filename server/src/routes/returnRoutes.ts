@@ -78,6 +78,13 @@ router.get(
  *                 type: string
  *               reason:
  *                 type: string
+ *               condition:
+ *                 type: string
+ *                 enum: [new, refurbished, open_box, used]
+ *                 description: Optional condition of returned item (usually set when receiving)
+ *               isDisposed:
+ *                 type: boolean
+ *                 description: Optional disposal flag (usually set when receiving)
  *     responses:
  *       200:
  *         description: Return request created successfully
@@ -97,7 +104,7 @@ router.post(
         return ApiResponseHelper.unauthorized(res, "User authentication required");
       }
 
-      const { orderId, orderItemId, reason } = req.body;
+      const { orderId, orderItemId, reason, condition, isDisposed } = req.body;
 
       // Verify order exists and belongs to user (or user is admin/staff)
       const order = await orderModel.getOrderById(orderId);
@@ -124,6 +131,8 @@ router.post(
         orderItemId,
         userId: order.userId || req.user.id,
         reason,
+        condition,
+        isDisposed,
       });
 
       return ApiResponseHelper.success(res, returnRequest, "Return request created successfully");
@@ -164,6 +173,13 @@ router.post(
  *                 type: number
  *               returnTrackingNumber:
  *                 type: string
+ *               condition:
+ *                 type: string
+ *                 enum: [new, refurbished, open_box, used]
+ *                 description: Condition of returned item (required when status is 'received' and isDisposed is false)
+ *               isDisposed:
+ *                 type: boolean
+ *                 description: Whether the item is disposed (if true, inventory won't be added back)
  *     responses:
  *       200:
  *         description: Return status updated successfully
@@ -179,7 +195,7 @@ router.put(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { status, refundAmount, returnTrackingNumber } = req.body;
+      const { status, refundAmount, returnTrackingNumber, condition, isDisposed } = req.body;
 
       if (!id) {
         return ApiResponseHelper.validationError(res, "Return ID is required");
@@ -190,11 +206,100 @@ router.put(
         return ApiResponseHelper.notFound(res, "Return request");
       }
 
+      // Validate condition when status is 'received'
+      if (status === 'received') {
+        if (isDisposed === undefined || isDisposed === false) {
+          // If not disposed, condition is required
+          if (!condition || !['new', 'refurbished', 'open_box', 'used'].includes(condition)) {
+            return ApiResponseHelper.validationError(
+              res,
+              "Condition is required when receiving return (must be: new, refurbished, open_box, or used). Set isDisposed=true if item is disposed."
+            );
+          }
+        }
+      }
+
+      const previousStatus = returnRequest.status;
       const updatedReturn = await returnModel.updateStatus(id, {
         status,
         refundAmount,
         returnTrackingNumber,
+        condition,
+        isDisposed,
       });
+
+      // If status changed to 'received' and item is not disposed, add inventory back
+      if (status === 'received' && previousStatus !== 'received' && !isDisposed && condition) {
+        try {
+          // Get order and order item details
+          const order = await orderModel.getOrderById(returnRequest.orderId);
+          const orderItem = order.items.find(item => item.id === returnRequest.orderItemId);
+
+          if (orderItem && !orderItem.isReservation) {
+            // Update store inventory with the specified condition
+            const { StoreProductInventoryModel } = await import('../models/StoreProductInventoryModel');
+            const inventoryModel = new StoreProductInventoryModel();
+            
+            // Get current inventory for this condition
+            const currentInventory = await inventoryModel.getInventoryByProductAndStore(
+              orderItem.productId,
+              order.storeId,
+              condition as 'new' | 'refurbished' | 'open_box' | 'used'
+            );
+
+            if (currentInventory) {
+              // Update existing inventory for this condition
+              await inventoryModel.upsertInventory({
+                productId: orderItem.productId,
+                storeId: order.storeId,
+                quantity: currentInventory.quantity + orderItem.quantity,
+                condition: condition as 'new' | 'refurbished' | 'open_box' | 'used',
+              });
+            } else {
+              // Create new inventory record for this condition
+              await inventoryModel.upsertInventory({
+                productId: orderItem.productId,
+                storeId: order.storeId,
+                quantity: orderItem.quantity,
+                condition: condition as 'new' | 'refurbished' | 'open_box' | 'used',
+              });
+            }
+
+            // Also update total product stock quantity
+            // Import stock operation service to record the operation and update total stock
+            const { StockOperationService } = await import('../services/stockOperationService');
+            const stockOperationService = new StockOperationService();
+
+            // Create stock in operation to update total stock quantity
+            await stockOperationService.createStockOperation(
+              {
+                productId: orderItem.productId,
+                type: 'in',
+                quantity: orderItem.quantity,
+                reason: `Return ${id} received - condition: ${condition}`,
+                orderId: returnRequest.orderId,
+              },
+              req.user!.id
+            );
+
+            logger.info(`Inventory added back for returned item`, {
+              returnId: id,
+              productId: orderItem.productId,
+              quantity: orderItem.quantity,
+              condition,
+              storeId: order.storeId,
+            });
+          }
+        } catch (inventoryError: any) {
+          logger.error(`Failed to add inventory for returned item ${id}:`, inventoryError, {
+            returnId: id,
+            orderId: returnRequest.orderId,
+            orderItemId: returnRequest.orderItemId,
+          });
+          // Don't fail the return status update if inventory update fails
+          // Admin can manually adjust inventory later if needed
+        }
+      }
 
       return ApiResponseHelper.success(res, updatedReturn, "Return status updated successfully");
     } catch (error: any) {

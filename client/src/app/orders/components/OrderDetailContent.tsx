@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import Header from "@/components/common/Header";
 import { Order } from "@/lib/server-api";
@@ -9,6 +10,7 @@ import {
   getOrderStatusBadgeStyle,
   getOrderStatusLabel,
 } from "../orderStatusConfig";
+import ReviewModal from "./ReviewModal";
 import styles from "./OrderDetailContent.module.scss";
 
 interface OrderDetailContentProps {
@@ -26,6 +28,13 @@ const formatDate = (dateString: string) => {
 };
 
 export default function OrderDetailContent({ initialOrder }: OrderDetailContentProps) {
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<{
+    id: string;
+    name: string;
+    image?: string;
+  } | null>(null);
+
   if (!initialOrder) {
     return (
       <ProtectedRoute>
@@ -41,6 +50,20 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
   }
 
   const order = initialOrder;
+
+  const handleWriteReview = (item: typeof order.items[0]) => {
+    setSelectedProduct({
+      id: item.productId,
+      name: item.productName,
+      image: getImageUrl(item.productImage) || undefined,
+    });
+    setReviewModalOpen(true);
+  };
+
+  const handleReviewSuccess = () => {
+    // Optionally refresh order data or show success message
+    window.location.reload();
+  };
   return (
     <ProtectedRoute>
       <div className={styles.wrapper}>
@@ -127,6 +150,14 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
                             )}
                           </div>
                         )}
+                        {order.status === 'delivered' && !(item as any).isReservation && (
+                          <button
+                            className={styles.reviewItemButton}
+                            onClick={() => handleWriteReview(item)}
+                          >
+                            Write Review
+                          </button>
+                        )}
                       </div>
                       <div className={styles.itemPrice}>
                         <p className={styles.priceAmount}>
@@ -204,11 +235,6 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
 
             {/* Actions */}
             <div className={styles.actions}>
-              {order.status === 'delivered' && (
-                <button className={`${styles.actionButton} ${styles.blue}`}>
-                  Write Review
-                </button>
-              )}
               {order.status === 'shipped' && (
                 <button className={`${styles.actionButton} ${styles.green}`}>
                   Track Package
@@ -224,6 +250,22 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
         </div>
         </div>
       </div>
+
+      {/* Review Modal */}
+      {selectedProduct && (
+        <ReviewModal
+          isOpen={reviewModalOpen}
+          onClose={() => {
+            setReviewModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          productId={selectedProduct.id}
+          productName={selectedProduct.name}
+          productImage={selectedProduct.image}
+          orderId={order.id}
+          onSuccess={handleReviewSuccess}
+        />
+      )}
     </ProtectedRoute>
   );
 }

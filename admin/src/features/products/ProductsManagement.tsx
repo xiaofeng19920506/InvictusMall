@@ -6,9 +6,10 @@ import {
   Search,
   RefreshCw,
   Package,
+  MessageSquare,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { productApi, storeApi } from "../../services/api";
+import { productApi, storeApi, productReviewApi } from "../../services/api";
 import type { Product, Store } from "../../services/api";
 // import { useAuth } from "../../contexts/AuthContext"; // Unused for now
 import { useNotification } from "../../contexts/NotificationContext";
@@ -16,6 +17,7 @@ import { getImageUrl } from "../../shared/utils/imageUtils";
 import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
 import Pagination from "../../shared/components/Pagination";
 import ProductModal from "./ProductModal";
+import ProductReviewsModal from "./ProductReviewsModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import styles from "./ProductsManagement.module.css";
 
@@ -28,6 +30,9 @@ const ProductsManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [selectedProductForReviews, setSelectedProductForReviews] = useState<Product | null>(null);
+  const [productReviewCounts, setProductReviewCounts] = useState<Record<string, number>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [totalItems, setTotalItems] = useState(0);
@@ -60,6 +65,13 @@ const ProductsManagement: React.FC = () => {
       setTotalItems(0);
     }
   }, [selectedStoreId, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    // Fetch review counts for all products
+    if (products.length > 0) {
+      fetchReviewCounts();
+    }
+  }, [products]);
 
   const fetchStores = async () => {
     try {
@@ -99,6 +111,27 @@ const ProductsManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchReviewCounts = async () => {
+    const counts: Record<string, number> = {};
+    for (const product of products) {
+      try {
+        const response = await productReviewApi.getReviewStats(product.id);
+        if (response.success && response.data) {
+          counts[product.id] = response.data.totalReviews;
+        }
+      } catch (error) {
+        console.error(`Error fetching review count for product ${product.id}:`, error);
+        counts[product.id] = 0;
+      }
+    }
+    setProductReviewCounts(counts);
+  };
+
+  const handleViewReviews = (product: Product) => {
+    setSelectedProductForReviews(product);
+    setShowReviewsModal(true);
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -270,6 +303,7 @@ const ProductsManagement: React.FC = () => {
                     <th>{t("products.table.price")}</th>
                     <th>{t("products.table.stock")}</th>
                     <th>{t("products.table.category")}</th>
+                    <th>Reviews</th>
                     <th>{t("products.table.status")}</th>
                     <th>{t("products.table.actions")}</th>
                   </tr>
@@ -307,6 +341,16 @@ const ProductsManagement: React.FC = () => {
                       <td>${product.price.toFixed(2)}</td>
                       <td>{product.stockQuantity}</td>
                       <td>{product.category || '-'}</td>
+                      <td>
+                        <button
+                          onClick={() => handleViewReviews(product)}
+                          className="btn btn-sm btn-secondary"
+                          title="View reviews"
+                        >
+                          <MessageSquare className="w-4 h-4 mr-1" />
+                          {productReviewCounts[product.id] ?? 0}
+                        </button>
+                      </td>
                       <td>
                         <span
                           className={`badge ${
@@ -358,6 +402,19 @@ const ProductsManagement: React.FC = () => {
           storeId={selectedStoreId}
           onClose={handleModalClose}
           onSave={handleModalSave}
+        />
+      )}
+
+      {/* Product Reviews Modal */}
+      {showReviewsModal && selectedProductForReviews && (
+        <ProductReviewsModal
+          productId={selectedProductForReviews.id}
+          productName={selectedProductForReviews.name}
+          isOpen={showReviewsModal}
+          onClose={() => {
+            setShowReviewsModal(false);
+            setSelectedProductForReviews(null);
+          }}
         />
       )}
 

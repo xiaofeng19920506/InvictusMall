@@ -41,6 +41,7 @@ const StoreReviewsModal: React.FC<StoreReviewsModalProps> = ({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replying, setReplying] = useState(false);
+  const canReply = isStoreOwner || isAdmin;
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     reviewId: string | null;
@@ -134,6 +135,24 @@ const StoreReviewsModal: React.FC<StoreReviewsModalProps> = ({
   };
 
   const totalPages = Math.ceil(totalReviews / itemsPerPage);
+
+  const handleReply = async (reviewId: string) => {
+    if (!replyText.trim()) return;
+
+    setReplying(true);
+    try {
+      await storeApi.replyToReview(reviewId, replyText.trim());
+      showSuccess(t("stores.reviews.replySuccess") || "Reply sent successfully");
+      setReplyingTo(null);
+      setReplyText("");
+      fetchReviews();
+    } catch (error: any) {
+      console.error("Error replying to review:", error);
+      showError(error.response?.data?.message || t("stores.reviews.replyError") || "Failed to send reply");
+    } finally {
+      setReplying(false);
+    }
+  };
 
   const renderStars = (rating: number) => {
     return (

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
-import { ProductReviewModel, CreateReviewRequest } from "../models/ProductReviewModel";
+import { ProductReviewModel, CreateReviewRequest, UpdateReviewRequest } from "../models/ProductReviewModel";
 import { authenticateUserToken, AuthenticatedRequest } from "../middleware/auth";
+import { authenticateStaffToken, requireAdmin } from "../middleware/auth";
 import { ApiResponseHelper } from "../utils/apiResponse";
 import { logger } from "../utils/logger";
 
@@ -158,9 +159,20 @@ router.post(
       }
 
       // Check if user already reviewed this product
-      const hasReviewed = await reviewModel.userHasReviewed(productId, req.user.id);
-      if (hasReviewed) {
-        return ApiResponseHelper.error(res, "You have already reviewed this product", 400);
+      // If yes, update the existing review instead of creating a new one
+      const existingReview = await reviewModel.findByProductIdAndUserId(productId, req.user.id);
+      
+      if (existingReview) {
+        // Update existing review
+        const updateData: UpdateReviewRequest = {
+          rating,
+          title,
+          comment,
+          images,
+        };
+        
+        const updatedReview = await reviewModel.update(existingReview.id, updateData);
+        return ApiResponseHelper.success(res, updatedReview, "Review updated successfully", 200);
       }
 
       // Validate that user has purchased the product and within 30 days
@@ -231,7 +243,7 @@ router.post(
  *         description: Vote recorded successfully
  */
 router.post(
-  "/reviews/:reviewId/helpful",
+  "/:reviewId/helpful",
   authenticateUserToken,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
@@ -252,6 +264,227 @@ router.post(
     } catch (error: any) {
       logger.error("Error marking review helpful", error, { userId: req.user?.id, reviewId: req.params.reviewId });
       return ApiResponseHelper.error(res, "Failed to record vote", 500, error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/reviews/{reviewId}:
+ *   put:
+ *     summary: Update a product review
+ *     tags: [Product Reviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *               title:
+ *                 type: string
+ *               comment:
+ *                 type: string
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Review updated successfully
+ *   delete:
+ *     summary: Delete a product review (admin only)
+ *     tags: [Product Reviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Review deleted successfully
+ */
+router.put(
+  "/:reviewId",
+  authenticateUserToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { reviewId } = req.params;
+      const { rating, title, comment, images } = req.body;
+
+      if (!reviewId) {
+        return ApiResponseHelper.validationError(res, "Review ID is required");
+      }
+
+      if (!req.user?.id) {
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
+      }
+
+      // Get the review to check ownership
+      const review = await reviewModel.findById(reviewId);
+      if (review.userId !== req.user.id) {
+        return ApiResponseHelper.forbidden(res, "You can only update your own reviews");
+      }
+
+      if (rating !== undefined && (rating < 1 || rating > 5)) {
+        return ApiResponseHelper.validationError(res, "Rating must be between 1 and 5");
+      }
+
+      const updateData: UpdateReviewRequest = {
+        rating,
+        title,
+        comment,
+        images,
+      };
+
+      const updatedReview = await reviewModel.update(reviewId, updateData);
+
+      return ApiResponseHelper.success(res, updatedReview, "Review updated successfully");
+    } catch (error: any) {
+      logger.error("Error updating review", error, { reviewId: req.params.reviewId, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to update review", 500, error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/reviews/{reviewId}:
+ *   delete:
+ *     summary: Delete a product review (admin only)
+ *     tags: [Product Reviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Review deleted successfully
+ */
+router.delete(
+  "/:reviewId",
+  authenticateStaffToken,
+  requireAdmin,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { reviewId } = req.params;
+
+      if (!reviewId) {
+        return ApiResponseHelper.validationError(res, "Review ID is required");
+      }
+
+      // Delete the review (updateProductReviewStats and updateStoreReviewStats are called inside delete method)
+      await reviewModel.delete(reviewId);
+
+      return ApiResponseHelper.success(res, null, "Review deleted successfully");
+    } catch (error: any) {
+      logger.error("Error deleting review", error, { reviewId: req.params.reviewId, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to delete review", 500, error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/reviews/{reviewId}/reply:
+ *   post:
+ *     summary: Reply to a product review (admin/store owner only)
+ *     tags: [Product Reviews]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: reviewId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reply
+ *             properties:
+ *               reply:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Reply added successfully
+ */
+router.post(
+  "/:reviewId/reply",
+  authenticateStaffToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { reviewId } = req.params;
+      const { reply } = req.body;
+
+      if (!reviewId) {
+        return ApiResponseHelper.validationError(res, "Review ID is required");
+      }
+
+      if (!req.user?.id) {
+        return ApiResponseHelper.unauthorized(res, "User authentication required");
+      }
+
+      if (!reply || typeof reply !== 'string' || reply.trim().length === 0) {
+        return ApiResponseHelper.validationError(res, "Reply text is required");
+      }
+
+      // Check if review exists
+      const review = await reviewModel.findById(reviewId);
+      if (!review) {
+        return ApiResponseHelper.notFound(res, "Review");
+      }
+
+      // Check if user is admin or store owner
+      const isAdmin = req.user.role === 'admin';
+      if (!isAdmin) {
+        // For store owners, check if they own the store that owns the product
+        const { ProductModel } = await import('../models/ProductModel');
+        const product = await ProductModel.findById(review.productId);
+        
+        if (!product) {
+          return ApiResponseHelper.notFound(res, "Product");
+        }
+
+        // Check if user is the store owner
+        const { StaffModel } = await import('../models/StaffModel');
+        const staffModel = new StaffModel();
+        const staff = await staffModel.getStaffById(req.user.id);
+        
+        if (!staff || (staff.storeId !== product.storeId && staff.role !== 'admin')) {
+          return ApiResponseHelper.forbidden(res, "Only admins and store owners can reply to reviews");
+        }
+      }
+
+      const updatedReview = await reviewModel.replyToReview(reviewId, reply.trim(), req.user.id);
+
+      return ApiResponseHelper.success(res, updatedReview, "Reply added successfully");
+    } catch (error: any) {
+      logger.error("Error replying to review", error, { reviewId: req.params.reviewId, userId: req.user?.id });
+      return ApiResponseHelper.error(res, "Failed to reply to review", 500, error);
     }
   }
 );

@@ -250,6 +250,98 @@ router.put(
       
       await orderModel.updateOrderStatus(orderId, status, trackingNumber);
 
+      // If order status changes to 'shipped', automatically reduce inventory
+      if (status === 'shipped' && previousStatus !== 'shipped') {
+        try {
+          const { StockOperationService } = await import('../services/stockOperationService');
+          const stockOperationService = new StockOperationService();
+          
+          // Check if inventory has already been reduced for this order
+          const { StockOperationModel } = await import('../models/StockOperationModel');
+          const stockOperationModel = new StockOperationModel();
+          const { operations } = await stockOperationModel.getAllStockOperations({
+            orderId: orderId,
+            type: 'out',
+          });
+
+          // If no stock operations exist for this order, reduce inventory for all items
+          if (operations.length === 0) {
+            logger.info(`Reducing inventory for shipped order ${orderId}`, {
+              orderId,
+              itemCount: order.items.length,
+            });
+
+            // Create stock out operations for each item in the order
+            for (const item of order.items) {
+              // Skip reservations (services) as they don't have physical inventory
+              if (item.isReservation) {
+                continue;
+              }
+
+              try {
+                // Reduce 'new' condition inventory (orders ship new products)
+                const { StoreProductInventoryModel } = await import('../models/StoreProductInventoryModel');
+                const inventoryModel = new StoreProductInventoryModel();
+                
+                // Get current 'new' condition inventory
+                const currentInventory = await inventoryModel.getInventoryByProductAndStore(
+                  item.productId,
+                  order.storeId,
+                  'new'
+                );
+
+                if (currentInventory && currentInventory.quantity >= item.quantity) {
+                  // Update 'new' condition inventory
+                  await inventoryModel.upsertInventory({
+                    productId: item.productId,
+                    storeId: order.storeId,
+                    quantity: currentInventory.quantity - item.quantity,
+                    condition: 'new',
+                  });
+                } else {
+                  // If 'new' inventory doesn't exist or is insufficient, log warning
+                  logger.warn(`Insufficient 'new' condition inventory for product ${item.productId}`, {
+                    productId: item.productId,
+                    storeId: order.storeId,
+                    requested: item.quantity,
+                    available: currentInventory?.quantity || 0,
+                  });
+                }
+
+                // Also update total product stock via stock operation service
+                await stockOperationService.createStockOperation(
+                  {
+                    productId: item.productId,
+                    type: 'out',
+                    quantity: item.quantity,
+                    reason: `Order ${orderId} shipped`,
+                    orderId: orderId,
+                  },
+                  req.user!.id
+                );
+
+                logger.info(`Inventory reduced for product ${item.productId} (quantity: ${item.quantity}) for order ${orderId}`);
+              } catch (itemError: any) {
+                logger.error(`Failed to reduce inventory for product ${item.productId} in order ${orderId}:`, itemError, {
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  orderId,
+                });
+                // Continue with other items even if one fails
+              }
+            }
+
+            logger.info(`Inventory reduction completed for shipped order ${orderId}`);
+          } else {
+            logger.info(`Inventory already reduced for order ${orderId} (${operations.length} stock operations found)`);
+          }
+        } catch (inventoryError: any) {
+          logger.error(`Error reducing inventory for shipped order ${orderId}:`, inventoryError, { orderId });
+          // Don't fail the status update if inventory reduction fails - just log it
+          // Admin can manually adjust inventory later if needed
+        }
+      }
+
       // If order status changes to 'delivered', automatically capture the payment intent
       // This implements Amazon-style payment: authorize at checkout, capture when delivered
       if (status === 'delivered' && previousStatus !== 'delivered' && stripeClient && order.paymentIntentId) {
@@ -319,6 +411,68 @@ router.put(
         } catch (captureError: any) {
           logger.error(`Error processing payment capture for delivered order ${orderId}`, captureError, { orderId });
           // Don't fail the status update if capture fails - just log it
+        }
+      }
+
+      // If order is being cancelled, restore inventory if it was already reduced
+      if (status === 'cancelled' && previousStatus !== 'cancelled') {
+        try {
+          const { StockOperationService } = await import('../services/stockOperationService');
+          const stockOperationService = new StockOperationService();
+          
+          // Check if inventory was reduced for this order
+          const { StockOperationModel } = await import('../models/StockOperationModel');
+          const stockOperationModel = new StockOperationModel();
+          const { operations } = await stockOperationModel.getAllStockOperations({
+            orderId: orderId,
+            type: 'out',
+          });
+
+          // If stock operations exist, restore inventory by creating stock in operations
+          if (operations.length > 0) {
+            logger.info(`Restoring inventory for cancelled order ${orderId}`, {
+              orderId,
+              stockOperationsCount: operations.length,
+            });
+
+            // Group operations by product to restore correct quantities
+            const productQuantities: Record<string, number> = {};
+            operations.forEach(op => {
+              productQuantities[op.productId] = (productQuantities[op.productId] || 0) + op.quantity;
+            });
+
+            // Create stock in operations to restore inventory
+            for (const [productId, quantity] of Object.entries(productQuantities)) {
+              try {
+                await stockOperationService.createStockOperation(
+                  {
+                    productId: productId,
+                    type: 'in',
+                    quantity: quantity,
+                    reason: `Order ${orderId} cancelled - inventory restored`,
+                    orderId: orderId,
+                  },
+                  req.user!.id
+                );
+
+                logger.info(`Inventory restored for product ${productId} (quantity: ${quantity}) for cancelled order ${orderId}`);
+              } catch (itemError: any) {
+                logger.error(`Failed to restore inventory for product ${productId} in cancelled order ${orderId}:`, itemError, {
+                  productId,
+                  quantity,
+                  orderId,
+                });
+                // Continue with other items even if one fails
+              }
+            }
+
+            logger.info(`Inventory restoration completed for cancelled order ${orderId}`);
+          } else {
+            logger.info(`No inventory to restore for cancelled order ${orderId} (no stock out operations found)`);
+          }
+        } catch (inventoryError: any) {
+          logger.error(`Error restoring inventory for cancelled order ${orderId}:`, inventoryError, { orderId });
+          // Don't fail the status update if inventory restoration fails - just log it
         }
       }
 

@@ -110,6 +110,8 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
   >("products");
   const [selectedService, setSelectedService] = useState<Product | null>(null);
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   const initialTabSet = useRef(false);
 
   // Memoize filtered products and services to avoid recalculation
@@ -177,9 +179,13 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
   const fetchProducts = useCallback(async () => {
     try {
       setProductsLoading(true);
+      console.log("[fetchProducts] Fetching products for store:", storeId);
       const response = await productService.getProductsByStoreId(storeId, { isActive: true });
+      console.log("[fetchProducts] Products response:", response);
       if (response.success) {
-        setAllItems(response.data || []);
+        const items = response.data || [];
+        console.log(`[fetchProducts] Setting ${items.length} items`);
+        setAllItems(items);
       } else {
         console.error("Failed to fetch products:", response.message);
         setAllItems([]);
@@ -188,9 +194,104 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
       console.error("Error fetching products:", err);
       setAllItems([]);
     } finally {
+      console.log("[fetchProducts] Setting productsLoading to false");
       setProductsLoading(false);
     }
   }, [storeId]);
+
+  const fetchReviews = useCallback(async () => {
+    console.log("[fetchReviews] Called", {
+      storeId,
+      productsLoading,
+      productsLength: products.length,
+      products: products.map(p => ({ id: p.id, name: p.name }))
+    });
+
+    if (!storeId) {
+      console.log("[fetchReviews] No storeId, skipping");
+      setReviews([]);
+      return;
+    }
+
+    if (productsLoading) {
+      console.log("[fetchReviews] Products still loading, skipping");
+      return;
+    }
+
+    if (products.length === 0) {
+      console.log("[fetchReviews] No products, clearing reviews");
+      setReviews([]);
+      return;
+    }
+
+    try {
+      setReviewsLoading(true);
+      const allReviews: any[] = [];
+      
+      console.log(`[fetchReviews] Fetching reviews for ${products.length} products:`, products.map(p => p.id));
+      
+      for (const product of products) {
+        try {
+          console.log(`[fetchReviews] Fetching reviews for product ${product.id} (${product.name})`);
+          const response = await apiService.getProductReviews(product.id, {
+            limit: 50,
+            sortBy: 'newest',
+          });
+          
+          console.log(`[fetchReviews] Response for product ${product.id}:`, response);
+          
+          if (response && response.success && Array.isArray(response.data) && response.data.length > 0) {
+            console.log(`[fetchReviews] Found ${response.data.length} reviews for product ${product.name}`);
+            const productReviews = response.data.map((review: any) => ({
+              ...review,
+              productName: product.name,
+              productImage: product.imageUrl || product.imageUrls?.[0],
+              productId: product.id,
+            }));
+            allReviews.push(...productReviews);
+          } else {
+            console.log(`[fetchReviews] No reviews found for product ${product.id}`, {
+              success: response?.success,
+              dataLength: response?.data?.length,
+              data: response?.data
+            });
+          }
+        } catch (err: any) {
+          console.error(`[fetchReviews] Error fetching reviews for product ${product.id}:`, err);
+          // Continue to next product if error occurs
+        }
+      }
+      
+      console.log(`[fetchReviews] Total reviews collected: ${allReviews.length}`, allReviews);
+      allReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setReviews(allReviews);
+    } catch (err: any) {
+      console.error("[fetchReviews] Error in fetchReviews:", err);
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [storeId, productsLoading, products]);
+
+  // Fetch reviews when products finish loading (regardless of active tab)
+  // This pre-loads reviews so they're ready when user switches to reviews tab
+  useEffect(() => {
+    console.log("[useEffect] Reviews effect triggered", {
+      productsLoading,
+      productsLength: products.length,
+      storeId,
+      hasProducts: products.length > 0,
+      allItemsLength: allItems.length
+    });
+    
+    if (!productsLoading && products.length > 0 && storeId) {
+      console.log("[useEffect] Products loaded, fetching reviews automatically");
+      fetchReviews();
+    } else if (!productsLoading && products.length === 0 && allItems.length === 0) {
+      console.log("[useEffect] No products, clearing reviews");
+      setReviews([]);
+    }
+  }, [productsLoading, products.length, storeId, allItems.length, fetchReviews]);
 
   if (loading) {
     return (
@@ -393,12 +494,84 @@ export default function StoreDetailContent({ initialStore }: StoreDetailContentP
             {/* Reviews Tab */}
             {activeTab === "reviews" && (
               <div className={styles.reviewsSection}>
-                <div className={styles.emptyState}>
-                  <p>Review system coming soon...</p>
-                  <p className={styles.emptySubtext}>
-                    Reviews feature will be implemented in the next update.
-                  </p>
-                </div>
+                {reviewsLoading ? (
+                  <div className={styles.loadingSpinner}>
+                    <div className={styles.smallSpinner}></div>
+                  </div>
+                ) : reviews.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    <p>No reviews yet</p>
+                    <p className={styles.emptySubtext}>
+                      Be the first to review products from this store!
+                    </p>
+                  </div>
+                ) : (
+                  <div className={styles.reviewsList}>
+                    {reviews.map((review) => (
+                      <div key={review.id} className={styles.reviewCard}>
+                        <div className={styles.reviewHeader}>
+                          <div className={styles.reviewUser}>
+                            {review.userAvatar ? (
+                              <img
+                                src={getImageUrl(review.userAvatar) || getPlaceholderImage()}
+                                alt={review.userName || "User"}
+                                className={styles.userAvatar}
+                                onError={handleImageError}
+                              />
+                            ) : (
+                              <div className={styles.userAvatarPlaceholder}>
+                                {(review.userName || "U")[0].toUpperCase()}
+                              </div>
+                            )}
+                            <div className={styles.userInfo}>
+                              <p className={styles.userName}>
+                                {review.userName || "Anonymous"}
+                                {review.isVerifiedPurchase && (
+                                  <span className={styles.verifiedBadge}>✓ Verified Purchase</span>
+                                )}
+                              </p>
+                              <p className={styles.reviewDate}>
+                                {new Date(review.createdAt).toLocaleDateString("en-US", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className={styles.reviewRating}>
+                            <StarRating rating={review.rating} size="sm" />
+                          </div>
+                        </div>
+                        {review.productName && (
+                          <div className={styles.reviewProduct}>
+                            <span className={styles.productLabel}>Product:</span>
+                            <span className={styles.productName}>{review.productName}</span>
+                          </div>
+                        )}
+                        {review.title && (
+                          <h4 className={styles.reviewTitle}>{review.title}</h4>
+                        )}
+                        {review.comment && (
+                          <p className={styles.reviewComment}>{review.comment}</p>
+                        )}
+                        {review.images && review.images.length > 0 && (
+                          <div className={styles.reviewImages}>
+                            {review.images.map((img: string, idx: number) => (
+                              <img
+                                key={idx}
+                                src={getImageUrl(img) || getPlaceholderImage()}
+                                alt={`Review image ${idx + 1}`}
+                                className={styles.reviewImage}
+                                onError={handleImageError}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

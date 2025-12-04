@@ -1,6 +1,7 @@
 import { Pool } from 'mysql2/promise';
 import { pool } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
+import type { ProductCondition } from '../types/product';
 
 export interface OrderReturn {
   id: string;
@@ -11,6 +12,8 @@ export interface OrderReturn {
   status: 'pending' | 'approved' | 'rejected' | 'received' | 'refunded';
   refundAmount?: number;
   returnTrackingNumber?: string;
+  condition?: ProductCondition; // Condition of returned item: new, refurbished, open_box, or used
+  isDisposed?: boolean; // Whether the item is disposed (not added back to inventory)
   requestedAt: string;
   processedAt?: string;
 }
@@ -20,12 +23,16 @@ export interface CreateReturnRequest {
   orderItemId: string;
   userId: string;
   reason: string;
+  condition?: ProductCondition; // Optional condition when creating return
+  isDisposed?: boolean; // Optional disposal flag
 }
 
 export interface UpdateReturnStatusRequest {
   status: 'pending' | 'approved' | 'rejected' | 'received' | 'refunded';
   refundAmount?: number;
   returnTrackingNumber?: string;
+  condition?: ProductCondition; // Condition of returned item (required when status is 'received')
+  isDisposed?: boolean; // Whether the item is disposed (if true, inventory won't be added)
 }
 
 export class ReturnModel {
@@ -42,14 +49,16 @@ export class ReturnModel {
 
       await connection.execute(
         `INSERT INTO order_returns (
-          id, order_id, order_item_id, user_id, reason, status
-        ) VALUES (?, ?, ?, ?, ?, 'pending')`,
+          id, order_id, order_item_id, user_id, reason, status, condition, is_disposed
+        ) VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
         [
           id,
           returnData.orderId,
           returnData.orderItemId,
           returnData.userId,
           returnData.reason,
+          returnData.condition || null,
+          returnData.isDisposed || false,
         ]
       );
 
@@ -127,7 +136,17 @@ export class ReturnModel {
         params.push(updateData.returnTrackingNumber);
       }
 
-      if (updateData.status === 'refunded' || updateData.status === 'rejected') {
+      if (updateData.condition !== undefined) {
+        fields.push('condition = ?');
+        params.push(updateData.condition);
+      }
+
+      if (updateData.isDisposed !== undefined) {
+        fields.push('is_disposed = ?');
+        params.push(updateData.isDisposed);
+      }
+
+      if (updateData.status === 'refunded' || updateData.status === 'rejected' || updateData.status === 'received') {
         fields.push('processed_at = NOW()');
       }
 
@@ -158,6 +177,8 @@ export class ReturnModel {
       status: row.status,
       refundAmount: row.refund_amount ? parseFloat(row.refund_amount) : undefined,
       returnTrackingNumber: row.return_tracking_number || undefined,
+      condition: (row.condition as ProductCondition) || undefined,
+      isDisposed: Boolean(row.is_disposed),
       requestedAt: row.requested_at.toISOString(),
       processedAt: row.processed_at ? row.processed_at.toISOString() : undefined,
     };

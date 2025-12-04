@@ -204,7 +204,17 @@ export async function fetchStoreByIdServer(
       ...data,
       data: transformStore(data.data),
     };
-  } catch (error) {
+  } catch (error: any) {
+    // Handle connection errors gracefully
+    if (error?.code === 'ECONNREFUSED' || error?.message?.includes('fetch failed')) {
+      console.error("Failed to fetch store on server: Backend API server is not running or not accessible");
+      // Return a default response instead of throwing to prevent page crashes
+      return {
+        success: false,
+        message: "Backend API server is not available",
+        data: null as any,
+      };
+    }
     console.error("Error fetching store on server:", error);
     throw error;
   }
@@ -506,7 +516,20 @@ export async function fetchShippingAddressesServer(
 
     const data: ApiResponse<ShippingAddress[]> = await response.json();
     return data;
-  } catch (error) {
+  } catch (error: any) {
+    // Handle connection errors gracefully
+    if (error?.code === 'ECONNREFUSED' || 
+        error?.message?.includes('fetch failed') || 
+        error?.cause?.code === 'ECONNREFUSED' ||
+        (error?.cause && Array.isArray(error.cause) && error.cause.some((c: any) => c.code === 'ECONNREFUSED'))) {
+      console.error("Unable to load shipping addresses: Backend API server connection failed");
+      // Return empty array instead of throwing to prevent page crashes
+      return {
+        success: false,
+        message: "Backend API server is not available. Please ensure the server is running on port 3001.",
+        data: [],
+      };
+    }
     console.error("Error fetching shipping addresses on server:", error);
     throw error;
   }

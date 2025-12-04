@@ -2,11 +2,14 @@ import { pool } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger';
 
+export type ProductCondition = 'new' | 'refurbished' | 'open_box' | 'used';
+
 export interface StoreProductInventory {
   id: string;
   productId: string;
   storeId: string;
   quantity: number;
+  condition?: ProductCondition; // Condition of the inventory items (defaults to 'new')
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +18,7 @@ export interface CreateOrUpdateInventoryRequest {
   productId: string;
   storeId: string;
   quantity: number;
+  condition?: ProductCondition; // Condition of the inventory items (defaults to 'new')
 }
 
 export class StoreProductInventoryModel {
@@ -28,11 +32,13 @@ export class StoreProductInventoryModel {
     try {
       const now = new Date();
 
-      // Check if inventory record exists
+      const condition = data.condition || 'new'; // Default to 'new' if not specified
+
+      // Check if inventory record exists for this product, store, and condition
       const [existing] = await connection.execute(
         `SELECT id FROM store_product_inventory 
-         WHERE product_id = ? AND store_id = ?`,
-        [data.productId, data.storeId]
+         WHERE product_id = ? AND store_id = ? AND condition = ?`,
+        [data.productId, data.storeId, condition]
       );
 
       const existingRows = existing as any[];
@@ -52,9 +58,9 @@ export class StoreProductInventoryModel {
         const id = uuidv4();
         await connection.execute(
           `INSERT INTO store_product_inventory (
-            id, product_id, store_id, quantity, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?)`,
-          [id, data.productId, data.storeId, data.quantity, now, now]
+            id, product_id, store_id, quantity, condition, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [id, data.productId, data.storeId, data.quantity, condition, now, now]
         );
         return this.getInventoryById(id);
       }
@@ -83,10 +89,12 @@ export class StoreProductInventoryModel {
 
       const now = new Date();
 
-      // Check if inventory record exists
+      // Note: updateQuantity doesn't support condition - it updates total inventory
+      // For condition-specific updates, use upsertInventory instead
+      // Check if inventory record exists (for 'new' condition by default)
       const [existing] = await connection.execute(
         `SELECT id, quantity FROM store_product_inventory 
-         WHERE product_id = ? AND store_id = ?
+         WHERE product_id = ? AND store_id = ? AND (condition = 'new' OR condition IS NULL)
          FOR UPDATE`,
         [productId, storeId]
       );
@@ -158,20 +166,51 @@ export class StoreProductInventoryModel {
    */
   async getInventoryByProductAndStore(
     productId: string,
-    storeId: string
+    storeId: string,
+    condition?: ProductCondition
   ): Promise<StoreProductInventory | null> {
     const connection = await this.pool.getConnection();
     try {
-      const [rows] = await connection.execute(
-        `SELECT * FROM store_product_inventory 
-         WHERE product_id = ? AND store_id = ?`,
-        [productId, storeId]
-      );
+      let query = `SELECT * FROM store_product_inventory 
+                   WHERE product_id = ? AND store_id = ?`;
+      const params: any[] = [productId, storeId];
+      
+      if (condition) {
+        query += ` AND condition = ?`;
+        params.push(condition);
+      } else {
+        // Default to 'new' if condition not specified
+        query += ` AND (condition = 'new' OR condition IS NULL)`;
+      }
+      
+      const [rows] = await connection.execute(query, params);
       const inventories = rows as any[];
       if (!inventories || inventories.length === 0) {
         return null;
       }
       return this.mapRowToInventory(inventories[0]);
+    } finally {
+      connection.release();
+    }
+  }
+
+  /**
+   * Get all inventory records for a product in a store, grouped by condition
+   */
+  async getInventoryByProductAndStoreAllConditions(
+    productId: string,
+    storeId: string
+  ): Promise<StoreProductInventory[]> {
+    const connection = await this.pool.getConnection();
+    try {
+      const [rows] = await connection.execute(
+        `SELECT * FROM store_product_inventory 
+         WHERE product_id = ? AND store_id = ?
+         ORDER BY condition`,
+        [productId, storeId]
+      );
+      const inventories = rows as any[];
+      return inventories.map(row => this.mapRowToInventory(row));
     } finally {
       connection.release();
     }
@@ -255,6 +294,7 @@ export class StoreProductInventoryModel {
       productId: row.product_id,
       storeId: row.store_id,
       quantity: parseInt(row.quantity, 10),
+      condition: (row.condition as ProductCondition) || 'new', // Default to 'new' if not set
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };

@@ -240,7 +240,131 @@
 }
 
 .reviewsSection {
-  // Reviews section styles
+  padding: 1.5rem 0;
+}
+
+.reviewsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.reviewCard {
+  border: 1px solid color('gray-200');
+  border-radius: border-radius('lg');
+  padding: 1.5rem;
+  background-color: color('white');
+}
+
+.reviewHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.reviewUser {
+  display: flex;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.userAvatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: border-radius('full');
+  object-fit: cover;
+}
+
+.userAvatarPlaceholder {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: border-radius('full');
+  background-color: color('gray-300');
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color('gray-600');
+  font-weight: font-weight('semibold');
+  font-size: font-size('sm');
+}
+
+.userInfo {
+  flex: 1;
+}
+
+.userName {
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.verifiedBadge {
+  font-size: font-size('xs');
+  color: color('green-600');
+  font-weight: font-weight('normal');
+}
+
+.reviewDate {
+  font-size: font-size('sm');
+  color: color('gray-500');
+}
+
+.reviewRating {
+  display: flex;
+  align-items: center;
+}
+
+.reviewProduct {
+  margin-bottom: 0.75rem;
+  font-size: font-size('sm');
+}
+
+.productLabel {
+  color: color('gray-600');
+  margin-right: 0.5rem;
+}
+
+.productName {
+  color: color('gray-900');
+  font-weight: font-weight('medium');
+}
+
+.reviewTitle {
+  font-size: font-size('lg');
+  font-weight: font-weight('semibold');
+  color: color('gray-900');
+  margin-bottom: 0.5rem;
+}
+
+.reviewComment {
+  color: color('gray-700');
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.reviewImages {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.reviewImage {
+  width: 6rem;
+  height: 6rem;
+  object-fit: cover;
+  border-radius: border-radius('md');
+  border: 1px solid color('gray-200');
+  cursor: pointer;
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: scale(1.05);
+  }
 }
 
 .reservationButton {

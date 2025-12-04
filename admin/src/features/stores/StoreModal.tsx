@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import { X } from "lucide-react";
+import { X, MessageSquare, Star, Trash2, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { storeApi, categoryApi, staffApi, type Category, type Staff } from "../../services/api";
+import { storeApi, categoryApi, staffApi, productApi, productReviewApi, type Category, type Staff, type ProductReview, type Product } from "../../services/api";
 import { useNotification } from "../../contexts/NotificationContext";
 import { useAuth } from "../../contexts/AuthContext";
 import type {
@@ -116,6 +116,14 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [availableOwners, setAvailableOwners] = useState<Staff[]>([]);
   const [loadingOwners, setLoadingOwners] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [replying, setReplying] = useState(false);
+  const isAdmin = user?.role === "admin";
 
   useEffect(() => {
     const originalOverflow = document.body.style.overflow;
@@ -285,6 +293,166 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
       });
     }
   }, [isEditing, store?.owner?.id, availableOwners.length, loadingOwners]);
+
+  // Fetch products when store is loaded
+  const fetchStoreProducts = useCallback(async () => {
+    if (!store?.id) {
+      console.log("StoreModal: No store ID, skipping product fetch");
+      return;
+    }
+    console.log("StoreModal: Fetching products for store:", store.id);
+    try {
+      const response = await productApi.getProductsByStore(store.id, undefined, 100, 0);
+      console.log("StoreModal: Products response:", response);
+      if (response.success && response.data) {
+        console.log(`StoreModal: Found ${response.data.length} products`);
+        setProducts(response.data);
+      } else {
+        console.warn("StoreModal: Failed to fetch products:", response);
+        setProducts([]);
+      }
+    } catch (error) {
+      console.error("StoreModal: Error fetching store products:", error);
+      setProducts([]);
+    }
+  }, [store?.id]);
+
+  useEffect(() => {
+    console.log("StoreModal: Component mounted/updated", {
+      isEditing,
+      storeId: store?.id,
+      storeName: store?.name
+    });
+    
+    if (isEditing && store?.id) {
+      console.log("StoreModal: Store loaded, fetching products...", store);
+      fetchStoreProducts();
+    } else {
+      console.log("StoreModal: Not editing or no store, clearing products and reviews");
+      setProducts([]);
+      setReviews([]);
+    }
+  }, [isEditing, store?.id, fetchStoreProducts]);
+
+  // Fetch reviews function - use ref to get latest products
+  const productsRef = React.useRef<Product[]>([]);
+  React.useEffect(() => {
+    productsRef.current = products;
+  }, [products]);
+
+  const fetchStoreReviews = useCallback(async () => {
+    const currentProducts = productsRef.current;
+    const currentStoreId = store?.id;
+    
+    if (!currentStoreId) {
+      console.log("StoreModal: No store ID, skipping review fetch");
+      setReviews([]);
+      return;
+    }
+
+    if (currentProducts.length === 0) {
+      console.log("StoreModal: No products found, cannot fetch reviews");
+      setReviews([]);
+      return;
+    }
+
+    console.log(`StoreModal: Fetching reviews for ${currentProducts.length} products`, currentProducts.map(p => ({ id: p.id, name: p.name })));
+    
+    setReviewsLoading(true);
+    const allReviews: ProductReview[] = [];
+    
+    try {
+      for (let i = 0; i < currentProducts.length; i++) {
+        const product = currentProducts[i];
+        
+        // Check if store ID changed during fetch (prevent race condition)
+        if (store?.id !== currentStoreId) {
+          console.log("StoreModal: Store ID changed during fetch, aborting");
+          return;
+        }
+        
+        try {
+          // Add delay between requests to avoid rate limiting (except for the first request)
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+          
+          const response = await productReviewApi.getProductReviews(product.id, {
+            limit: 50,
+            sortBy: 'newest',
+          });
+          
+          // Validate response structure
+          if (response && response.success && Array.isArray(response.data)) {
+            const productReviews = response.data.map((review: ProductReview) => ({
+              ...review,
+              productName: product.name,
+            }));
+            
+            if (productReviews.length > 0) {
+              allReviews.push(...productReviews);
+            }
+          }
+        } catch (err: any) {
+          // If rate limited, wait longer before continuing to next product
+          if (err.response?.status === 429) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+          // Continue to next product even if error occurred
+        }
+      }
+      
+      // Only update reviews if store ID hasn't changed
+      if (store?.id === currentStoreId) {
+        // Sort by newest first
+        allReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setReviews(allReviews);
+      }
+    } catch (err) {
+      console.error("StoreModal: Error fetching store reviews:", err);
+      // Only clear reviews if store ID hasn't changed
+      if (store?.id === currentStoreId) {
+        setReviews([]);
+      }
+    } finally {
+      if (store?.id === currentStoreId) {
+        setReviewsLoading(false);
+      }
+    }
+  }, [store?.id]);
+
+  // Use ref to track if we're currently fetching to prevent duplicate calls
+  const isFetchingRef = React.useRef(false);
+
+  // Fetch reviews when showReviews is toggled and products are available
+  useEffect(() => {
+    console.log("StoreModal: Reviews useEffect triggered", {
+      showReviews,
+      productsLength: products.length,
+      reviewsLoading,
+      storeId: store?.id,
+      isFetching: isFetchingRef.current,
+    });
+    
+    // Only fetch if:
+    // 1. showReviews is true
+    // 2. products are available
+    // 3. not currently fetching
+    // 4. not already loading
+    if (showReviews && products.length > 0 && !isFetchingRef.current && !reviewsLoading) {
+      console.log("StoreModal: Show reviews is true, fetching reviews...");
+      isFetchingRef.current = true;
+      fetchStoreReviews().finally(() => {
+        isFetchingRef.current = false;
+      });
+    } else if (showReviews && products.length === 0) {
+      console.log("StoreModal: Show reviews but no products, waiting for products...");
+    } else if (!showReviews) {
+      console.log("StoreModal: Reviews hidden, not fetching");
+      // Reset fetching flag when hiding reviews
+      isFetchingRef.current = false;
+    }
+  }, [showReviews, products.length, store?.id]); // Removed fetchStoreReviews and reviewsLoading from dependencies
 
   const updateLocationField = (field: keyof Location, value: string) => {
     setFormData((prev) => ({
@@ -505,19 +673,26 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
                   <label className="form-label">
                     {t("storeModal.fields.rating")} <span className="text-muted">({t("storeModal.fields.ratingDisabled")})</span>
                   </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    value={formData.rating}
-                    disabled
-                    className="form-input"
-                    style={{ opacity: 0.6, cursor: 'not-allowed' }}
-                    title={t("storeModal.fields.ratingDisabled")}
-                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="5"
+                      value={formData.rating || 0}
+                      disabled
+                      className="form-input"
+                      style={{ opacity: 0.6, cursor: 'not-allowed', flex: 1 }}
+                      title={t("storeModal.fields.ratingDisabled")}
+                    />
+                    <div style={{ fontSize: '18px', color: '#fbbf24' }}>
+                      {'⭐'.repeat(Math.floor(formData.rating || 0))}
+                      {formData.rating % 1 >= 0.5 && '⭐'}
+                      {'☆'.repeat(5 - Math.ceil(formData.rating || 0))}
+                    </div>
+                  </div>
                   <small className="text-muted">
-                    {t("storeModal.fields.ratingNote")}
+                    {t("storeModal.fields.ratingNote") || "Rating is calculated from product reviews"}
                   </small>
                 </div>
               )}
@@ -767,19 +942,24 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
               <div className={styles.gridTwo}>
                 <div className="form-group">
                   <label className="form-label">
-                    {t("storeModal.fields.reviewCount")} <span className="text-muted">({t("storeModal.fields.reviewCountDisabled")})</span>
+                    {t("storeModal.fields.reviewCount") || "Review Count"} <span className="text-muted">({t("storeModal.fields.reviewCountDisabled") || "Auto-calculated"})</span>
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.reviewCount}
-                    disabled
-                    className="form-input"
-                    style={{ opacity: 0.6, cursor: 'not-allowed' }}
-                    title={t("storeModal.fields.reviewCountDisabled")}
-                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.reviewCount || 0}
+                      disabled
+                      className="form-input"
+                      style={{ opacity: 0.6, cursor: 'not-allowed', flex: 1 }}
+                      title={t("storeModal.fields.reviewCountDisabled") || "Review count is calculated from product reviews"}
+                    />
+                    <span style={{ fontSize: '14px', color: '#666' }}>
+                      {formData.reviewCount === 0 ? 'No reviews yet' : `${formData.reviewCount} review${formData.reviewCount !== 1 ? 's' : ''}`}
+                    </span>
+                  </div>
                   <small className="text-muted">
-                    {t("storeModal.fields.reviewCountNote")}
+                    {t("storeModal.fields.reviewCountNote") || "Review count is calculated from all product reviews"}
                   </small>
                 </div>
                 <div className="form-group">
@@ -848,36 +1028,351 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
             </div>
 
             {isEditing && (
-              <div className={styles.toggleGroup}>
-                <label className={styles.toggleRow}>
-                  <input
-                    type="checkbox"
-                    checked={formData.isVerified}
-                    onChange={(event) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        isVerified: event.target.checked,
-                      }))
-                    }
-                    className={styles.checkbox}
-                  />
-                  <span>{t("storeModal.fields.verified")}</span>
-                </label>
-                <label className={styles.toggleRow}>
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(event) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        isActive: event.target.checked,
-                      }))
-                    }
-                    className={styles.checkbox}
-                  />
-                  <span>{t("storeModal.fields.active")}</span>
-                </label>
-              </div>
+              <>
+                <div className={styles.toggleGroup}>
+                  <label className={styles.toggleRow}>
+                    <input
+                      type="checkbox"
+                      checked={formData.isVerified}
+                      onChange={(event) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          isVerified: event.target.checked,
+                        }))
+                      }
+                      className={styles.checkbox}
+                    />
+                    <span>{t("storeModal.fields.verified")}</span>
+                  </label>
+                  <label className={styles.toggleRow}>
+                    <input
+                      type="checkbox"
+                      checked={formData.isActive}
+                      onChange={(event) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          isActive: event.target.checked,
+                        }))
+                      }
+                      className={styles.checkbox}
+                    />
+                    <span>{t("storeModal.fields.active")}</span>
+                  </label>
+                </div>
+
+                {/* Reviews Section */}
+                <div className={styles.sectionDivider} style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #e5e5e5' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <h4 className={styles.sectionTitle} style={{ fontSize: '18px', fontWeight: '600', color: '#333', margin: 0 }}>
+                        {t("storeModal.fields.reviews") || "Product Reviews"}
+                      </h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '14px', color: '#666' }}>
+                        <span>Rating: <strong>{formData.rating.toFixed(1)}</strong></span>
+                        <span>Reviews: <strong>{formData.reviewCount}</strong></span>
+                        <span>Products: <strong>{products.length}</strong></span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          console.log("StoreModal: Debug button clicked", {
+                            showReviews,
+                            productsCount: products.length,
+                            reviewsCount: reviews.length,
+                            storeId: store?.id,
+                            reviewsLoading,
+                            products: products.map(p => ({ id: p.id, name: p.name }))
+                          });
+                        }}
+                        className="btn btn-sm"
+                        style={{ fontSize: '12px', padding: '4px 8px' }}
+                        title="Debug info"
+                      >
+                        Debug
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          console.log("StoreModal: Toggle reviews button clicked", {
+                            currentShowReviews: showReviews,
+                            productsCount: products.length,
+                            productsRefCount: productsRef.current.length,
+                            reviewsCount: reviews.length,
+                            storeId: store?.id,
+                            reviewsLoading,
+                            products: products.map(p => ({ id: p.id, name: p.name }))
+                          });
+                          
+                          // Simply toggle the state - useEffect will handle fetching
+                          setShowReviews(!showReviews);
+                        }}
+                        className="btn btn-sm btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+                        disabled={products.length === 0 || reviewsLoading}
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                        {showReviews ? 'Hide Reviews' : 'Show Reviews'}
+                        {products.length > 0 && ` (${products.length} products)`}
+                        {reviews.length > 0 && ` - ${reviews.length} reviews`}
+                      </button>
+                    </div>
+                  </div>
+
+                  {showReviews && (
+                    <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e5e5e5', borderRadius: '8px', padding: '16px' }}>
+                      {reviewsLoading ? (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
+                          <div className="loading" />
+                          <p style={{ marginTop: '8px', color: '#666' }}>Loading reviews...</p>
+                        </div>
+                      ) : products.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                          <p>No products found for this store</p>
+                          <p style={{ fontSize: '12px', marginTop: '4px', color: '#999' }}>
+                            Products: {products.length} | Store ID: {store?.id}
+                          </p>
+                        </div>
+                      ) : reviews.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                          <MessageSquare className="w-8 h-8 mx-auto mb-2" style={{ opacity: 0.5 }} />
+                          <p>No reviews yet</p>
+                          <p style={{ fontSize: '12px', marginTop: '4px', color: '#999' }}>
+                            Checked {products.length} products
+                          </p>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                          {reviews.map((review) => (
+                            <div key={review.id} style={{ borderBottom: '1px solid #e5e5e5', paddingBottom: '16px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                    <strong style={{ fontSize: '14px' }}>{review.userName || 'Anonymous'}</strong>
+                                    {review.isVerifiedPurchase && (
+                                      <span style={{ fontSize: '12px', color: '#10b981', backgroundColor: '#d1fae5', padding: '2px 6px', borderRadius: '4px' }}>
+                                        ✓ Verified
+                                      </span>
+                                    )}
+                                  </div>
+                                  {review.productName && (
+                                    <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                                      Product: {review.productName}
+                                    </div>
+                                  )}
+                                  <div style={{ fontSize: '12px', color: '#999' }}>
+                                    {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : 'N/A'}
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`w-4 h-4 ${
+                                        star <= (review.rating || 0)
+                                          ? "text-yellow-400 fill-current"
+                                          : "text-gray-300"
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              {review.title && (
+                                <h5 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                                  {review.title}
+                                </h5>
+                              )}
+                              {review.comment && (
+                                <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.5', marginBottom: '8px' }}>
+                                  {review.comment}
+                                </p>
+                              )}
+                              {review.images && review.images.length > 0 && (
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                  {review.images.map((img, idx) => (
+                                    <img
+                                      key={idx}
+                                      src={getImageUrl(img) || getPlaceholderImage()}
+                                      alt={`Review image ${idx + 1}`}
+                                      style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e5e5e5' }}
+                                      onError={handleImageError}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                              {/* Reply Section */}
+                              {review.reply && (
+                                <div style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f0f9ff', borderLeft: '3px solid #3b82f6', borderRadius: '4px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                    <MessageSquare size={16} color="#3b82f6" />
+                                    <span style={{ fontWeight: '600', color: '#1e40af', fontSize: '14px' }}>
+                                      Store Reply
+                                      {review.replyByName && ` by ${review.replyByName}`}
+                                    </span>
+                                    {review.replyAt && (
+                                      <span style={{ fontSize: '12px', color: '#666', marginLeft: 'auto' }}>
+                                        {new Date(review.replyAt).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: '14px', color: '#333', lineHeight: '1.5' }}>
+                                    {review.reply}
+                                  </div>
+                                </div>
+                              )}
+                              {/* Reply Input */}
+                              {isAdmin && !review.reply && (
+                                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed #e5e5e5' }}>
+                                  {replyingTo === review.id ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                      <textarea
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        placeholder="Write a reply..."
+                                        style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '4px', fontSize: '14px', resize: 'vertical' }}
+                                        rows={3}
+                                      />
+                                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                        <button
+                                          onClick={async () => {
+                                            if (!replyText.trim()) {
+                                              showError("Reply cannot be empty");
+                                              return;
+                                            }
+                                            setReplying(true);
+                                            try {
+                                              const response = await productReviewApi.replyToReview(review.id, replyText.trim());
+                                              if (response.success) {
+                                                showSuccess("Reply sent successfully");
+                                                setReplyingTo(null);
+                                                setReplyText("");
+                                                // Refresh reviews
+                                                if (store?.id) {
+                                                  const response = await productApi.getProductsByStore(store.id, undefined, 100, 0);
+                                                  if (response.success && response.data) {
+                                                    setProducts(response.data);
+                                                    const allReviews: ProductReview[] = [];
+                                                    for (const product of response.data) {
+                                                      try {
+                                                        const reviewResponse = await productReviewApi.getProductReviews(product.id, {
+                                                          limit: 50,
+                                                          sortBy: 'newest',
+                                                        });
+                                                        if (reviewResponse.success && reviewResponse.data) {
+                                                          const productReviews = reviewResponse.data.map((r: ProductReview) => ({
+                                                            ...r,
+                                                            productName: product.name,
+                                                          }));
+                                                          allReviews.push(...productReviews);
+                                                        }
+                                                      } catch (err) {
+                                                        // Continue to next product
+                                                      }
+                                                    }
+                                                    allReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                                                    setReviews(allReviews);
+                                                  }
+                                                }
+                                              } else {
+                                                showError("Failed to send reply");
+                                              }
+                                            } catch (error: any) {
+                                              showError(error.response?.data?.message || "Failed to send reply");
+                                            } finally {
+                                              setReplying(false);
+                                            }
+                                          }}
+                                          disabled={replying || !replyText.trim()}
+                                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                                        >
+                                          <Send size={16} />
+                                          Send Reply
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setReplyingTo(null);
+                                            setReplyText("");
+                                          }}
+                                          disabled={replying}
+                                          style={{ padding: '6px 12px', backgroundColor: '#e5e7eb', color: '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => setReplyingTo(review.id)}
+                                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                                    >
+                                      <MessageSquare size={16} />
+                                      Reply
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                              {/* Delete Button */}
+                              {isAdmin && (
+                                <div style={{ marginTop: '8px' }}>
+                                  <button
+                                    onClick={async () => {
+                                      if (!window.confirm("Are you sure you want to delete this review?")) {
+                                        return;
+                                      }
+                                      try {
+                                        const response = await productReviewApi.deleteReview(review.id);
+                                        if (response.success) {
+                                          showSuccess("Review deleted successfully");
+                                          // Refresh reviews
+                                          if (store?.id) {
+                                            const response = await productApi.getProductsByStore(store.id, undefined, 100, 0);
+                                            if (response.success && response.data) {
+                                              setProducts(response.data);
+                                              const allReviews: ProductReview[] = [];
+                                              for (const product of response.data) {
+                                                try {
+                                                  const reviewResponse = await productReviewApi.getProductReviews(product.id, {
+                                                    limit: 50,
+                                                    sortBy: 'newest',
+                                                  });
+                                                  if (reviewResponse.success && reviewResponse.data) {
+                                                    const productReviews = reviewResponse.data.map((r: ProductReview) => ({
+                                                      ...r,
+                                                      productName: product.name,
+                                                    }));
+                                                    allReviews.push(...productReviews);
+                                                  }
+                                                } catch (err) {
+                                                  // Continue to next product
+                                                }
+                                              }
+                                              allReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                                              setReviews(allReviews);
+                                            }
+                                          }
+                                        } else {
+                                          showError("Failed to delete review");
+                                        }
+                                      } catch (error: any) {
+                                        showError(error.message || "Failed to delete review");
+                                      }
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px' }}
+                                  >
+                                    <Trash2 size={16} />
+                                    Delete Review
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
 
             <div className={styles.actions}>

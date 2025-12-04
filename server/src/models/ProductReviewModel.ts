@@ -1,6 +1,7 @@
 import { Pool } from 'mysql2/promise';
 import { pool } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../utils/logger';
 
 export interface ProductReview {
   id: string;
@@ -15,9 +16,14 @@ export interface ProductReview {
   images?: string[];
   createdAt: Date;
   updatedAt: Date;
+  // Reply fields
+  reply?: string;
+  replyBy?: string;
+  replyAt?: Date;
   // Joined fields
   userName?: string;
   userAvatar?: string;
+  replyByName?: string;
 }
 
 export interface CreateReviewRequest {
@@ -25,6 +31,13 @@ export interface CreateReviewRequest {
   userId: string;
   orderId?: string;
   rating: number;
+  title?: string;
+  comment?: string;
+  images?: string[];
+}
+
+export interface UpdateReviewRequest {
+  rating?: number;
   title?: string;
   comment?: string;
   images?: string[];
@@ -72,7 +85,20 @@ export class ProductReviewModel {
       ]);
 
       // Update product review stats
-      await this.updateProductReviewStats(data.productId);
+      try {
+        await this.updateProductReviewStats(data.productId);
+      } catch (error: any) {
+        logger.error(`Failed to update product review stats for product ${data.productId}:`, error);
+        // Continue even if stats update fails
+      }
+
+      // Update store review stats
+      try {
+        await this.updateStoreReviewStats(data.productId);
+      } catch (error: any) {
+        logger.error(`Failed to update store review stats for product ${data.productId}:`, error);
+        // Continue even if stats update fails
+      }
 
       return await this.findById(id);
     } finally {
@@ -89,9 +115,12 @@ export class ProductReviewModel {
           r.*,
           u.first_name,
           u.last_name,
-          u.avatar
+          u.avatar,
+          reply_user.first_name as reply_first_name,
+          reply_user.last_name as reply_last_name
         FROM product_reviews r
         LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN staff reply_user ON r.reply_by = reply_user.id
         WHERE r.id = ?
       `, [id]);
 
@@ -164,9 +193,12 @@ export class ProductReviewModel {
           r.*,
           u.first_name,
           u.last_name,
-          u.avatar
+          u.avatar,
+          reply_user.first_name as reply_first_name,
+          reply_user.last_name as reply_last_name
         FROM product_reviews r
         LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN staff reply_user ON r.reply_by = reply_user.id
         ${whereClause}
         ${orderBy}
         ${limitClause}
@@ -261,6 +293,36 @@ export class ProductReviewModel {
       `, [productId, userId]);
 
       return (rows as any[]).length > 0;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async findByProductIdAndUserId(productId: string, userId: string): Promise<ProductReview | null> {
+    const connection = await this.pool.getConnection();
+    
+    try {
+      const [rows] = await connection.execute(`
+        SELECT 
+          r.*,
+          u.first_name,
+          u.last_name,
+          u.avatar,
+          reply_user.first_name as reply_first_name,
+          reply_user.last_name as reply_last_name
+        FROM product_reviews r
+        LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN staff reply_user ON r.reply_by = reply_user.id
+        WHERE r.product_id = ? AND r.user_id = ?
+        LIMIT 1
+      `, [productId, userId]);
+
+      const reviews = rows as any[];
+      if (reviews.length === 0) {
+        return null;
+      }
+
+      return this.mapRowToReview(reviews[0]);
     } finally {
       connection.release();
     }
@@ -373,7 +435,7 @@ export class ProductReviewModel {
     }
   }
 
-  private async updateProductReviewStats(productId: string): Promise<void> {
+  async updateProductReviewStats(productId: string): Promise<void> {
     const connection = await this.pool.getConnection();
     
     try {
@@ -384,6 +446,165 @@ export class ProductReviewModel {
         SET average_rating = ?, review_count = ?
         WHERE id = ?
       `, [stats.averageRating, stats.totalReviews, productId]);
+    } finally {
+      connection.release();
+    }
+  }
+
+  async updateStoreReviewStats(productId: string): Promise<void> {
+    const connection = await this.pool.getConnection();
+    
+    try {
+      // Get the store_id for this product
+      const [productRows] = await connection.execute(`
+        SELECT store_id FROM products WHERE id = ?
+      `, [productId]);
+
+      const products = productRows as any[];
+      if (products.length === 0) {
+        return; // Product not found, skip store update
+      }
+
+      const storeId = products[0].store_id;
+
+      // Calculate store review stats from all product reviews in the store
+      // Get all product IDs for this store
+      const [storeProductRows] = await connection.execute(`
+        SELECT id FROM products WHERE store_id = ?
+      `, [storeId]);
+
+      const storeProductIds = (storeProductRows as any[]).map(row => row.id);
+      
+      if (storeProductIds.length === 0) {
+        return; // No products in store
+      }
+
+      // Calculate total reviews and average rating from all product reviews
+      const placeholders = storeProductIds.map(() => '?').join(',');
+      const [statsRows] = await connection.execute(`
+        SELECT 
+          COUNT(*) as total_reviews,
+          AVG(rating) as average_rating
+        FROM product_reviews
+        WHERE product_id IN (${placeholders})
+      `, storeProductIds);
+
+      const stats = (statsRows as any[])[0] || {};
+      const totalReviews = parseInt(stats.total_reviews || 0);
+      const averageRating = parseFloat(stats.average_rating || 0) || 0;
+
+      // Update store review count and rating
+      await connection.execute(`
+        UPDATE stores
+        SET review_count = ?, rating = ?
+        WHERE id = ?
+      `, [totalReviews, averageRating, storeId]);
+    } finally {
+      connection.release();
+    }
+  }
+
+  async update(reviewId: string, data: UpdateReviewRequest): Promise<ProductReview> {
+    const connection = await this.pool.getConnection();
+    
+    try {
+      const fields: string[] = [];
+      const params: any[] = [];
+
+      if (data.rating !== undefined) {
+        fields.push('rating = ?');
+        params.push(data.rating);
+      }
+      if (data.title !== undefined) {
+        fields.push('title = ?');
+        params.push(data.title || null);
+      }
+      if (data.comment !== undefined) {
+        fields.push('comment = ?');
+        params.push(data.comment || null);
+      }
+      if (data.images !== undefined) {
+        fields.push('images = ?');
+        params.push(data.images.length > 0 ? JSON.stringify(data.images) : null);
+      }
+
+      if (fields.length === 0) {
+        return await this.findById(reviewId);
+      }
+
+      fields.push('updated_at = NOW()');
+      params.push(reviewId);
+
+      await connection.execute(
+        `UPDATE product_reviews SET ${fields.join(', ')} WHERE id = ?`,
+        params
+      );
+
+      const review = await this.findById(reviewId);
+      
+      // Update product review stats
+      try {
+        await this.updateProductReviewStats(review.productId);
+      } catch (error: any) {
+        logger.error(`Failed to update product review stats for product ${review.productId}:`, error);
+        // Continue even if stats update fails
+      }
+      
+      // Update store review stats
+      try {
+        await this.updateStoreReviewStats(review.productId);
+      } catch (error: any) {
+        logger.error(`Failed to update store review stats for product ${review.productId}:`, error);
+        // Continue even if stats update fails
+      }
+
+      return review;
+    } finally {
+      connection.release();
+    }
+  }
+
+  async delete(reviewId: string): Promise<void> {
+    const connection = await this.pool.getConnection();
+    
+    try {
+      // Get review to find productId before deleting
+      const review = await this.findById(reviewId);
+      const productId = review.productId;
+
+      await connection.execute(
+        `DELETE FROM product_reviews WHERE id = ?`,
+        [reviewId]
+      );
+
+      // Update product review stats
+      await this.updateProductReviewStats(productId);
+      
+      // Update store review stats
+      try {
+        await this.updateStoreReviewStats(productId);
+      } catch (error: any) {
+        logger.error(`Failed to update store review stats for product ${productId}:`, error);
+      }
+    } finally {
+      connection.release();
+    }
+  }
+
+  async replyToReview(reviewId: string, reply: string, repliedBy: string): Promise<ProductReview> {
+    const connection = await this.pool.getConnection();
+    
+    try {
+      const now = new Date();
+      
+      await connection.execute(
+        `UPDATE product_reviews 
+         SET reply = ?, reply_by = ?, reply_at = ?, updated_at = ?
+         WHERE id = ?`,
+        [reply, repliedBy, now, now, reviewId]
+      );
+
+      return await this.findById(reviewId);
     } finally {
       connection.release();
     }
@@ -403,10 +624,16 @@ export class ProductReviewModel {
       images: row.images ? JSON.parse(row.images) : undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
+      reply: row.reply || undefined,
+      replyBy: row.reply_by || undefined,
+      replyAt: row.reply_at ? new Date(row.reply_at) : undefined,
       userName: row.first_name && row.last_name 
         ? `${row.first_name} ${row.last_name}` 
         : undefined,
       userAvatar: row.avatar || undefined,
+      replyByName: row.reply_first_name && row.reply_last_name
+        ? `${row.reply_first_name} ${row.reply_last_name}`
+        : undefined,
     };
   }
 }

@@ -45,6 +45,7 @@ export class ProductModel {
       category: row.category || undefined,
       barcode: row.barcode || undefined,
       serialNumber: row.serial_number || undefined,
+      condition: (row.condition as 'new' | 'refurbished' | 'open_box' | 'used') || 'new', // Default to 'new' if not set
       isActive: Boolean(row.is_active),
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
@@ -327,8 +328,8 @@ export class ProductModel {
       const [insertResult] = await connection.execute(
         `INSERT INTO products (
           id, store_id, name, description, price, image_url, image_urls,
-          stock_quantity, category, barcode, serial_number, is_active, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          stock_quantity, category, barcode, serial_number, condition, is_active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           productId,
           productData.storeId,
@@ -341,6 +342,7 @@ export class ProductModel {
           productData.category || null,
           productData.barcode || null,
           productData.serialNumber || null,
+          productData.condition || 'new', // Default to 'new' if not specified
           isActive,
           now,
           now,
@@ -534,6 +536,10 @@ export class ProductModel {
       if (productData.serialNumber !== undefined) {
         updates.push('serial_number = ?');
         params.push(productData.serialNumber || null);
+      }
+      if (productData.condition !== undefined) {
+        updates.push('condition = ?');
+        params.push(productData.condition);
       }
       if (productData.isActive !== undefined) {
         updates.push('is_active = ?');

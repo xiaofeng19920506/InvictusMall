@@ -23,6 +23,13 @@ export type {
   UpdateProductRequest,
 } from './productApi';
 
+// Product Review management (Products page)
+export { productReviewApi } from './productReviewApi';
+export type {
+  ProductReview,
+  ReviewStats,
+} from './productReviewApi';
+
 // Category management (Categories page)
 export { categoryApi } from './categoryApi';
 export type {

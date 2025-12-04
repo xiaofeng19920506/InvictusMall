@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Order } from "@/lib/server-api";
 import Link from "next/link";
 import {
@@ -11,6 +12,7 @@ import {
   getOrderStatusBadgeStyle,
   getOrderStatusLabel,
 } from "../orderStatusConfig";
+import ReviewModal from "./ReviewModal";
 import styles from "./OrderDetailInfo.module.scss";
 
 interface OrderDetailInfoProps {
@@ -28,6 +30,32 @@ function formatDate(dateString: string) {
 }
 
 export default function OrderDetailInfo({ order }: OrderDetailInfoProps) {
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<{
+    id: string;
+    name: string;
+    image?: string;
+  } | null>(null);
+
+  const handleWriteReview = () => {
+    // For simplicity, allow review for the first product in the order
+    // In a more complex scenario, you might want to show a product selector
+    if (order.items.length > 0 && !(order.items[0] as any).isReservation) {
+      const firstItem = order.items[0];
+      setSelectedProduct({
+        id: firstItem.productId,
+        name: firstItem.productName,
+        image: getImageUrl(firstItem.productImage) || undefined,
+      });
+      setReviewModalOpen(true);
+    }
+  };
+
+  const handleReviewSuccess = () => {
+    // Optionally refresh order data or show success message
+    window.location.reload();
+  };
+
   return (
     <div className={styles.container}>
       {/* Order Header */}
@@ -192,10 +220,28 @@ export default function OrderDetailInfo({ order }: OrderDetailInfoProps) {
         <Link href="/profile?tab=orders&orderStatus=all" className={styles.backButton}>
           Back to Orders
         </Link>
-        {order.status === "delivered" && (
-          <button className={styles.reviewButton}>Write Review</button>
+        {order.status === "delivered" && order.items.length > 0 && !(order.items[0] as any).isReservation && (
+          <button className={styles.reviewButton} onClick={handleWriteReview}>
+            Write Review
+          </button>
         )}
       </div>
+
+      {/* Review Modal */}
+      {selectedProduct && (
+        <ReviewModal
+          isOpen={reviewModalOpen}
+          onClose={() => {
+            setReviewModalOpen(false);
+            setSelectedProduct(null);
+          }}
+          productId={selectedProduct.id}
+          productName={selectedProduct.name}
+          productImage={selectedProduct.image}
+          orderId={order.id}
+          onSuccess={handleReviewSuccess}
+        />
+      )}
     </div>
   );
 }

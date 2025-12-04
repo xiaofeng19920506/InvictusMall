@@ -192,7 +192,8 @@ app.use("/api/refunds", refundRoutes);
 app.use("/api/returns", returnRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
-app.use("/api/products", productReviewRoutes); // Product reviews routes
+app.use("/api/products", productReviewRoutes); // Product reviews routes (for /api/products/:productId/reviews)
+app.use("/api/reviews", productReviewRoutes); // Product reviews routes (for /api/reviews/:reviewId/*)
 app.use("/api/stores", storeReviewRoutes); // Store reviews routes
 app.use("/api/categories", categoryRoutes);
 app.use("/api/upload", uploadRoutes);

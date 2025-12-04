@@ -225,6 +225,23 @@
   color: color('gray-500');
 }
 
+.reviewItemButton {
+  margin-top: 0.75rem; // mt-3
+  padding: 0.5rem 1rem; // px-4 py-2
+  background-color: color('blue-500');
+  color: color('white');
+  border: none;
+  border-radius: border-radius('md');
+  font-size: font-size('sm');
+  font-weight: font-weight('medium');
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: color('blue-600');
+  }
+}
+
 .itemPrice {
   text-align: right;
 }

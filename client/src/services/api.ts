@@ -462,6 +462,47 @@ class ApiService {
       body: JSON.stringify({ productId, date, timeSlot }),
     });
   }
+
+  // Product Review methods
+  async createReview(productId: string, reviewData: {
+    rating: number;
+    title?: string;
+    comment?: string;
+    orderId?: string;
+    images?: string[];
+  }): Promise<{
+    success: boolean;
+    data?: any;
+    message?: string;
+  }> {
+    return this.request(`/api/products/${productId}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(reviewData),
+    });
+  }
+
+  async getProductReviews(productId: string, options?: {
+    limit?: number;
+    offset?: number;
+    rating?: number;
+    sortBy?: 'newest' | 'oldest' | 'helpful' | 'rating';
+  }): Promise<{
+    success: boolean;
+    data?: any[];
+    total?: number;
+    message?: string;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.offset) params.append('offset', options.offset.toString());
+    if (options?.rating) params.append('rating', options.rating.toString());
+    if (options?.sortBy) params.append('sortBy', options.sortBy);
+    
+    const queryString = params.toString();
+    return this.request(`/api/products/${productId}/reviews${queryString ? `?${queryString}` : ''}`, {
+      method: 'GET',
+    });
+  }
 }
 
 // Category interface
