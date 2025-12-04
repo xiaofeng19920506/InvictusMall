@@ -89,8 +89,9 @@ class LowStockAlertService {
     for (const alert of alerts) {
       try {
         await ActivityLogModel.createLog({
-          type: 'store_updated', // Using existing type, could add 'low_stock_alert' type
+          type: 'system',
           message: `Low stock alert: ${alert.productName} has ${alert.currentStock} units remaining (threshold: ${alert.threshold})`,
+          userName: 'System',
           metadata: {
             productId: alert.productId,
             productName: alert.productName,

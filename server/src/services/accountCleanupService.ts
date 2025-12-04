@@ -59,11 +59,12 @@ class AccountCleanupService {
       // Also clean up associated verification tokens
       // Note: This is a best-effort cleanup - if tokens are orphaned, they'll expire naturally
       
-      // Log the cleanup activity
+      // Log the cleanup activity as a system action
       try {
         await ActivityLogModel.createLog({
-          type: "user_registered",
+          type: "system",
           message: `Cleaned up ${deletedCount} unactivated user account(s) older than 7 days`,
+          userName: 'System',
           metadata: {
             deletedCount,
             cleanupTime: new Date().toISOString(),
@@ -87,11 +88,12 @@ class AccountCleanupService {
     } catch (error: any) {
       console.error("❌ Error during account cleanup:", error);
       
-      // Log the error
+      // Log the error as a system action
       try {
         await ActivityLogModel.createLog({
-          type: "user_registered",
+          type: "system",
           message: `Account cleanup failed: ${error.message}`,
+          userName: 'System',
           metadata: {
             error: error.message,
             cleanupTime: new Date().toISOString(),

@@ -84,11 +84,12 @@ class OrderCleanupService {
           await this.orderModel.updateOrderStatus(order.id, 'cancelled' as OrderStatus);
           cancelledCount++;
 
-          // Log the cancellation
+          // Log the cancellation as a system action
           try {
             await ActivityLogModel.createLog({
-              type: 'order_created', // Using existing type, could add 'order_cancelled' type
+              type: 'system',
               message: `Order ${order.id} automatically cancelled (pending for more than ${timeoutHours} hours)`,
+              userName: 'System',
               metadata: {
                 orderId: order.id,
                 userId: order.userId,
@@ -119,11 +120,12 @@ class OrderCleanupService {
     } catch (error: any) {
       logger.error('❌ Error during order cleanup:', error);
 
-      // Log the error
+      // Log the error as a system action
       try {
         await ActivityLogModel.createLog({
-          type: 'order_created',
+          type: 'system',
           message: `Order cleanup failed: ${error.message}`,
+          userName: 'System',
           metadata: {
             error: error.message,
             cleanupTime: new Date().toISOString(),

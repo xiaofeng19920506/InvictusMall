@@ -18,7 +18,8 @@
     "delete-remaining-chinese": "ts-node scripts/deleteRemainingChineseCategory.ts",
     "delete-specific-categories": "ts-node scripts/deleteSpecificCategories.ts",
     "update-home-category": "ts-node scripts/updateHomeCategory.ts",
-    "add-food-beverage": "ts-node scripts/addFoodBeverageCategory.ts"
+    "add-food-beverage": "ts-node scripts/addFoodBeverageCategory.ts",
+    "cleanup-system-logs": "ts-node scripts/cleanupSystemLogs.ts"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",
