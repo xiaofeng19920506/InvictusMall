@@ -23,6 +23,7 @@ import productRoutes from "./routes/productRoutes";
 import categoryRoutes from "./routes/categoryRoutes";
 import uploadRoutes from "./routes/uploadRoutes";
 import productReviewRoutes from "./routes/productReviewRoutes";
+import storeReviewRoutes from "./routes/storeReviewRoutes";
 import wishlistRoutes from "./routes/wishlistRoutes";
 import browseHistoryRoutes from "./routes/browseHistoryRoutes";
 import taxRoutes from "./routes/taxRoutes";
@@ -192,6 +193,7 @@ app.use("/api/returns", returnRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/products", productReviewRoutes); // Product reviews routes
+app.use("/api/stores", storeReviewRoutes); // Store reviews routes
 app.use("/api/categories", categoryRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/wishlists", wishlistRoutes);

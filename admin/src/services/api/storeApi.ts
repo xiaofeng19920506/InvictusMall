@@ -6,6 +6,39 @@ import type {
   UpdateStoreRequest,
 } from '../../shared/types/store';
 
+export interface StoreReview {
+  id: string;
+  storeId: string;
+  userId: string;
+  orderId?: string;
+  rating: number;
+  title?: string;
+  comment?: string;
+  isVerifiedPurchase: boolean;
+  helpfulCount: number;
+  images?: string[];
+  reply?: string;
+  replyBy?: string;
+  replyAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  userName?: string;
+  userAvatar?: string;
+  replyByName?: string;
+}
+
+export interface StoreReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  ratingDistribution: {
+    5: number;
+    4: number;
+    3: number;
+    2: number;
+    1: number;
+  };
+}
+
 export const storeApi = {
   // Get all stores
   getAllStores: async (params?: {
@@ -196,6 +229,46 @@ export const storeApi = {
       console.error("Store image upload failed:", error);
       throw error;
     }
+  },
+
+  // Get store reviews (admin/staff only)
+  getStoreReviews: async (
+    storeId: string,
+    params?: {
+      limit?: number;
+      offset?: number;
+      rating?: number;
+      sortBy?: 'newest' | 'oldest' | 'helpful' | 'rating';
+    }
+  ): Promise<ApiResponse<StoreReview[]>> => {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.rating) queryParams.append('rating', params.rating.toString());
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+
+    const response = await api.get(
+      `/api/stores/${storeId}/reviews${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    );
+    return response.data;
+  },
+
+  // Get store review stats (admin/staff only)
+  getStoreReviewStats: async (storeId: string): Promise<ApiResponse<StoreReviewStats>> => {
+    const response = await api.get(`/api/stores/${storeId}/reviews/stats`);
+    return response.data;
+  },
+
+  // Delete store review (admin only)
+  deleteStoreReview: async (reviewId: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/api/stores/reviews/${reviewId}`);
+    return response.data;
+  },
+
+  // Reply to store review (admin/store owner only)
+  replyToReview: async (reviewId: string, reply: string): Promise<ApiResponse<StoreReview>> => {
+    const response = await api.post(`/api/stores/reviews/${reviewId}/reply`, { reply });
+    return response.data;
   },
 };
 

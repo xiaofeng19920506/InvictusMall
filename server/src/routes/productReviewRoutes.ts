@@ -163,13 +163,31 @@ router.post(
         return ApiResponseHelper.error(res, "You have already reviewed this product", 400);
       }
 
+      // Validate that user has purchased the product and within 30 days
+      const purchaseValidation = await reviewModel.validatePurchaseForReview(
+        productId,
+        req.user.id,
+        orderId
+      );
+
+      if (!purchaseValidation.purchaseValid) {
+        return ApiResponseHelper.error(
+          res,
+          purchaseValidation.message || "You must purchase this product before writing a review",
+          400
+        );
+      }
+
+      // Use the validated orderId (from validation if not provided)
+      const validatedOrderId = orderId || purchaseValidation.orderId;
+
       const reviewData: CreateReviewRequest = {
         productId,
         userId: req.user.id,
         rating,
         title,
         comment,
-        orderId,
+        orderId: validatedOrderId,
         images,
       };
 

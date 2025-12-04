@@ -8,6 +8,7 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
+  MessageSquare,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { storeApi } from "../../services/api";
@@ -19,6 +20,7 @@ import { getImageUrl, getPlaceholderImage, handleImageError } from "../../shared
 import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
 import Pagination from "../../shared/components/Pagination";
 import StoreModal from "./StoreModal";
+import StoreReviewsModal from "./StoreReviewsModal";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 import styles from "./StoresManagement.module.css";
 
@@ -28,6 +30,8 @@ const StoresManagement: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [selectedStoreForReviews, setSelectedStoreForReviews] = useState<Store | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -148,6 +152,11 @@ const StoresManagement: React.FC = () => {
   const handleAddStore = () => {
     setEditingStore(null);
     setShowModal(true);
+  };
+
+  const handleViewReviews = (store: Store) => {
+    setSelectedStoreForReviews(store);
+    setShowReviewsModal(true);
   };
 
   // Set header actions (after handleAddStore is defined)
@@ -320,6 +329,15 @@ const StoresManagement: React.FC = () => {
                   </td>
                   <td>
                     <div className={styles.actionButtons}>
+                      {store.reviewCount > 0 && (
+                        <button
+                          onClick={() => handleViewReviews(store)}
+                          className="btn btn-info btn-sm"
+                          title={t("stores.actions.viewReviews") || "View Reviews"}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+                      )}
                       {isAdmin && !store.isVerified && (
                         <button
                           onClick={() => handleVerifyStore(store.id)}
@@ -386,6 +404,22 @@ const StoresManagement: React.FC = () => {
             setShowModal(false);
             setEditingStore(null);
           }}
+        />
+      )}
+      {/* Store Reviews Modal */}
+      {isClient && showReviewsModal && selectedStoreForReviews && (
+        <StoreReviewsModal
+          storeId={selectedStoreForReviews.id}
+          storeName={selectedStoreForReviews.name}
+          isOpen={showReviewsModal}
+          onClose={() => {
+            setShowReviewsModal(false);
+            setSelectedStoreForReviews(null);
+          }}
+          onReviewDeleted={() => {
+            refetch();
+          }}
+          isStoreOwner={!isAdmin && selectedStoreForReviews.owner?.id === user?.id}
         />
       )}
       <ConfirmModal

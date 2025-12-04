@@ -402,13 +402,29 @@ class ApiService {
   async getAvailableTimeSlots(productId: string, date: string): Promise<{
     success: boolean;
     data?: {
-      availableTimeSlots: string[];
-      bookedTimeSlots: string[];
+      timeSlots: Array<{
+        timeslot: string;
+        isAvailable: boolean;
+      }>;
     };
     message?: string;
   }> {
     return this.request(`/api/reservations/available-time-slots?productId=${encodeURIComponent(productId)}&date=${encodeURIComponent(date)}`, {
       method: 'GET',
+    });
+  }
+
+  async checkTimeSlotAvailability(productId: string, date: string, timeSlot: string): Promise<{
+    success: boolean;
+    data?: {
+      available: boolean;
+      message: string;
+    };
+    message?: string;
+  }> {
+    return this.request('/api/reservations/check-time-slot', {
+      method: 'POST',
+      body: JSON.stringify({ productId, date, timeSlot }),
     });
   }
 }

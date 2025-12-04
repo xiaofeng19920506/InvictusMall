@@ -403,8 +403,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           ...baseData,
           imageUrl: formData.imageUrl || undefined,
           category: formData.category,
-          rating: formData.rating,
-          reviewCount: formData.reviewCount,
+          // Rating and reviewCount are auto-calculated from reviews, don't send them
           productsCount: formData.productsCount,
           discount: formData.discount || undefined,
           isVerified: formData.isVerified,
@@ -429,8 +428,9 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           ...baseData,
           imageUrl: "/images/default-store.png",
           category: formData.category,
-          rating: 0,
-          reviewCount: 0,
+          // Rating and reviewCount are auto-calculated from reviews
+          // rating: 0,
+          // reviewCount: 0,
           productsCount: 0,
           discount: undefined,
           isVerified: false,
@@ -503,7 +503,7 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
               {isEditing && (
                 <div className="form-group">
                   <label className="form-label">
-                    {t("storeModal.fields.rating")}
+                    {t("storeModal.fields.rating")} <span className="text-muted">({t("storeModal.fields.ratingDisabled")})</span>
                   </label>
                   <input
                     type="number"
@@ -511,14 +511,14 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
                     min="0"
                     max="5"
                     value={formData.rating}
-                    onChange={(event) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        rating: parseFloat(event.target.value || "0"),
-                      }))
-                    }
+                    disabled
                     className="form-input"
+                    style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                    title={t("storeModal.fields.ratingDisabled")}
                   />
+                  <small className="text-muted">
+                    {t("storeModal.fields.ratingNote")}
+                  </small>
                 </div>
               )}
             </div>
@@ -767,20 +767,20 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
               <div className={styles.gridTwo}>
                 <div className="form-group">
                   <label className="form-label">
-                    {t("storeModal.fields.reviewCount")}
+                    {t("storeModal.fields.reviewCount")} <span className="text-muted">({t("storeModal.fields.reviewCountDisabled")})</span>
                   </label>
                   <input
                     type="number"
                     min="0"
                     value={formData.reviewCount}
-                    onChange={(event) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        reviewCount: parseInt(event.target.value || "0", 10),
-                      }))
-                    }
+                    disabled
                     className="form-input"
+                    style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                    title={t("storeModal.fields.reviewCountDisabled")}
                   />
+                  <small className="text-muted">
+                    {t("storeModal.fields.reviewCountNote")}
+                  </small>
                 </div>
                 <div className="form-group">
                   <label className="form-label">

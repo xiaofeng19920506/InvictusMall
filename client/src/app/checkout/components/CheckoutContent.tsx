@@ -238,8 +238,10 @@ export default function CheckoutContent({
 
       if (result.success) {
         clearCart();
-        // Redirect to success page
-        router.push(`/checkout/success?payment_intent=${paymentIntentId}`);
+        // Redirect to success page with order IDs
+        const orderIds = result.data?.orderIds || [];
+        const orderIdsParam = orderIds.length > 0 ? `&order_ids=${orderIds.join(',')}` : '';
+        router.push(`/checkout/success?payment_intent=${paymentIntentId}${orderIdsParam}`);
         return;
       }
 

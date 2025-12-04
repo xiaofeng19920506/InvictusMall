@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useCallback, memo } from "react";
+import { useMemo, useCallback, memo, useState, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 import Header from "@/components/common/Header";
 import Link from "next/link";
 import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
+import { apiService } from "@/services/api";
 import type { ShippingAddress } from "@/lib/server-api";
 import type { CartItem } from "@/contexts/CartContext";
 import styles from "./CartContent.module.scss";
@@ -153,6 +154,54 @@ export default function CartContent({
   beginCheckout,
 }: CartContentProps) {
   const { items, updateQuantity, removeItem, clearCart } = useCart();
+  const [conflictedReservations, setConflictedReservations] = useState<string[]>([]);
+  const [showConflictBanner, setShowConflictBanner] = useState(false);
+
+  // Check for reservation conflicts when component mounts or items change
+  useEffect(() => {
+    const checkReservationConflicts = async () => {
+      const reservationItems = items.filter(item => item.isReservation && item.reservationDate && item.reservationTime);
+      
+      if (reservationItems.length === 0) {
+        setConflictedReservations([]);
+        setShowConflictBanner(false);
+        return;
+      }
+
+      const conflicts: string[] = [];
+
+      for (const item of reservationItems) {
+        try {
+          const response = await apiService.checkTimeSlotAvailability(
+            item.productId,
+            item.reservationDate!,
+            item.reservationTime!
+          );
+
+          if (response.success && response.data && !response.data.available) {
+            conflicts.push(item.id);
+          }
+        } catch (error) {
+          console.error(`Failed to check availability for item ${item.id}:`, error);
+        }
+      }
+
+      if (conflicts.length > 0) {
+        setConflictedReservations(conflicts);
+        setShowConflictBanner(true);
+        
+        // Auto-remove conflicted items immediately
+        conflicts.forEach(itemId => {
+          removeItem(itemId);
+        });
+      } else {
+        setConflictedReservations([]);
+        setShowConflictBanner(false);
+      }
+    };
+
+    checkReservationConflicts();
+  }, [items, removeItem]);
 
   const subtotal = useMemo(
     () =>
@@ -175,6 +224,10 @@ export default function CartContent({
   const handleRemoveItem = useCallback((id: string) => {
     removeItem(id);
   }, [removeItem]);
+
+  const handleDismissBanner = useCallback(() => {
+    setShowConflictBanner(false);
+  }, []);
 
   const handleClearCart = useCallback(() => {
     clearCart();

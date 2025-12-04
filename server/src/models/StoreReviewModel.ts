@@ -2,9 +2,9 @@ import { Pool } from 'mysql2/promise';
 import { pool } from '../config/database';
 import { v4 as uuidv4 } from 'uuid';
 
-export interface ProductReview {
+export interface StoreReview {
   id: string;
-  productId: string;
+  storeId: string;
   userId: string;
   orderId?: string;
   rating: number; // 1-5
@@ -13,15 +13,19 @@ export interface ProductReview {
   isVerifiedPurchase: boolean;
   helpfulCount: number;
   images?: string[];
+  reply?: string;
+  replyBy?: string;
+  replyAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   // Joined fields
   userName?: string;
   userAvatar?: string;
+  replyByName?: string;
 }
 
-export interface CreateReviewRequest {
-  productId: string;
+export interface CreateStoreReviewRequest {
+  storeId: string;
   userId: string;
   orderId?: string;
   rating: number;
@@ -30,7 +34,7 @@ export interface CreateReviewRequest {
   images?: string[];
 }
 
-export interface ReviewStats {
+export interface StoreReviewStats {
   averageRating: number;
   totalReviews: number;
   ratingDistribution: {
@@ -42,26 +46,28 @@ export interface ReviewStats {
   };
 }
 
-export class ProductReviewModel {
+export class StoreReviewModel {
   private pool: Pool;
 
   constructor() {
     this.pool = pool;
   }
 
-  async create(data: CreateReviewRequest): Promise<ProductReview> {
+  async create(data: CreateStoreReviewRequest): Promise<StoreReview> {
     const id = uuidv4();
     const connection = await this.pool.getConnection();
     
     try {
+      await connection.beginTransaction();
+
       await connection.execute(`
-        INSERT INTO product_reviews (
-          id, product_id, user_id, order_id, rating, title, comment, 
+        INSERT INTO store_reviews (
+          id, store_id, user_id, order_id, rating, title, comment, 
           is_verified_purchase, images
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         id,
-        data.productId,
+        data.storeId,
         data.userId,
         data.orderId || null,
         data.rating,
@@ -71,16 +77,20 @@ export class ProductReviewModel {
         data.images ? JSON.stringify(data.images) : null
       ]);
 
-      // Update product review stats
-      await this.updateProductReviewStats(data.productId);
+      // Update store review stats
+      await this.updateStoreReviewStats(data.storeId, connection);
 
+      await connection.commit();
       return await this.findById(id);
+    } catch (error) {
+      await connection.rollback();
+      throw error;
     } finally {
       connection.release();
     }
   }
 
-  async findById(id: string): Promise<ProductReview> {
+  async findById(id: string): Promise<StoreReview> {
     const connection = await this.pool.getConnection();
     
     try {
@@ -89,9 +99,13 @@ export class ProductReviewModel {
           r.*,
           u.first_name,
           u.last_name,
-          u.avatar
-        FROM product_reviews r
+          u.avatar,
+          reply_user.first_name as reply_first_name,
+          reply_user.last_name as reply_last_name
+        FROM store_reviews r
         LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN staff reply_staff ON r.reply_by = reply_staff.id
+        LEFT JOIN users reply_user ON reply_staff.user_id = reply_user.id
         WHERE r.id = ?
       `, [id]);
 
@@ -106,20 +120,20 @@ export class ProductReviewModel {
     }
   }
 
-  async findByProductId(
-    productId: string,
+  async findByStoreId(
+    storeId: string,
     options?: {
       limit?: number;
       offset?: number;
       rating?: number;
       sortBy?: 'newest' | 'oldest' | 'helpful' | 'rating';
     }
-  ): Promise<{ reviews: ProductReview[]; total: number }> {
+  ): Promise<{ reviews: StoreReview[]; total: number }> {
     const connection = await this.pool.getConnection();
     
     try {
-      let whereClause = 'WHERE r.product_id = ?';
-      const params: any[] = [productId];
+      let whereClause = 'WHERE r.store_id = ?';
+      const params: any[] = [storeId];
 
       if (options?.rating) {
         whereClause += ' AND r.rating = ?';
@@ -128,7 +142,7 @@ export class ProductReviewModel {
 
       // Get total count
       const [countRows] = await connection.execute(
-        `SELECT COUNT(*) as total FROM product_reviews r ${whereClause}`,
+        `SELECT COUNT(*) as total FROM store_reviews r ${whereClause}`,
         params
       );
       const total = (countRows as any[])[0]?.total || 0;
@@ -164,9 +178,14 @@ export class ProductReviewModel {
           r.*,
           u.first_name,
           u.last_name,
-          u.avatar
-        FROM product_reviews r
+          u.avatar,
+          reply_staff.id as reply_staff_id,
+          reply_user.first_name as reply_first_name,
+          reply_user.last_name as reply_last_name
+        FROM store_reviews r
         LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN staff reply_staff ON r.reply_by = reply_staff.id
+        LEFT JOIN users reply_user ON reply_staff.user_id = reply_user.id
         ${whereClause}
         ${orderBy}
         ${limitClause}
@@ -180,7 +199,7 @@ export class ProductReviewModel {
     }
   }
 
-  async getReviewStats(productId: string): Promise<ReviewStats> {
+  async getReviewStats(storeId: string): Promise<StoreReviewStats> {
     const connection = await this.pool.getConnection();
     
     try {
@@ -193,9 +212,9 @@ export class ProductReviewModel {
           SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as rating_3,
           SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as rating_2,
           SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as rating_1
-        FROM product_reviews
-        WHERE product_id = ?
-      `, [productId]);
+        FROM store_reviews
+        WHERE store_id = ?
+      `, [storeId]);
 
       const stats = (rows as any[])[0] || {};
 
@@ -215,34 +234,38 @@ export class ProductReviewModel {
     }
   }
 
-  async markHelpful(reviewId: string, userId: string, isHelpful: boolean): Promise<void> {
+  async delete(id: string): Promise<boolean> {
     const connection = await this.pool.getConnection();
     
     try {
       await connection.beginTransaction();
 
-      // Insert or update vote
-      await connection.execute(`
-        INSERT INTO review_helpful_votes (id, review_id, user_id, is_helpful)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE is_helpful = ?
-      `, [uuidv4(), reviewId, userId, isHelpful, isHelpful]);
+      // Get store ID before deleting
+      const [reviewRows] = await connection.execute(
+        `SELECT store_id FROM store_reviews WHERE id = ?`,
+        [id]
+      );
+      const storeId = (reviewRows as any[])[0]?.store_id;
 
-      // Update helpful count
-      const [voteRows] = await connection.execute(`
-        SELECT COUNT(*) as count FROM review_helpful_votes
-        WHERE review_id = ? AND is_helpful = true
-      `, [reviewId]);
+      if (!storeId) {
+        throw new Error('Review not found');
+      }
 
-      const helpfulCount = (voteRows as any[])[0]?.count || 0;
+      // Delete the review
+      const [result] = await connection.execute(
+        `DELETE FROM store_reviews WHERE id = ?`,
+        [id]
+      );
 
-      await connection.execute(`
-        UPDATE product_reviews
-        SET helpful_count = ?
-        WHERE id = ?
-      `, [helpfulCount, reviewId]);
+      const deleted = (result as any).affectedRows > 0;
+
+      if (deleted) {
+        // Update store review stats
+        await this.updateStoreReviewStats(storeId, connection);
+      }
 
       await connection.commit();
+      return deleted;
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -251,14 +274,14 @@ export class ProductReviewModel {
     }
   }
 
-  async userHasReviewed(productId: string, userId: string): Promise<boolean> {
+  async userHasReviewed(storeId: string, userId: string): Promise<boolean> {
     const connection = await this.pool.getConnection();
     
     try {
       const [rows] = await connection.execute(`
-        SELECT id FROM product_reviews
-        WHERE product_id = ? AND user_id = ?
-      `, [productId, userId]);
+        SELECT id FROM store_reviews
+        WHERE store_id = ? AND user_id = ?
+      `, [storeId, userId]);
 
       return (rows as any[]).length > 0;
     } finally {
@@ -266,133 +289,47 @@ export class ProductReviewModel {
     }
   }
 
-  /**
-   * Check if user has purchased the product and if the purchase is within 30 days
-   * @returns { purchaseValid: boolean, orderId?: string, orderDate?: Date, message?: string }
-   */
-  async validatePurchaseForReview(
-    productId: string,
-    userId: string,
-    providedOrderId?: string
-  ): Promise<{
-    purchaseValid: boolean;
-    orderId?: string;
-    orderDate?: Date;
-    message?: string;
-  }> {
-    const connection = await this.pool.getConnection();
-    
-    try {
-      // If orderId is provided, validate that specific order
-      if (providedOrderId) {
-        const [orderRows] = await connection.execute(`
-          SELECT 
-            o.id,
-            o.user_id,
-            o.order_date,
-            o.status,
-            oi.product_id
-          FROM orders o
-          INNER JOIN order_items oi ON o.id = oi.order_id
-          WHERE o.id = ? AND o.user_id = ? AND oi.product_id = ?
-          AND o.status NOT IN ('cancelled', 'returned', 'return_processing')
-        `, [providedOrderId, userId, productId]);
-
-        const orders = orderRows as any[];
-        if (orders.length === 0) {
-          return {
-            purchaseValid: false,
-            message: 'Order not found or does not contain this product',
-          };
-        }
-
-        const order = orders[0];
-        const orderDate = new Date(order.order_date);
-        const now = new Date();
-        const daysSincePurchase = Math.floor((now.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (daysSincePurchase > 30) {
-          return {
-            purchaseValid: false,
-            orderId: order.id,
-            orderDate,
-            message: 'Review can only be submitted within 30 days of purchase',
-          };
-        }
-
-        return {
-          purchaseValid: true,
-          orderId: order.id,
-          orderDate,
-        };
-      }
-
-      // If no orderId provided, find the most recent purchase of this product
-      const [orderRows] = await connection.execute(`
-        SELECT 
-          o.id,
-          o.order_date,
-          o.status
-        FROM orders o
-        INNER JOIN order_items oi ON o.id = oi.order_id
-        WHERE o.user_id = ? AND oi.product_id = ?
-        AND o.status NOT IN ('cancelled', 'returned', 'return_processing')
-        ORDER BY o.order_date DESC
-        LIMIT 1
-      `, [userId, productId]);
-
-      const orders = orderRows as any[];
-      if (orders.length === 0) {
-        return {
-          purchaseValid: false,
-          message: 'You must purchase this product before writing a review',
-        };
-      }
-
-      const order = orders[0];
-      const orderDate = new Date(order.order_date);
-      const now = new Date();
-      const daysSincePurchase = Math.floor((now.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysSincePurchase > 30) {
-        return {
-          purchaseValid: false,
-          orderId: order.id,
-          orderDate,
-          message: 'Review can only be submitted within 30 days of purchase',
-        };
-      }
-
-      return {
-        purchaseValid: true,
-        orderId: order.id,
-        orderDate,
-      };
-    } finally {
-      connection.release();
+  private async updateStoreReviewStats(storeId: string, connection?: any): Promise<void> {
+    const shouldRelease = !connection;
+    if (!connection) {
+      connection = await this.pool.getConnection();
     }
-  }
-
-  private async updateProductReviewStats(productId: string): Promise<void> {
-    const connection = await this.pool.getConnection();
     
     try {
-      const stats = await this.getReviewStats(productId);
+      const stats = await this.getReviewStats(storeId);
       
       await connection.execute(`
-        UPDATE products
-        SET average_rating = ?, review_count = ?
+        UPDATE stores
+        SET rating = ?, review_count = ?
         WHERE id = ?
-      `, [stats.averageRating, stats.totalReviews, productId]);
+      `, [stats.averageRating, stats.totalReviews, storeId]);
+    } finally {
+      if (shouldRelease) {
+        connection.release();
+      }
+    }
+  }
+
+  async replyToReview(reviewId: string, replyText: string, repliedBy: string): Promise<StoreReview> {
+    const connection = await this.pool.getConnection();
+    
+    try {
+      await connection.execute(`
+        UPDATE store_reviews
+        SET reply = ?, reply_by = ?, reply_at = NOW()
+        WHERE id = ?
+      `, [replyText, repliedBy, reviewId]);
+
+      return await this.findById(reviewId);
     } finally {
       connection.release();
     }
   }
 
-  private mapRowToReview(row: any): ProductReview {
+  private mapRowToReview(row: any): StoreReview {
     return {
       id: row.id,
-      productId: row.product_id,
+      storeId: row.store_id,
       userId: row.user_id,
       orderId: row.order_id || undefined,
       rating: parseInt(row.rating),
@@ -401,12 +338,18 @@ export class ProductReviewModel {
       isVerifiedPurchase: Boolean(row.is_verified_purchase),
       helpfulCount: parseInt(row.helpful_count || 0),
       images: row.images ? JSON.parse(row.images) : undefined,
+      reply: row.reply || undefined,
+      replyBy: row.reply_by || undefined,
+      replyAt: row.reply_at ? new Date(row.reply_at) : undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       userName: row.first_name && row.last_name 
         ? `${row.first_name} ${row.last_name}` 
         : undefined,
       userAvatar: row.avatar || undefined,
+      replyByName: row.reply_first_name && row.reply_last_name
+        ? `${row.reply_first_name} ${row.reply_last_name}`
+        : undefined,
     };
   }
 }

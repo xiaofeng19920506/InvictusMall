@@ -1540,6 +1540,47 @@ const createTables = async (): Promise<void> => {
 
     // ========== Amazon-Style Features: Core Tables ==========
     
+    // Create store_reviews table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS store_reviews (
+        id VARCHAR(36) PRIMARY KEY,
+        store_id VARCHAR(36) NOT NULL,
+        user_id VARCHAR(36) NOT NULL,
+        order_id VARCHAR(36) NULL,
+        rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        title VARCHAR(255) NULL,
+        comment TEXT NULL,
+        is_verified_purchase BOOLEAN DEFAULT FALSE,
+        helpful_count INT DEFAULT 0,
+        images JSON NULL,
+        reply TEXT NULL,
+        reply_by VARCHAR(36) NULL,
+        reply_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_store_id (store_id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_rating (rating),
+        INDEX idx_created_at (created_at),
+        UNIQUE KEY unique_user_store_review (user_id, store_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Add reply columns to store_reviews if they don't exist
+    try {
+      await connection.execute(`
+        ALTER TABLE store_reviews
+        ADD COLUMN reply TEXT NULL,
+        ADD COLUMN reply_by VARCHAR(36) NULL,
+        ADD COLUMN reply_at TIMESTAMP NULL
+      `);
+      console.log("✅ Added reply columns to store_reviews table");
+    } catch (error: any) {
+      if (error.code !== "ER_DUP_FIELDNAME") {
+        console.warn("Could not add reply columns to store_reviews:", error.message);
+      }
+    }
+
     // Create product_reviews table
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS product_reviews (

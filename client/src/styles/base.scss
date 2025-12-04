@@ -24,7 +24,8 @@
 html {
   font-size: 16px;
   height: 100%;
-  overflow: hidden; // Prevent html from scrolling
+  overflow-y: auto; // Allow html to scroll
+  overflow-x: hidden; // Prevent horizontal scroll
 }
 
 body {
@@ -34,8 +35,9 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  height: 100vh; // Fixed height to viewport
-  overflow: hidden; // Prevent body from scrolling
+  min-height: 100vh; // Minimum height to viewport, but allow growth
+  overflow-y: auto; // Allow body to scroll
+  overflow-x: hidden; // Prevent horizontal scroll
   display: flex;
   flex-direction: column;
 }
