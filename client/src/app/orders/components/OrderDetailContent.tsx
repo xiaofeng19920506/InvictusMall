@@ -4,11 +4,7 @@ import ProtectedRoute from "@/components/common/ProtectedRoute";
 import Header from "@/components/common/Header";
 import { Order } from "@/lib/server-api";
 import Link from "next/link";
-<<<<<<< HEAD
-import { getImageUrl } from "@/utils/imageUtils";
-=======
 import { getImageUrl, getPlaceholderImage, handleImageError } from "@/utils/imageUtils";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import {
   getOrderStatusBadgeStyle,
   getOrderStatusLabel,
@@ -96,31 +92,6 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
                 <h3 className={styles.itemsTitle}>Order Items</h3>
                 <div className={styles.itemsList}>
                   {order.items.map((item) => (
-<<<<<<< HEAD
-                    <div key={item.id} className="flex gap-4 border-b border-gray-100 pb-4 last:border-0">
-                      {item.productImage ? (
-                        <img
-                          src={getImageUrl(item.productImage)}
-                          alt={item.productName}
-                          className="w-20 h-20 object-cover rounded"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.onerror = null;
-                            target.src = "/placeholder/product.png";
-                          }}
-                        />
-                      ) : (
-                        <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
-                          <span className="text-gray-400 text-xs">No Image</span>
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{item.productName}</h4>
-                        <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                        <p className="text-sm text-gray-600">Unit Price: ${item.price.toFixed(2)}</p>
-                        {(item as any).isReservation && (item as any).reservationDate && (item as any).reservationTime && (
-                          <div className="mt-2 text-sm text-gray-600">
-=======
                     <div key={item.id} className={styles.itemRow}>
                       <img
                         src={getImageUrl(item.productImage) || getPlaceholderImage()}
@@ -134,7 +105,6 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
                         <p className={styles.itemDetail}>Unit Price: ${item.price.toFixed(2)}</p>
                         {(item as any).isReservation && (item as any).reservationDate && (item as any).reservationTime && (
                           <div className={styles.reservationInfo}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                             <p>
                               📅 {new Date((item as any).reservationDate).toLocaleDateString('en-US', {
                                 weekday: 'short',
@@ -151,11 +121,7 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
                               })}
                             </p>
                             {(item as any).reservationNotes && (
-<<<<<<< HEAD
-                              <p className="mt-1 text-xs text-gray-500">
-=======
                               <p className={styles.reservationNote}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
                                 Notes: {(item as any).reservationNotes}
                               </p>
                             )}

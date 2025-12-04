@@ -4,10 +4,7 @@ import StoreHeader from "../components/StoreHeader";
 import StoreTabsContent from "../components/StoreTabsContent";
 import Header from "@/components/common/Header";
 import type { Metadata } from "next";
-<<<<<<< HEAD
-=======
 import styles from "./page.module.scss";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
 interface StorePageProps {
   params: Promise<{
@@ -52,9 +49,6 @@ export async function generateMetadata({ params }: StorePageProps): Promise<Meta
       const store = response.data;
       return {
         title: `${store.name} - Invictus Mall | Shop ${store.category} Products`,
-<<<<<<< HEAD
-        description: store.description || `Shop at ${store.name}. ${store.category} store with ${store.productsCount} products. ${store.isVerified ? 'Verified store.' : ''} Rated ${store.rating.toFixed(1)} stars.`,
-=======
         description: store.description || `Shop at ${store.name}. ${store.category} store with ${store.productsCount || 0} products. ${store.isVerified ? 'Verified store. ' : ''}Rated ${store.rating?.toFixed(1) || '5.0'} stars.`,
         keywords: [
           store.name,
@@ -63,19 +57,15 @@ export async function generateMetadata({ params }: StorePageProps): Promise<Meta
           "Invictus Mall",
           store.isVerified ? "verified store" : "",
         ].filter(Boolean),
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         openGraph: {
           title: `${store.name} - Invictus Mall`,
           description: store.description || `Shop at ${store.name} - ${store.category} store`,
           type: "website",
           images: store.imageUrl ? [store.imageUrl] : [],
-<<<<<<< HEAD
-=======
           url: `https://invictusmall.com/stores/${id}`,
         },
         alternates: {
           canonical: `https://invictusmall.com/stores/${id}`,
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         },
       };
     }
@@ -110,13 +100,6 @@ export default async function StoreDetailPage({ params }: StorePageProps) {
     notFound();
   }
 
-<<<<<<< HEAD
-  return (
-    <>
-      <Header />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-=======
   // Generate structured data for SEO (JSON-LD)
   const structuredData = {
     "@context": "https://schema.org/",
@@ -144,7 +127,6 @@ export default async function StoreDetailPage({ params }: StorePageProps) {
       <Header />
       <div className={styles.pageContainer}>
         <div className={styles.container}>
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
           <StoreHeader store={store} storeId={id} />
           <StoreTabsContent store={store} />
         </div>

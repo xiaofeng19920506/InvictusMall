@@ -11,11 +11,7 @@ import type {
   UpdateStoreRequest,
   Location,
 } from "../../shared/types/store";
-<<<<<<< HEAD
-import { getImageUrl } from "../../shared/utils/imageUtils";
-=======
 import { getImageUrl, getPlaceholderImage, handleImageError } from "../../shared/utils/imageUtils";
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 import styles from "./StoreModal.module.css";
 
 export interface StoreModalProps {
@@ -192,15 +188,6 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     const fetchOwners = async () => {
       setLoadingOwners(true);
       try {
-<<<<<<< HEAD
-        const response = await staffApi.getAllStaff();
-        if (response.success && response.data) {
-          // Filter to only show staff with 'owner' role
-          const owners = response.data.filter(
-            (staff) => staff.role === "owner" && staff.isActive
-          );
-          setAvailableOwners(owners);
-=======
         // Pass forStoreCreation=true to get all available owners and admins for store creation
         // For editing, only pass it if user can edit the owner
         const response = await staffApi.getAllStaff({ 
@@ -272,9 +259,6 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
     };
 
     fetchOwners();
-<<<<<<< HEAD
-  }, [showError]);
-=======
   }, [showError, isEditing, canEditOwner, store]);
 
   // Ensure owner is selected when editing a store with an owner
@@ -429,17 +413,11 @@ const StoreModal: React.FC<StoreModalProps> = ({ store, onClose, onSave }) => {
           isActive: formData.isActive,
         };
         
-<<<<<<< HEAD
-        // Only include ownerId if user can edit owner and it's different from current
-        if (canEditOwner && formData.ownerId !== store.owner?.id) {
-          updateData.ownerId = formData.ownerId || undefined;
-=======
         // Always include ownerId if user can edit owner
         // This ensures the owner relationship is preserved and updated correctly on the backend
         if (canEditOwner) {
           // Use formData.ownerId if set, otherwise preserve the current owner
           updateData.ownerId = formData.ownerId || store?.owner?.id || undefined;
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         }
         
         await storeApi.updateStore(store.id, updateData);

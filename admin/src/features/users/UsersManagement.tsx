@@ -1,305 +1,3 @@
-<<<<<<< HEAD
-import React, { useState, useEffect } from "react";
-import {
-  Users,
-  Search,
-  Edit,
-  Shield,
-  Mail,
-  Phone,
-  Calendar,
-  Plus,
-  X,
-} from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { useAuth } from "../../contexts/AuthContext";
-import { useNotification } from "../../contexts/NotificationContext";
-import { useAdminHeader } from "../../shared/hooks/useAdminHeader";
-import Pagination from "../../shared/components/Pagination";
-import EditUserModal from "./EditUserModal";
-import { staffApi, storeApi, type Staff } from "../../services/api";
-import type { Store } from "../../shared/types/store";
-import styles from "./UsersManagement.module.css";
-
-type User = Staff;
-
-interface RegisterFormData {
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: "admin" | "owner" | "manager" | "employee";
-  department: string;
-  employeeId: string;
-  storeId: string;
-}
-
-const UsersManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterRole, setFilterRole] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
-  const [totalItems, setTotalItems] = useState(0);
-  const { t } = useTranslation();
-  const { user: currentUser } = useAuth();
-  const { showError, showInfo, showSuccess } = useNotification();
-  const { setHeaderActions } = useAdminHeader();
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [showRegisterForm, setShowRegisterForm] = useState(false);
-  const [stores, setStores] = useState<Store[]>([]);
-  const [loadingStores, setLoadingStores] = useState(false);
-  const [registerFormData, setRegisterFormData] = useState<RegisterFormData>({
-    email: "",
-    firstName: "",
-    lastName: "",
-    role: "employee",
-    department: "",
-    employeeId: "",
-    storeId: "",
-  });
-  const [registerError, setRegisterError] = useState<string>("");
-  const [registerSuccess, setRegisterSuccess] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    loadUsers();
-    if (currentUser && (currentUser.role === "admin" || currentUser.role === "owner" || currentUser.role === "manager")) {
-      if (currentUser.role === "admin") {
-        loadStores();
-      } else {
-        loadStoresForOwnerOrManager();
-      }
-    }
-  }, [currentUser, currentPage, itemsPerPage]);
-
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      const offset = (currentPage - 1) * itemsPerPage;
-      const response = await staffApi.getAllStaff({
-        limit: itemsPerPage,
-        offset,
-      });
-      if (response.success) {
-        setUsers(response.data || []);
-        setTotalItems((response as any).total || response.data?.length || 0);
-      }
-    } catch (error: any) {
-      console.error("Error loading users:", error);
-      if (error.response?.status !== 404) {
-        showError(t("users.loadError"));
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const handleItemsPerPageChange = (itemsPerPage: number) => {
-    setItemsPerPage(itemsPerPage);
-    setCurrentPage(1);
-  };
-
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-  const loadStores = async () => {
-    try {
-      setLoadingStores(true);
-      const response = await storeApi.getAllStores();
-      if (response.success && response.data) {
-        setStores(response.data);
-      }
-    } catch (error) {
-      console.error("Error loading stores:", error);
-    } finally {
-      setLoadingStores(false);
-    }
-  };
-
-  const loadStoresForOwnerOrManager = async () => {
-    try {
-      setLoadingStores(true);
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
-      const token = localStorage.getItem('staff_auth_token');
-      const headers: HeadersInit = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      const staffResponse = await fetch(`${apiUrl}/api/staff/me`, {
-        headers,
-        credentials: "include",
-      });
-
-      if (!staffResponse.ok) {
-        console.error("Failed to fetch staff info");
-        return;
-      }
-
-      const staffData = await staffResponse.json();
-      if (!staffData.success || !staffData.user) {
-        console.error("Failed to get staff info");
-        return;
-      }
-
-      const userStoreId = (staffData.user as any).storeId;
-
-      if (!userStoreId) {
-        setStores([]);
-        return;
-      }
-
-      const response = await storeApi.getAllStores();
-      if (response.success && response.data) {
-        const filteredStores = response.data.filter((store) => store.id === userStoreId);
-        setStores(filteredStores);
-
-        if (filteredStores.length === 1) {
-          setRegisterFormData((prev) => ({
-            ...prev,
-            storeId: filteredStores[0].id,
-          }));
-        }
-      }
-    } catch (error) {
-      console.error("Error loading stores for owner/manager:", error);
-    } finally {
-      setLoadingStores(false);
-    }
-  };
-
-  const getInitialRole = (): RegisterFormData["role"] => {
-    if (currentUser?.role === "admin") {
-      return "owner";
-    } else if (currentUser?.role === "owner") {
-      return "employee";
-    }
-    return "employee";
-  };
-
-  const getAvailableRoles = (): RegisterFormData["role"][] => {
-    if (currentUser?.role === "admin") {
-      return ["owner"];
-    } else if (currentUser?.role === "owner") {
-      return ["manager", "employee"];
-    } else if (currentUser?.role === "manager") {
-      return ["employee"];
-    }
-    return [];
-  };
-
-  const handleRegisterChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setRegisterFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    setRegisterError("");
-    setRegisterSuccess("");
-  };
-
-  const handleRegisterSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setRegisterError("");
-    setRegisterSuccess("");
-
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
-      const token = localStorage.getItem('staff_auth_token');
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-      };
-      
-      // Add Bearer token if available (fallback when cookies don't work)
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(`${apiUrl}/api/staff/invite`, {
-        method: "POST",
-        headers,
-        credentials: "include",
-        body: JSON.stringify({
-          email: registerFormData.email,
-          firstName: registerFormData.firstName,
-          lastName: registerFormData.lastName,
-          role: registerFormData.role,
-          department: registerFormData.department || undefined,
-          employeeId: registerFormData.employeeId || undefined,
-          storeId: registerFormData.storeId || undefined,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setRegisterSuccess(
-          t("registerStaff.feedback.success", { email: registerFormData.email })
-        );
-        showSuccess(t("registerStaff.feedback.success", { email: registerFormData.email }));
-        const resetStoreId =
-          currentUser?.role !== "admin" && stores.length === 1
-            ? stores[0].id
-            : "";
-        setRegisterFormData({
-          email: "",
-          firstName: "",
-          lastName: "",
-          role: getInitialRole(),
-          department: "",
-          employeeId: "",
-          storeId: resetStoreId,
-        });
-        loadUsers();
-        setTimeout(() => {
-          setShowRegisterForm(false);
-          setRegisterSuccess("");
-        }, 2000);
-      } else {
-        setRegisterError(data.message || t("registerStaff.feedback.error"));
-        showError(data.message || t("registerStaff.feedback.error"));
-      }
-    } catch (err: any) {
-      const errorMsg = err.message || t("registerStaff.feedback.unexpected");
-      setRegisterError(errorMsg);
-      showError(errorMsg);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      `${user.firstName} ${user.lastName}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      user.phoneNumber.includes(searchTerm);
-    const matchesFilter = filterRole === "all" || user.role === filterRole;
-    return matchesSearch && matchesFilter;
-  });
-
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case "admin":
-        return styles.roleAdmin;
-      case "owner":
-        return styles.roleOwner;
-      case "manager":
-        return styles.roleManager || styles.roleDefault;
-      case "employee":
-        return styles.roleEmployee || styles.roleDefault;
-      default:
-        return styles.roleDefault;
-    }
-  };
-=======
 import React, { useEffect } from "react";
 import { Users, Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -358,27 +56,7 @@ const UsersManagement: React.FC = () => {
   const users = usersData?.staff || [];
   const totalItems = usersData?.total || 0;
   const loading = loadingUsers || loadingStores;
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
 
-  const canRegisterStaff =
-    currentUser &&
-    (currentUser.role === "admin" ||
-      currentUser.role === "owner" ||
-      currentUser.role === "manager");
-
-<<<<<<< HEAD
-  // Set header actions - must be before early return to maintain hook order
-  useEffect(() => {
-    if (canRegisterStaff) {
-      const handleToggleRegister = () => {
-        setShowRegisterForm(!showRegisterForm);
-        if (!showRegisterForm) {
-          setRegisterFormData((prev) => ({
-            ...prev,
-            role: getInitialRole(),
-          }));
-        }
-=======
   // Update accessible stores in Redux
   useEffect(() => {
     const stores =
@@ -399,19 +77,14 @@ const UsersManagement: React.FC = () => {
     if (canRegisterStaff) {
       const handleToggleRegister = () => {
         dispatch(setShowRegisterForm(!showRegisterForm));
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       };
 
       setHeaderActions(
         <button
           onClick={handleToggleRegister}
-<<<<<<< HEAD
-          className={`btn ${showRegisterForm ? "btn-secondary" : "btn-primary"}`}
-=======
           className={`btn ${
             showRegisterForm ? "btn-secondary" : "btn-primary"
           }`}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         >
           {showRegisterForm ? (
             <>
@@ -429,10 +102,6 @@ const UsersManagement: React.FC = () => {
     } else {
       setHeaderActions(null);
     }
-<<<<<<< HEAD
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canRegisterStaff, showRegisterForm, setHeaderActions, t]);
-=======
   }, [canRegisterStaff, showRegisterForm, setHeaderActions, t, dispatch]);
 
   const handlePageChange = (page: number) => {
@@ -708,12 +377,10 @@ const UsersManagement: React.FC = () => {
             </select>
           </div>
         </div>
-=======
       <RegisterStaffForm />
 
       <div className="card">
         <UserFilters />
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
       </div>
 
       <div className="card">
@@ -903,16 +570,8 @@ const UsersManagement: React.FC = () => {
       {editingUser && (
         <EditUserModal
           user={editingUser}
-<<<<<<< HEAD
-          onClose={() => setEditingUser(null)}
-          onSave={() => {
-            loadUsers();
-            setEditingUser(null);
-          }}
-=======
           onClose={handleCloseEditModal}
           onSave={handleSaveUser}
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
         />
       )}
     </div>
@@ -920,7 +579,3 @@ const UsersManagement: React.FC = () => {
 };
 
 export default UsersManagement;
-<<<<<<< HEAD
-
-=======
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
