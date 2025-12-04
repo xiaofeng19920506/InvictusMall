@@ -118,17 +118,10 @@
       "discountPlaceholder": "e.g., 20% OFF",
       "verified": "Verified Store",
       "active": "Active Store",
-<<<<<<< HEAD
-      "owner": "Store Owner",
-      "selectOwner": "-- Select owner --",
-      "loadingOwners": "Loading owners...",
-      "noOwnersAvailable": "No owners available. Please create an owner account first."
-=======
       "owner": "Pemilik Toko/Administrator",
       "selectOwner": "-- Pilih pemilik/administrator --",
       "loadingOwners": "Memuat pemilik/administrator...",
       "noOwnersAvailable": "Tidak ada pemilik atau administrator yang tersedia. Silakan buat akun pemilik atau administrator terlebih dahulu."
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "actions": {
       "invalidImageType": "Please select an image file.",
@@ -839,13 +832,9 @@
       "processing": "Processing",
       "shipped": "Shipped",
       "delivered": "Delivered",
-<<<<<<< HEAD
-      "cancelled": "Cancelled"
-=======
       "cancelled": "Cancelled",
       "return_processing": "Memproses Pengembalian",
       "returned": "Dikembalikan"
->>>>>>> bcc2c5c8c5e42fe7bc4d70fbb3c123ad7a9c4009
     },
     "empty": {
       "noOrders": "No orders found"
