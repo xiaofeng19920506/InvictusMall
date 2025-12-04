@@ -135,7 +135,8 @@ export default function StoreTabsContent({ store }: StoreTabsContentProps) {
     if (storeId) {
       fetchProducts();
     }
-  }, [storeId, fetchProducts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId]); // Only depend on storeId, fetchProducts is stable due to useCallback
 
 
   // Set initial tab and handle tab switching when content is unavailable

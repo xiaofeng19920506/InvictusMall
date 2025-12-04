@@ -19,6 +19,8 @@ import { handleUpdateStore } from "../services/store/storeUpdateService";
 import { handleDeleteStore } from "../services/store/storeDeleteService";
 import { handleVerifyStore, handleUnverifyStore } from "../services/store/storeVerifyService";
 import { handleUploadStoreImage } from "../services/store/storeImageService";
+import { ApiResponseHelper } from "../utils/apiResponse";
+import { logger } from "../utils/logger";
 
 const router = Router();
 const storeService = new StoreService();
@@ -354,6 +356,45 @@ router.post(
   uploadStoreImage.single("file"),
   async (req: AuthenticatedRequest, res: Response) => {
     await handleUploadStoreImage(req, res, storeService);
+  }
+);
+
+/**
+ * Get store inventory for all products
+ * GET /api/stores/:storeId/inventory
+ */
+router.get(
+  "/:storeId/inventory",
+  authenticateStaffToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { storeId } = req.params;
+
+      if (!storeId) {
+        return ApiResponseHelper.validationError(res, "Store ID is required");
+      }
+
+      // Check if owner has access to this store
+      const { hasStoreAccess } = await import("../utils/ownerPermissions");
+      const hasAccess = await hasStoreAccess(req, storeId);
+      if (!hasAccess) {
+        return ApiResponseHelper.error(res, "Access denied to this store", 403);
+      }
+
+      const { StoreProductInventoryModel } = await import("../models/StoreProductInventoryModel");
+      const inventoryModel = new StoreProductInventoryModel();
+
+      const inventories = await inventoryModel.getInventoryByStore(storeId);
+
+      return ApiResponseHelper.success(
+        res,
+        inventories,
+        "Store inventory retrieved successfully"
+      );
+    } catch (error: any) {
+      logger.error("Error fetching store inventory:", error);
+      return ApiResponseHelper.error(res, "Failed to retrieve store inventory", 500, error);
+    }
   }
 );
 

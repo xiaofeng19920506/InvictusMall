@@ -688,5 +688,49 @@ router.post(
   }
 );
 
+/**
+ * Get product inventory across all stores
+ * GET /api/products/:productId/inventory
+ */
+router.get(
+  "/:productId/inventory",
+  authenticateStaffToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { productId } = req.params;
+
+      if (!productId) {
+        return ApiResponseHelper.validationError(res, "Product ID is required");
+      }
+
+      const { StoreProductInventoryModel } = await import("../models/StoreProductInventoryModel");
+      const inventoryModel = new StoreProductInventoryModel();
+
+      // Get accessible store IDs for owner filtering
+      const accessibleStoreIds = await getAccessibleStoreIds(req);
+
+      // Get all inventory records for this product
+      const inventories = await inventoryModel.getInventoryByProduct(productId);
+
+      // Filter by accessible stores for owner
+      let filteredInventories = inventories;
+      if (accessibleStoreIds !== null && accessibleStoreIds.length > 0) {
+        filteredInventories = inventories.filter((inv: any) =>
+          inv.storeId && accessibleStoreIds.includes(inv.storeId)
+        );
+      }
+
+      return ApiResponseHelper.success(
+        res,
+        filteredInventories,
+        "Product inventory retrieved successfully"
+      );
+    } catch (error: any) {
+      logger.error("Error fetching product inventory:", error);
+      return ApiResponseHelper.error(res, "Failed to retrieve product inventory", 500, error);
+    }
+  }
+);
+
 export default router;
 
