@@ -5,11 +5,23 @@ import {
   AuthenticatedRequest,
 } from "../middleware/auth";
 import { ActivityLogModel } from '../models/ActivityLogModel';
+import { RefundModel } from '../models/RefundModel';
+import { TransactionModel } from '../models/TransactionModel';
+import Stripe from 'stripe';
 import { ApiResponseHelper } from '../utils/apiResponse';
 import { logger } from '../utils/logger';
 
 const router = Router();
 const orderModel = new OrderModel();
+const refundModel = new RefundModel();
+const transactionModel = new TransactionModel();
+
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripeClient = stripeSecretKey
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: "2025-02-24.acacia",
+    })
+  : null;
 
 /**
  * @swagger
@@ -404,6 +416,290 @@ router.get(
 
       logger.error('Failed to retrieve guest order', error, { orderId: req.params.id, email: req.query.email });
       return ApiResponseHelper.error(res, 'Failed to retrieve order', 500, error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /api/orders/{id}/cancel:
+ *   post:
+ *     summary: Cancel an order (user can only cancel their own orders)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Order ID
+ *     responses:
+ *       200:
+ *         description: Order cancelled successfully
+ *       400:
+ *         description: Order cannot be cancelled (already shipped/delivered/cancelled)
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden (not your order)
+ *       404:
+ *         description: Order not found
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  "/:id/cancel",
+  authenticateUserToken,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const orderId = req.params.id as string;
+      const userId = req.user!.id;
+
+      if (!orderId) {
+        return ApiResponseHelper.validationError(res, 'Order ID is required');
+      }
+
+      // Get order and verify ownership
+      const order = await orderModel.getOrderByIdAndUserId(orderId, userId);
+
+      // Check if order can be cancelled (only pending or processing orders can be cancelled)
+      if (order.status === 'cancelled') {
+        return ApiResponseHelper.error(res, 'Order is already cancelled', 400);
+      }
+
+      if (order.status === 'shipped' || order.status === 'delivered') {
+        return ApiResponseHelper.error(
+          res,
+          'Cannot cancel order that has already been shipped or delivered',
+          400
+        );
+      }
+
+      // Only allow cancellation of pending or processing orders
+      if (order.status !== 'pending' && order.status !== 'processing') {
+        return ApiResponseHelper.error(
+          res,
+          `Cannot cancel order with status: ${order.status}. Only pending or processing orders can be cancelled.`,
+          400
+        );
+      }
+
+      // Update order status to cancelled
+      await orderModel.updateOrderStatus(orderId, 'cancelled');
+
+      // Restore inventory if it was already reduced
+      try {
+        const { StockOperationService } = await import('../services/stockOperationService');
+        const stockOperationService = new StockOperationService();
+        
+        // Check if inventory was reduced for this order
+        const { StockOperationModel } = await import('../models/StockOperationModel');
+        const stockOperationModel = new StockOperationModel();
+        const { operations } = await stockOperationModel.getAllStockOperations({
+          orderId: orderId,
+          type: 'out',
+        });
+
+        // If stock operations exist, restore inventory by creating stock in operations
+        if (operations.length > 0) {
+          logger.info(`Restoring inventory for user-cancelled order ${orderId}`, {
+            orderId,
+            userId,
+            stockOperationsCount: operations.length,
+          });
+
+          // Group operations by product to restore correct quantities
+          const productQuantities: Record<string, number> = {};
+          operations.forEach(op => {
+            productQuantities[op.productId] = (productQuantities[op.productId] || 0) + op.quantity;
+          });
+
+          // Create stock in operations to restore inventory
+          for (const [productId, quantity] of Object.entries(productQuantities)) {
+            try {
+              await stockOperationService.createStockOperation(
+                {
+                  productId: productId,
+                  type: 'in',
+                  quantity: quantity,
+                  reason: `Order ${orderId} cancelled by user - inventory restored`,
+                  orderId: orderId,
+                },
+                userId
+              );
+
+              logger.info(`Inventory restored for product ${productId} (quantity: ${quantity}) for user-cancelled order ${orderId}`);
+            } catch (itemError: any) {
+              logger.error(`Failed to restore inventory for product ${productId} in user-cancelled order ${orderId}:`, itemError, {
+                productId,
+                quantity,
+                orderId,
+              });
+              // Continue with other items even if one fails
+            }
+          }
+
+          logger.info(`Inventory restoration completed for user-cancelled order ${orderId}`);
+        } else {
+          logger.info(`No inventory to restore for user-cancelled order ${orderId} (no stock out operations found)`);
+        }
+      } catch (inventoryError: any) {
+        logger.error(`Error restoring inventory for user-cancelled order ${orderId}`, inventoryError, { orderId, userId });
+        // Don't fail the cancellation if inventory restoration fails - just log it
+      }
+
+      // Process automatic refund if payment was made
+      if (stripeClient && order.paymentIntentId) {
+        try {
+          // Recalculate total refunded amount from refunds table to ensure accuracy
+          const totalRefunded = await refundModel.getTotalRefundedAmount(orderId);
+          const remainingAmount = order.totalAmount - totalRefunded;
+          
+          if (remainingAmount > 0.01) {
+            try {
+              // Get payment intent
+              const paymentIntent = await stripeClient.paymentIntents.retrieve(order.paymentIntentId);
+              
+              if (paymentIntent.status === 'succeeded') {
+                // Find successful charge
+                let chargeId: string | null = null;
+                
+                if (paymentIntent.latest_charge) {
+                  const latestChargeId = typeof paymentIntent.latest_charge === 'string' 
+                    ? paymentIntent.latest_charge 
+                    : paymentIntent.latest_charge.id;
+                  
+                  try {
+                    const charge = await stripeClient.charges.retrieve(latestChargeId);
+                    if (charge.status === 'succeeded') {
+                      chargeId = charge.id;
+                    }
+                  } catch (chargeError) {
+                    logger.error(`Error retrieving charge ${latestChargeId}`, chargeError, { chargeId: latestChargeId, orderId });
+                  }
+                }
+                
+                // If no charge found from latest_charge, try to list charges
+                if (!chargeId) {
+                  try {
+                    const charges = await stripeClient.charges.list({
+                      payment_intent: order.paymentIntentId,
+                      limit: 10,
+                    });
+                    
+                    const succeededCharge = charges.data.find(c => c.status === 'succeeded');
+                    if (succeededCharge) {
+                      chargeId = succeededCharge.id;
+                    }
+                  } catch (listError) {
+                    logger.error('Error listing charges for payment intent', listError, { paymentIntentId: order.paymentIntentId });
+                  }
+                }
+                
+                if (chargeId) {
+                  // Create refund in Stripe
+                  const refund = await stripeClient.refunds.create({
+                    charge: chargeId,
+                    amount: Math.round(remainingAmount * 100),
+                    reason: 'requested_by_customer',
+                    metadata: {
+                      orderId: order.id,
+                      refundedBy: userId,
+                      autoRefund: 'true',
+                      reason: 'Order cancelled by user',
+                    },
+                  });
+                  
+                  // Save refund record
+                  await refundModel.create({
+                    orderId: order.id,
+                    paymentIntentId: order.paymentIntentId,
+                    refundId: refund.id,
+                    amount: remainingAmount,
+                    currency: "usd",
+                    reason: "Order cancelled by user - automatic full refund",
+                    status: refund.status || 'succeeded',
+                    refundedBy: userId,
+                  });
+                  
+                  // Create transaction record
+                  try {
+                    await transactionModel.createTransaction({
+                      storeId: order.storeId,
+                      transactionType: 'refund',
+                      amount: -remainingAmount,
+                      currency: 'usd',
+                      description: `Automatic full refund for user-cancelled order ${order.id}`,
+                      orderId: order.id,
+                      paymentMethod: order.paymentMethod || undefined,
+                      status: refund.status === 'succeeded' ? 'completed' : (refund.status === 'pending' ? 'pending' : 'failed'),
+                      transactionDate: new Date(),
+                      createdBy: userId,
+                      metadata: {
+                        refundId: refund.id,
+                        paymentIntentId: order.paymentIntentId,
+                        chargeId: chargeId,
+                        autoRefund: true,
+                        cancelledBy: 'user',
+                      },
+                    });
+                  } catch (transactionError) {
+                    logger.error("Failed to create transaction record for auto refund", transactionError, { orderId, refundId: refund.id });
+                  }
+                  
+                  logger.info(`Automatic full refund processed for user-cancelled order ${orderId}: $${remainingAmount}`, { orderId, amount: remainingAmount, userId });
+                } else {
+                  logger.warn(`No successful charge found for payment intent ${order.paymentIntentId} when user cancelling order ${orderId}`, { paymentIntentId: order.paymentIntentId, orderId });
+                }
+              } else {
+                logger.warn(`Payment intent ${order.paymentIntentId} is not succeeded (status: ${paymentIntent.status}) when user cancelling order ${orderId}`, { paymentIntentId: order.paymentIntentId, orderId, status: paymentIntent.status });
+              }
+            } catch (refundError: any) {
+              logger.error(`Failed to process automatic refund for user-cancelled order ${orderId}`, refundError, { orderId, paymentIntentId: order.paymentIntentId });
+              // Don't fail the cancellation if refund fails - just log it
+            }
+          } else {
+            logger.info(`Order ${orderId} already fully refunded, skipping automatic refund`, { orderId, totalRefunded });
+          }
+        } catch (autoRefundError) {
+          logger.error(`Error processing automatic refund for user-cancelled order ${orderId}`, autoRefundError, { orderId });
+          // Don't fail the cancellation if auto-refund fails
+        }
+      } else if (!order.paymentIntentId) {
+        logger.info(`Order ${orderId} has no payment intent, skipping refund`, { orderId });
+      }
+
+      // Log the activity
+      try {
+        await ActivityLogModel.createLog({
+          type: 'order_status_updated',
+          message: `Order ${orderId} cancelled by user`,
+          metadata: {
+            orderId: order.id,
+            userId: order.userId,
+            storeId: order.storeId,
+            totalAmount: order.totalAmount,
+            previousStatus: order.status,
+            newStatus: 'cancelled',
+          }
+        });
+      } catch (logError) {
+        logger.warn('Failed to log order cancellation', { orderId: order.id, error: logError });
+      }
+
+      // Get updated order
+      const updatedOrder = await orderModel.getOrderByIdAndUserId(orderId, userId);
+
+      return ApiResponseHelper.success(res, updatedOrder, 'Order cancelled successfully. Refund will be processed automatically if payment was made.');
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Order not found') {
+        return ApiResponseHelper.notFound(res, 'Order');
+      }
+
+      logger.error('Failed to cancel order', error, { orderId: req.params.id, userId: req.user?.id });
+      return ApiResponseHelper.error(res, 'Failed to cancel order', 500, error);
     }
   }
 );

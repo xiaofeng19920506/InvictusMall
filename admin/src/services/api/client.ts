@@ -32,6 +32,16 @@ api.interceptors.request.use(
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
+    // Log response structure for debugging
+    if (response.config.url?.includes('withdrawals')) {
+      console.log('API Response interceptor - URL:', response.config.url);
+      console.log('API Response interceptor - response.data:', response.data);
+      console.log('API Response interceptor - response.data type:', typeof response.data);
+      console.log('API Response interceptor - response.data.success:', response.data?.success);
+      console.log('API Response interceptor - response.data.data:', response.data?.data);
+      console.log('API Response interceptor - response.data.data type:', typeof response.data?.data);
+      console.log('API Response interceptor - response.data.data isArray:', Array.isArray(response.data?.data));
+    }
     return response;
   },
   (error) => {

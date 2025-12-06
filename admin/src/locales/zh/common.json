@@ -8,6 +8,7 @@
       "orders": "订单管理",
       "shipments": "物流管理",
       "inventory": "库存管理",
+      "withdrawals": "提现管理",
       "users": "用户管理",
       "settings": "设置",
       "systemLogs": "系统日志",
@@ -53,11 +54,12 @@
     "categories": "分类管理",
     "orders": "订单管理",
     "shipments": "物流管理",
-    "inventory": "库存管理",
-    "users": "用户管理",
-    "settings": "设置",
-    "systemLogs": "系统日志",
-    "transactions": "交易记录"
+      "inventory": "库存管理",
+      "withdrawals": "提现管理",
+      "users": "用户管理",
+      "settings": "设置",
+      "systemLogs": "系统日志",
+      "transactions": "交易记录"
   },
   "stores": {
     "title": "门店管理",
@@ -1192,6 +1194,161 @@
       "email": "邮箱",
       "maxOrdersPerDay": "每日最大订单数",
       "isActive": "启用"
+    }
+  },
+  "withdrawals": {
+    "title": "提现管理",
+    "subtitle": "管理商店提现请求",
+    "subtitleOwner": "管理您的商店提现请求",
+    "createButton": "创建提现",
+    "selectStore": "选择商店",
+    "refresh": "刷新",
+    "loading": "加载提现记录中...",
+    "empty": "未找到提现记录",
+    "searchPlaceholder": "按商店、银行或提现ID搜索...",
+    "stats": {
+      "total": "总提现数",
+      "pending": "待处理",
+      "approved": "已批准",
+      "completed": "已完成",
+      "totalPaid": "总支付金额"
+    },
+    "filters": {
+      "allStatus": "全部状态",
+      "allStores": "全部商店",
+      "pending": "待处理",
+      "approved": "已批准",
+      "processing": "处理中",
+      "completed": "已完成",
+      "rejected": "已拒绝",
+      "cancelled": "已取消"
+    },
+    "table": {
+      "store": "商店",
+      "amount": "金额",
+      "bankAccount": "银行账户",
+      "status": "状态",
+      "requested": "申请时间",
+      "actions": "操作"
+    },
+    "status": {
+      "pending": "待处理",
+      "approved": "已批准",
+      "processing": "处理中",
+      "completed": "已完成",
+      "rejected": "已拒绝",
+      "cancelled": "已取消"
+    },
+    "actions": {
+      "viewDetails": "查看详情",
+      "approve": "批准",
+      "reject": "拒绝",
+      "complete": "标记为已完成",
+      "refreshed": "提现记录已刷新"
+    },
+    "detail": {
+      "title": "提现详情",
+      "subtitle": "ID: {{id}}",
+      "storeBalance": "商店余额",
+      "withdrawalInfo": "提现信息",
+      "bankAccountInfo": "银行账户信息",
+      "notes": "备注",
+      "rejectionReason": "拒绝原因",
+      "completionNotes": "完成备注",
+      "completionNotesPlaceholder": "添加关于支付处理的备注...",
+      "rejectionReasonPlaceholder": "输入拒绝原因...",
+      "fields": {
+        "store": "商店",
+        "amount": "金额",
+        "status": "状态",
+        "requestedAt": "申请时间",
+        "approvedAt": "批准时间",
+        "processedAt": "处理时间",
+        "bankName": "银行名称",
+        "accountName": "账户名称",
+        "accountNumber": "账户号码",
+        "routingNumber": "路由号码"
+      },
+      "balance": {
+        "totalEarnings": "总收入",
+        "platformCommission": "平台佣金",
+        "totalWithdrawn": "已提现金额",
+        "pendingWithdrawals": "待提现金额",
+        "availableBalance": "可用余额"
+      },
+      "confirm": {
+        "approve": {
+          "title": "批准提现",
+          "message": "您确定要批准这笔 {{amount}} 的提现吗？"
+        },
+        "reject": {
+          "title": "拒绝提现",
+          "message": "您确定要拒绝这笔提现吗？请提供拒绝原因。"
+        },
+        "complete": {
+          "title": "完成提现",
+          "message": "将此提现标记为已完成？这表示支付已处理。"
+        }
+      },
+      "success": {
+        "approved": "提现批准成功",
+        "rejected": "提现拒绝成功",
+        "completed": "提现标记为已完成"
+      },
+      "error": {
+        "approveFailed": "批准提现失败",
+        "rejectFailed": "拒绝提现失败",
+        "completeFailed": "完成提现失败",
+        "rejectionReasonRequired": "请提供拒绝原因",
+        "loadBalanceFailed": "加载商店余额失败"
+      }
+    },
+    "error": {
+      "loadFailed": "加载提现记录失败"
+    },
+    "createModal": {
+      "title": "创建提现请求",
+      "store": "商店",
+      "selectStore": "选择商店",
+      "selectStorePlaceholder": "请选择商店",
+      "availableBalance": "可用余额",
+      "totalEarnings": "总收入",
+      "totalWithdrawn": "已提现金额",
+      "pendingWithdrawals": "待处理提现",
+      "loadingBalance": "加载余额中...",
+      "amount": "金额",
+      "maxAmount": "最大金额",
+      "maxButton": "最大",
+      "setMaxAmount": "设置为最大可提现金额",
+      "bankName": "银行名称",
+      "bankNamePlaceholder": "请输入银行名称",
+      "selectBank": "选择银行",
+      "bankAccountName": "账户持有人姓名",
+      "bankAccountNamePlaceholder": "请输入账户持有人姓名",
+      "bankAccountNumber": "账户号码",
+      "bankAccountNumberPlaceholder": "请输入账户号码",
+      "bankRoutingNumber": "路由号码",
+      "bankRoutingNumberPlaceholder": "请输入路由号码",
+      "notes": "备注（可选）",
+      "notesPlaceholder": "添加任何额外备注...",
+      "cancel": "取消",
+      "submit": "提交请求",
+      "submitting": "提交中...",
+      "success": "提现请求创建成功",
+      "error": {
+        "loadBalance": "加载商店余额失败",
+        "createFailed": "创建提现请求失败",
+        "noStores": "没有可用的商店",
+        "noStoreSelected": "请选择商店"
+      },
+      "errors": {
+        "amountRequired": "金额是必需的，必须大于0",
+        "insufficientBalance": "余额不足。请输入较小的金额",
+        "bankAccountNameRequired": "账户持有人姓名是必需的",
+        "bankAccountNumberRequired": "账户号码是必需的",
+        "bankRoutingNumberRequired": "路由号码是必需的",
+        "bankNameRequired": "银行名称是必需的"
+      }
     }
   }
 }

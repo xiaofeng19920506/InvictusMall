@@ -11,6 +11,8 @@ import {
   getOrderStatusLabel,
 } from "../orderStatusConfig";
 import ReviewModal from "./ReviewModal";
+import { apiService } from "@/services/api";
+import { useRouter } from "next/navigation";
 import styles from "./OrderDetailContent.module.scss";
 
 interface OrderDetailContentProps {
@@ -28,14 +30,18 @@ const formatDate = (dateString: string) => {
 };
 
 export default function OrderDetailContent({ initialOrder }: OrderDetailContentProps) {
+  const router = useRouter();
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<{
     id: string;
     name: string;
     image?: string;
   } | null>(null);
+  const [order, setOrder] = useState<Order | null>(initialOrder);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  if (!initialOrder) {
+  if (!order) {
     return (
       <ProtectedRoute>
         <div className={styles.pageContainer}>
@@ -48,8 +54,6 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
       </ProtectedRoute>
     );
   }
-
-  const order = initialOrder;
 
   const handleWriteReview = (item: typeof order.items[0]) => {
     setSelectedProduct({
@@ -64,6 +68,45 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
     // Optionally refresh order data or show success message
     window.location.reload();
   };
+
+  const handleCancelOrder = async () => {
+    if (!order) return;
+
+    setIsCancelling(true);
+    try {
+      const response = await apiService.cancelOrder(order.id);
+      if (response.success && response.data) {
+        // Update order status locally - this will automatically hide the cancel button
+        setOrder(response.data);
+        setShowCancelConfirm(false);
+        // Refresh the page after a short delay to show updated status
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        alert(response.message || 'Failed to cancel order');
+      }
+    } catch (error: any) {
+      alert(error.message || 'An error occurred while cancelling the order');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  if (!order) {
+    return (
+      <ProtectedRoute>
+        <div className={styles.pageContainer}>
+          <div className={styles.container}>
+            <div className={styles.errorMessage}>
+              Order not found.
+            </div>
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute>
       <div className={styles.wrapper}>
@@ -241,9 +284,39 @@ export default function OrderDetailContent({ initialOrder }: OrderDetailContentP
                 </button>
               )}
               {(order.status === 'pending' || order.status === 'processing') && (
-                <button className={`${styles.actionButton} ${styles.red}`}>
-                  Cancel Order
-                </button>
+                <>
+                  <button
+                    onClick={() => setShowCancelConfirm(true)}
+                    className={`${styles.actionButton} ${styles.red}`}
+                    disabled={isCancelling}
+                  >
+                    {isCancelling ? 'Cancelling...' : 'Cancel Order'}
+                  </button>
+                  {showCancelConfirm && (
+                    <div className={styles.confirmModal}>
+                      <div className={styles.confirmModalContent}>
+                        <h3>Cancel Order?</h3>
+                        <p>Are you sure you want to cancel this order? This action cannot be undone.</p>
+                        <div className={styles.confirmModalActions}>
+                          <button
+                            onClick={() => setShowCancelConfirm(false)}
+                            className={styles.confirmButton}
+                            disabled={isCancelling}
+                          >
+                            No, Keep Order
+                          </button>
+                          <button
+                            onClick={handleCancelOrder}
+                            className={`${styles.confirmButton} ${styles.danger}`}
+                            disabled={isCancelling}
+                          >
+                            {isCancelling ? 'Cancelling...' : 'Yes, Cancel Order'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

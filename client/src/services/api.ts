@@ -503,6 +503,17 @@ class ApiService {
       method: 'GET',
     });
   }
+
+  // Order cancellation
+  async cancelOrder(orderId: string): Promise<{
+    success: boolean;
+    data?: any;
+    message?: string;
+  }> {
+    return this.request(`/api/orders/${orderId}/cancel`, {
+      method: 'POST',
+    });
+  }
 }
 
 // Category interface

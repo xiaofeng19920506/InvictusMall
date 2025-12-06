@@ -118,6 +118,17 @@ router.post(
         return ApiResponseHelper.notFound(res, "Order item");
       }
 
+      // Check if product is final sale (no returns allowed)
+      const { ProductModel } = await import('../models/ProductModel');
+      const product = await ProductModel.findById(orderItem.productId);
+      if (product && product.isFinalSale) {
+        return ApiResponseHelper.error(
+          res,
+          "This product is marked as final sale and cannot be returned",
+          400
+        );
+      }
+
       // Check if there's already a pending return for this item
       const existingReturns = await returnModel.findByOrderItemId(orderItemId);
       const hasPendingReturn = existingReturns.some(r => r.status === 'pending' || r.status === 'approved');

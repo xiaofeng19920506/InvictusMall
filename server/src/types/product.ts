@@ -16,6 +16,7 @@ export interface Product {
   storeInventories?: StoreProductInventory[]; // Inventory quantities per store
   condition?: ProductCondition; // Product condition: new, refurbished, open_box, or used
   isActive: boolean;
+  isFinalSale: boolean; // If true, product cannot be returned (default: true)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +42,7 @@ export interface CreateProductRequest {
   serialNumbers?: string[]; // Array of serial numbers for tracking individual products
   condition?: ProductCondition; // Product condition: new, refurbished, open_box, or used (defaults to 'new')
   isActive?: boolean;
+  isFinalSale?: boolean; // If true, product cannot be returned (default: true)
 }
 
 export interface UpdateProductRequest {
@@ -56,5 +58,6 @@ export interface UpdateProductRequest {
   serialNumbers?: string[]; // Array of serial numbers for tracking individual products
   condition?: ProductCondition; // Product condition: new, refurbished, open_box, or used
   isActive?: boolean;
+  isFinalSale?: boolean; // If true, product cannot be returned (default: true)
 }
 

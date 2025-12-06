@@ -362,6 +362,11 @@
   border: none;
   color: color('white');
   
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
   &.blue {
     background-color: color('blue-500');
     
@@ -381,8 +386,84 @@
   &.red {
     background-color: color('red-500');
     
-    &:hover {
+    &:hover:not(:disabled) {
       background-color: color('red-600');
+    }
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Confirm Modal
+.confirmModal {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.confirmModalContent {
+  background-color: color('white');
+  border-radius: border-radius('lg');
+  padding: 1.5rem;
+  max-width: 28rem;
+  width: 100%;
+  box-shadow: shadow('xl');
+  
+  h3 {
+    font-size: font-size('xl');
+    font-weight: font-weight('bold');
+    color: color('gray-900');
+    margin-bottom: 0.75rem;
+  }
+  
+  p {
+    color: color('gray-600');
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+}
+
+.confirmModalActions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.confirmButton {
+  padding: 0.5rem 1rem;
+  border-radius: border-radius('md');
+  border: 1px solid color('gray-300');
+  background-color: color('white');
+  color: color('gray-700');
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: font-weight('medium');
+  
+  &:hover:not(:disabled) {
+    background-color: color('gray-50');
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  &.danger {
+    background-color: color('red-500');
+    color: color('white');
+    border-color: color('red-500');
+    
+    &:hover:not(:disabled) {
+      background-color: color('red-600');
+      border-color: color('red-600');
     }
   }
 }

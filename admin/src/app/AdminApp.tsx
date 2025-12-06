@@ -15,6 +15,7 @@ import {
   LazyCategoriesManagement,
   LazyInventoryManagement,
   LazyOrdersManagement,
+  LazyWithdrawalsManagement,
 } from "./routes";
 import type { AdminPageKey } from "./types";
 
@@ -29,6 +30,7 @@ const ROUTE_PATHS: Record<AdminPageKey, string> = {
   settings: "/settings",
   system_logs: "/system-logs",
   inventory: "/inventory",
+  withdrawals: "/withdrawals",
 };
 
 // Protected Route Component
@@ -109,6 +111,11 @@ const AdminApp = () => {
     if (currentPage === "users" && user.role === "employee") {
       navigate("/dashboard", { replace: true });
     }
+
+    // Check withdrawals page access - only admin or owner can access
+    if (currentPage === "withdrawals" && user.role !== "admin" && user.role !== "owner") {
+      navigate("/dashboard", { replace: true });
+    }
   }, [currentPage, user, navigate]);
 
   return (
@@ -160,6 +167,14 @@ const AdminApp = () => {
             element={
               <ProtectedRoute requiredPermission="stores">
                 <LazyInventoryManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/withdrawals"
+            element={
+              <ProtectedRoute requiredRole={["admin", "owner"]}>
+                <LazyWithdrawalsManagement />
               </ProtectedRoute>
             }
           />

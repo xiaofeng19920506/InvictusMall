@@ -389,6 +389,36 @@ export const requireOwnerOrManager = (
   next();
 };
 
+// Require admin or owner role (for staff members)
+export const requireAdminOrOwner = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (!req.staff && !req.user) {
+    res.status(401).json({
+      success: false,
+      message: "Authentication required",
+    });
+    return;
+  }
+
+  const role = req.staff?.role || req.user?.role;
+  const allowedRoles = ["admin", "owner"];
+
+  if (!role || !allowedRoles.includes(role)) {
+    res.status(403).json({
+      success: false,
+      message: "Insufficient permissions. Required role: admin or owner. Your role: " + (role || "unknown"),
+      userRole: role,
+      requiredRoles: allowedRoles,
+    });
+    return;
+  }
+
+  next();
+};
+
 /**
  * Helper function to verify that the authenticated user owns the store
  * Admin and owner can only access their own store, managers and employees can only access their assigned store

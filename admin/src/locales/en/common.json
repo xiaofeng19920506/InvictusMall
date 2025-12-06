@@ -8,6 +8,7 @@
       "orders": "Orders",
       "shipments": "Shipments",
       "inventory": "Inventory Management",
+      "withdrawals": "Withdrawals",
       "users": "Users",
       "settings": "Settings",
       "systemLogs": "System Logs",
@@ -54,6 +55,7 @@
       "orders": "Orders",
       "shipments": "Shipments",
       "inventory": "Inventory Management",
+      "withdrawals": "Withdrawals",
       "users": "Users",
       "settings": "Settings",
       "systemLogs": "System Logs",
@@ -1237,6 +1239,161 @@
         "after": "After",
         "reason": "Reason",
         "order": "Order"
+      }
+    }
+  },
+  "withdrawals": {
+    "title": "Withdrawals Management",
+    "subtitle": "Manage store withdrawal requests",
+    "subtitleOwner": "Manage your store withdrawal requests",
+    "createButton": "Create Withdrawal",
+    "selectStore": "Select Store",
+    "refresh": "Refresh",
+    "loading": "Loading withdrawals...",
+    "empty": "No withdrawals found",
+    "searchPlaceholder": "Search by store, bank, or withdrawal ID...",
+    "stats": {
+      "total": "Total Withdrawals",
+      "pending": "Pending",
+      "approved": "Approved",
+      "completed": "Completed",
+      "totalPaid": "Total Paid"
+    },
+    "filters": {
+      "allStatus": "All Status",
+      "allStores": "All Stores",
+      "pending": "Pending",
+      "approved": "Approved",
+      "processing": "Processing",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "table": {
+      "store": "Store",
+      "amount": "Amount",
+      "bankAccount": "Bank Account",
+      "status": "Status",
+      "requested": "Requested",
+      "actions": "Actions"
+    },
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "processing": "Processing",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "approve": "Approve",
+      "reject": "Reject",
+      "complete": "Mark as Completed",
+      "refreshed": "Withdrawals refreshed"
+    },
+    "detail": {
+      "title": "Withdrawal Details",
+      "subtitle": "ID: {{id}}",
+      "storeBalance": "Store Balance",
+      "withdrawalInfo": "Withdrawal Information",
+      "bankAccountInfo": "Bank Account Information",
+      "notes": "Notes",
+      "rejectionReason": "Rejection Reason",
+      "completionNotes": "Completion Notes",
+      "completionNotesPlaceholder": "Add notes about the payment processing...",
+      "rejectionReasonPlaceholder": "Enter reason for rejection...",
+      "fields": {
+        "store": "Store",
+        "amount": "Amount",
+        "status": "Status",
+        "requestedAt": "Requested At",
+        "approvedAt": "Approved At",
+        "processedAt": "Processed At",
+        "bankName": "Bank Name",
+        "accountName": "Account Name",
+        "accountNumber": "Account Number",
+        "routingNumber": "Routing Number"
+      },
+      "balance": {
+        "totalEarnings": "Total Earnings",
+        "platformCommission": "Platform Commission",
+        "totalWithdrawn": "Total Withdrawn",
+        "pendingWithdrawals": "Pending Withdrawals",
+        "availableBalance": "Available Balance"
+      },
+      "confirm": {
+        "approve": {
+          "title": "Approve Withdrawal",
+          "message": "Are you sure you want to approve this withdrawal of {{amount}}?"
+        },
+        "reject": {
+          "title": "Reject Withdrawal",
+          "message": "Are you sure you want to reject this withdrawal? Please provide a reason."
+        },
+        "complete": {
+          "title": "Complete Withdrawal",
+          "message": "Mark this withdrawal as completed? This indicates the payment has been processed."
+        }
+      },
+      "success": {
+        "approved": "Withdrawal approved successfully",
+        "rejected": "Withdrawal rejected successfully",
+        "completed": "Withdrawal marked as completed successfully"
+      },
+      "error": {
+        "approveFailed": "Failed to approve withdrawal",
+        "rejectFailed": "Failed to reject withdrawal",
+        "completeFailed": "Failed to complete withdrawal",
+        "rejectionReasonRequired": "Please provide a rejection reason",
+        "loadBalanceFailed": "Failed to load store balance"
+      }
+    },
+    "error": {
+      "loadFailed": "Failed to load withdrawals"
+    },
+    "createModal": {
+      "title": "Create Withdrawal Request",
+      "store": "Store",
+      "selectStore": "Select Store",
+      "selectStorePlaceholder": "Choose a store",
+      "availableBalance": "Available Balance",
+      "totalEarnings": "Total Earnings",
+      "totalWithdrawn": "Total Withdrawn",
+      "pendingWithdrawals": "Pending Withdrawals",
+      "loadingBalance": "Loading balance...",
+      "amount": "Amount",
+      "maxAmount": "Maximum",
+      "maxButton": "Max",
+      "setMaxAmount": "Set maximum withdrawable amount",
+      "bankName": "Bank Name",
+      "bankNamePlaceholder": "Enter bank name",
+      "selectBank": "Select a bank",
+      "bankAccountName": "Account Holder Name",
+      "bankAccountNamePlaceholder": "Enter account holder name",
+      "bankAccountNumber": "Account Number",
+      "bankAccountNumberPlaceholder": "Enter account number",
+      "bankRoutingNumber": "Routing Number",
+      "bankRoutingNumberPlaceholder": "Enter routing number",
+      "notes": "Notes (Optional)",
+      "notesPlaceholder": "Add any additional notes...",
+      "cancel": "Cancel",
+      "submit": "Submit Request",
+      "submitting": "Submitting...",
+      "success": "Withdrawal request created successfully",
+      "error": {
+        "loadBalance": "Failed to load store balance",
+        "createFailed": "Failed to create withdrawal request",
+        "noStores": "No stores available",
+        "noStoreSelected": "Please select a store"
+      },
+      "errors": {
+        "amountRequired": "Amount is required and must be greater than 0",
+        "insufficientBalance": "Insufficient balance. Please enter a smaller amount",
+        "bankAccountNameRequired": "Account holder name is required",
+        "bankAccountNumberRequired": "Account number is required",
+        "bankRoutingNumberRequired": "Routing number is required",
+        "bankNameRequired": "Bank name is required"
       }
     }
   }

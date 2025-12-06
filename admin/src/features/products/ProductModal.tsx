@@ -44,6 +44,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
     barcode: product?.barcode ?? "",
     serialNumber: product?.serialNumber ?? "",
     isActive: product?.isActive ?? true,
+    isFinalSale: product?.isFinalSale ?? true, // Default to true (final sale)
   });
 
   const [saving, setSaving] = useState(false);
@@ -211,6 +212,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           barcode: formData.barcode || undefined,
           serialNumber: formData.serialNumber || undefined,
           isActive: formData.isActive,
+          isFinalSale: formData.isFinalSale,
         };
         const response = await productApi.updateProduct(product.id, updateData);
         if (response.success) {
@@ -365,6 +367,25 @@ const ProductModal: React.FC<ProductModalProps> = ({
               />
               <span>{t("productModal.fields.active")}</span>
             </label>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.checkboxLabel}>
+              <input
+                name="isFinalSale"
+                type="checkbox"
+                checked={formData.isFinalSale ?? true}
+                onChange={handleChange}
+                className={styles.checkbox}
+              />
+              <span>
+                {t("productModal.fields.finalSale") || "Final Sale (No Returns)"}
+              </span>
+            </label>
+            <p className={styles.helpText}>
+              {t("productModal.fields.finalSaleHelp") || 
+                "If checked, this product cannot be returned. Uncheck to allow returns."}
+            </p>
           </div>
 
           <div className={styles.actions}>

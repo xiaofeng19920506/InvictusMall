@@ -16,6 +16,7 @@ import {
   FolderTree,
   ShoppingBag,
   Warehouse,
+  Wallet,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
@@ -81,6 +82,13 @@ const NAV_ITEMS: NavigationItem[] = [
     pageTitleKey: "pages.inventory",
   },
   {
+    id: "withdrawals",
+    permission: "stores",
+    icon: Wallet,
+    translationKey: "nav.withdrawals",
+    pageTitleKey: "pages.withdrawals",
+  },
+  {
     id: "users",
     permission: "users",
     icon: Users,
@@ -135,6 +143,10 @@ const AdminLayout = ({
           }
           // Hide stores management for manager role
           if (item.id === "stores" && user.role === "manager") {
+            return false;
+          }
+          // Hide withdrawals for non-admin and non-owner roles
+          if (item.id === "withdrawals" && user.role !== "admin" && user.role !== "owner") {
             return false;
           }
           return authService.hasPermission(user, item.permission);

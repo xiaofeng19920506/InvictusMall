@@ -15,6 +15,7 @@ export interface Product {
   barcode?: string;
   serialNumber?: string;
   isActive: boolean;
+  isFinalSale: boolean; // If true, product cannot be returned (default: true)
   createdAt: string;
   updatedAt: string;
 }
@@ -31,6 +32,7 @@ export interface CreateProductRequest {
   barcode?: string;
   serialNumber?: string;
   isActive?: boolean;
+  isFinalSale?: boolean; // If true, product cannot be returned (default: true)
 }
 
 export interface UpdateProductRequest {
@@ -44,6 +46,7 @@ export interface UpdateProductRequest {
   barcode?: string;
   serialNumber?: string;
   isActive?: boolean;
+  isFinalSale?: boolean; // If true, product cannot be returned (default: true)
 }
 
 export const productApi = {

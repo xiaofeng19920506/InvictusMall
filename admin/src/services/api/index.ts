@@ -87,3 +87,11 @@ export type {
   StockOperation,
   CreateStockOperationRequest,
 } from './stockOperationApi';
+
+// Withdrawal management (Withdrawals page)
+export { withdrawalApi } from './withdrawalApi';
+export type {
+  Withdrawal,
+  StoreBalance,
+  CreateWithdrawalRequest,
+} from './withdrawalApi';

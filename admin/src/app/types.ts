@@ -7,5 +7,6 @@ export type AdminPageKey =
   | "users"
   | "settings"
   | "system_logs"
-  | "inventory";
+  | "inventory"
+  | "withdrawals";
 

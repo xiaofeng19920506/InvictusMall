@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
         openGraph: {
           title: `${product.name} - Invictus Mall`,
           description: product.description || `Buy ${product.name} at Invictus Mall`,
-          type: "product",
+          type: "website",
           images: product.imageUrls && product.imageUrls.length > 0 
             ? product.imageUrls.slice(0, 4) 
             : product.imageUrl ? [product.imageUrl] : [],
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       };
     }
   } catch (error) {
-    console.error('Failed to fetch product for metadata:', error);
+    // Failed to fetch product for metadata
   }
   
   return {
@@ -70,14 +70,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
           store = storeResponse.data;
         }
       } catch (storeError) {
-        console.warn('Failed to fetch store for product:', storeError);
         // Continue without store data - component can handle it
       }
     } else {
       notFound();
     }
   } catch (error) {
-    console.error('Failed to fetch product on server:', error);
     notFound();
   }
 
