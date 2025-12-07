@@ -34,6 +34,7 @@ import productSerialNumberRoutes from "./routes/productSerialNumberRoutes";
 import storeProductInventoryRoutes from "./routes/storeProductInventoryRoutes";
 import barcodeLookupRoutes from "./routes/barcodeLookupRoutes";
 import withdrawalRoutes from "./routes/withdrawalRoutes";
+import productQuestionRoutes from "./routes/productQuestionRoutes";
 import { errorHandler, notFound } from "./middleware/errorHandler";
 import { testConnection, initializeDatabase } from "./config/database";
 import { setupSwagger } from "./config/swagger";
@@ -208,6 +209,7 @@ app.use("/api/product-serial-numbers", productSerialNumberRoutes);
 app.use("/api/store-product-inventory", storeProductInventoryRoutes);
 app.use("/api/barcode-lookup", barcodeLookupRoutes);
 app.use("/api", withdrawalRoutes);
+app.use("/api", productQuestionRoutes);
 
 /**
  * @swagger

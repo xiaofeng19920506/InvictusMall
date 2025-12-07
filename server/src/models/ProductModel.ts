@@ -267,6 +267,233 @@ export class ProductModel {
     }
   }
 
+  // Advanced global product search with filters
+  static async globalSearch(options?: {
+    query?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    minRating?: number;
+    storeId?: string;
+    condition?: string;
+    inStock?: boolean;
+    sortBy?: 'price_asc' | 'price_desc' | 'rating' | 'newest' | 'name';
+    limit?: number;
+    offset?: number;
+  }): Promise<{ products: Product[]; total: number }> {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      
+      // Build WHERE clause
+      const conditions: string[] = ['p.is_active = TRUE'];
+      const params: any[] = [];
+      
+      // Search query
+      if (options?.query) {
+        const searchTerm = `%${options.query}%`;
+        conditions.push(`(p.name LIKE ? OR p.description LIKE ? OR p.category LIKE ?)`);
+        params.push(searchTerm, searchTerm, searchTerm);
+      }
+      
+      // Category filter
+      if (options?.category) {
+        conditions.push(`p.category = ?`);
+        params.push(options.category);
+      }
+      
+      // Price range
+      if (options?.minPrice !== undefined) {
+        conditions.push(`p.price >= ?`);
+        params.push(options.minPrice);
+      }
+      if (options?.maxPrice !== undefined) {
+        conditions.push(`p.price <= ?`);
+        params.push(options.maxPrice);
+      }
+      
+      // Store filter
+      if (options?.storeId) {
+        conditions.push(`p.store_id = ?`);
+        params.push(options.storeId);
+      }
+      
+      // Condition filter
+      if (options?.condition) {
+        conditions.push(`p.condition = ?`);
+        params.push(options.condition);
+      }
+      
+      // Stock filter
+      if (options?.inStock === true) {
+        conditions.push(`p.stock_quantity > 0`);
+      }
+      
+      // Rating filter (join with product_reviews)
+      let ratingJoin = '';
+      if (options?.minRating !== undefined) {
+        ratingJoin = `LEFT JOIN (
+          SELECT product_id, AVG(rating) as avg_rating
+          FROM product_reviews
+          GROUP BY product_id
+        ) pr ON p.id = pr.product_id`;
+        conditions.push(`(pr.avg_rating >= ? OR pr.avg_rating IS NULL)`);
+        params.push(options.minRating);
+      }
+      
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      
+      // Build ORDER BY clause
+      let orderBy = 'p.created_at DESC';
+      if (options?.sortBy) {
+        switch (options.sortBy) {
+          case 'price_asc':
+            orderBy = 'p.price ASC';
+            break;
+          case 'price_desc':
+            orderBy = 'p.price DESC';
+            break;
+          case 'rating':
+            orderBy = 'pr.avg_rating DESC, p.created_at DESC';
+            break;
+          case 'newest':
+            orderBy = 'p.created_at DESC';
+            break;
+          case 'name':
+            orderBy = 'p.name ASC';
+            break;
+        }
+      }
+      
+      // Get total count
+      const countQuery = `SELECT COUNT(DISTINCT p.id) as total 
+        FROM products p 
+        ${ratingJoin}
+        ${whereClause}`;
+      const [countResult] = await connection.execute(countQuery, params);
+      const total = (countResult as any[])[0]?.total || 0;
+      
+      // Get products with pagination
+      const limit = options?.limit !== undefined ? Math.max(0, Math.floor(options.limit)) : 50;
+      const offset = options?.offset !== undefined ? Math.max(0, Math.floor(options.offset)) : 0;
+      
+      const query = `SELECT DISTINCT p.* 
+        FROM products p 
+        ${ratingJoin}
+        ${whereClause}
+        ORDER BY ${orderBy}
+        LIMIT ? OFFSET ?`;
+      
+      const [rows] = await connection.execute(query, [...params, limit, offset]);
+      const products = rows as any[];
+      
+      if (!products || products.length === 0) {
+        return { products: [], total };
+      }
+      
+      return { products: products.map(this.mapRowToProduct), total };
+    } catch (error: any) {
+      logger.error('Database error in globalSearch', error);
+      throw error;
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
+
+  // Get product recommendations (related products, frequently bought together)
+  static async getRecommendations(productId: string, options?: {
+    type?: 'related' | 'frequently_bought_together' | 'similar_price';
+    limit?: number;
+  }): Promise<Product[]> {
+    let connection;
+    try {
+      connection = await pool.getConnection();
+      const limit = options?.limit || 12;
+      const type = options?.type || 'related';
+      
+      // First, get the current product
+      const currentProduct = await this.findById(productId);
+      if (!currentProduct) {
+        return [];
+      }
+      
+      let query = '';
+      let params: any[] = [];
+      
+      if (type === 'related') {
+        // Related products: same category, different product
+        query = `
+          SELECT DISTINCT p.* 
+          FROM products p
+          WHERE p.id != ?
+            AND p.is_active = TRUE
+            AND p.category = ?
+            AND p.store_id = ?
+          ORDER BY p.created_at DESC
+          LIMIT ?
+        `;
+        params = [productId, currentProduct.category || '', currentProduct.storeId, limit];
+      } else if (type === 'frequently_bought_together') {
+        // Frequently bought together: products from same store, different category
+        // In a real implementation, this would use order history data
+        query = `
+          SELECT DISTINCT p.* 
+          FROM products p
+          WHERE p.id != ?
+            AND p.is_active = TRUE
+            AND p.store_id = ?
+            AND p.stock_quantity > 0
+          ORDER BY p.price ASC, p.created_at DESC
+          LIMIT ?
+        `;
+        params = [productId, currentProduct.storeId, limit];
+      } else if (type === 'similar_price') {
+        // Similar price range: products within 20% price range
+        const priceRange = currentProduct.price * 0.2;
+        query = `
+          SELECT DISTINCT p.* 
+          FROM products p
+          WHERE p.id != ?
+            AND p.is_active = TRUE
+            AND p.price >= ? 
+            AND p.price <= ?
+            AND p.stock_quantity > 0
+          ORDER BY ABS(p.price - ?) ASC, p.created_at DESC
+          LIMIT ?
+        `;
+        params = [
+          productId,
+          currentProduct.price - priceRange,
+          currentProduct.price + priceRange,
+          currentProduct.price,
+          limit
+        ];
+      }
+      
+      if (!query) {
+        return [];
+      }
+      
+      const [rows] = await connection.execute(query, params);
+      const products = rows as any[];
+      
+      if (!products || products.length === 0) {
+        return [];
+      }
+      
+      return products.map(this.mapRowToProduct);
+    } catch (error: any) {
+      logger.error('Database error in getRecommendations', error);
+      throw error;
+    } finally {
+      if (connection) {
+        connection.release();
+      }
+    }
+  }
+
   // Get product by barcode
   static async findByBarcode(barcode: string): Promise<Product | null> {
     let connection;

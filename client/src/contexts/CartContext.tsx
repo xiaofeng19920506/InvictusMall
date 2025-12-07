@@ -16,13 +16,18 @@ export interface CartItem {
   reservationTime?: string;
   reservationNotes?: string;
   isReservation?: boolean;
+  // Save for later
+  savedForLater?: boolean;
 }
 
 interface CartContextType {
   items: CartItem[];
+  savedItems: CartItem[];
   addItem: (item: Omit<CartItem, 'id'>) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
+  saveForLater: (id: string) => void;
+  moveToCart: (id: string) => void;
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
@@ -32,23 +37,35 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [savedItems, setSavedItems] = useState<CartItem[]>([]);
 
   // Load cart from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('cart');
+    const storedSaved = localStorage.getItem('savedItems');
     if (stored) {
       try {
-        setItems(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setItems(parsed.filter((item: CartItem) => !item.savedForLater));
+        setSavedItems(parsed.filter((item: CartItem) => item.savedForLater));
       } catch (error) {
         console.error('Failed to load cart:', error);
+      }
+    }
+    if (storedSaved) {
+      try {
+        setSavedItems(JSON.parse(storedSaved));
+      } catch (error) {
+        console.error('Failed to load saved items:', error);
       }
     }
   }, []);
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+    localStorage.setItem('cart', JSON.stringify([...items, ...savedItems]));
+    localStorage.setItem('savedItems', JSON.stringify(savedItems));
+  }, [items, savedItems]);
 
   const addItem = (item: Omit<CartItem, 'id'>) => {
     setItems(prev => {
@@ -104,6 +121,22 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const saveForLater = (id: string) => {
+    const item = items.find(i => i.id === id);
+    if (item) {
+      setItems(prev => prev.filter(i => i.id !== id));
+      setSavedItems(prev => [...prev, { ...item, savedForLater: true }]);
+    }
+  };
+
+  const moveToCart = (id: string) => {
+    const item = savedItems.find(i => i.id === id);
+    if (item) {
+      setSavedItems(prev => prev.filter(i => i.id !== id));
+      setItems(prev => [...prev, { ...item, savedForLater: false }]);
+    }
+  };
+
   const clearCart = () => {
     setItems([]);
   };
@@ -120,9 +153,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     <CartContext.Provider
       value={{
         items,
+        savedItems,
         addItem,
         removeItem,
         updateQuantity,
+        saveForLater,
+        moveToCart,
         clearCart,
         getTotal,
         getItemCount

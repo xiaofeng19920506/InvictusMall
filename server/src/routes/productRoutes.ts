@@ -54,6 +54,117 @@ const uploadMultipleProductImages = multer({
 });
 
 /**
+ * Global product search with advanced filtering (Public endpoint)
+ * @swagger
+ * /api/products/search:
+ *   get:
+ *     summary: Search products globally with filters
+ *     tags: [Products]
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         schema:
+ *           type: string
+ *         description: Search query (name, description, category)
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Minimum price
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Maximum price
+ *       - in: query
+ *         name: minRating
+ *         schema:
+ *           type: number
+ *         description: Minimum rating
+ *       - in: query
+ *         name: storeId
+ *         schema:
+ *           type: string
+ *         description: Filter by store ID
+ *       - in: query
+ *         name: condition
+ *         schema:
+ *           type: string
+ *           enum: [new, refurbished, open_box, used]
+ *         description: Product condition
+ *       - in: query
+ *         name: inStock
+ *         schema:
+ *           type: boolean
+ *         description: Only show in-stock products
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [price_asc, price_desc, rating, newest, name]
+ *         description: Sort order
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Number of products to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of products to skip
+ *     responses:
+ *       200:
+ *         description: Products retrieved successfully
+ */
+router.get("/search", async (req: Request, res: Response) => {
+  try {
+    const {
+      query: searchQuery,
+      category,
+      minPrice,
+      maxPrice,
+      minRating,
+      storeId,
+      condition,
+      inStock,
+      sortBy,
+      limit,
+      offset,
+    } = req.query;
+
+    const searchOptions: any = {};
+    
+    if (searchQuery) searchOptions.query = searchQuery as string;
+    if (category) searchOptions.category = category as string;
+    if (minPrice) searchOptions.minPrice = parseFloat(minPrice as string);
+    if (maxPrice) searchOptions.maxPrice = parseFloat(maxPrice as string);
+    if (minRating) searchOptions.minRating = parseFloat(minRating as string);
+    if (storeId) searchOptions.storeId = storeId as string;
+    if (condition) searchOptions.condition = condition as string;
+    if (inStock === 'true') searchOptions.inStock = true;
+    if (sortBy) searchOptions.sortBy = sortBy as any;
+    if (limit) searchOptions.limit = parseInt(limit as string);
+    if (offset) searchOptions.offset = parseInt(offset as string);
+
+    const result = await ProductModel.globalSearch(searchOptions);
+
+    return ApiResponseHelper.successWithPagination(res, result.products, result.total);
+  } catch (error) {
+    logger.error("Failed to search products", error);
+    return ApiResponseHelper.error(res, "Failed to search products", 500, error);
+  }
+});
+
+/**
  * Get all products for a store
  * Public endpoint for client app, but requires authentication for admin app
  */
@@ -150,6 +261,60 @@ router.get("/barcode/:barcode", async (req: Request, res: Response) => {
   } catch (error) {
     logger.error("Error fetching product by barcode", error, { barcode: req.params.barcode });
     return ApiResponseHelper.error(res, "Failed to fetch product", 500, error);
+  }
+});
+
+/**
+ * Get product recommendations
+ * @swagger
+ * /api/products/{id}/recommendations:
+ *   get:
+ *     summary: Get product recommendations
+ *     tags: [Products]
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [related, frequently_bought_together, similar_price]
+ *           default: related
+ *         description: Type of recommendations
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 12
+ *         description: Number of recommendations
+ *     responses:
+ *       200:
+ *         description: Recommendations retrieved successfully
+ */
+router.get("/:id/recommendations", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { type, limit } = req.query;
+
+    if (!id) {
+      return ApiResponseHelper.validationError(res, "Product ID is required");
+    }
+
+    const options: any = {};
+    if (type) options.type = type as any;
+    if (limit) options.limit = parseInt(limit as string);
+
+    const recommendations = await ProductModel.getRecommendations(id, options);
+
+    return ApiResponseHelper.successWithCount(res, recommendations, recommendations.length);
+  } catch (error) {
+    logger.error("Failed to get recommendations", error);
+    return ApiResponseHelper.error(res, "Failed to get recommendations", 500, error);
   }
 });
 
